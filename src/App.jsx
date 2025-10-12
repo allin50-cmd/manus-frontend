@@ -17,6 +17,8 @@ import dashboardBg from './assets/IMG_3555(1).jpeg'
 import ultraGuardian from './assets/IMG_3577(1).jpeg'
 import workshopImage from './assets/IMG_3576(1).jpeg'
 import engineRoom from './assets/IMG_3574(1).jpeg'
+import navbarDesign from './assets/IMG_3575(2).jpeg'
+import footerDesign from './assets/IMG_3577(2).jpeg'
 
 // Demo data
 const initialData = {
@@ -308,15 +310,23 @@ function App() {
       {/* Hero Section */}
       <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={heroImage} alt="FineGuard Workshop" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-purple-900/70"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 to-purple-900/30"></div>
         <div className="relative z-10 text-center text-white px-4 max-w-4xl">
           <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">Welcome to FineGuard</h1>
           <p className="text-xl md:text-2xl mb-8 opacity-90">Where paperwork has personality and compliance is effortless</p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50 text-lg px-8" onClick={() => setCurrentPage('dashboard')}>
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-cyan-400 to-blue-500 text-white border-0 rounded-full px-10 py-6 text-lg font-semibold hover:shadow-2xl hover:shadow-cyan-400/40 transition-all hover:scale-105" 
+              onClick={() => setCurrentPage('dashboard')}
+            >
               Get Started
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20 text-lg px-8" onClick={() => setCurrentPage('how-it-works')}>
+            <Button 
+              size="lg" 
+              className="border-2 border-cyan-400/50 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 rounded-full px-10 py-6 text-lg font-semibold transition-all hover:scale-105" 
+              onClick={() => setCurrentPage('how-it-works')}
+            >
               Learn More
             </Button>
           </div>
@@ -362,7 +372,11 @@ function App() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to protect your business?</h2>
           <p className="text-xl mb-8 opacity-90">Join thousands of UK businesses using FineGuard</p>
-          <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50 text-lg px-8" onClick={() => setCurrentPage('pricing')}>
+          <Button 
+            size="lg" 
+            className="bg-white/90 backdrop-blur-md text-blue-900 hover:bg-white rounded-full px-10 py-6 text-lg font-semibold hover:shadow-2xl hover:scale-105 transition-all" 
+            onClick={() => setCurrentPage('pricing')}
+          >
             View Pricing Plans
           </Button>
         </div>
@@ -374,7 +388,7 @@ function App() {
     <div className="space-y-12">
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={aboutImage} alt="Ultra Guardian" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 to-purple-900/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/30 to-purple-900/30"></div>
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">The Story of Protection</h1>
           <p className="text-xl opacity-90">Giving peace of mind to UK founders</p>
@@ -415,7 +429,7 @@ function App() {
     <div className="space-y-12">
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={howItWorksImage} alt="Engine Room" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-teal-900/80 to-blue-900/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-teal-900/30 to-blue-900/30"></div>
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">Inside the System</h1>
           <p className="text-xl opacity-90">How FineGuard keeps you compliant</p>
@@ -467,7 +481,7 @@ function App() {
     <div className="space-y-12">
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={featuresImage} alt="Features" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 to-indigo-900/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/30 to-indigo-900/30"></div>
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">Never Miss a Deadline</h1>
           <p className="text-xl opacity-90">Powerful features for complete peace of mind</p>
@@ -503,7 +517,7 @@ function App() {
     <div className="space-y-12">
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={pricingImage} alt="Pricing" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/80 to-blue-900/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/30 to-blue-900/30"></div>
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">Protection for Every Dream</h1>
           <p className="text-xl opacity-90">Transparent pricing, no hidden fees</p>
@@ -590,7 +604,7 @@ function App() {
     <div className="space-y-12">
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={testimonialsImage} alt="Testimonials" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-900/80 to-blue-900/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-900/30 to-blue-900/30"></div>
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">Voices of Relief</h1>
           <p className="text-xl opacity-90">Trusted by UK businesses nationwide</p>
@@ -645,7 +659,7 @@ function App() {
     <div className="space-y-12">
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={contactImage} alt="Contact" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 to-indigo-900/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/30 to-indigo-900/30"></div>
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">Reach Out Anytime</h1>
           <p className="text-xl opacity-90">We're here to help</p>
@@ -855,52 +869,64 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
-            <Shield className="h-8 w-8 text-blue-600" />
-            <div>
-              <h1 className="text-xl font-bold">FineGuard</h1>
-              <p className="text-xs text-muted-foreground">UK Compliance Management</p>
+      {/* Header with Glassmorphism */}
+      <header className="sticky top-0 z-50 w-full">
+        <div className="mx-4 mt-4 rounded-full border border-cyan-400/30 bg-background/40 backdrop-blur-xl shadow-lg shadow-cyan-500/20">
+          <div className="container flex h-20 items-center justify-between px-6">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
+              <div className="relative">
+                <Shield className="h-10 w-10 text-cyan-400" />
+                <div className="absolute inset-0 blur-lg bg-cyan-400/30"></div>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">FineGuard</h1>
+                <p className="text-xs text-muted-foreground">by UltraTech AI</p>
+              </div>
             </div>
-          </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setCurrentPage(item.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                  currentPage === item.id 
-                    ? 'bg-blue-100 dark:bg-blue-950 text-blue-600' 
-                    : 'hover:bg-muted'
-                }`}
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-3">
+              {navItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentPage(item.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    currentPage === item.id 
+                      ? 'bg-cyan-400/20 text-cyan-400 shadow-lg shadow-cyan-400/20 border border-cyan-400/30' 
+                      : 'text-foreground/70 hover:text-foreground hover:bg-white/10'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+
+            <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                className="hidden md:flex bg-gradient-to-r from-cyan-400 to-blue-500 text-white border-0 rounded-full px-6 hover:shadow-lg hover:shadow-cyan-400/30 transition-all"
+                onClick={() => setCurrentPage('pricing')}
               >
-                <item.icon className="h-4 w-4" />
-                <span className="text-sm font-medium">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDarkMode(!darkMode)}
-              className="rounded-full"
-            >
-              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Sign Up
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDarkMode(!darkMode)}
+                className="rounded-full hover:bg-white/10"
+              >
+                {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden rounded-full hover:bg-white/10"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -1112,6 +1138,59 @@ function App() {
           </Card>
         </div>
       )}
+
+      {/* Footer with Glassmorphism */}
+      <footer className="mt-16 mb-4">
+        <div className="mx-4 rounded-3xl border border-cyan-400/30 bg-background/40 backdrop-blur-xl shadow-lg shadow-cyan-500/20 p-8">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Shield className="h-12 w-12 text-cyan-400" />
+                  <div className="absolute inset-0 blur-lg bg-cyan-400/30"></div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">FineGuard</h3>
+                  <p className="text-xs text-muted-foreground">by UltraTech AI</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+                <button onClick={() => setCurrentPage('home')} className="text-foreground/70 hover:text-cyan-400 transition-colors">
+                  Home
+                </button>
+                <button onClick={() => setCurrentPage('about')} className="text-foreground/70 hover:text-cyan-400 transition-colors">
+                  About
+                </button>
+                <button onClick={() => setCurrentPage('pricing')} className="text-foreground/70 hover:text-cyan-400 transition-colors">
+                  Pricing
+                </button>
+                <button onClick={() => setCurrentPage('contact')} className="text-foreground/70 hover:text-cyan-400 transition-colors">
+                  Contact
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <a href="#" className="text-foreground/70 hover:text-cyan-400 transition-colors">
+                  <MessageSquare className="h-5 w-5" />
+                </a>
+                <a href="#" className="text-foreground/70 hover:text-cyan-400 transition-colors">
+                  <Phone className="h-5 w-5" />
+                </a>
+                <a href="#" className="text-foreground/70 hover:text-cyan-400 transition-colors">
+                  <Info className="h-5 w-5" />
+                </a>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-cyan-400/20 text-center">
+              <p className="text-sm text-muted-foreground">
+                © 2024 UltraTech AI. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
