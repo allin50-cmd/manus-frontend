@@ -515,7 +515,7 @@ function App() {
           {[
             {
               name: "Starter",
-              price: "£29",
+              price: "£1",
               period: "/month",
               features: [
                 "1 company",
@@ -527,7 +527,7 @@ function App() {
             },
             {
               name: "Pro",
-              price: "£79",
+              price: "£15",
               period: "/month",
               popular: true,
               features: [
@@ -541,7 +541,7 @@ function App() {
             },
             {
               name: "Ultimate",
-              price: "£199",
+              price: "£99",
               period: "/month",
               features: [
                 "Unlimited companies",
