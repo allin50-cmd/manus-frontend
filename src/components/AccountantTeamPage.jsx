@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { 
-  Users, Bot, User, Calendar, DollarSign, TrendingUp, 
+import {
+  Users, Bot, User, Calendar, DollarSign, TrendingUp,
   CheckCircle, Clock, Award, Briefcase, Mail, Phone,
   Zap, Target, BarChart3, Settings
 } from 'lucide-react';
@@ -18,140 +18,76 @@ const AccountantTeamPage = () => {
   });
   const [costComparison, setCostComparison] = useState(null);
 
-  // Mock data - in production, fetch from API
-  const accountants = [
-    {
-      id: 'JA-001',
-      name: 'Sarah Mitchell',
-      type: 'junior_accountant',
-      avatar: '👩‍💼',
-      specialties: ['Bookkeeping', 'Payroll', 'Data Entry'],
-      availability: 'Mon-Fri 9am-5pm',
-      capacity: 20,
-      costPerHour: 35,
-      accuracy: 95.0,
-      speedMultiplier: 1.0,
-      email: 'sarah.mitchell@devonshiregreen.uk',
-      phone: '01959 565 772',
-      tasksCompleted: 342,
-      rating: 4.7
-    },
-    {
-      id: 'SA-001',
-      name: 'Michael Roberts',
-      type: 'senior_accountant',
-      avatar: '👨‍💼',
-      specialties: ['Tax Returns', 'Financial Planning', 'Consulting'],
-      availability: 'Mon-Fri 9am-6pm',
-      capacity: 15,
-      costPerHour: 75,
-      accuracy: 98.0,
-      speedMultiplier: 1.5,
-      qualifications: ['ACCA', '15 years experience'],
-      email: 'michael.roberts@devonshiregreen.uk',
-      phone: '01959 565 772',
-      tasksCompleted: 567,
-      rating: 4.9
-    },
-    {
-      id: 'CA-001',
-      name: 'David Patterson',
-      type: 'chartered_accountant',
-      avatar: '👔',
-      specialties: ['Audit', 'Financial Planning', 'Consulting', 'Tax Planning'],
-      availability: 'Mon-Fri 9am-7pm',
-      capacity: 10,
-      costPerHour: 150,
-      accuracy: 99.5,
-      speedMultiplier: 2.0,
-      qualifications: ['FCA', '25 years experience', 'Partner'],
-      email: 'david.patterson@devonshiregreen.uk',
-      phone: '01959 565 772',
-      tasksCompleted: 892,
-      rating: 5.0
-    },
-    {
-      id: 'TS-001',
-      name: 'Rachel Green',
-      type: 'tax_specialist',
-      avatar: '📊',
-      specialties: ['Tax Returns', 'Tax Planning', 'Inheritance Tax', 'Capital Gains'],
-      availability: 'Mon-Fri 9am-6pm',
-      capacity: 12,
-      costPerHour: 120,
-      accuracy: 99.0,
-      speedMultiplier: 1.8,
-      qualifications: ['CTA', 'ATT', '18 years experience'],
-      email: 'rachel.green@devonshiregreen.uk',
-      phone: '01959 565 772',
-      tasksCompleted: 445,
-      rating: 4.9
-    }
-  ];
+  // State for fetched data and loading states
+  const [accountants, setAccountants] = useState([]);
+  const [loadingAccountants, setLoadingAccountants] = useState(true);
+  const [errorAccountants, setErrorAccountants] = useState(null);
 
-  const services = [
-    {
-      category: 'Bookkeeping',
-      icon: '📚',
-      aiSupported: true,
-      startingPrice: 150,
-      services: ['Transaction recording', 'Bank reconciliation', 'Accounts payable/receivable']
-    },
-    {
-      category: 'Tax Returns',
-      icon: '📋',
-      aiSupported: false,
-      startingPrice: 250,
-      services: ['Personal tax returns', 'Corporate tax returns', 'Tax planning']
-    },
-    {
-      category: 'Payroll',
-      icon: '💰',
-      aiSupported: true,
-      startingPrice: 100,
-      services: ['Payroll processing', 'RTI submissions', 'PAYE/NI calculations']
-    },
-    {
-      category: 'VAT',
-      icon: '🧾',
-      aiSupported: true,
-      startingPrice: 120,
-      services: ['VAT returns', 'VAT registration', 'Making Tax Digital compliance']
-    },
-    {
-      category: 'Audit',
-      icon: '🔍',
-      aiSupported: false,
-      startingPrice: 1500,
-      services: ['Statutory audit', 'Internal audit', 'Compliance audit']
-    },
-    {
-      category: 'Financial Planning',
-      icon: '📈',
-      aiSupported: false,
-      startingPrice: 500,
-      services: ['Business planning', 'Cash flow forecasting', 'Investment advice']
-    }
-  ];
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [errorServices, setErrorServices] = useState(null);
 
-  const teamCapacity = {
-    totalCapacity: 1067,
-    aiCapacity: 1000,
-    humanCapacity: 67,
-    currentTasks: 234,
-    utilization: 21.9,
-    availableSlots: 833,
-    teamSize: 5,
-    aiAccountants: 1,
-    humanAccountants: 4
-  };
+  const [teamCapacity, setTeamCapacity] = useState(null);
+  const [loadingTeamCapacity, setLoadingTeamCapacity] = useState(true);
+  const [errorTeamCapacity, setErrorTeamCapacity] = useState(null);
+
+  // Fetch accountants data
+  useEffect(() => {
+    const fetchAccountants = async () => {
+      try {
+        setLoadingAccountants(true);
+        const response = await api.get('/accountants');
+        setAccountants(response.data);
+      } catch (err) {
+        setErrorAccountants('Failed to fetch accountants.');
+        console.error('Error fetching accountants:', err);
+      } finally {
+        setLoadingAccountants(false);
+      }
+    };
+    fetchAccountants();
+  }, []);
+
+  // Fetch services data
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoadingServices(true);
+        const response = await api.get('/services');
+        setServices(response.data);
+      } catch (err) {
+        setErrorServices('Failed to fetch services.');
+        console.error('Error fetching services:', err);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+    fetchServices();
+  }, []);
+
+  // Fetch team capacity data
+  useEffect(() => {
+    const fetchTeamCapacity = async () => {
+      try {
+        setLoadingTeamCapacity(true);
+        const response = await api.get('/team-capacity');
+        setTeamCapacity(response.data);
+      } catch (err) {
+        setErrorTeamCapacity('Failed to fetch team capacity.');
+        console.error('Error fetching team capacity:', err);
+      } finally {
+        setLoadingTeamCapacity(false);
+      }
+    };
+    fetchTeamCapacity();
+  }, []);
 
   const handleCalculateCost = () => {
-    // Simulate cost comparison
-    const aiCost = 0;
-    const humanCost = taskForm.estimatedHours * 75;
+    // Simulate cost comparison - this logic might need adjustment based on actual API responses
+    const aiCost = 0; // Assuming AI cost is handled by backend or fixed
+    const humanCost = taskForm.estimatedHours * 75; // Assuming a default human cost
     const savings = humanCost - aiCost;
-    
+
     setCostComparison({
       ai: {
         cost: aiCost,
@@ -161,10 +97,10 @@ const AccountantTeamPage = () => {
       human: {
         cost: humanCost,
         time: taskForm.estimatedHours + ' hours',
-        accountant: 'Michael Roberts'
+        accountant: 'Michael Roberts' // This should probably be dynamic based on selectedAccountant
       },
       savings: savings,
-      savingsPercentage: 100,
+      savingsPercentage: savings > 0 ? ((savings / humanCost) * 100).toFixed(0) : 0,
       recommendation: taskForm.complexity === 'high' ? 'human' : 'ai'
     });
   };
@@ -229,7 +165,10 @@ const AccountantTeamPage = () => {
         {/* Team Tab */}
         {selectedTab === 'team' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {accountants.map(accountant => {
+            {loadingAccountants && <p className="text-white">Loading accountants...</p>}
+            {errorAccountants && <p className="text-red-500">Error: {errorAccountants}</p>}
+            {!loadingAccountants && !errorAccountants && accountants.length === 0 && <p className="text-gray-300">No accountants found.</p>}
+            {!loadingAccountants && !errorAccountants && accountants.map(accountant => {
               const badge = getTypeBadge(accountant.type);
               return (
                 <div
@@ -311,42 +250,63 @@ const AccountantTeamPage = () => {
           </div>
         )}
 
+        {/* Accountant Detail Modal */}
+        {selectedAccountant && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-gradient-to-br from-slate-800 to-gray-900 p-8 rounded-2xl shadow-xl max-w-2xl w-full relative border border-purple-500">
+              <button
+                onClick={() => setSelectedAccountant(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <h2 className="text-3xl font-bold text-white mb-4 flex items-center gap-3">
+                {selectedAccountant.avatar} {selectedAccountant.name}
+              </h2>
+              <span className={`inline-block px-4 py-1 rounded-full text-sm font-medium text-white ${getTypeBadge(selectedAccountant.type).color} mb-4`}>
+                {getTypeBadge(selectedAccountant.type).label}
+              </span>
+              <div className="grid grid-cols-2 gap-4 text-gray-300 text-sm mb-6">
+                <p><strong className="text-white">Specialties:</strong> {selectedAccountant.specialties.join(', ')}</p>
+                <p><strong className="text-white">Availability:</strong> {selectedAccountant.availability}</p>
+                <p><strong className="text-white">Accuracy:</strong> {selectedAccountant.accuracy}%</p>
+                <p><strong className="text-white">Rating:</strong> ⭐ {selectedAccountant.rating}</p>
+                <p><strong className="text-white">Tasks Completed:</strong> {selectedAccountant.tasksCompleted.toLocaleString()}</p>
+                <p><strong className="text-white">Cost per Hour:</strong> {selectedAccountant.costPerHour === 0 ? 'Free' : `£${selectedAccountant.costPerHour}`}</p>
+                {selectedAccountant.qualifications && <p className="col-span-2"><strong className="text-white">Qualifications:</strong> {selectedAccountant.qualifications.join(', ')}</p>}
+                <p className="col-span-2"><strong className="text-white">Email:</strong> {selectedAccountant.email}</p>
+                <p className="col-span-2"><strong className="text-white">Phone:</strong> {selectedAccountant.phone}</p>
+              </div>
+              <button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                Assign Task to {selectedAccountant.name}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Services Tab */}
         {selectedTab === 'services' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service, idx) => (
-              <div
-                key={idx}
-                className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:border-purple-400/50 transition-all"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-4xl">{service.icon}</div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{service.category}</h3>
-                      <div className="text-sm text-gray-400">From £{service.startingPrice}/month</div>
-                    </div>
-                  </div>
-                  {service.aiSupported && (
-                    <div className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                      <Bot className="w-3 h-3" />
-                      AI
-                    </div>
-                  )}
+            {loadingServices && <p className="text-white">Loading services...</p>}
+            {errorServices && <p className="text-red-500">Error: {errorServices}</p>}
+            {!loadingServices && !errorServices && services.length === 0 && <p className="text-gray-300">No services found.</p>}
+            {!loadingServices && !errorServices && services.map((service, index) => (
+              <div key={index} className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="text-4xl">{service.icon}</div>
+                  <h3 className="text-xl font-bold text-white">{service.category}</h3>
                 </div>
-
-                <ul className="space-y-2">
-                  {service.services.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-gray-300 text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      {item}
-                    </li>
+                <p className="text-gray-300 mb-4">Starting from <span className="font-bold text-purple-400">£{service.startingPrice}</span></p>
+                <ul className="list-disc list-inside text-gray-300 mb-4">
+                  {service.services.map((item, idx) => (
+                    <li key={idx}>{item}</li>
                   ))}
                 </ul>
-
-                <button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white py-2 rounded-lg font-medium hover:shadow-lg transition-all">
-                  Request Service
-                </button>
+                {service.aiSupported && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300">
+                    <Bot className="w-4 h-4" /> AI Supported
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -354,257 +314,158 @@ const AccountantTeamPage = () => {
 
         {/* Assign Task Tab */}
         {selectedTab === 'assign' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                <Target className="w-6 h-6 text-purple-400" />
-                Assign New Task
-              </h2>
-
-              <div className="space-y-6">
-                {/* Category */}
-                <div>
-                  <label className="block text-white mb-2 font-medium">Service Category</label>
-                  <select
-                    value={taskForm.category}
-                    onChange={(e) => setTaskForm({...taskForm, category: e.target.value})}
-                    className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white"
-                  >
-                    <option value="bookkeeping">Bookkeeping</option>
-                    <option value="tax_returns">Tax Returns</option>
-                    <option value="payroll">Payroll</option>
-                    <option value="vat">VAT</option>
-                    <option value="audit">Audit</option>
-                    <option value="financial_planning">Financial Planning</option>
-                  </select>
-                </div>
-
-                {/* Priority & Complexity */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white mb-2 font-medium">Priority</label>
-                    <select
-                      value={taskForm.priority}
-                      onChange={(e) => setTaskForm({...taskForm, priority: e.target.value})}
-                      className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="urgent">Urgent</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-white mb-2 font-medium">Complexity</label>
-                    <select
-                      value={taskForm.complexity}
-                      onChange={(e) => setTaskForm({...taskForm, complexity: e.target.value})}
-                      className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Estimated Hours */}
-                <div>
-                  <label className="block text-white mb-2 font-medium">Estimated Hours</label>
-                  <input
-                    type="number"
-                    value={taskForm.estimatedHours}
-                    onChange={(e) => setTaskForm({...taskForm, estimatedHours: parseFloat(e.target.value)})}
-                    className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white"
-                    min="0.5"
-                    step="0.5"
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-white mb-2 font-medium">Task Description</label>
-                  <textarea
-                    value={taskForm.description}
-                    onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
-                    className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white h-32"
-                    placeholder="Describe the task in detail..."
-                  />
-                </div>
-
-                {/* Calculate Cost Button */}
-                <button
-                  onClick={handleCalculateCost}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold text-white mb-6">Assign a New Task</h2>
+            <form onSubmit={(e) => { e.preventDefault(); handleCalculateCost(); }} className="space-y-6">
+              <div>
+                <label htmlFor="taskCategory" className="block text-gray-300 text-sm font-medium mb-2">Category</label>
+                <select
+                  id="taskCategory"
+                  name="category"
+                  value={taskForm.category}
+                  onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}
+                  className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-purple-500 focus:border-purple-500"
                 >
-                  <DollarSign className="w-5 h-5" />
-                  Calculate Cost Comparison
-                </button>
-
-                {/* Cost Comparison Result */}
-                {costComparison && (
-                  <div className="mt-6 p-6 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl border border-purple-400/30">
-                    <h3 className="text-xl font-bold text-white mb-4">Cost Comparison</h3>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      {/* AI Option */}
-                      <div className="bg-white/10 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Bot className="w-5 h-5 text-purple-400" />
-                          <span className="font-bold text-white">AI Assistant</span>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-300">Cost:</span>
-                            <span className="text-white font-bold">£{costComparison.ai.cost}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-300">Time:</span>
-                            <span className="text-white font-bold">{costComparison.ai.time}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Human Option */}
-                      <div className="bg-white/10 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <User className="w-5 h-5 text-blue-400" />
-                          <span className="font-bold text-white">Human Accountant</span>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-300">Cost:</span>
-                            <span className="text-white font-bold">£{costComparison.human.cost}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-300">Time:</span>
-                            <span className="text-white font-bold">{costComparison.human.time}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Savings */}
-                    <div className="bg-green-500/20 border border-green-400/30 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-green-300 font-medium">Potential Savings with AI:</span>
-                        <span className="text-green-400 font-bold text-xl">£{costComparison.savings} ({costComparison.savingsPercentage}%)</span>
-                      </div>
-                    </div>
-
-                    {/* Recommendation */}
-                    <div className="mt-4 p-4 bg-white/10 rounded-lg">
-                      <div className="flex items-center gap-2 text-white">
-                        <Zap className="w-5 h-5 text-yellow-400" />
-                        <span className="font-bold">Recommendation:</span>
-                        <span className="capitalize">{costComparison.recommendation}</span>
-                      </div>
-                    </div>
-
-                    {/* Assign Button */}
-                    <button className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
-                      Assign to {costComparison.recommendation === 'ai' ? 'AI Assistant' : 'Human Accountant'}
-                    </button>
-                  </div>
-                )}
+                  {services.map(s => <option key={s.category} value={s.category.toLowerCase()}>{s.category}</option>)}
+                </select>
               </div>
-            </div>
+              <div>
+                <label htmlFor="taskPriority" className="block text-gray-300 text-sm font-medium mb-2">Priority</label>
+                <select
+                  id="taskPriority"
+                  name="priority"
+                  value={taskForm.priority}
+                  onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
+                  className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="taskComplexity" className="block text-gray-300 text-sm font-medium mb-2">Complexity</label>
+                <select
+                  id="taskComplexity"
+                  name="complexity"
+                  value={taskForm.complexity}
+                  onChange={(e) => setTaskForm({ ...taskForm, complexity: e.target.value })}
+                  className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-purple-500 focus:border-purple-500"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="estimatedHours" className="block text-gray-300 text-sm font-medium mb-2">Estimated Hours</label>
+                <input
+                  type="number"
+                  id="estimatedHours"
+                  name="estimatedHours"
+                  value={taskForm.estimatedHours}
+                  onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: parseInt(e.target.value) })}
+                  min="1"
+                  className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="taskDescription" className="block text-gray-300 text-sm font-medium mb-2">Description</label>
+                <textarea
+                  id="taskDescription"
+                  name="description"
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                  rows="4"
+                  className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Briefly describe the task..."
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg"
+              >
+                Calculate Cost & Recommend
+              </button>
+            </form>
+
+            {costComparison && (
+              <div className="mt-8 p-6 bg-white/5 rounded-xl border border-white/10">
+                <h3 className="text-2xl font-bold text-white mb-4">Cost Comparison</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <p className="text-purple-400 font-semibold mb-2 flex items-center gap-2"><Bot className="w-5 h-5" /> AI Assistant</p>
+                    <p className="text-white text-xl font-bold">£{costComparison.ai.cost}</p>
+                    <p className="text-gray-400 text-sm">Time: {costComparison.ai.time}</p>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <p className="text-blue-400 font-semibold mb-2 flex items-center gap-2"><User className="w-5 h-5" /> Human Accountant</p>
+                    <p className="text-white text-xl font-bold">£{costComparison.human.cost}</p>
+                    <p className="text-gray-400 text-sm">Time: {costComparison.human.time}</p>
+                  </div>
+                </div>
+                <div className="text-center mb-6">
+                  <p className="text-gray-300 text-lg">Potential Savings: <span className="text-green-400 font-bold">£{costComparison.savings} ({costComparison.savingsPercentage}%)</span></p>
+                </div>
+                <div className="text-center">
+                  <p className="text-white text-lg font-semibold">Recommendation: 
+                    <span className={`ml-2 px-3 py-1 rounded-full ${costComparison.recommendation === 'ai' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
+                      {costComparison.recommendation === 'ai' ? 'AI Assistant' : 'Human Accountant'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Capacity Tab */}
         {selectedTab === 'capacity' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-purple-400" />
-                Team Capacity & Utilization
-              </h2>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl p-4 border border-purple-400/30">
-                  <div className="text-gray-300 text-sm mb-1">Total Capacity</div>
-                  <div className="text-white text-2xl font-bold">{teamCapacity.totalCapacity}</div>
-                  <div className="text-gray-400 text-xs">tasks/day</div>
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold text-white mb-6">Team Capacity Overview</h2>
+            {loadingTeamCapacity && <p className="text-white">Loading team capacity...</p>}
+            {errorTeamCapacity && <p className="text-red-500">Error: {errorTeamCapacity}</p>}
+            {!loadingTeamCapacity && !errorTeamCapacity && teamCapacity && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-300">
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">Total Capacity (Hours)</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.totalCapacity}</p>
                 </div>
-                <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 border border-green-400/30">
-                  <div className="text-gray-300 text-sm mb-1">Current Tasks</div>
-                  <div className="text-white text-2xl font-bold">{teamCapacity.currentTasks}</div>
-                  <div className="text-gray-400 text-xs">active</div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">AI Capacity (Hours)</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.aiCapacity}</p>
                 </div>
-                <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl p-4 border border-orange-400/30">
-                  <div className="text-gray-300 text-sm mb-1">Utilization</div>
-                  <div className="text-white text-2xl font-bold">{teamCapacity.utilization}%</div>
-                  <div className="text-gray-400 text-xs">of capacity</div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">Human Capacity (Hours)</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.humanCapacity}</p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl p-4 border border-blue-400/30">
-                  <div className="text-gray-300 text-sm mb-1">Available</div>
-                  <div className="text-white text-2xl font-bold">{teamCapacity.availableSlots}</div>
-                  <div className="text-gray-400 text-xs">slots</div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">Current Tasks</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.currentTasks}</p>
                 </div>
-              </div>
-
-              {/* Capacity Breakdown */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white mb-4">Capacity Breakdown</h3>
-                
-                {/* AI Capacity */}
-                <div className="bg-white/5 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Bot className="w-5 h-5 text-purple-400" />
-                      <span className="text-white font-medium">AI Assistant Capacity</span>
-                    </div>
-                    <span className="text-white font-bold">{teamCapacity.aiCapacity} tasks/day</span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-3">
-                    <div 
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full"
-                      style={{width: '23%'}}
-                    ></div>
-                  </div>
-                  <div className="text-gray-400 text-sm mt-1">23% utilized (230 tasks)</div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">Utilization</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.utilization}%</p>
                 </div>
-
-                {/* Human Capacity */}
-                <div className="bg-white/5 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-5 h-5 text-blue-400" />
-                      <span className="text-white font-medium">Human Accountants Capacity</span>
-                    </div>
-                    <span className="text-white font-bold">{teamCapacity.humanCapacity} tasks/day</span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-3">
-                    <div 
-                      className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full"
-                      style={{width: '6%'}}
-                    ></div>
-                  </div>
-                  <div className="text-gray-400 text-sm mt-1">6% utilized (4 tasks)</div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">Available Slots</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.availableSlots}</p>
+                </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">Team Size</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.teamSize}</p>
+                </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">AI Accountants</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.aiAccountants}</p>
+                </div>
+                <div className="bg-white/5 p-4 rounded-lg border border-white/10 flex items-center justify-between">
+                  <p className="font-medium">Human Accountants</p>
+                  <p className="text-white text-xl font-bold">{teamCapacity.humanAccountants}</p>
                 </div>
               </div>
-
-              {/* Team Size */}
-              <div className="mt-8 grid grid-cols-3 gap-4">
-                <div className="bg-white/5 rounded-xl p-4 text-center">
-                  <div className="text-3xl mb-2">🤖</div>
-                  <div className="text-white font-bold text-xl">{teamCapacity.aiAccountants}</div>
-                  <div className="text-gray-400 text-sm">AI Assistant</div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4 text-center">
-                  <div className="text-3xl mb-2">👥</div>
-                  <div className="text-white font-bold text-xl">{teamCapacity.humanAccountants}</div>
-                  <div className="text-gray-400 text-sm">Human Accountants</div>
-                </div>
-                <div className="bg-white/5 rounded-xl p-4 text-center">
-                  <div className="text-3xl mb-2">🎯</div>
-                  <div className="text-white font-bold text-xl">{teamCapacity.teamSize}</div>
-                  <div className="text-gray-400 text-sm">Total Team</div>
-                </div>
-              </div>
-            </div>
+            )}
+            {!loadingTeamCapacity && !errorTeamCapacity && !teamCapacity && <p className="text-gray-300">Team capacity data not available.</p>}
           </div>
         )}
       </div>
@@ -613,4 +474,3 @@ const AccountantTeamPage = () => {
 };
 
 export default AccountantTeamPage;
-

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,56 +8,58 @@ const ReportsPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedType, setSelectedType] = useState('all');
 
-  const reports = [
-    {
-      id: 1,
-      name: 'Monthly Financial Report',
-      type: 'financial',
-      date: '2024-10-01',
-      size: '2.4 MB',
-      status: 'ready',
-      description: 'Complete financial overview for October 2024'
-    },
-    {
-      id: 2,
-      name: 'Compliance Status Report',
-      type: 'compliance',
-      date: '2024-10-15',
-      size: '1.8 MB',
-      status: 'ready',
-      description: 'Current compliance obligations and status'
-    },
-    {
-      id: 3,
-      name: 'Tax Summary Q3 2024',
-      type: 'tax',
-      date: '2024-09-30',
-      size: '3.1 MB',
-      status: 'ready',
-      description: 'Quarterly tax summary and projections'
-    },
-    {
-      id: 4,
-      name: 'Payroll Report October',
-      type: 'payroll',
-      date: '2024-10-31',
-      size: '1.2 MB',
-      status: 'processing',
-      description: 'Monthly payroll summary and analysis'
-    }
-  ];
+  const [reports, setReports] = useState([]);
+  const [reportTypes, setReportTypes] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(true);
+  const [loadingReportTypes, setLoadingReportTypes] = useState(true);
+  const [errorReports, setErrorReports] = useState(null);
+  const [errorReportTypes, setErrorReportTypes] = useState(null);
 
-  const reportTypes = [
-    { value: 'all', label: 'All Reports', icon: FileText },
-    { value: 'financial', label: 'Financial', icon: DollarSign },
-    { value: 'compliance', label: 'Compliance', icon: TrendingUp },
-    { value: 'tax', label: 'Tax', icon: PieChart },
-    { value: 'payroll', label: 'Payroll', icon: BarChart3 }
-  ];
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoadingReports(true);
+        const response = await api.get('/reports');
+        setReports(response.data);
+      } catch (err) {
+        setErrorReports(err);
+      } finally {
+        setLoadingReports(false);
+      }
+    };
+
+    const fetchReportTypes = async () => {
+      try {
+        setLoadingReportTypes(true);
+        const response = await api.get('/report-types');
+        setReportTypes(response.data);
+      } catch (err) {
+        setErrorReportTypes(err);
+      } finally {
+        setLoadingReportTypes(false);
+      }
+    };
+
+    fetchReports();
+    fetchReportTypes();
+  }, []);
+
+  // Add 'All Reports' option to fetched report types
+  const allReportTypes = [{ value: 'all', label: 'All Reports', icon: FileText }, ...reportTypes];
+
+
 
   const filteredReports = selectedType === 'all' 
     ? reports 
     : reports.filter(r => r.type === selectedType);
+
+  if (loadingReports || loadingReportTypes) {
+    return <div className="space-y-6">Loading reports...</div>;
+  }
+
+  if (errorReports || errorReportTypes) {
+    return <div className="space-y-6 text-red-500">Error loading reports: {errorReports?.message || errorReportTypes?.message}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -83,7 +85,7 @@ const ReportsPage = () => {
         <CardContent>
           <div className="flex gap-4">
             <div className="flex gap-2">
-              {reportTypes.map(type => (
+              {allReportTypes.map(type => (
                 <Button
                   key={type.value}
                   variant={selectedType === type.value ? 'default' : 'outline'}
@@ -140,4 +142,3 @@ const ReportsPage = () => {
 };
 
 export default ReportsPage;
-

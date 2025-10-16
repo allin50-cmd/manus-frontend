@@ -1,15 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Plus, Calendar, Users } from 'lucide-react';
 
 const ProjectsPage = () => {
-  const projects = [
-    { id: 1, name: 'Q4 Tax Planning', client: 'ABC Ltd', progress: 75, status: 'in_progress', deadline: '2024-12-15' },
-    { id: 2, name: 'Annual Audit 2024', client: 'XYZ Corp', progress: 30, status: 'in_progress', deadline: '2024-11-30' },
-    { id: 3, name: 'Payroll Setup', client: 'Tech Solutions', progress: 100, status: 'completed', deadline: '2024-10-01' }
-  ];
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const data = await api.request('/api/projects');
+        setProjects(data);
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, []);
 
   return (
     <div className="space-y-6">

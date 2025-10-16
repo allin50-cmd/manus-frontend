@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Settings, User, Bell, Shield, CreditCard, Key, Save, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
@@ -23,6 +23,26 @@ export default function SettingsPage({ user, onUpdate }) {
       sessionTimeout: '30'
     }
   });
+
+  const [apiKeys, setApiKeys] = useState([]);
+  const [loadingApiKeys, setLoadingApiKeys] = useState(true);
+  const [errorApiKeys, setErrorApiKeys] = useState(null);
+
+  useEffect(() => {
+    const fetchApiKeys = async () => {
+      try {
+        setLoadingApiKeys(true);
+        const response = await api.get('/api/v1/api-keys'); // Assuming this is the endpoint for API keys
+        setApiKeys(response.data);
+      } catch (error) {
+        console.error('Error fetching API keys:', error);
+        setErrorApiKeys('Failed to load API keys.');
+      } finally {
+        setLoadingApiKeys(false);
+      }
+    };
+    fetchApiKeys();
+  }, []);
 
   const tabs = [
     { id: 'account', label: 'Account', icon: User },
@@ -278,15 +298,10 @@ export default function SettingsPage({ user, onUpdate }) {
                   <Button variant="outline" size="sm">Update</Button>
                 </div>
               </div>
-              <div>
-                <p className="font-medium mb-2">Billing History</p>
-                <div className="space-y-2">
-                  <div className="p-3 border rounded-lg flex items-center justify-between text-sm">
-                    <span>Oct 2025 - {user?.subscription || 'Free'} Plan</span>
-                    <span className="font-medium">£{user?.subscription === 'ultimate' ? '99.00' : user?.subscription === 'pro' ? '15.00' : '0.00'}</span>
-                  </div>
-                </div>
-              </div>
+              <Button onClick={handleSave} className="w-full">
+                <Save className="w-4 h-4 mr-2" />
+                Save Billing Information
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -295,40 +310,25 @@ export default function SettingsPage({ user, onUpdate }) {
           <Card>
             <CardHeader>
               <CardTitle>API Keys</CardTitle>
-              <CardDescription>Manage your API keys for integrations</CardDescription>
+              <CardDescription>Manage your API authentication tokens</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <p className="text-sm">
-                  <strong>⚠️ Keep your API keys secure!</strong> Never share them publicly or commit them to version control.
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Production API Key</label>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value="fg_live_1234567890abcdef"
-                    readOnly
-                    className="flex-1 px-4 py-2 rounded-lg border border-border bg-background"
-                  />
-                  <Button variant="outline">Copy</Button>
+              {loadingApiKeys && <p>Loading API keys...</p>}
+              {errorApiKeys && <p className="text-red-500">{errorApiKeys}</p>}
+              {!loadingApiKeys && !errorApiKeys && apiKeys.length === 0 && (
+                <p className="text-muted-foreground">No API keys found. Generate a new one to get started.</p>
+              )}
+              {!loadingApiKeys && !errorApiKeys && apiKeys.length > 0 && (
+                <div className="space-y-2">
+                  {apiKeys.map(key => (
+                    <div key={key.id} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                      <div className="font-mono text-sm text-gray-700 dark:text-gray-300">{key.key}</div>
+                      <Badge variant="secondary">{key.status}</Badge>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Test API Key</label>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value="fg_test_abcdef1234567890"
-                    readOnly
-                    className="flex-1 px-4 py-2 rounded-lg border border-border bg-background"
-                  />
-                  <Button variant="outline">Copy</Button>
-                </div>
-              </div>
-              <Button variant="outline" className="w-full">
-                <Key className="w-4 h-4 mr-2" />
+              )}
+              <Button className="w-full">
                 Generate New API Key
               </Button>
             </CardContent>
@@ -338,4 +338,3 @@ export default function SettingsPage({ user, onUpdate }) {
     </div>
   );
 }
-

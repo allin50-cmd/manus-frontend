@@ -1,15 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Circle, Plus, Calendar } from 'lucide-react';
 
 const TasksPage = () => {
-  const tasks = [
-    { id: 1, title: 'Review Q3 financial statements', status: 'pending', priority: 'high', due: '2024-10-20' },
-    { id: 2, title: 'Update client database', status: 'in_progress', priority: 'medium', due: '2024-10-22' },
-    { id: 3, title: 'Prepare tax documents', status: 'completed', priority: 'high', due: '2024-10-15' }
-  ];
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const data = await api.request('/api/tasks');
+        setTasks(data);
+      } catch (error) {
+        console.error('Failed to load tasks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
+  }, []);
 
   return (
     <div className="space-y-6">

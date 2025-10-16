@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import {
@@ -12,87 +13,32 @@ const CRMDashboardPage = () => {
   const [opportunities, setOpportunities] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data for demo (in production, fetch from API)
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setLeads([
-        {
-          leadId: 'LEAD-001',
-          companyName: 'Tech Innovations Ltd',
-          contactEmail: 'john@techinnovations.com',
-          status: 'new',
-          priority: 'high',
-          leadScore: 85,
-          potentialValue: 9588,
-          recommendedServices: ['Taxation Services', 'Financial Planning'],
-          createdAt: '2024-10-15T10:30:00',
-          nextFollowUpDate: '2024-10-17T09:00:00'
-        },
-        {
-          leadId: 'LEAD-002',
-          companyName: 'Construction Services Ltd',
-          contactEmail: 'sarah@construction.com',
-          status: 'contacted',
-          priority: 'medium',
-          leadScore: 67,
-          potentialValue: 3588,
-          recommendedServices: ['CIS Reporting', 'Payroll'],
-          createdAt: '2024-10-14T14:20:00',
-          nextFollowUpDate: '2024-10-18T14:00:00'
-        },
-        {
-          leadId: 'LEAD-003',
-          companyName: 'Retail Solutions Ltd',
-          contactEmail: 'mike@retail.com',
-          status: 'qualified',
-          priority: 'high',
-          leadScore: 78,
-          potentialValue: 3588,
-          recommendedServices: ['Bookkeeping', 'VAT Returns'],
-          createdAt: '2024-10-13T11:45:00',
-          nextFollowUpDate: '2024-10-16T10:00:00'
-        }
-      ]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      setOpportunities([
-        {
-          opportunityId: 'OPP-001',
-          companyName: 'Tech Innovations Ltd',
-          package: 'Enterprise',
-          annualValue: 9588,
-          probability: 80,
-          expectedValue: 7670,
-          stage: 'proposal',
-          expectedCloseDate: '2024-11-15'
-        },
-        {
-          opportunityId: 'OPP-002',
-          companyName: 'Retail Solutions Ltd',
-          package: 'Professional',
-          annualValue: 3588,
-          probability: 65,
-          expectedValue: 2332,
-          stage: 'negotiation',
-          expectedCloseDate: '2024-10-30'
-        }
-      ]);
+        const [leadsResponse, opportunitiesResponse, analyticsResponse] = await Promise.all([
+          api.get('/api/leads'),
+          api.get('/api/opportunities'),
+          api.get('/api/analytics')
+        ]);
 
-      setAnalytics({
-        totalLeads: 12,
-        totalOpportunities: 5,
-        conversionRate: 41.7,
-        averageLeadScore: 68.5,
-        winRate: 35.0,
-        averageDealSize: 5250,
-        pipelineVelocity: 28,
-        totalPipelineValue: 45000,
-        expectedRevenue: 28500
-      });
+        setLeads(leadsResponse.data);
+        setOpportunities(opportunitiesResponse.data);
+        setAnalytics(analyticsResponse.data);
+      } catch (err) {
+        console.error('Error fetching CRM data:', err);
+        setError('Failed to load CRM data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setLoading(false);
-    }, 500);
+    fetchData();
   }, []);
 
   const getStatusColor = (status) => {
@@ -226,7 +172,6 @@ const CRMDashboardPage = () => {
           <div className="text-lg font-semibold text-emerald-400">£{opp.expectedValue.toLocaleString()}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-400 mb-1">Stage</div>
           <div className="text-sm font-medium text-white capitalize">{opp.stage}</div>
         </div>
       </div>
@@ -248,6 +193,16 @@ const CRMDashboardPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8">
         <div className="flex items-center justify-center h-96">
           <div className="text-white text-xl">Loading CRM Dashboard...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-red-400 text-xl">Error: {error}</div>
         </div>
       </div>
     );
@@ -349,8 +304,8 @@ const CRMDashboardPage = () => {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {leads.map(lead => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {leads.map((lead) => (
               <LeadCard key={lead.leadId} lead={lead} />
             ))}
           </div>
@@ -361,13 +316,23 @@ const CRMDashboardPage = () => {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">Opportunities ({opportunities.length})</h2>
-            <button className="px-4 py-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              New Opportunity
-            </button>
+            <div className="flex gap-3">
+              <button className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Filter
+              </button>
+              <button className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                Search
+              </button>
+              <button className="px-4 py-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                New Opportunity
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {opportunities.map(opp => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {opportunities.map((opp) => (
               <OpportunityCard key={opp.opportunityId} opp={opp} />
             ))}
           </div>
@@ -376,60 +341,37 @@ const CRMDashboardPage = () => {
 
       {activeTab === 'analytics' && analytics && (
         <div>
-          <h2 className="text-2xl font-bold text-white mb-6">Sales Analytics</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">CRM Analytics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-4">
-                <Award className="w-8 h-8 text-green-400" />
-                <h3 className="text-lg font-semibold text-white">Win Rate</h3>
-              </div>
-              <div className="text-3xl font-bold text-green-400 mb-2">{analytics.winRate}%</div>
-              <div className="text-sm text-gray-300">Of opportunities closed successfully</div>
+              <div className="text-sm text-gray-300 mb-2">Conversion Rate</div>
+              <div className="text-4xl font-bold text-green-400">{analytics.conversionRate}%</div>
+              <p className="text-gray-400 mt-2">Leads converted to opportunities.</p>
             </div>
-
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-4">
-                <DollarSign className="w-8 h-8 text-emerald-400" />
-                <h3 className="text-lg font-semibold text-white">Avg Deal Size</h3>
-              </div>
-              <div className="text-3xl font-bold text-emerald-400 mb-2">£{analytics.averageDealSize.toLocaleString()}</div>
-              <div className="text-sm text-gray-300">Average annual contract value</div>
+              <div className="text-sm text-gray-300 mb-2">Win Rate</div>
+              <div className="text-4xl font-bold text-emerald-400">{analytics.winRate}%</div>
+              <p className="text-gray-400 mt-2">Opportunities won vs. lost.</p>
             </div>
-
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-4">
-                <Clock className="w-8 h-8 text-blue-400" />
-                <h3 className="text-lg font-semibold text-white">Pipeline Velocity</h3>
-              </div>
-              <div className="text-3xl font-bold text-blue-400 mb-2">{analytics.pipelineVelocity} days</div>
-              <div className="text-sm text-gray-300">Average time to close</div>
+              <div className="text-sm text-gray-300 mb-2">Average Deal Size</div>
+              <div className="text-4xl font-bold text-green-400">£{analytics.averageDealSize.toLocaleString()}</div>
+              <p className="text-gray-400 mt-2">Average value of closed deals.</p>
             </div>
-
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-4">
-                <TrendingUp className="w-8 h-8 text-purple-400" />
-                <h3 className="text-lg font-semibold text-white">Avg Lead Score</h3>
-              </div>
-              <div className="text-3xl font-bold text-purple-400 mb-2">{analytics.averageLeadScore}</div>
-              <div className="text-sm text-gray-300">Out of 100 points</div>
+              <div className="text-sm text-gray-300 mb-2">Pipeline Velocity</div>
+              <div className="text-4xl font-bold text-emerald-400">{analytics.pipelineVelocity} Days</div>
+              <p className="text-gray-400 mt-2">Average time to close a deal.</p>
             </div>
-
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-4">
-                <Target className="w-8 h-8 text-yellow-400" />
-                <h3 className="text-lg font-semibold text-white">Expected Revenue</h3>
-              </div>
-              <div className="text-3xl font-bold text-yellow-400 mb-2">£{(analytics.expectedRevenue / 1000).toFixed(0)}k</div>
-              <div className="text-sm text-gray-300">Weighted by probability</div>
+              <div className="text-sm text-gray-300 mb-2">Total Pipeline Value</div>
+              <div className="text-4xl font-bold text-green-400">£{analytics.totalPipelineValue.toLocaleString()}</div>
+              <p className="text-gray-400 mt-2">Total value of all active opportunities.</p>
             </div>
-
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-              <div className="flex items-center gap-3 mb-4">
-                <CheckCircle className="w-8 h-8 text-green-400" />
-                <h3 className="text-lg font-semibold text-white">Conversion Rate</h3>
-              </div>
-              <div className="text-3xl font-bold text-green-400 mb-2">{analytics.conversionRate}%</div>
-              <div className="text-sm text-gray-300">Leads to opportunities</div>
+              <div className="text-sm text-gray-300 mb-2">Expected Revenue</div>
+              <div className="text-4xl font-bold text-emerald-400">£{analytics.expectedRevenue.toLocaleString()}</div>
+              <p className="text-gray-400 mt-2">Weighted revenue from opportunities.</p>
             </div>
           </div>
         </div>
@@ -439,4 +381,3 @@ const CRMDashboardPage = () => {
 };
 
 export default CRMDashboardPage;
-

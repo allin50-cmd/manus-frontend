@@ -1,15 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Plus, Download, Eye } from 'lucide-react';
 
 const InvoicesPage = () => {
-  const invoices = [
-    { id: 'INV-001', client: 'ABC Ltd', amount: 2500, status: 'paid', date: '2024-10-01' },
-    { id: 'INV-002', client: 'XYZ Corp', amount: 3200, status: 'pending', date: '2024-10-10' },
-    { id: 'INV-003', client: 'Tech Solutions', amount: 1800, status: 'overdue', date: '2024-09-25' }
-  ];
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const data = await api.request('/api/invoices');
+        setInvoices(data);
+      } catch (error) {
+        console.error('Failed to load invoices:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInvoices();
+  }, []);
 
   return (
     <div className="space-y-6">

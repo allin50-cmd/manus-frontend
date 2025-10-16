@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,39 +8,45 @@ const DocumentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFolder, setSelectedFolder] = useState('all');
 
-  const folders = [
-    { id: 'all', name: 'All Documents', count: 24 },
-    { id: 'contracts', name: 'Contracts', count: 8 },
-    { id: 'invoices', name: 'Invoices', count: 12 },
-    { id: 'reports', name: 'Reports', count: 4 }
-  ];
+  const [folders, setFolders] = useState([]);
+  const [loadingFolders, setLoadingFolders] = useState(true);
+  const [errorFolders, setErrorFolders] = useState(null);
 
-  const documents = [
-    {
-      id: 1,
-      name: 'Service Agreement 2024.pdf',
-      folder: 'contracts',
-      size: '245 KB',
-      date: '2024-10-15',
-      type: 'pdf'
-    },
-    {
-      id: 2,
-      name: 'Invoice INV-001.pdf',
-      folder: 'invoices',
-      size: '128 KB',
-      date: '2024-10-14',
-      type: 'pdf'
-    },
-    {
-      id: 3,
-      name: 'Monthly Report Sept.xlsx',
-      folder: 'reports',
-      size: '512 KB',
-      date: '2024-10-01',
-      type: 'excel'
-    }
-  ];
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        setLoadingFolders(true);
+        const response = await api.get('/api/folders');
+        setFolders([{ id: 'all', name: 'All Documents', count: response.data.reduce((acc, folder) => acc + folder.count, 0) }, ...response.data]);
+      } catch (err) {
+        setErrorFolders('Failed to load folders.');
+        console.error('Failed to fetch folders:', err);
+      } finally {
+        setLoadingFolders(false);
+      }
+    };
+    fetchFolders();
+  }, []);
+
+  const [documents, setDocuments] = useState([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(true);
+  const [errorDocuments, setErrorDocuments] = useState(null);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        setLoadingDocuments(true);
+        const response = await api.get('/api/documents');
+        setDocuments(response.data);
+      } catch (err) {
+        setErrorDocuments('Failed to load documents.');
+        console.error('Failed to fetch documents:', err);
+      } finally {
+        setLoadingDocuments(false);
+      }
+    };
+    fetchDocuments();
+  }, []);
 
   const filteredDocs = documents.filter(doc => 
     (selectedFolder === 'all' || doc.folder === selectedFolder) &&
@@ -62,6 +68,9 @@ const DocumentsPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Folders Sidebar */}
+        {loadingFolders && <p>Loading folders...</p>}
+        {errorFolders && <p className="text-red-500">{errorFolders}</p>}
+        {!loadingFolders && !errorFolders && (
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg">Folders</CardTitle>
@@ -81,6 +90,7 @@ const DocumentsPage = () => {
             ))}
           </CardContent>
         </Card>
+        )}
 
         {/* Documents List */}
         <div className="md:col-span-3 space-y-4">
@@ -97,6 +107,10 @@ const DocumentsPage = () => {
           </div>
 
           {/* Documents Grid */}
+            {loadingDocuments && <p>Loading documents...</p>}
+            {errorDocuments && <p className="text-red-500">{errorDocuments}</p>}
+            {!loadingDocuments && !errorDocuments && documents.length === 0 && <p>No documents found.</p>}
+            {!loadingDocuments && !errorDocuments && filteredDocs.length > 0 && (
           <div className="grid gap-4">
             {filteredDocs.map(doc => (
               <Card key={doc.id}>
@@ -129,6 +143,7 @@ const DocumentsPage = () => {
               </Card>
             ))}
           </div>
+            )}
         </div>
       </div>
     </div>
