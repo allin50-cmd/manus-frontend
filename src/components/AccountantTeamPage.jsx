@@ -20,20 +20,6 @@ const AccountantTeamPage = () => {
   // Mock data - in production, fetch from API
   const accountants = [
     {
-      id: 'AI-001',
-      name: 'FineGuard AI Assistant',
-      type: 'ai_assistant',
-      avatar: '🤖',
-      specialties: ['Bookkeeping', 'Data Entry', 'Categorization', 'Reconciliation'],
-      availability: '24/7',
-      capacity: 1000,
-      costPerHour: 0,
-      accuracy: 98.5,
-      speedMultiplier: 10.0,
-      tasksCompleted: 15420,
-      rating: 4.9
-    },
-    {
       id: 'JA-001',
       name: 'Sarah Mitchell',
       type: 'junior_accountant',

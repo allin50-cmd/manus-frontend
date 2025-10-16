@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User, Users, CreditCard, Code, Workflow, HelpCircle, Calculator, BarChart3 } from 'lucide-react'
+import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User, Users, CreditCard, Code, Workflow, HelpCircle, Calculator, BarChart3, FileText, FolderOpen, CheckSquare, Briefcase, Plug, BookOpen, GraduationCap, Megaphone } from 'lucide-react'
 import './App.css'
 
 // Import images
@@ -38,6 +38,23 @@ import AccountingServicesPage from './components/AccountingServicesPage.jsx'
 import CRMDashboardPage from './components/CRMDashboardPage.jsx'
 import EnhancedAnalyticsPage from './components/EnhancedAnalyticsPage.jsx'
 import AccountantTeamPage from './components/AccountantTeamPage.jsx'
+import ReportsPage from './components/ReportsPage.jsx'
+import DocumentsPage from './components/DocumentsPage.jsx'
+import CalendarPage from './components/CalendarPage.jsx'
+import TasksPage from './components/TasksPage.jsx'
+import InvoicesPage from './components/InvoicesPage.jsx'
+import ClientsPage from './components/ClientsPage.jsx'
+import ProjectsPage from './components/ProjectsPage.jsx'
+import IntegrationsPage from './components/IntegrationsPage.jsx'
+import AuditLogPage from './components/AuditLogPage.jsx'
+import SupportPage from './components/SupportPage.jsx'
+import KnowledgeBasePage from './components/KnowledgeBasePage.jsx'
+import TrainingPage from './components/TrainingPage.jsx'
+import ComplianceDashboardPage from './components/ComplianceDashboardPage.jsx'
+import TaxPlanningPage from './components/TaxPlanningPage.jsx'
+import PayrollPage from './components/PayrollPage.jsx'
+import MarketingPage from './components/MarketingPage.jsx'
+import SalesPage from './components/SalesPage.jsx'
 
 // Demo data
 const initialData = {
@@ -323,7 +340,24 @@ function App() {
     { id: 'accounting', label: 'Accounting Services', icon: Calculator },
     { id: 'crm-dashboard', label: 'CRM Dashboard', icon: TrendingUp },
     { id: 'enhanced-analytics', label: 'Enhanced Analytics', icon: BarChart3 },
-    { id: 'accountant-team', label: 'Accountant Team', icon: Users }
+    { id: 'accountant-team', label: 'Accountant Team', icon: Users },
+    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'documents', label: 'Documents', icon: FolderOpen },
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+    { id: 'invoices', label: 'Invoices', icon: FileText },
+    { id: 'clients', label: 'Clients', icon: Users },
+    { id: 'projects', label: 'Projects', icon: Briefcase },
+    { id: 'integrations', label: 'Integrations', icon: Plug },
+    { id: 'audit-log', label: 'Audit Log', icon: Shield },
+    { id: 'support', label: 'Support', icon: HelpCircle },
+    { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen },
+    { id: 'training', label: 'Training', icon: GraduationCap },
+    { id: 'compliance-dashboard', label: 'Compliance Dashboard', icon: CheckCircle2 },
+    { id: 'tax-planning', label: 'Tax Planning', icon: Calculator },
+    { id: 'payroll', label: 'Payroll', icon: Users },
+    { id: 'marketing', label: 'Marketing', icon: Megaphone },
+    { id: 'sales', label: 'Sales', icon: TrendingUp }
   ]
 
   const renderPage = () => {
@@ -376,6 +410,40 @@ function App() {
         return <EnhancedAnalyticsPage />
       case 'accountant-team':
         return <AccountantTeamPage />
+      case 'reports':
+        return <ReportsPage />
+      case 'documents':
+        return <DocumentsPage />
+      case 'calendar':
+        return <CalendarPage />
+      case 'tasks':
+        return <TasksPage />
+      case 'invoices':
+        return <InvoicesPage />
+      case 'clients':
+        return <ClientsPage />
+      case 'projects':
+        return <ProjectsPage />
+      case 'integrations':
+        return <IntegrationsPage />
+      case 'audit-log':
+        return <AuditLogPage />
+      case 'support':
+        return <SupportPage />
+      case 'knowledge-base':
+        return <KnowledgeBasePage />
+      case 'training':
+        return <TrainingPage />
+      case 'compliance-dashboard':
+        return <ComplianceDashboardPage />
+      case 'tax-planning':
+        return <TaxPlanningPage />
+      case 'payroll':
+        return <PayrollPage />
+      case 'marketing':
+        return <MarketingPage />
+      case 'sales':
+        return <SalesPage />
       case 'member':
         return user ? (
           <MemberDashboard 
