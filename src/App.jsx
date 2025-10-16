@@ -25,6 +25,7 @@ import AuthModal from './components/AuthModal.jsx'
 import MemberDashboard from './components/MemberDashboard.jsx'
 import AdvancedCRM from './components/AdvancedCRM.jsx'
 import VaultPage from './components/VaultPage.jsx'
+import ContactForm from './components/ContactForm.jsx'
 
 // Demo data
 const initialData = {
@@ -734,20 +735,8 @@ function App() {
               <CardTitle>Get in Touch</CardTitle>
               <CardDescription>Fill out the form and we'll respond within 24 hours</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Name</label>
-                <input type="text" className="w-full p-2 border rounded-lg" placeholder="Your name" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
-                <input type="email" className="w-full p-2 border rounded-lg" placeholder="your@email.com" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Message</label>
-                <textarea className="w-full p-2 border rounded-lg" rows={4} placeholder="How can we help?"></textarea>
-              </div>
-              <Button className="w-full">Send Message</Button>
+            <CardContent>
+              <ContactForm />
             </CardContent>
           </Card>
 
