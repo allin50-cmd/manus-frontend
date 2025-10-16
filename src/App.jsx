@@ -70,6 +70,7 @@ import ReportsBuilderPage from './components/ReportsBuilderPage.jsx'
 import DashboardBuilderPage from './components/DashboardBuilderPage.jsx'
 import WhiteLabelPage from './components/WhiteLabelPage.jsx'
 
+import DatabaseDashboard from './components/DatabaseDashboard.jsx'
 // Demo data
 const initialData = {
   companies: [
@@ -408,6 +409,8 @@ function App() {
         return <DashboardPage />
       case 'admin':
         return <AdminPage />
+      case 'database':
+        return <DatabaseDashboard />
       case 'live-data':
         return <LiveDataPage />
       case 'crm':
