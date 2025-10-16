@@ -24,6 +24,7 @@ import LiveDataPage from './components/LiveDataPage.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import MemberDashboard from './components/MemberDashboard.jsx'
 import AdvancedCRM from './components/AdvancedCRM.jsx'
+import VaultPage from './components/VaultPage.jsx'
 
 // Demo data
 const initialData = {
@@ -296,7 +297,8 @@ function App() {
     { id: 'dashboard', label: 'Dashboard', icon: Shield },
     { id: 'crm', label: 'CRM', icon: Users },
     { id: 'admin', label: 'Admin', icon: Cog },
-    { id: 'live-data', label: 'Live Data', icon: Calendar }
+    { id: 'live-data', label: 'Live Data', icon: Calendar },
+    { id: 'vault', label: 'Vault', icon: Shield }
   ]
 
   const renderPage = () => {
@@ -323,6 +325,8 @@ function App() {
         return <LiveDataPage />
       case 'crm':
         return <AdvancedCRM />
+      case 'vault':
+        return <VaultPage />
       case 'member':
         return user ? (
           <MemberDashboard 
