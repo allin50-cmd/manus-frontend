@@ -1,15 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Database, Plus, Edit, Trash, Save } from 'lucide-react';
 
 const BackupRestorePage = () => {
-  const [items, setItems] = useState([
-    { id: 1, name: 'Sample Item 1', status: 'active', created: '2024-10-16' },
-    { id: 2, name: 'Sample Item 2', status: 'active', created: '2024-10-15' },
-    { id: 3, name: 'Sample Item 3', status: 'inactive', created: '2024-10-14' }
-  ]);
+    const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        const response = await api.request('get', '/api/backup-restore-items');
+        setItems(response.data);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -21,8 +34,25 @@ const BackupRestorePage = () => {
         <Button><Plus className="mr-2 h-4 w-4" />Create New</Button>
       </div>
 
-      <div className="grid gap-4">
-        {items.map(item => (
+      {loading && <p className="text-center text-muted-foreground">Loading items...</p>}
+      {error && <p className="text-center text-red-500">Error loading items: {error.message}</p>}
+
+      {!loading && !error && items.length === 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>No Items Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              It looks like there are no backup or restore items yet. Click "Create New" to add your first item.
+            </p>
+            <Button><Plus className="mr-2 h-4 w-4" />Create Your First Item</Button>
+          </CardContent>
+        </Card>
+      )}
+      {!loading && !error && items.length > 0 && (
+        <div className="grid gap-4">
+          {items.map(item => (
           <Card key={item.id}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -45,20 +75,11 @@ const BackupRestorePage = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Start</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            Backup and restore system. Click "Create New" to get started.
-          </p>
-          <Button><Plus className="mr-2 h-4 w-4" />Create Your First Item</Button>
-        </CardContent>
-      </Card>
+
     </div>
   );
 };

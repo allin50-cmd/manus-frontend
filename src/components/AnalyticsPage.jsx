@@ -1,39 +1,81 @@
 import { BarChart3, TrendingUp, TrendingDown, Activity, Users, Building2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 
 export default function AnalyticsPage() {
-  const stats = {
-    totalCompanies: 3,
-    activeObligations: 15,
-    completedThisMonth: 12,
-    overdueItems: 3,
-    avgComplianceScore: 62.7,
-    penaltyRisk: 5800,
-    trendsUp: 2,
-    trendsDown: 1
-  };
+  const [stats, setStats] = useState({});
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const monthlyData = [
-    { month: 'Jun', completed: 8, overdue: 2 },
-    { month: 'Jul', completed: 10, overdue: 1 },
-    { month: 'Aug', completed: 12, overdue: 3 },
-    { month: 'Sep', completed: 15, overdue: 2 },
-    { month: 'Oct', completed: 12, overdue: 3 }
-  ];
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setStatsLoading(true);
+        const response = await api.request("/api/analytics/stats");
+        setStats(response.data);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
-  const companyPerformance = [
-    { name: 'Tech Innovations Ltd', score: 65, trend: 'up', change: '+5%' },
-    { name: 'Global Solutions Ltd', score: 78, trend: 'up', change: '+8%' },
-    { name: 'Startup Ventures Ltd', score: 45, trend: 'down', change: '-12%' }
-  ];
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [monthlyDataLoading, setMonthlyDataLoading] = useState(true);
 
-  const upcomingDeadlines = [
-    { task: 'VAT Return', company: 'Tech Innovations', daysLeft: 5, priority: 'high' },
-    { task: 'Confirmation Statement', company: 'Global Solutions', daysLeft: 15, priority: 'medium' },
-    { task: 'Annual Accounts', company: 'Startup Ventures', daysLeft: 30, priority: 'low' }
-  ];
+  useEffect(() => {
+    const fetchMonthlyData = async () => {
+      try {
+        setMonthlyDataLoading(true);
+        const response = await api.request("/api/analytics/monthlyData");
+        setMonthlyData(response.data);
+      } catch (error) {
+        console.error("Error fetching monthly data:", error);
+      } finally {
+        setMonthlyDataLoading(false);
+      }
+    };
+    fetchMonthlyData();
+  }, []);
+
+  const [companyPerformance, setCompanyPerformance] = useState([]);
+  const [companyPerformanceLoading, setCompanyPerformanceLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCompanyPerformance = async () => {
+      try {
+        setCompanyPerformanceLoading(true);
+        const response = await api.request("/api/analytics/companyPerformance");
+        setCompanyPerformance(response.data);
+      } catch (error) {
+        console.error("Error fetching company performance:", error);
+      } finally {
+        setCompanyPerformanceLoading(false);
+      }
+    };
+    fetchCompanyPerformance();
+  }, []);
+
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState([]);
+  const [upcomingDeadlinesLoading, setUpcomingDeadlinesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUpcomingDeadlines = async () => {
+      try {
+        setUpcomingDeadlinesLoading(true);
+        const response = await api.request("/api/analytics/upcomingDeadlines");
+        setUpcomingDeadlines(response.data);
+      } catch (error) {
+        console.error("Error fetching upcoming deadlines:", error);
+      } finally {
+        setUpcomingDeadlinesLoading(false);
+      }
+    };
+    fetchUpcomingDeadlines();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -54,7 +96,7 @@ export default function AnalyticsPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+            <div className="text-2xl font-bold">{statsLoading ? '...' : stats.totalCompanies}</div>
             <p className="text-xs text-muted-foreground">Active monitoring</p>
           </CardContent>
         </Card>
@@ -65,7 +107,7 @@ export default function AnalyticsPage() {
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completedThisMonth}</div>
+            <div className="text-2xl font-bold text-green-600">{statsLoading ? '...' : stats.completedThisMonth}</div>
             <p className="text-xs text-muted-foreground">+20% from last month</p>
           </CardContent>
         </Card>
@@ -76,7 +118,7 @@ export default function AnalyticsPage() {
             <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.overdueItems}</div>
+            <div className="text-2xl font-bold text-red-600">{statsLoading ? '...' : stats.overdueItems}</div>
             <p className="text-xs text-muted-foreground">Requires attention</p>
           </CardContent>
         </Card>
@@ -87,7 +129,7 @@ export default function AnalyticsPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.avgComplianceScore}%</div>
+            <div className="text-2xl font-bold">{statsLoading ? '...' : stats.avgComplianceScore}%</div>
             <p className="text-xs text-muted-foreground">Overall health</p>
           </CardContent>
         </Card>
@@ -103,7 +145,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {monthlyData.map((data, index) => (
+              {monthlyDataLoading ? <p>Loading monthly data...</p> : monthlyData.map((data, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{data.month}</span>
@@ -147,7 +189,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {companyPerformance.map((company, index) => (
+              {companyPerformanceLoading ? <p>Loading company performance...</p> : companyPerformance.map((company, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{company.name}</span>
@@ -192,7 +234,7 @@ export default function AnalyticsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {upcomingDeadlines.map((deadline, index) => (
+            {upcomingDeadlinesLoading ? <p>Loading upcoming deadlines...</p> : upcomingDeadlines.map((deadline, index) => (
               <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors">
                 <div className="flex-1">
                   <p className="font-medium">{deadline.task}</p>
@@ -219,4 +261,3 @@ export default function AnalyticsPage() {
     </div>
   );
 }
-

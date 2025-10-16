@@ -1096,29 +1096,23 @@ function App() {
     <div className="min-h-screen bg-background">
       {/* Header with Glassmorphism */}
       <header className="sticky top-0 z-50 w-full">
-        <div className="mx-4 mt-4 rounded-full border border-cyan-400/30 bg-background/40 backdrop-blur-xl shadow-lg shadow-cyan-500/20">
-          <div className="container flex h-20 items-center justify-between px-6">
+        <div className="mx-0 border-b border-cyan-400/20 bg-background/95 backdrop-blur-xl shadow-lg shadow-cyan-500/10">
+          <div className="container mx-auto flex h-16 items-center justify-between px-6">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
-              <div className="relative">
-                <Shield className="h-10 w-10 text-cyan-400" />
-                <div className="absolute inset-0 blur-lg bg-cyan-400/30"></div>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">FineGuard</h1>
-                <p className="text-xs text-muted-foreground">by FineGuard</p>
-              </div>
+              <Shield className="h-8 w-8 text-cyan-400" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">FineGuard</h1>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-3">
+            <nav className="hidden md:flex items-center gap-1">
               {navItems.map(item => (
                 <button
                   key={item.id}
                   onClick={() => setCurrentPage(item.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentPage === item.id 
-                      ? 'bg-cyan-400/20 text-cyan-400 shadow-lg shadow-cyan-400/20 border border-cyan-400/30' 
-                      : 'text-foreground/70 hover:text-foreground hover:bg-white/10'
+                      ? 'bg-cyan-400/10 text-cyan-400 border-b-2 border-cyan-400' 
+                      : 'text-foreground/60 hover:text-foreground hover:bg-muted'
                   }`}
                 >
                   {item.label}

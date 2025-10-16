@@ -1,28 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download, Plus, Edit, Trash, Save } from 'lucide-react';
 
 const DataImportExportPage = () => {
-  const [items, setItems] = useState([
-    { id: 1, name: 'Sample Item 1', status: 'active', created: '2024-10-16' },
-    { id: 2, name: 'Sample Item 2', status: 'active', created: '2024-10-15' },
-    { id: 3, name: 'Sample Item 3', status: 'inactive', created: '2024-10-14' }
-  ]);
+    const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        const response = await api.request('/api/data-items'); // Assuming this is the endpoint
+        setItems(response.data);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">DataImportExport</h1>
+          {loading && <p className="text-muted-foreground">Loading data...</p>}
+          {error && <p className="text-red-500">Error: {error.message}</p>}
           <p className="text-muted-foreground">Import and export data</p>
         </div>
         <Button><Plus className="mr-2 h-4 w-4" />Create New</Button>
       </div>
 
       <div className="grid gap-4">
-        {items.map(item => (
+        {!loading && items.length === 0 && <p className="text-muted-foreground">No data items found.</p>}
+        {!loading && items.map(item => (
           <Card key={item.id}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">

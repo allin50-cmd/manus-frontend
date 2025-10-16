@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import api from '../utils/api';
 import BookingModal from './BookingModal.jsx'
 import AIAccountingRecommendations from './AIAccountingRecommendations.jsx'
@@ -28,199 +28,86 @@ export default function AccountingServicesPage({ companyData }) {
     hasAccountant: false
   }
   
-  const serviceCategories = [
-    {
-      id: 'taxation',
-      name: 'Taxation Services',
-      icon: Calculator,
-      color: 'green',
-      description: 'Comprehensive tax planning and compliance services',
-      services: [
-        'Tax Efficiency Planning',
-        'Personal & Corporate Tax Returns',
-        'Inheritance Tax Planning',
-        'Tax Strategy & Optimization',
-        'Entrepreneurs Relief',
-        'SEIS & EIS Investment Schemes'
-      ]
-    },
-    {
-      id: 'financial',
-      name: 'Financial Planning',
-      icon: TrendingUp,
-      color: 'blue',
-      description: 'Strategic financial planning for your future',
-      services: [
-        'Investment Planning',
-        'Retirement Planning',
-        'Estate Protection',
-        'Corporate Financial Services',
-        'Banking & Mortgage Advice',
-        'Wealth Management'
-      ]
-    },
-    {
-      id: 'company',
-      name: 'Company Secretarial & Legal',
-      icon: FileText,
-      color: 'purple',
-      description: 'Company formation and legal compliance',
-      services: [
-        'Company Formation',
-        'File Maintenance',
-        'Statutory Returns',
-        'Legal Document Preparation',
-        'Companies House Filings',
-        'Corporate Governance'
-      ]
-    },
-    {
-      id: 'consulting',
-      name: 'Business Consulting',
-      icon: Users,
-      color: 'orange',
-      description: 'Expert business advisory and risk assessment',
-      services: [
-        'Business Strategy Consulting',
-        'Acquisitions & Disposals',
-        'Exit Strategy Planning',
-        'Risk Assessment',
-        'Business Valuation',
-        'Growth Planning'
-      ]
-    },
-    {
-      id: 'contracting',
-      name: 'Contracting Services',
-      icon: Briefcase,
-      color: 'indigo',
-      description: 'Specialized services for contractors',
-      services: [
-        'Contractor Accounts',
-        'IR35 Contract Reviews',
-        'Professional Indemnity Insurance',
-        'Contractor Tax Planning',
-        'Limited Company Setup',
-        'Umbrella Company Advice'
-      ]
-    },
-    {
-      id: 'cis',
-      name: 'Construction Industry Scheme',
-      icon: HardHat,
-      color: 'yellow',
-      description: 'CIS compliance and reporting',
-      services: [
-        'HMRC CIS Reporting',
-        'CIS Registration',
-        'Public Liability Insurance',
-        'Indemnity Insurance',
-        'CIS Tax Returns',
-        'Subcontractor Verification'
-      ]
-    },
-    {
-      id: 'payroll',
-      name: 'Payroll & Bookkeeping',
-      icon: DollarSign,
-      color: 'teal',
-      description: 'Complete payroll and bookkeeping solutions',
-      services: [
-        'Payroll Cycle Submissions',
-        'Full Bookkeeping Services',
-        'PAYE & NI (RTI)',
-        'Auto-Enrolment Pensions',
-        'Management Accounts',
-        'VAT Returns'
-      ]
+  const [serviceCategories, setServiceCategories] = useState([])
+  const [loadingServiceCategories, setLoadingServiceCategories] = useState(true)
+  const [errorServiceCategories, setErrorServiceCategories] = useState(null)
+
+  useEffect(() => {
+    const fetchServiceCategories = async () => {
+      try {
+        setLoadingServiceCategories(true)
+        const response = await api.request('get', '/api/accounting/service-categories')
+        setServiceCategories(response.data)
+      } catch (error) {
+        console.error('Error fetching service categories:', error)
+        setErrorServiceCategories('Failed to load service categories.')
+      } finally {
+        setLoadingServiceCategories(false)
+      }
     }
-  ]
-  
-  const packages = [
-    {
-      name: 'Starter',
-      price: 99,
-      period: 'month',
-      description: 'Perfect for small businesses and startups',
-      features: [
-        'Basic bookkeeping (50 transactions/month)',
-        'Quarterly tax returns',
-        'Annual accounts preparation',
-        'Email support',
-        'Online portal access',
-        'Quarterly business review'
-      ],
-      popular: false,
-      color: 'blue'
-    },
-    {
-      name: 'Professional',
-      price: 299,
-      period: 'month',
-      description: 'Ideal for growing businesses',
-      features: [
-        'Full bookkeeping service',
-        'Monthly management accounts',
-        'Tax planning & optimization',
-        'Payroll services (up to 10 employees)',
-        'Quarterly business review',
-        'Priority support',
-        'Dedicated account manager',
-        'VAT returns'
-      ],
-      popular: true,
-      color: 'green'
-    },
-    {
-      name: 'Enterprise',
-      price: 799,
-      period: 'month',
-      description: 'Comprehensive solution for established businesses',
-      features: [
-        'Comprehensive accounting services',
-        'CFO advisory services',
-        'Advanced tax strategy & planning',
-        'Unlimited payroll',
-        'Company secretarial services',
-        'Monthly business review',
-        'Dedicated account manager',
-        '24/7 priority support',
-        'Business consulting included'
-      ],
-      popular: false,
-      color: 'purple'
+    fetchServiceCategories()
+  }, [])
+
+  const [packages, setPackages] = useState([])
+  const [loadingPackages, setLoadingPackages] = useState(true)
+  const [errorPackages, setErrorPackages] = useState(null)
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        setLoadingPackages(true)
+        const response = await api.request('get', '/api/accounting/packages')
+        setPackages(response.data)
+      } catch (error) {
+        console.error('Error fetching packages:', error)
+        setErrorPackages('Failed to load packages.')
+      } finally {
+        setLoadingPackages(false)
+      }
     }
-  ]
-  
-  const addOnServices = [
-    { name: 'Company Formation', price: 150, description: 'Complete company setup and registration' },
-    { name: 'IR35 Contract Review', price: 250, description: 'Comprehensive IR35 status assessment' },
-    { name: 'Business Valuation', price: 500, description: 'Professional business valuation report' },
-    { name: 'Exit Strategy Consultation', price: 750, description: 'Strategic exit planning and advice' },
-    { name: 'CIS Registration & Setup', price: 200, description: 'Complete CIS registration and setup' }
-  ]
-  
-  const testimonials = [
-    {
-      name: 'Sarah Mitchell',
-      company: 'Tech Innovations Ltd',
-      text: 'Devonshire Green transformed our financial management. Their proactive approach saved us thousands in tax.',
-      rating: 5
-    },
-    {
-      name: 'James Thompson',
-      company: 'Thompson Construction',
-      text: 'Excellent CIS support and always available when we need them. Highly recommended!',
-      rating: 5
-    },
-    {
-      name: 'Emma Roberts',
-      company: 'Roberts Consulting',
-      text: 'Professional, knowledgeable, and always responsive. They handle everything so we can focus on our business.',
-      rating: 5
+    fetchPackages()
+  }, [])
+
+  const [addOnServices, setAddOnServices] = useState([])
+  const [loadingAddOnServices, setLoadingAddOnServices] = useState(true)
+  const [errorAddOnServices, setErrorAddOnServices] = useState(null)
+
+  useEffect(() => {
+    const fetchAddOnServices = async () => {
+      try {
+        setLoadingAddOnServices(true)
+        const response = await api.request('get', '/api/accounting/add-on-services')
+        setAddOnServices(response.data)
+      } catch (error) {
+        console.error('Error fetching add-on services:', error)
+        setErrorAddOnServices('Failed to load add-on services.')
+      } finally {
+        setLoadingAddOnServices(false)
+      }
     }
-  ]
-  
+    fetchAddOnServices()
+  }, [])
+
+  const [testimonials, setTestimonials] = useState([])
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true)
+  const [errorTestimonials, setErrorTestimonials] = useState(null)
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoadingTestimonials(true)
+        const response = await api.request('get', '/api/accounting/testimonials')
+        setTestimonials(response.data)
+      } catch (error) {
+        console.error('Error fetching testimonials:', error)
+        setErrorTestimonials('Failed to load testimonials.')
+      } finally {
+        setLoadingTestimonials(false)
+      }
+    }
+    fetchTestimonials()
+  }, [])
+
   const getIconColor = (color) => {
     const colors = {
       green: 'text-green-400',
@@ -237,6 +124,14 @@ export default function AccountingServicesPage({ companyData }) {
   const filteredCategories = selectedCategory === 'all' 
     ? serviceCategories 
     : serviceCategories.filter(cat => cat.id === selectedCategory)
+
+  if (loadingServiceCategories || loadingPackages || loadingAddOnServices || loadingTestimonials) {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-8 text-white flex items-center justify-center text-xl">Loading accounting services...</div>
+  }
+
+  if (errorServiceCategories || errorPackages || errorAddOnServices || errorTestimonials) {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-8 text-red-400 flex items-center justify-center text-xl">Error: {errorServiceCategories || errorPackages || errorAddOnServices || errorTestimonials}</div>
+  }
   
   const handleBookConsultation = () => {
     setIsBookingModalOpen(true)
@@ -369,46 +264,27 @@ export default function AccountingServicesPage({ companyData }) {
                         </li>
                       ))}
                     </ul>
-                    <Button
-                      onClick={handleBookConsultation}
-                      className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      Learn More
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
                   </CardContent>
                 </Card>
               )
             })}
           </div>
         </div>
-        
-        {/* Pricing Packages */}
+
+        {/* Packages Section */}
         <div className="mb-12">
-          <h2 className="text-3xl font-bold text-white mb-2 text-center">Service Packages</h2>
-          <p className="text-gray-300 text-center mb-8">Choose the package that fits your business needs</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {packages.map((pkg, index) => (
-              <Card 
-                key={index} 
-                className={`bg-white/10 backdrop-blur-lg border-white/20 ${pkg.popular ? 'ring-2 ring-green-500' : ''} relative`}
-              >
-                {pkg.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-green-600 text-white">Most Popular</Badge>
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="text-white text-2xl">{pkg.name}</CardTitle>
+          <h2 className="text-3xl font-bold text-white mb-6 text-center">Our Packages</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {packages.map((pkg) => (
+              <Card key={pkg.name} className={`bg-white/10 backdrop-blur-lg border-white/20 flex flex-col ${pkg.popular ? 'border-green-400' : ''}`}>
+                <CardHeader className="text-center">
+                  {pkg.popular && <Badge className="absolute top-0 -translate-y-1/2 bg-green-500 text-white">Most Popular</Badge>}
+                  <CardTitle className="text-2xl text-white">{pkg.name}</CardTitle>
+                  <p className="text-4xl font-bold text-white">£{pkg.price}<span className="text-lg font-normal text-gray-300">/{pkg.period}</span></p>
                   <CardDescription className="text-gray-300">{pkg.description}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold text-green-300">£{pkg.price}</span>
-                    <span className="text-gray-400">/{pkg.period}</span>
-                  </div>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 mb-6">
+                <CardContent className="flex-grow">
+                  <ul className="space-y-3">
                     {pkg.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-gray-300">
                         <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
@@ -416,98 +292,77 @@ export default function AccountingServicesPage({ companyData }) {
                       </li>
                     ))}
                   </ul>
-                  <Button
+                </CardContent>
+                <div className="p-6">
+                  <Button 
                     onClick={() => handleSelectPackage(pkg.name)}
-                    className={`w-full ${pkg.popular ? 'bg-green-600 hover:bg-green-700' : 'bg-white/10 hover:bg-white/20'} text-white`}
-                  >
-                    Select {pkg.name}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-6">
+                    Select Package
                   </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Add-on Services */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-white mb-6 text-center">Optional Add-ons</h2>
+          <div className="max-w-3xl mx-auto">
+            {addOnServices.map((service, idx) => (
+              <Card key={idx} className="bg-white/10 backdrop-blur-lg border-white/20 mb-4">
+                <CardContent className="p-4 flex justify-between items-center">
+                  <div>
+                    <p className="text-white font-medium">{service.name}</p>
+                    <p className="text-gray-400 text-sm">{service.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white font-bold text-lg">£{service.price}</p>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white mt-1">Add</Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
-        
-        {/* Add-On Services */}
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 mb-12">
-          <CardHeader>
-            <CardTitle className="text-white text-2xl">Add-On Services</CardTitle>
-            <CardDescription className="text-gray-300">
-              Pay-as-you-go services to complement your package
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {addOnServices.map((service, index) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold">{service.name}</h3>
-                    <p className="text-sm text-gray-400">{service.description}</p>
-                  </div>
-                  <div className="text-right ml-4">
-                    <div className="text-2xl font-bold text-green-300">£{service.price}</div>
-                    <Button className="mt-2 bg-green-600 hover:bg-green-700 text-white text-sm" size="sm">
-                      Add
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Testimonials */}
+
+        {/* Testimonials Section */}
         <div className="mb-12">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">What Our Clients Say</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="bg-white/10 backdrop-blur-lg border-white/20">
+          <h2 className="text-3xl font-bold text-white mb-6 text-center">What Our Clients Say</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, idx) => (
+              <Card key={idx} className="bg-white/10 backdrop-blur-lg border-white/20">
                 <CardContent className="p-6">
-                  <div className="flex gap-1 mb-4">
+                  <div className="flex items-center mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-300 mb-4 italic">"{testimonial.text}"</p>
-                  <div>
-                    <div className="text-white font-semibold">{testimonial.name}</div>
-                    <div className="text-sm text-gray-400">{testimonial.company}</div>
-                  </div>
+                  <p className="text-gray-300 mb-4">"{testimonial.text}"</p>
+                  <p className="text-white font-bold">{testimonial.name}</p>
+                  <p className="text-gray-400">{testimonial.company}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
-        
-        {/* CTA Section */}
-        <Card className="bg-gradient-to-r from-green-600/20 to-green-800/20 backdrop-blur-lg border-green-500/50">
-          <CardContent className="p-12 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Ready to Transform Your Business Finances?
-            </h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Book a complimentary consultation with our expert team. No obligation, just expert advice tailored to your business.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button
-                onClick={handleBookConsultation}
-                className="bg-green-600 hover:bg-green-700 text-white text-lg px-8 py-6"
-              >
-                <Calendar className="w-5 h-5 mr-2" />
-                Book Free Consultation
-              </Button>
-              <Button
-                className="bg-white/10 hover:bg-white/20 text-white text-lg px-8 py-6"
-              >
-                <Mail className="w-5 h-5 mr-2" />
-                Email Us
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+
+        {/* Final CTA */}
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">Ready to Simplify Your Finances?</h2>
+          <p className="text-xl text-gray-300 mb-6">Let our experts handle your accounting needs so you can focus on what you do best.</p>
+          <Button
+            onClick={handleBookConsultation}
+            className="bg-green-600 hover:bg-green-700 text-white text-xl px-10 py-7"
+          >
+            <Calendar className="w-6 h-6 mr-3" />
+            Book Your Free Consultation Today
+            <ArrowRight className="w-6 h-6 ml-3" />
+          </Button>
+        </div>
+
       </div>
-    </div>
+      </div>
     </>
   )
 }
-

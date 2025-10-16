@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import api from '../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
@@ -7,167 +7,31 @@ import { Users, UserPlus, Mail, Shield, Edit, Trash2, CheckCircle2, XCircle, Clo
 
 export default function TeamPage() {
   const [selectedMember, setSelectedMember] = useState(null)
-  
-  const teamMembers = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@fineguard.com',
-      role: 'Admin',
-      department: 'Compliance',
-      status: 'active',
-      avatar: 'SJ',
-      joinedDate: '2024-01-15',
-      lastActive: '2024-10-16T11:45:00',
-      permissions: ['read', 'write', 'delete', 'admin'],
-      companiesAssigned: 15,
-      tasksCompleted: 234
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      email: 'michael.chen@fineguard.com',
-      role: 'Manager',
-      department: 'Operations',
-      status: 'active',
-      avatar: 'MC',
-      joinedDate: '2024-02-20',
-      lastActive: '2024-10-16T10:30:00',
-      permissions: ['read', 'write', 'delete'],
-      companiesAssigned: 12,
-      tasksCompleted: 189
-    },
-    {
-      id: 3,
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@fineguard.com',
-      role: 'Analyst',
-      department: 'Compliance',
-      status: 'active',
-      avatar: 'ER',
-      joinedDate: '2024-03-10',
-      lastActive: '2024-10-16T09:15:00',
-      permissions: ['read', 'write'],
-      companiesAssigned: 8,
-      tasksCompleted: 156
-    },
-    {
-      id: 4,
-      name: 'David Thompson',
-      email: 'david.thompson@fineguard.com',
-      role: 'Analyst',
-      department: 'Risk Management',
-      status: 'active',
-      avatar: 'DT',
-      joinedDate: '2024-04-05',
-      lastActive: '2024-10-15T16:20:00',
-      permissions: ['read', 'write'],
-      companiesAssigned: 10,
-      tasksCompleted: 142
-    },
-    {
-      id: 5,
-      name: 'Lisa Anderson',
-      email: 'lisa.anderson@fineguard.com',
-      role: 'Viewer',
-      department: 'Finance',
-      status: 'active',
-      avatar: 'LA',
-      joinedDate: '2024-05-15',
-      lastActive: '2024-10-16T08:45:00',
-      permissions: ['read'],
-      companiesAssigned: 0,
-      tasksCompleted: 45
-    },
-    {
-      id: 6,
-      name: 'James Wilson',
-      email: 'james.wilson@fineguard.com',
-      role: 'Manager',
-      department: 'Compliance',
-      status: 'inactive',
-      avatar: 'JW',
-      joinedDate: '2024-01-20',
-      lastActive: '2024-09-30T14:30:00',
-      permissions: ['read', 'write'],
-      companiesAssigned: 5,
-      tasksCompleted: 98
-    }
-  ]
-  
-  const roles = [
-    {
-      name: 'Admin',
-      description: 'Full access to all features and settings',
-      permissions: ['read', 'write', 'delete', 'admin', 'billing'],
-      color: 'red',
-      count: 1
-    },
-    {
-      name: 'Manager',
-      description: 'Manage companies, users, and workflows',
-      permissions: ['read', 'write', 'delete', 'manage_users'],
-      color: 'purple',
-      count: 2
-    },
-    {
-      name: 'Analyst',
-      description: 'View and edit company data',
-      permissions: ['read', 'write'],
-      color: 'blue',
-      count: 2
-    },
-    {
-      name: 'Viewer',
-      description: 'Read-only access to data',
-      permissions: ['read'],
-      color: 'green',
-      count: 1
-    }
-  ]
-  
-  const activities = [
-    {
-      id: 1,
-      user: 'Sarah Johnson',
-      action: 'Updated compliance data',
-      target: 'Tech Innovations Ltd',
-      timestamp: '2024-10-16T11:45:00',
-      type: 'update'
-    },
-    {
-      id: 2,
-      user: 'Michael Chen',
-      action: 'Added new company',
-      target: 'Enterprise Corp',
-      timestamp: '2024-10-16T10:30:00',
-      type: 'create'
-    },
-    {
-      id: 3,
-      user: 'Emily Rodriguez',
-      action: 'Completed obligation',
-      target: 'VAT Return - Global Solutions Ltd',
-      timestamp: '2024-10-16T09:15:00',
-      type: 'complete'
-    },
-    {
-      id: 4,
-      user: 'David Thompson',
-      action: 'Generated risk report',
-      target: 'Q3 2024 Risk Assessment',
-      timestamp: '2024-10-15T16:20:00',
-      type: 'report'
-    },
-    {
-      id: 5,
-      user: 'Sarah Johnson',
-      action: 'Invited new user',
-      target: 'john.doe@fineguard.com',
-      timestamp: '2024-10-15T14:10:00',
-      type: 'invite'
-    }
-  ]
+  const [teamMembers, setTeamMembers] = useState([])
+  const [roles, setRoles] = useState([])
+  const [activities, setActivities] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [membersRes, rolesRes, activitiesRes] = await Promise.all([
+          api.request('/api/team/members'),
+          api.request('/api/team/roles'),
+          api.request('/api/team/activities')
+        ]);
+        setTeamMembers(membersRes.data);
+        setRoles(rolesRes.data);
+        setActivities(activitiesRes.data);
+      } catch (error) {
+        console.error("Failed to fetch team data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
   
   const getRoleColor = (role) => {
     switch(role) {
@@ -223,6 +87,10 @@ export default function TeamPage() {
     alert(`Resending invitation to ${email}...`)
   }
   
+  if (loading) {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8 flex justify-center items-center"><div className="text-white text-2xl">Loading team data...</div></div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
       <div className="max-w-7xl mx-auto">
@@ -311,60 +179,41 @@ export default function TeamPage() {
                     <th className="text-left py-3 px-4 text-gray-300 font-medium">Role</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium">Department</th>
                     <th className="text-center py-3 px-4 text-gray-300 font-medium">Status</th>
-                    <th className="text-right py-3 px-4 text-gray-300 font-medium">Companies</th>
-                    <th className="text-right py-3 px-4 text-gray-300 font-medium">Tasks</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium">Last Active</th>
                     <th className="text-center py-3 px-4 text-gray-300 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {teamMembers.map((member) => (
-                    <tr key={member.id} className="border-b border-white/5 hover:bg-white/5">
+                    <tr key={member.id} className="border-b border-white/10 hover:bg-white/5">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold">
+                          <div className="w-10 h-10 rounded-full bg-purple-500/30 flex items-center justify-center font-bold text-purple-200">
                             {member.avatar}
                           </div>
                           <div>
-                            <div className="text-white font-medium">{member.name}</div>
+                            <div className="font-medium text-white">{member.name}</div>
                             <div className="text-sm text-gray-400">{member.email}</div>
                           </div>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <Badge className={getRoleColor(member.role)}>
-                          {member.role}
-                        </Badge>
+                        <Badge className={getRoleColor(member.role)}>{member.role}</Badge>
                       </td>
                       <td className="py-3 px-4 text-gray-300">{member.department}</td>
                       <td className="py-3 px-4 text-center">
-                        <Badge className={member.status === 'active' ? 'bg-green-500/20 text-green-300 border-green-500/50' : 'bg-gray-500/20 text-gray-300 border-gray-500/50'}>
-                          {member.status === 'active' ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+                        <Badge className={member.status === 'active' ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-300'}>
                           {member.status}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 text-right text-white">{member.companiesAssigned}</td>
-                      <td className="py-3 px-4 text-right text-white">{member.tasksCompleted}</td>
-                      <td className="py-3 px-4 text-gray-300 text-sm">
-                        {formatLastActive(member.lastActive)}
-                      </td>
+                      <td className="py-3 px-4 text-gray-300">{formatLastActive(member.lastActive)}</td>
                       <td className="py-3 px-4 text-center">
-                        <div className="flex gap-2 justify-center">
-                          <Button
-                            onClick={() => handleEditUser(member.id)}
-                            className="bg-white/10 hover:bg-white/20 text-white"
-                            size="sm"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteUser(member.id)}
-                            className="bg-red-500/20 hover:bg-red-500/30 text-red-300"
-                            size="sm"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleEditUser(member.id)} className="text-gray-400 hover:text-white">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(member.id)} className="text-gray-400 hover:text-red-400">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -373,73 +222,59 @@ export default function TeamPage() {
             </div>
           </CardContent>
         </Card>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Roles & Permissions */}
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+          <Card className="lg:col-span-2 bg-white/10 backdrop-blur-lg border-white/20">
             <CardHeader>
               <CardTitle className="text-white">Roles & Permissions</CardTitle>
-              <CardDescription className="text-gray-300">
-                Defined roles and their access levels
-              </CardDescription>
+              <CardDescription className="text-gray-300">Define roles for your team members</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {roles.map((role, index) => (
-                  <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
-                    <div className="flex items-start justify-between mb-2">
+                {roles.map(role => (
+                  <div key={role.name} className="p-4 rounded-lg bg-black/20">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-white">{role.name}</h3>
-                          <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50">
-                            {role.count} {role.count === 1 ? 'user' : 'users'}
-                          </Badge>
+                        <h3 className={`font-bold text-lg ${getRoleColor(role.name).split(' ').slice(1).join(' ')}`}>{role.name}</h3>
+                        <p className="text-sm text-gray-400 mt-1">{role.description}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {role.permissions.map(p => <Badge key={p} variant="outline" className="text-gray-300 border-gray-500">{p}</Badge>)}
                         </div>
-                        <p className="text-sm text-gray-300 mb-3">{role.description}</p>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {role.permissions.map((perm, idx) => (
-                        <Badge key={idx} className="bg-blue-500/20 text-blue-300 border-blue-500/50 text-xs">
-                          {perm}
-                        </Badge>
-                      ))}
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-white">{role.count}</div>
+                        <div className="text-sm text-gray-400">users</div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Recent Activity */}
           <Card className="bg-white/10 backdrop-blur-lg border-white/20">
             <CardHeader>
               <CardTitle className="text-white">Recent Activity</CardTitle>
-              <CardDescription className="text-gray-300">
-                Latest team member actions
-              </CardDescription>
+              <CardDescription className="text-gray-300">Track recent team activities</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
-                    <div className="flex-shrink-0 mt-1">
+              <ul className="space-y-4">
+                {activities.map(activity => (
+                  <li key={activity.id} className="flex items-start gap-3">
+                    <div className="w-8 h-8 flex-shrink-0 rounded-full bg-black/20 flex items-center justify-center mt-1">
                       {getActivityIcon(activity.type)}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium mb-1">
-                        {activity.user}
-                      </div>
-                      <div className="text-sm text-gray-300 mb-1">
-                        {activity.action}: <span className="text-purple-300">{activity.target}</span>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {formatLastActive(activity.timestamp)}
-                      </div>
+                    <div>
+                      <p className="text-sm text-white">
+                        <span className="font-bold">{activity.user}</span> {activity.action} <span className="font-bold text-purple-300">{activity.target}</span>
+                      </p>
+                      <p className="text-xs text-gray-400">{formatLastActive(activity.timestamp)}</p>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </CardContent>
           </Card>
         </div>
@@ -447,4 +282,3 @@ export default function TeamPage() {
     </div>
   )
 }
-

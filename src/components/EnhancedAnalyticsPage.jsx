@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import {
@@ -8,66 +9,26 @@ import {
 
 const EnhancedAnalyticsPage = () => {
   const [timeRange, setTimeRange] = useState('30d');
-  const [loading, setLoading] = useState(false);
-  
-  // Mock analytics data
-  const analytics = {
-    revenue: {
-      current: 125000,
-      previous: 98000,
-      growth: 27.6,
-      trend: 'up',
-      forecast: 145000
-    },
-    leads: {
-      total: 48,
-      new: 12,
-      qualified: 18,
-      converted: 8,
-      conversionRate: 16.7,
-      trend: 'up',
-      growth: 15.4
-    },
-    opportunities: {
-      total: 15,
-      open: 10,
-      won: 3,
-      lost: 2,
-      winRate: 60.0,
-      avgDealSize: 5250,
-      trend: 'up'
-    },
-    pipeline: {
-      totalValue: 78500,
-      expectedValue: 52340,
-      velocity: 28,
-      stages: [
-        { name: 'Discovery', count: 4, value: 18000 },
-        { name: 'Proposal', count: 3, value: 22500 },
-        { name: 'Negotiation', count: 3, value: 38000 }
-      ]
-    },
-    performance: {
-      avgResponseTime: 2.4,
-      customerSatisfaction: 4.8,
-      retentionRate: 94.5,
-      churnRate: 5.5
-    },
-    topServices: [
-      { name: 'Taxation Services', revenue: 45000, count: 12, growth: 22 },
-      { name: 'Financial Planning', revenue: 32000, count: 8, growth: 18 },
-      { name: 'Payroll Services', revenue: 28000, count: 15, growth: 12 },
-      { name: 'Company Secretarial', revenue: 20000, count: 6, growth: 8 }
-    ],
-    monthlyTrend: [
-      { month: 'Jan', revenue: 85000, leads: 32, opportunities: 12 },
-      { month: 'Feb', revenue: 92000, leads: 38, opportunities: 14 },
-      { month: 'Mar', revenue: 98000, leads: 42, opportunities: 13 },
-      { month: 'Apr', revenue: 105000, leads: 45, opportunities: 15 },
-      { month: 'May', revenue: 115000, leads: 48, opportunities: 16 },
-      { month: 'Jun', revenue: 125000, leads: 52, opportunities: 18 }
-    ]
-  };
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await api.request(`/analytics?timeRange=${timeRange}`);
+        setAnalytics(response.data);
+      } catch (err) {
+        console.error('Error fetching analytics:', err);
+        setError('Failed to load analytics data.');
+      }
+      setLoading(false);
+    };
+
+    fetchAnalytics();
+  }, [timeRange]);
 
   const MetricCard = ({ icon: Icon, label, value, change, trend, subtitle }) => (
     <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hover:border-green-400/50 transition-all">
@@ -111,6 +72,30 @@ const EnhancedAnalyticsPage = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8 flex items-center justify-center">
+        <div className="text-white text-xl">Loading analytics data...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8 flex items-center justify-center">
+        <div className="text-red-400 text-xl">Error: {error}</div>
+      </div>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8 flex items-center justify-center">
+        <div className="text-gray-400 text-xl">No analytics data available.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8">
@@ -302,4 +287,3 @@ const EnhancedAnalyticsPage = () => {
 };
 
 export default EnhancedAnalyticsPage;
-

@@ -1,15 +1,37 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Mail, Plus, Edit, Trash, Save } from 'lucide-react';
 
 const EmailTemplatesPage = () => {
-  const [items, setItems] = useState([
-    { id: 1, name: 'Sample Item 1', status: 'active', created: '2024-10-16' },
-    { id: 2, name: 'Sample Item 2', status: 'active', created: '2024-10-15' },
-    { id: 3, name: 'Sample Item 3', status: 'inactive', created: '2024-10-14' }
-  ]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchEmailTemplates = async () => {
+      try {
+        setLoading(true);
+        const response = await api.request('/api/email-templates');
+        setItems(response.data);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmailTemplates();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center py-8">Loading email templates...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-8 text-red-500">Error: {error.message}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -48,17 +70,19 @@ const EmailTemplatesPage = () => {
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Start</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            Create and manage email templates. Click "Create New" to get started.
-          </p>
-          <Button><Plus className="mr-2 h-4 w-4" />Create Your First Item</Button>
-        </CardContent>
-      </Card>
+      {items.length === 0 && !loading && !error && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Start</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Create and manage email templates. Click "Create New" to get started.
+            </p>
+            <Button><Plus className="mr-2 h-4 w-4" />Create Your First Item</Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

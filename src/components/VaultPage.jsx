@@ -1,73 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Key, Lock, Shield, Eye, EyeOff, Plus, Trash2, RefreshCw, Clock, CheckCircle, Copy } from 'lucide-react';
 
 export default function VaultPage() {
-  const [secrets, setSecrets] = useState([
-    { 
-      key: 'COMPANIES_HOUSE_API_KEY', 
-      value: 'elab6044-6d0a-4fec-83fe-dfee5e1d83c7',
-      created_at: '2025-10-16T10:00:00', 
-      access_count: 45, 
-      last_accessed: '2025-10-16T10:30:00',
-      metadata: { service: 'companies_house', description: 'UK Companies House API access' } 
-    },
-    { 
-      key: 'SENDGRID_API_KEY', 
-      value: 'SG.demo_key_replace_in_production',
-      created_at: '2025-10-16T10:00:00', 
-      access_count: 12, 
-      last_accessed: '2025-10-16T09:45:00',
-      metadata: { service: 'email', description: 'SendGrid email delivery' } 
-    },
-    { 
-      key: 'TWILIO_SID', 
-      value: 'AC_demo_sid_replace_in_production',
-      created_at: '2025-10-16T10:00:00', 
-      access_count: 8, 
-      last_accessed: '2025-10-16T09:30:00',
-      metadata: { service: 'sms', description: 'Twilio SMS service' } 
-    },
-    { 
-      key: 'JWT_SECRET', 
-      value: 'fineguard_jwt_secret_change_in_production_2025',
-      created_at: '2025-10-16T10:00:00', 
-      access_count: 156, 
-      last_accessed: '2025-10-16T10:35:00',
-      metadata: { service: 'auth', description: 'JWT signing secret' } 
-    },
-  ]);
+  const [secrets, setSecrets] = useState([]);
+  const [loadingSecrets, setLoadingSecrets] = useState(true);
+  const [errorSecrets, setErrorSecrets] = useState(null);
+
+  useEffect(() => {
+    const fetchSecrets = async () => {
+      try {
+        setLoadingSecrets(true);
+        const response = await api.request('/api/secrets');
+        setSecrets(response.data);
+      } catch (error) {
+        console.error('Error fetching secrets:', error);
+        setErrorSecrets('Failed to load secrets.');
+      } finally {
+        setLoadingSecrets(false);
+      }
+    };
+    fetchSecrets();
+  }, []);
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showValue, setShowValue] = useState({});
   const [copiedKey, setCopiedKey] = useState(null);
   const [newSecret, setNewSecret] = useState({ key: '', value: '', service: '', description: '' });
   
-  const [auditLog] = useState([
-    { timestamp: '2025-10-16T10:35:00', action: 'GET', key: 'JWT_SECRET', message: 'Secret accessed by auth service' },
-    { timestamp: '2025-10-16T10:30:00', action: 'GET', key: 'COMPANIES_HOUSE_API_KEY', message: 'Secret accessed by Live Data agent' },
-    { timestamp: '2025-10-16T10:00:00', action: 'SET', key: 'COMPANIES_HOUSE_API_KEY', message: 'Secret stored' },
-    { timestamp: '2025-10-16T09:45:00', action: 'GET', key: 'SENDGRID_API_KEY', message: 'Secret accessed by email service' },
-  ]);
+  const [auditLog, setAuditLog] = useState([]);
+  const [loadingAuditLog, setLoadingAuditLog] = useState(true);
+  const [errorAuditLog, setErrorAuditLog] = useState(null);
+
+  useEffect(() => {
+    const fetchAuditLog = async () => {
+      try {
+        setLoadingAuditLog(true);
+        const response = await api.request('/api/auditlog');
+        setAuditLog(response.data);
+      } catch (error) {
+        console.error('Error fetching audit log:', error);
+        setErrorAuditLog('Failed to load audit log.');
+      } finally {
+        setLoadingAuditLog(false);
+      }
+    };
+    fetchAuditLog();
+  }, []);
   
-  const addSecret = () => {
+  const addSecret = async () => {
     if (newSecret.key && newSecret.value) {
-      setSecrets([...secrets, {
-        key: newSecret.key,
-        value: newSecret.value,
-        created_at: new Date().toISOString(),
-        access_count: 0,
-        last_accessed: 'Never',
-        metadata: { service: newSecret.service, description: newSecret.description }
-      }]);
-      setNewSecret({ key: '', value: '', service: '', description: '' });
-      setShowAddModal(false);
+      try {
+        await api.request('/api/secrets', { method: 'POST', data: newSecret });
+        setNewSecret({ key: '', value: '', service: '', description: '' });
+        setShowAddModal(false);
+        // Re-fetch secrets after adding a new one
+        const response = await api.request('/api/secrets');
+        setSecrets(response.data);
+      } catch (error) {
+        console.error('Error adding secret:', error);
+        // Optionally, show an error message to the user
+      }
     }
   };
   
-  const deleteSecret = (key) => {
+  const deleteSecret = async (key) => {
     if (confirm(`Are you sure you want to delete ${key}?`)) {
-      setSecrets(secrets.filter(s => s.key !== key));
+      try {
+        await api.request(`/api/secrets/${key}`, { method: 'DELETE' });
+        // Re-fetch secrets after deleting one
+        const response = await api.request('/api/secrets');
+        setSecrets(response.data);
+      } catch (error) {
+        console.error('Error deleting secret:', error);
+        // Optionally, show an error message to the user
+      }
     }
   };
   
@@ -104,11 +111,15 @@ export default function VaultPage() {
           </div>
           <div className="grid grid-cols-3 gap-4 mt-6">
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-3xl font-bold">{secrets.length}</div>
+              <div className="text-3xl font-bold">
+              {loadingSecrets ? <RefreshCw className="animate-spin" /> : secrets.length}
+            </div>
               <div className="text-sm text-cyan-100">Stored Secrets</div>
             </div>
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-3xl font-bold">{secrets.reduce((sum, s) => sum + s.access_count, 0)}</div>
+              <div className="text-3xl font-bold">
+              {loadingSecrets ? <RefreshCw className="animate-spin" /> : secrets.reduce((sum, s) => sum + s.access_count, 0)}
+            </div>
               <div className="text-sm text-cyan-100">Total Accesses</div>
             </div>
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
@@ -131,7 +142,23 @@ export default function VaultPage() {
           </div>
           
           <div className="space-y-4">
-            {secrets.map((secret) => (
+            {loadingSecrets && (
+              <div className="text-center py-8 dark:text-gray-300">
+                <RefreshCw className="animate-spin mx-auto w-8 h-8 text-cyan-500 mb-4" />
+                <p>Loading secrets...</p>
+              </div>
+            )}
+            {errorSecrets && (
+              <div className="text-center py-8 text-red-500 dark:text-red-400">
+                <p>{errorSecrets}</p>
+              </div>
+            )}
+            {!loadingSecrets && !errorSecrets && secrets.length === 0 && (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p>No secrets found. Add a new secret to get started!</p>
+              </div>
+            )}
+            {!loadingSecrets && !errorSecrets && secrets.map((secret) => (
               <div key={secret.key} className="border dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -204,7 +231,23 @@ export default function VaultPage() {
           </div>
           
           <div className="space-y-2">
-            {auditLog.map((entry, idx) => (
+            {loadingAuditLog && (
+              <div className="text-center py-4 dark:text-gray-300">
+                <RefreshCw className="animate-spin mx-auto w-6 h-6 text-cyan-500 mb-2" />
+                <p>Loading audit log...</p>
+              </div>
+            )}
+            {errorAuditLog && (
+              <div className="text-center py-4 text-red-500 dark:text-red-400">
+                <p>{errorAuditLog}</p>
+              </div>
+            )}
+            {!loadingAuditLog && !errorAuditLog && auditLog.length === 0 && (
+              <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                <p>No audit log entries found.</p>
+              </div>
+            )}
+            {!loadingAuditLog && !errorAuditLog && auditLog.map((entry, idx) => (
               <div key={idx} className="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition">
                 <span className="text-sm text-gray-500 dark:text-gray-400 w-40">
                   {new Date(entry.timestamp).toLocaleString()}

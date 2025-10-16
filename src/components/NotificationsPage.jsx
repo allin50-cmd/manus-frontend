@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import api from '../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
@@ -8,116 +8,36 @@ import { Bell, Mail, MessageSquare, AlertTriangle, CheckCircle2, Info, Settings,
 export default function NotificationsPage() {
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
-  
-  const notifications = [
-    {
-      id: 1,
-      type: 'alert',
-      title: 'Compliance Deadline Approaching',
-      message: 'Annual Accounts Filing for Tech Innovations Ltd is due in 3 days',
-      timestamp: '2024-10-16T10:30:00',
-      read: false,
-      priority: 'high',
-      category: 'compliance'
-    },
-    {
-      id: 2,
-      type: 'success',
-      title: 'Payment Received',
-      message: 'Subscription payment of £99 processed successfully',
-      timestamp: '2024-10-16T09:15:00',
-      read: false,
-      priority: 'normal',
-      category: 'billing'
-    },
-    {
-      id: 3,
-      type: 'info',
-      title: 'New Company Added',
-      message: 'Enterprise Corp has been added to your portfolio',
-      timestamp: '2024-10-16T08:45:00',
-      read: true,
-      priority: 'normal',
-      category: 'system'
-    },
-    {
-      id: 4,
-      type: 'alert',
-      title: 'High Churn Risk Detected',
-      message: 'AI Agent detected high churn risk for Startup Ventures Ltd',
-      timestamp: '2024-10-15T16:20:00',
-      read: true,
-      priority: 'high',
-      category: 'ai'
-    },
-    {
-      id: 5,
-      type: 'success',
-      title: 'Obligation Completed',
-      message: 'VAT Return for Global Solutions Ltd has been filed',
-      timestamp: '2024-10-15T14:10:00',
-      read: true,
-      priority: 'normal',
-      category: 'compliance'
-    },
-    {
-      id: 6,
-      type: 'info',
-      title: 'Data Enrichment Complete',
-      message: 'Companies House data updated for 5 companies',
-      timestamp: '2024-10-15T12:00:00',
-      read: true,
-      priority: 'low',
-      category: 'data'
-    },
-    {
-      id: 7,
-      type: 'alert',
-      title: 'Storage Limit Warning',
-      message: 'You have used 80% of your storage allocation (40GB / 50GB)',
-      timestamp: '2024-10-15T10:30:00',
-      read: true,
-      priority: 'medium',
-      category: 'system'
-    },
-    {
-      id: 8,
-      type: 'success',
-      title: 'Email Campaign Sent',
-      message: 'Monthly newsletter sent to 150 contacts with 42% open rate',
-      timestamp: '2024-10-15T09:00:00',
-      read: true,
-      priority: 'normal',
-      category: 'marketing'
-    }
-  ]
-  
-  const [notificationList, setNotificationList] = useState(notifications)
-  
-  const notificationSettings = {
-    email: {
-      compliance_alerts: true,
-      payment_updates: true,
-      system_updates: false,
-      marketing: true,
-      ai_insights: true
-    },
-    push: {
-      compliance_alerts: true,
-      payment_updates: true,
-      system_updates: true,
-      marketing: false,
-      ai_insights: true
-    },
-    sms: {
-      compliance_alerts: true,
-      payment_updates: false,
-      system_updates: false,
-      marketing: false,
-      ai_insights: false
-    }
-  }
-  
+  const [notificationList, setNotificationList] = useState([])
+  const [notificationSettings, setNotificationSettings] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.request('get', '/api/notifications');
+        setNotificationList(data);
+      } catch (error) {
+        console.error("Failed to fetch notifications", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchNotificationSettings = async () => {
+      try {
+        const { data } = await api.request('get', '/api/notification-settings');
+        setNotificationSettings(data);
+      } catch (error) {
+        console.error("Failed to fetch notification settings", error);
+      }
+    };
+
+    fetchNotifications();
+    fetchNotificationSettings();
+  }, []);
+
   const getIcon = (type) => {
     switch(type) {
       case 'alert': return <AlertTriangle className="w-5 h-5 text-yellow-400" />
@@ -176,6 +96,10 @@ export default function NotificationsPage() {
     if (diffHours < 24) return `${diffHours} hours ago`
     if (diffDays < 7) return `${diffDays} days ago`
     return date.toLocaleDateString()
+  }
+
+  if (loading) {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8 flex justify-center items-center"><h2 className="text-white text-2xl">Loading notifications...</h2></div>
   }
   
   return (
@@ -295,7 +219,7 @@ export default function NotificationsPage() {
                         </Button>
                         <Button
                           onClick={() => handleDelete(notification.id)}
-                          className="bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm"
+                          className="bg-red-500/20 hover:bg-red-500/40 text-red-300 text-sm"
                           size="sm"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -307,93 +231,42 @@ export default function NotificationsPage() {
               </CardContent>
             </Card>
           ))}
-          
-          {filteredNotifications.length === 0 && (
-            <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-              <CardContent className="p-12 text-center">
-                <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No notifications found</h3>
-                <p className="text-gray-300">You're all caught up!</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
-        
+
         {/* Notification Settings */}
         <Card className="bg-white/10 backdrop-blur-lg border-white/20">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Notification Preferences
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Configure how you receive notifications
-            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-white flex items-center gap-3
+            "><Settings className="w-6 h-6" /> Notification Settings</CardTitle>
+            <CardDescription className="text-gray-300">Manage how you receive notifications.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Category</th>
-                    <th className="text-center py-3 px-4 text-gray-300 font-medium">
-                      <Mail className="w-5 h-5 inline mr-1" />
-                      Email
-                    </th>
-                    <th className="text-center py-3 px-4 text-gray-300 font-medium">
-                      <Bell className="w-5 h-5 inline mr-1" />
-                      Push
-                    </th>
-                    <th className="text-center py-3 px-4 text-gray-300 font-medium">
-                      <MessageSquare className="w-5 h-5 inline mr-1" />
-                      SMS
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.keys(notificationSettings.email).map((category) => (
-                    <tr key={category} className="border-b border-white/5">
-                      <td className="py-3 px-4 text-white capitalize">
-                        {category.replace('_', ' ')}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings.email[category]}
-                          className="w-5 h-5 rounded border-white/20 bg-white/10 text-purple-600 focus:ring-purple-500"
-                          readOnly
-                        />
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings.push[category]}
-                          className="w-5 h-5 rounded border-white/20 bg-white/10 text-purple-600 focus:ring-purple-500"
-                          readOnly
-                        />
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings.sms[category]}
-                          className="w-5 h-5 rounded border-white/20 bg-white/10 text-purple-600 focus:ring-purple-500"
-                          readOnly
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                Save Preferences
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
+              {Object.keys(notificationSettings).map(method => (
+                <div key={method}>
+                  <h3 className="text-lg font-semibold capitalize flex items-center gap-2 mb-3">
+                    {method === 'email' && <Mail className="w-5 h-5" />}
+                    {method === 'push' && <Bell className="w-5 h-5" />}
+                    {method === 'sms' && <MessageSquare className="w-5 h-5" />}
+                    {method}
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.keys(notificationSettings[method]).map(type => (
+                      <div key={type} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                        <span className="text-gray-300 capitalize">{type.replace(/_/g, ' ')}</span>
+                        <label className="switch">
+                          <input type="checkbox" defaultChecked={notificationSettings[method][type]} />
+                          <span className="slider round"></span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }
-

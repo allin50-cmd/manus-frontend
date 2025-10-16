@@ -34,7 +34,30 @@ export default function LiveDataPage() {
     const [processedCompanies, setProcessedCompanies] = useState([]);
     const [isDbLoading, setIsDbLoading] = useState(false);
     const [dbError, setDbError] = useState(null);
-    
+
+    const fetchProcessedCompaniesFromDB = async () => {
+        setIsDbLoading(true);
+        setDbError(null);
+        try {
+            // Assuming a local API endpoint to fetch previously processed companies
+            // The actual endpoint might need to be defined in ../utils/api or a separate configuration
+            const response = await api.request(
+                'GET',
+                '/api/processed-companies' // Hypothetical endpoint
+            );
+            setProcessedCompanies(response.data);
+        } catch (err) {
+            setDbError(err.message);
+            logMessage(`Error fetching processed companies: ${err.message}`);
+        } finally {
+            setIsDbLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchProcessedCompaniesFromDB();
+    }, []);
+
     const logMessage = (message) => {
         setAgentLog(prev => [`[${new Date().toLocaleTimeString()}] ${message}`, ...prev.slice(0, 199)]);
     };
@@ -46,61 +69,63 @@ export default function LiveDataPage() {
 
     // Search companies incorporated on specific date
     const searchCompaniesByDate = async (date, startIndex = 0) => {
-        const response = await fetch(
-            `${COMPANIES_HOUSE_API_BASE}/search/companies?incorporated_from=${date}&incorporated_to=${date}&start_index=${startIndex}`,
-            {
-                headers: {
+        try {
+            const response = await api.request(
+                'GET',
+                `${COMPANIES_HOUSE_API_BASE}/search/companies`,
+                { 
+                    incorporated_from: date,
+                    incorporated_to: date,
+                    start_index: startIndex
+                },
+                { 
                     'Authorization': `Basic ${btoa(apiKey + ':')}`,
                     'Content-Type': 'application/json'
                 }
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
+            );
+            return response;
+        } catch (error) {
+            throw new Error(`API error: ${error.message}`);
         }
-
-        return await response.json();
     };
 
     // Get company profile with full details
     const getCompanyProfile = async (companyNumber) => {
-        const response = await fetch(
-            `${COMPANIES_HOUSE_API_BASE}/company/${companyNumber}`,
-            {
-                headers: {
+        try {
+            const response = await api.request(
+                'GET',
+                `${COMPANIES_HOUSE_API_BASE}/company/${companyNumber}`,
+                {},
+                {
                     'Authorization': `Basic ${btoa(apiKey + ':')}`,
                     'Content-Type': 'application/json'
                 }
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(`Company profile error: ${response.status}`);
+            );
+            return response;
+        } catch (error) {
+            throw new Error(`Company profile error: ${error.message}`);
         }
-
-        return await response.json();
     };
 
     // Get registered office address
     const getCompanyAddress = async (companyNumber) => {
         try {
-            const response = await fetch(
+            const response = await api.request(
+                'GET',
                 `${COMPANIES_HOUSE_API_BASE}/company/${companyNumber}/registered-office-address`,
+                {},
                 {
-                    headers: {
-                        'Authorization': `Basic ${btoa(apiKey + ':')}`,
-                        'Content-Type': 'application/json'
-                    }
+                    'Authorization': `Basic ${btoa(apiKey + ':')}`,
+                    'Content-Type': 'application/json'
                 }
             );
-
-            if (!response.ok) {
+            return response;
+        } catch (error) {
+            // If the address is not found, the API might return a 404, which api.request will throw as an error.
+            // In this case, we want to return null, not re-throw the error.
+            if (error.response && error.response.status === 404) {
                 return null;
             }
-
-            return await response.json();
-        } catch {
             return null;
         }
     };
@@ -279,130 +304,133 @@ export default function LiveDataPage() {
                         <div>
                             <label className="text-sm font-semibold flex items-center gap-2 mb-2">
                                 <KeyRound className="w-4 h-4" />
-                                Companies House API Key
+                                Companies House API Key:
                             </label>
-                            <div className="relative">
-                                <input 
-                                    type="password" 
-                                    value={apiKey} 
-                                    onChange={(e) => handleApiKeyChange(e.target.value)} 
-                                    placeholder="Enter your Companies House API key" 
-                                    className="w-full p-3 border rounded-lg bg-background pr-10"
-                                />
-                                {apiKey.length > 0 && <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                                Get your API key from: <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Companies House Developer Portal</a>
-                            </p>
-                        </div>
-
-                        {/* Control Buttons */}
-                        <div className="flex items-center gap-4">
-                            {!isAgentRunning ? (
-                                <Button 
-                                    onClick={startAgent} 
-                                    disabled={!apiKey} 
-                                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                                >
-                                    <PlayCircle className="w-5 h-5 mr-2" /> Start Live Data Collection
-                                </Button>
-                            ) : (
-                                <Button 
-                                    onClick={pauseAgent} 
-                                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                                >
-                                    <PauseCircle className="w-5 h-5 mr-2" /> Pause Collection
-                                </Button>
+                            <input
+                                type="password"
+                                value={apiKey}
+                                onChange={(e) => handleApiKeyChange(e.target.value)}
+                                placeholder="Enter your Companies House API Key"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                            {!apiKey && (
+                                <p className="text-red-500 text-xs mt-1">API Key is required to fetch data.</p>
                             )}
                         </div>
 
-                        {/* Progress Bar */}
-                        <div>
-                            <div className="flex justify-between items-center text-sm font-semibold mb-2">
-                                <span>Status: <Badge variant="outline">{agentStatus}</Badge></span>
-                                <span className="text-gray-500">{agentProgress.current} / {agentProgress.total}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                                <div 
-                                    className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 rounded-full transition-all duration-500" 
-                                    style={{ width: agentProgress.total > 0 ? `${(agentProgress.current / agentProgress.total) * 100}%` : '0%' }}
-                                ></div>
-                            </div>
+                        {/* Agent Controls */}
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                onClick={startAgent}
+                                disabled={isAgentRunning || !apiKey}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                {isAgentRunning ? (
+                                    <><Loader className="mr-2 h-4 w-4 animate-spin" /> Running...</>
+                                ) : (
+                                    <><PlayCircle className="mr-2 h-4 w-4" /> Start Agent</>
+                                )}
+                            </Button>
+                            <Button
+                                onClick={pauseAgent}
+                                disabled={!isAgentRunning}
+                                className="bg-orange-500 hover:bg-orange-600 text-white"
+                            >
+                                <PauseCircle className="mr-2 h-4 w-4" /> Pause Agent
+                            </Button>
                         </div>
 
-                        {/* Agent Log */}
-                        <div className="bg-gray-900 text-green-400 font-mono text-xs rounded-lg p-4 h-48 overflow-y-auto">
-                            {agentLog.length > 0 ? agentLog.map((msg, i) => <p key={i} className="whitespace-pre-wrap">{msg}</p>) : <p className="text-gray-500">Agent log will appear here...</p>}
+                        {/* Agent Status */}
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-sm px-3 py-1">
+                                Status: <span className="font-semibold ml-1">{agentStatus}</span>
+                            </Badge>
+                            {isAgentRunning && agentProgress.total > 0 && (
+                                <Badge variant="outline" className="text-sm px-3 py-1">
+                                    Progress: <span className="font-semibold ml-1">{agentProgress.current}/{agentProgress.total}</span>
+                                </Badge>
+                            )}
+                            {isDbLoading && (
+                                <Badge variant="outline" className="text-sm px-3 py-1 bg-blue-100 text-blue-800">
+                                    <Loader className="mr-2 h-4 w-4 animate-spin" /> Loading DB...
+                                </Badge>
+                            )}
+                            {dbError && (
+                                <Badge variant="destructive" className="text-sm px-3 py-1">
+                                    <AlertCircle className="mr-2 h-4 w-4" /> DB Error: {dbError}
+                                </Badge>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Results Table */}
+                {/* Processed Companies Display */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <FileText className="w-6 h-6 text-blue-600" />
-                            Live Company Database
+                            <FileText className="w-6 h-6 text-green-600" />
+                            Processed Companies ({processedCompanies.length})
                         </CardTitle>
                         <CardDescription>
-                            Real-time company data from Companies House
+                            List of companies fetched and enriched from Companies House.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {isDbLoading ? (
-                            <div className="text-center p-8">
-                                <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500"/>
-                                <p className="text-gray-500 mt-2">Loading company data...</p>
-                            </div>
-                        ) : dbError ? (
-                            <div className="p-4 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-center">{dbError}</div>
-                        ) : processedCompanies.length === 0 ? (
-                            <div className="text-center text-gray-500 p-8">
-                                <Database className="w-12 h-12 mx-auto text-gray-300 mb-2"/>
-                                <p>No data yet. Start the agent to collect real company data.</p>
-                            </div>
+                        {processedCompanies.length === 0 && !isDbLoading && !dbError ? (
+                            <p className="text-gray-500 dark:text-gray-400">No companies processed yet. Start the agent to fetch data.</p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 dark:bg-gray-800 text-xs uppercase">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left">Company Name & Number</th>
-                                            <th className="px-4 py-3 text-left">Status</th>
-                                            <th className="px-4 py-3 text-left">Registered Address</th>
-                                            <th className="px-4 py-3 text-left">Accounts Due</th>
-                                            <th className="px-4 py-3 text-left">CS Due</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {processedCompanies.map((company, index) => (
-                                            <tr key={index} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                                                <td className="px-4 py-3">
-                                                    <div className="font-medium">{company.company_name}</div>
-                                                    <div className="font-mono text-xs text-gray-500">{company.company_number}</div>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <Badge variant={
-                                                        company.company_status === 'active' ? 'default' :
-                                                        company.company_status === 'dissolved' ? 'destructive' :
-                                                        'secondary'
-                                                    }>
-                                                        {company.company_status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-4 py-3 text-xs max-w-xs truncate" title={company.registered_address}>
-                                                    {company.registered_address}
-                                                </td>
-                                                <td className="px-4 py-3 font-mono text-red-600 dark:text-red-400 font-bold text-xs">
-                                                    {company.accounts_due_date}
-                                                </td>
-                                                <td className="px-4 py-3 font-mono text-blue-600 dark:text-blue-400 font-bold text-xs">
-                                                    {company.cs_due_date}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {processedCompanies.map((company, index) => (
+                                    <Card key={index} className="p-4">
+                                        <CardTitle className="text-lg mb-2 flex items-center justify-between">
+                                            {company.company_name}
+                                            <a 
+                                                href={`https://find-and-update.company-information.service.gov.uk/company/${company.company_number}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-500 hover:text-blue-700"
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
+                                            </a>
+                                        </CardTitle>
+                                        <CardDescription className="text-sm">
+                                            <p><strong>Number:</strong> {company.company_number}</p>
+                                            <p><strong>Status:</strong> <Badge variant="secondary">{company.company_status}</Badge></p>
+                                            <p><strong>Type:</strong> {company.company_type}</p>
+                                            <p><strong>Incorporated:</strong> {company.incorporation_date}</p>
+                                            <p><strong>Address:</strong> {company.registered_address}</p>
+                                            <p><strong>Accounts Due:</strong> {company.accounts_due_date}</p>
+                                            <p><strong>CS Due:</strong> {company.cs_due_date}</p>
+                                            {company.sic_codes && company.sic_codes.length > 0 && (
+                                                <p><strong>SIC Codes:</strong> {company.sic_codes.join(', ')}</p>
+                                            )}
+                                            <p className="text-xs text-gray-400">Last Updated: {new Date(company.last_updated).toLocaleString()}</p>
+                                        </CardDescription>
+                                    </Card>
+                                ))}
                             </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Agent Log */}
+                <Card className="mt-8">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <FileText className="w-6 h-6 text-purple-600" />
+                            Agent Log
+                        </CardTitle>
+                        <CardDescription>
+                            Real-time logs from the data collection agent.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-64 overflow-y-auto bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm font-mono">
+                        {agentLog.length === 0 ? (
+                            <p className="text-gray-500 dark:text-gray-400">Agent log is empty.</p>
+                        ) : (
+                            agentLog.map((log, index) => (
+                                <p key={index} className="text-gray-700 dark:text-gray-300">{log}</p>
+                            ))
                         )}
                     </CardContent>
                 </Card>
@@ -410,4 +438,3 @@ export default function LiveDataPage() {
         </div>
     );
 }
-

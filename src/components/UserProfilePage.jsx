@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,23 +8,47 @@ import { User, Mail, Phone, MapPin, Calendar, Activity, Settings, Bell, Lock, Cr
 const UserProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
 
-  const user = {
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+44 20 1234 5678',
-    location: 'London, UK',
-    joinDate: '2024-01-15',
-    role: 'Business Owner',
-    company: 'ABC Ltd'
-  };
+  const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
-  const activities = [
-    { id: 1, action: 'Logged in', timestamp: '2024-10-16 09:30', ip: '192.168.1.1' },
-    { id: 2, action: 'Updated profile', timestamp: '2024-10-15 14:20', ip: '192.168.1.1' },
-    { id: 3, action: 'Generated report', timestamp: '2024-10-15 11:45', ip: '192.168.1.1' }
-  ];
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await api.request('/api/user');
+        setUser(response.data);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    const fetchActivitiesData = async () => {
+      try {
+        const response = await api.request('/api/activities');
+        setActivities(response.data);
+      } catch (error) {
+        console.error('Error fetching activities data:', error);
+      } finally {
+        setActivitiesLoading(false);
+      }
+    };
+
+    fetchUserData();
+    fetchActivitiesData();
+  }, []);
 
   const renderTabContent = () => {
+    if (userLoading || activitiesLoading) {
+      return <div className="text-center py-8">Loading...</div>;
+    }
+
+    if (!user) {
+      return <div className="text-center py-8 text-red-500">Error: User data not found.</div>;
+    }
+
     switch(activeTab) {
       case 'profile':
         return (
@@ -61,18 +86,22 @@ const UserProfilePage = () => {
       case 'activity':
         return (
           <div className="space-y-4">
-            {activities.map(activity => (
-              <div key={activity.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Activity className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-semibold">{activity.action}</p>
-                    <p className="text-sm text-muted-foreground">{activity.timestamp}</p>
+            {activities.length > 0 ? (
+              activities.map(activity => (
+                <div key={activity.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Activity className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-semibold">{activity.action}</p>
+                      <p className="text-sm text-muted-foreground">{activity.timestamp}</p>
+                    </div>
                   </div>
+                  <span className="text-sm text-muted-foreground">{activity.ip}</span>
                 </div>
-                <span className="text-sm text-muted-foreground">{activity.ip}</span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">No activities found.</div>
+            )}
           </div>
         );
 
@@ -154,12 +183,18 @@ const UserProfilePage = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold">
-          {user.name.split(' ').map(n => n[0]).join('')}
-        </div>
+        {userLoading ? (
+          <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-2xl font-bold">...</div>
+        ) : user ? (
+          <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold">
+            {user.name.split(' ').map(n => n[0]).join('')}
+          </div>
+        ) : (
+          <div className="w-20 h-20 bg-red-200 rounded-full flex items-center justify-center text-red-700 text-2xl font-bold">!</div>
+        )}
         <div>
-          <h1 className="text-3xl font-bold">{user.name}</h1>
-          <p className="text-muted-foreground">{user.email}</p>
+          <h1 className="text-3xl font-bold">{userLoading ? 'Loading...' : user ? user.name : 'N/A'}</h1>
+          <p className="text-muted-foreground">{userLoading ? 'Loading...' : user ? user.email : 'N/A'}</p>
         </div>
       </div>
 
@@ -200,4 +235,3 @@ const UserProfilePage = () => {
 };
 
 export default UserProfilePage;
-

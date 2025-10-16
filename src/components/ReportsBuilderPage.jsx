@@ -1,15 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Plus, Edit, Trash, Save } from 'lucide-react';
 
 const ReportsBuilderPage = () => {
-  const [items, setItems] = useState([
-    { id: 1, name: 'Sample Item 1', status: 'active', created: '2024-10-16' },
-    { id: 2, name: 'Sample Item 2', status: 'active', created: '2024-10-15' },
-    { id: 3, name: 'Sample Item 3', status: 'inactive', created: '2024-10-14' }
-  ]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        const response = await api.request('/reports'); // Assuming /reports is the endpoint
+        setItems(response.data);
+      } catch (err) {
+        setError(err);
+        console.error('Error fetching reports:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItems();
+  }, []);
+
+  if (loading) {
+    return <div className="p-6 text-center">Loading reports...</div>;
+  }
+
+  if (error) {
+    return <div className="p-6 text-center text-red-500">Error: {error.message}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -48,17 +71,19 @@ const ReportsBuilderPage = () => {
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Start</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            Build custom reports. Click "Create New" to get started.
-          </p>
-          <Button><Plus className="mr-2 h-4 w-4" />Create Your First Item</Button>
-        </CardContent>
-      </Card>
+      {items.length === 0 && !loading && !error && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Start</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              No reports found. Click "Create New" to get started.
+            </p>
+            <Button><Plus className="mr-2 h-4 w-4" />Create Your First Item</Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

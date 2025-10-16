@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import api from '../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
@@ -9,153 +9,93 @@ export default function APIManagerPage() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [selectedEndpoint, setSelectedEndpoint] = useState(null)
   
-  const apiKeys = [
-    {
-      id: 1,
-      name: 'Production API Key',
-      key: 'fg_prod_k3j4h5g6f7d8s9a0',
-      created: '2024-01-15',
-      lastUsed: '2024-10-16',
-      requests: 45230,
-      status: 'active',
-      permissions: ['read', 'write', 'delete']
-    },
-    {
-      id: 2,
-      name: 'Development API Key',
-      key: 'fg_dev_a1b2c3d4e5f6g7h8',
-      created: '2024-03-20',
-      lastUsed: '2024-10-15',
-      requests: 12450,
-      status: 'active',
-      permissions: ['read', 'write']
-    },
-    {
-      id: 3,
-      name: 'Testing API Key',
-      key: 'fg_test_x9y8z7w6v5u4t3s2',
-      created: '2024-06-10',
-      lastUsed: '2024-09-30',
-      requests: 3200,
-      status: 'inactive',
-      permissions: ['read']
+  const [apiKeys, setApiKeys] = useState([])
+  const [loadingApiKeys, setLoadingApiKeys] = useState(true)
+  const [apiKeysError, setApiKeysError] = useState(null)
+
+  useEffect(() => {
+    const fetchApiKeys = async () => {
+      try {
+        setLoadingApiKeys(true)
+        const response = await api.request('/api/v1/api-keys')
+        setApiKeys(response.data)
+      } catch (error) {
+        console.error('Error fetching API keys:', error)
+        setApiKeysError('Failed to load API keys.')
+      } finally {
+        setLoadingApiKeys(false)
+      }
     }
-  ]
-  
-  const endpoints = [
-    {
-      method: 'GET',
-      path: '/api/v1/companies',
-      description: 'List all companies',
-      requests: 15420,
-      avgResponseTime: 45,
-      successRate: 99.8,
-      rateLimit: '100/min'
-    },
-    {
-      method: 'POST',
-      path: '/api/v1/companies',
-      description: 'Create new company',
-      requests: 892,
-      avgResponseTime: 120,
-      successRate: 98.5,
-      rateLimit: '50/min'
-    },
-    {
-      method: 'GET',
-      path: '/api/v1/companies/{id}',
-      description: 'Get company details',
-      requests: 23150,
-      avgResponseTime: 38,
-      successRate: 99.9,
-      rateLimit: '100/min'
-    },
-    {
-      method: 'PUT',
-      path: '/api/v1/companies/{id}',
-      description: 'Update company',
-      requests: 3420,
-      avgResponseTime: 95,
-      successRate: 99.2,
-      rateLimit: '50/min'
-    },
-    {
-      method: 'DELETE',
-      path: '/api/v1/companies/{id}',
-      description: 'Delete company',
-      requests: 234,
-      avgResponseTime: 52,
-      successRate: 100,
-      rateLimit: '20/min'
-    },
-    {
-      method: 'GET',
-      path: '/api/v1/obligations',
-      description: 'List obligations',
-      requests: 18920,
-      avgResponseTime: 62,
-      successRate: 99.5,
-      rateLimit: '100/min'
-    },
-    {
-      method: 'POST',
-      path: '/api/v1/obligations',
-      description: 'Create obligation',
-      requests: 1560,
-      avgResponseTime: 110,
-      successRate: 98.9,
-      rateLimit: '50/min'
-    },
-    {
-      method: 'GET',
-      path: '/api/v1/analytics',
-      description: 'Get analytics data',
-      requests: 5670,
-      avgResponseTime: 180,
-      successRate: 99.1,
-      rateLimit: '30/min'
+    fetchApiKeys()
+  }, [])
+
+  const [endpoints, setEndpoints] = useState([])
+  const [loadingEndpoints, setLoadingEndpoints] = useState(true)
+  const [endpointsError, setEndpointsError] = useState(null)
+
+  useEffect(() => {
+    const fetchEndpoints = async () => {
+      try {
+        setLoadingEndpoints(true)
+        const response = await api.request('/api/v1/endpoints')
+        setEndpoints(response.data)
+      } catch (error) {
+        console.error('Error fetching endpoints:', error)
+        setEndpointsError('Failed to load endpoints.')
+      } finally {
+        setLoadingEndpoints(false)
+      }
     }
-  ]
-  
-  const webhooks = [
-    {
-      id: 1,
-      name: 'Slack Notifications',
-      url: 'https://hooks.slack.com/services/...',
-      events: ['obligation.overdue', 'payment.received'],
-      status: 'active',
-      lastTriggered: '2024-10-16T10:30:00',
-      successRate: 99.5
-    },
-    {
-      id: 2,
-      name: 'CRM Integration',
-      url: 'https://api.crm.example.com/webhook',
-      events: ['company.created', 'company.updated'],
-      status: 'active',
-      lastTriggered: '2024-10-16T09:15:00',
-      successRate: 98.2
-    },
-    {
-      id: 3,
-      name: 'Analytics Pipeline',
-      url: 'https://analytics.example.com/ingest',
-      events: ['*'],
-      status: 'inactive',
-      lastTriggered: '2024-10-10T14:20:00',
-      successRate: 95.8
+    fetchEndpoints()
+  }, [])
+
+  const [webhooks, setWebhooks] = useState([])
+  const [loadingWebhooks, setLoadingWebhooks] = useState(true)
+  const [webhooksError, setWebhooksError] = useState(null)
+
+  useEffect(() => {
+    const fetchWebhooks = async () => {
+      try {
+        setLoadingWebhooks(true)
+        const response = await api.request('/api/v1/webhooks')
+        setWebhooks(response.data)
+      } catch (error) {
+        console.error('Error fetching webhooks:', error)
+        setWebhooksError('Failed to load webhooks.')
+      } finally {
+        setLoadingWebhooks(false)
+      }
     }
-  ]
-  
-  const usageStats = {
-    totalRequests: 71446,
-    requestsToday: 2340,
-    avgResponseTime: 78,
-    successRate: 99.3,
-    rateLimit: '1000 requests/hour',
-    remaining: 756
-  }
-  
+    fetchWebhooks()
+  }, [])
+
+  const [usageStats, setUsageStats] = useState({
+    totalRequests: 0,
+    requestsToday: 0,
+    avgResponseTime: 0,
+    successRate: 0,
+    rateLimit: '',
+    remaining: 0,
+  })
+  const [loadingUsageStats, setLoadingUsageStats] = useState(true)
+  const [usageStatsError, setUsageStatsError] = useState(null)
+
+  useEffect(() => {
+    const fetchUsageStats = async () => {
+      try {
+        setLoadingUsageStats(true)
+        const response = await api.request('/api/v1/usage-stats')
+        setUsageStats(response.data)
+      } catch (error) {
+        console.error('Error fetching usage stats:', error)
+        setUsageStatsError('Failed to load usage stats.')
+      } finally {
+        setLoadingUsageStats(false)
+      }
+    }
+    fetchUsageStats()
+  }, [])
+
   const getMethodColor = (method) => {
     switch(method) {
       case 'GET': return 'bg-blue-500/20 text-blue-300 border-blue-500/50'
@@ -214,7 +154,7 @@ export default function APIManagerPage() {
                 </Badge>
               </div>
               <div className="text-3xl font-bold text-white mb-1">
-                {usageStats.totalRequests.toLocaleString()}
+                {loadingUsageStats ? '...' : usageStats.totalRequests.toLocaleString()}
               </div>
               <div className="text-sm text-gray-300">Total Requests</div>
             </CardContent>
@@ -226,7 +166,7 @@ export default function APIManagerPage() {
                 <BarChart3 className="w-8 h-8 text-blue-400" />
               </div>
               <div className="text-3xl font-bold text-white mb-1">
-                {usageStats.requestsToday.toLocaleString()}
+                {loadingUsageStats ? '...' : usageStats.requestsToday.toLocaleString()}
               </div>
               <div className="text-sm text-gray-300">Requests Today</div>
             </CardContent>
@@ -238,7 +178,7 @@ export default function APIManagerPage() {
                 <Activity className="w-8 h-8 text-green-400" />
               </div>
               <div className="text-3xl font-bold text-white mb-1">
-                {usageStats.avgResponseTime}ms
+                {loadingUsageStats ? '...' : usageStats.avgResponseTime}ms
               </div>
               <div className="text-sm text-gray-300">Avg Response Time</div>
             </CardContent>
@@ -250,7 +190,7 @@ export default function APIManagerPage() {
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
               <div className="text-3xl font-bold text-white mb-1">
-                {usageStats.successRate}%
+                {loadingUsageStats ? '...' : usageStats.successRate}%
               </div>
               <div className="text-sm text-gray-300">Success Rate</div>
             </CardContent>
@@ -281,7 +221,14 @@ export default function APIManagerPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {apiKeys.map((apiKey) => (
+              {loadingApiKeys ? (
+                <p className="text-gray-400">Loading API keys...</p>
+              ) : apiKeysError ? (
+                <p className="text-red-400">{apiKeysError}</p>
+              ) : apiKeys.length === 0 ? (
+                <p className="text-gray-400">No API keys found.</p>
+              ) : 
+                apiKeys.map((apiKey) => (
                 <div key={apiKey.id} className="p-4 bg-white/5 rounded-lg border border-white/10">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -345,75 +292,78 @@ export default function APIManagerPage() {
             </div>
           </CardContent>
         </Card>
-        
-        {/* API Endpoints */}
+
+        {/* Endpoints */}
         <Card className="bg-white/10 backdrop-blur-lg border-white/20 mb-8">
           <CardHeader>
-            <CardTitle className="text-white">API Endpoints</CardTitle>
+            <CardTitle className="text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              API Endpoints
+            </CardTitle>
             <CardDescription className="text-gray-300">
-              Available API endpoints and their performance metrics
+              Explore available API endpoints and their usage statistics
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Method</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Endpoint</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium">Description</th>
-                    <th className="text-right py-3 px-4 text-gray-300 font-medium">Requests</th>
-                    <th className="text-right py-3 px-4 text-gray-300 font-medium">Avg Time</th>
-                    <th className="text-right py-3 px-4 text-gray-300 font-medium">Success</th>
-                    <th className="text-center py-3 px-4 text-gray-300 font-medium">Rate Limit</th>
+                    <th className="py-3 px-4 text-gray-300 font-medium">Endpoint</th>
+                    <th className="text-center py-3 px-4 text-gray-300 font-medium">Requests</th>
+                    <th className="text-center py-3 px-4 text-gray-300 font-medium">Avg. Response</th>
+                    <th className="text-center py-3 px-4 text-gray-300 font-medium">Success Rate</th>
                     <th className="text-center py-3 px-4 text-gray-300 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {endpoints.map((endpoint, index) => (
+                  {loadingEndpoints ? (
+                <p className="text-gray-400">Loading endpoints...</p>
+              ) : endpointsError ? (
+                <p className="text-red-400">{endpointsError}</p>
+              ) : endpoints.length === 0 ? (
+                <p className="text-gray-400">No endpoints found.</p>
+              ) : (
+                endpoints.map((endpoint, index) => (
                     <tr key={index} className="border-b border-white/5 hover:bg-white/5">
                       <td className="py-3 px-4">
                         <Badge className={getMethodColor(endpoint.method)}>
                           {endpoint.method}
                         </Badge>
+                        <code className="ml-3 text-purple-300 font-mono">{endpoint.path}</code>
+                        <p className="text-xs text-gray-400 mt-1 ml-3">{endpoint.description}</p>
                       </td>
-                      <td className="py-3 px-4">
-                        <code className="text-purple-300 font-mono text-sm">{endpoint.path}</code>
-                      </td>
-                      <td className="py-3 px-4 text-gray-300">{endpoint.description}</td>
-                      <td className="py-3 px-4 text-right text-white">{endpoint.requests.toLocaleString()}</td>
-                      <td className="py-3 px-4 text-right text-white">{endpoint.avgResponseTime}ms</td>
-                      <td className="py-3 px-4 text-right text-white">{endpoint.successRate}%</td>
-                      <td className="py-3 px-4 text-center">
-                        <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/50">
-                          {endpoint.rateLimit}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="text-center py-3 px-4 text-white">{endpoint.requests.toLocaleString()}</td>
+                      <td className="text-center py-3 px-4 text-white">{endpoint.avgResponseTime}ms</td>
+                      <td className="text-center py-3 px-4 text-green-400">{endpoint.successRate}%</td>
+                      <td className="text-center py-3 px-4">
                         <Button
                           onClick={() => handleTestEndpoint(endpoint)}
-                          className="bg-white/10 hover:bg-white/20 text-white text-sm"
+                          className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-300"
                           size="sm"
                         >
                           Test
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Webhooks */}
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+        <Card className="bg-white/10 backdrop-blur-lg border-white/20 mb-8">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-white">Webhooks</CardTitle>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Webhooks
+                </CardTitle>
                 <CardDescription className="text-gray-300">
-                  Configure webhook endpoints for event notifications
+                  Manage your webhook integrations for real-time notifications
                 </CardDescription>
               </div>
               <Button className="bg-purple-600 hover:bg-purple-700 text-white">
@@ -424,7 +374,14 @@ export default function APIManagerPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {webhooks.map((webhook) => (
+              {loadingWebhooks ? (
+                <p className="text-gray-400">Loading webhooks...</p>
+              ) : webhooksError ? (
+                <p className="text-red-400">{webhooksError}</p>
+              ) : webhooks.length === 0 ? (
+                <p className="text-gray-400">No webhooks found.</p>
+              ) : (
+                webhooks.map((webhook) => (
                 <div key={webhook.id} className="p-4 bg-white/5 rounded-lg border border-white/10">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -434,35 +391,41 @@ export default function APIManagerPage() {
                           {webhook.status}
                         </Badge>
                       </div>
-                      <code className="text-sm text-purple-300 font-mono">{webhook.url}</code>
-                      <div className="flex gap-2 mt-3">
-                        {webhook.events.map((event, idx) => (
-                          <Badge key={idx} className="bg-blue-500/20 text-blue-300 border-blue-500/50 text-xs">
-                            {event}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="flex gap-4 text-sm text-gray-300 mt-2">
-                        <span>Last triggered: {new Date(webhook.lastTriggered).toLocaleString()}</span>
-                        <span>Success rate: {webhook.successRate}%</span>
+                      <code className="text-sm text-purple-300 font-mono break-all">{webhook.url}</code>
+                      <p className="text-xs text-gray-400 mt-2">Last triggered: {new Date(webhook.lastTriggered).toLocaleString()}</p>
+                      <div className="mt-3">
+                        <p className="text-sm text-gray-300 mb-2">Subscribed events:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {webhook.events.map((event, idx) => (
+                            <Badge key={idx} className="bg-gray-500/20 text-gray-300 border-gray-500/50 text-xs">
+                              {event}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button className="bg-white/10 hover:bg-white/20 text-white" size="sm">
+                    <div className="flex gap-2 ml-4">
+                       <Button
+                        className="bg-white/10 hover:bg-white/20 text-white"
+                        size="sm"
+                      >
                         Edit
                       </Button>
-                      <Button className="bg-red-500/20 hover:bg-red-500/30 text-red-300" size="sm">
-                        <Trash2 className="w-4 h-4" />
+                      <Button
+                        className="bg-red-500/20 hover:bg-red-500/30 text-red-300"
+                        size="sm"
+                      >
+                        Delete
                       </Button>
                     </div>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </CardContent>
         </Card>
+
       </div>
     </div>
   )
 }
-

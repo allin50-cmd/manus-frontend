@@ -1,16 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Crown, User, CreditCard, Settings, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const MemberDashboard = ({ user, onLogout, onUpgrade }) => {
-  const subscriptionTiers = {
-    free: { name: 'Free', color: 'text-gray-500', icon: '🆓' },
-    starter: { name: 'Starter', color: 'text-blue-500', icon: '🌟', price: '£1' },
-    pro: { name: 'Pro', color: 'text-purple-500', icon: '👑', price: '£15' },
-    ultimate: { name: 'Ultimate', color: 'text-amber-500', icon: '💎', price: '£99' }
-  };
+  const [subscriptionTiers, setSubscriptionTiers] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSubscriptionTiers = async () => {
+      try {
+        setLoading(true);
+        const response = await api.request('/api/subscription-tiers', { method: 'GET' });
+        setSubscriptionTiers(response.data);
+      } catch (err) {
+        setError('Failed to fetch subscription tiers.');
+        console.error('Error fetching subscription tiers:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubscriptionTiers();
+  }, []);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-xl">Loading subscription details...</div>;
+  }
+
+  if (error) {
+    return <div className="min-h-screen flex items-center justify-center text-xl text-red-500">{error}</div>;
+  }
 
   const currentTier = subscriptionTiers[user.subscription || 'free'];
+
+  if (!currentTier) {
+    return <div className="min-h-screen flex items-center justify-center text-xl text-red-500">Subscription tier data not available.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background py-12 px-4">
@@ -208,4 +234,3 @@ const MemberDashboard = ({ user, onLogout, onUpgrade }) => {
 };
 
 export default MemberDashboard;
-
