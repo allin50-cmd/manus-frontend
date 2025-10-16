@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import api from '../utils/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Upload, Folder, Search, Download, Trash2, Eye } from 'lucide-react';

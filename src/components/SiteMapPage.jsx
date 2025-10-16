@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import api from '../utils/api';
 import { Home, Users, Settings, FileText, Calendar, Briefcase, Shield } from 'lucide-react';
 
 const SiteMapPage = () => {

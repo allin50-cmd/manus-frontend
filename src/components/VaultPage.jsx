@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../utils/api';
 import { Key, Lock, Shield, Eye, EyeOff, Plus, Trash2, RefreshCw, Clock, CheckCircle, Copy } from 'lucide-react';
 
 export default function VaultPage() {
