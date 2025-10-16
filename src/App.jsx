@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User, Users, CreditCard, Code, Workflow, HelpCircle, Calculator, BarChart3, FileText, FolderOpen, CheckSquare, Briefcase, Plug, BookOpen, GraduationCap, Megaphone } from 'lucide-react'
+import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User, Users, CreditCard, Code, Workflow, HelpCircle, Calculator, BarChart3, FileText, FolderOpen, CheckSquare, Briefcase, Plug, BookOpen, GraduationCap, Megaphone, Bot, Mail, Zap, Download, Database, Webhook, Layout, Palette, Map } from 'lucide-react'
 import './App.css'
 
 // Import images
@@ -55,6 +55,20 @@ import TaxPlanningPage from './components/TaxPlanningPage.jsx'
 import PayrollPage from './components/PayrollPage.jsx'
 import MarketingPage from './components/MarketingPage.jsx'
 import SalesPage from './components/SalesPage.jsx'
+import UserProfilePage from './components/UserProfilePage.jsx'
+import AdminControlPanel from './components/AdminControlPanel.jsx'
+import AIAgentManagementPage from './components/AIAgentManagementPage.jsx'
+import SiteMapPage from './components/SiteMapPage.jsx'
+import EmailTemplatesPage from './components/EmailTemplatesPage.jsx'
+import AutomationRulesPage from './components/AutomationRulesPage.jsx'
+import DataImportExportPage from './components/DataImportExportPage.jsx'
+import BackupRestorePage from './components/BackupRestorePage.jsx'
+import APIDocumentationPage from './components/APIDocumentationPage.jsx'
+import WebhooksManagerPage from './components/WebhooksManagerPage.jsx'
+import CustomFieldsPage from './components/CustomFieldsPage.jsx'
+import ReportsBuilderPage from './components/ReportsBuilderPage.jsx'
+import DashboardBuilderPage from './components/DashboardBuilderPage.jsx'
+import WhiteLabelPage from './components/WhiteLabelPage.jsx'
 
 // Demo data
 const initialData = {
@@ -357,7 +371,21 @@ function App() {
     { id: 'tax-planning', label: 'Tax Planning', icon: Calculator },
     { id: 'payroll', label: 'Payroll', icon: Users },
     { id: 'marketing', label: 'Marketing', icon: Megaphone },
-    { id: 'sales', label: 'Sales', icon: TrendingUp }
+    { id: 'sales', label: 'Sales', icon: TrendingUp },
+    { id: 'user-profile', label: 'User Profile', icon: User },
+    { id: 'admin-control', label: 'Admin Control', icon: Shield },
+    { id: 'ai-agents', label: 'AI Agents', icon: Bot },
+    { id: 'site-map', label: 'Site Map', icon: Map },
+    { id: 'email-templates', label: 'Email Templates', icon: Mail },
+    { id: 'automation-rules', label: 'Automation Rules', icon: Zap },
+    { id: 'data-import-export', label: 'Data Import/Export', icon: Download },
+    { id: 'backup-restore', label: 'Backup & Restore', icon: Database },
+    { id: 'api-docs', label: 'API Documentation', icon: Code },
+    { id: 'webhooks', label: 'Webhooks', icon: Webhook },
+    { id: 'custom-fields', label: 'Custom Fields', icon: Cog },
+    { id: 'reports-builder', label: 'Reports Builder', icon: FileText },
+    { id: 'dashboard-builder', label: 'Dashboard Builder', icon: Layout },
+    { id: 'white-label', label: 'White Label', icon: Palette }
   ]
 
   const renderPage = () => {
@@ -444,6 +472,34 @@ function App() {
         return <MarketingPage />
       case 'sales':
         return <SalesPage />
+      case 'user-profile':
+        return <UserProfilePage />
+      case 'admin-control':
+        return <AdminControlPanel />
+      case 'ai-agents':
+        return <AIAgentManagementPage />
+      case 'site-map':
+        return <SiteMapPage />
+      case 'email-templates':
+        return <EmailTemplatesPage />
+      case 'automation-rules':
+        return <AutomationRulesPage />
+      case 'data-import-export':
+        return <DataImportExportPage />
+      case 'backup-restore':
+        return <BackupRestorePage />
+      case 'api-docs':
+        return <APIDocumentationPage />
+      case 'webhooks':
+        return <WebhooksManagerPage />
+      case 'custom-fields':
+        return <CustomFieldsPage />
+      case 'reports-builder':
+        return <ReportsBuilderPage />
+      case 'dashboard-builder':
+        return <DashboardBuilderPage />
+      case 'white-label':
+        return <WhiteLabelPage />
       case 'member':
         return user ? (
           <MemberDashboard 
