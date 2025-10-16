@@ -1,13 +1,32 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import api from '../utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
-import { HelpCircle, Search, Book, MessageSquare, LifeBuoy, ChevronDown, ChevronUp } from 'lucide-react'
+import { HelpCircle, Search, Book, MessageSquare, LifeBuoy, ChevronDown, ChevronUp, Mail } from 'lucide-react'
 
 export default function HelpPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [openFaq, setOpenFaq] = useState(null)
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const data = await api.request('/api/documents');
+        setArticles(data.map(doc => ({
+          title: doc.name,
+          category: doc.type || 'General',
+          link: '#'
+        })));
+      } catch (error) {
+        console.error('Failed to load help articles:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
   
   const faqs = [
     {
@@ -32,43 +51,13 @@ export default function HelpPage() {
     }
   ]
   
-  const docs = [
-    {
-      category: 'Getting Started',
-      articles: [
-        { title: 'Account Setup & Configuration', link: '#' },
-        { title: 'Adding Your First Company', link: '#' },
-        { title: 'Understanding the Dashboard', link: '#' },
-        { title: 'Navigating the Platform', link: '#' }
-      ]
-    },
-    {
-      category: 'Core Features',
-      articles: [
-        { title: 'Compliance Management', link: '#' },
-        { title: 'AI-Powered Insights', link: '#' },
-        { title: 'Data Enrichment', link: '#' },
-        { title: 'Risk Assessment', link: '#' }
-      ]
-    },
-    {
-      category: 'Advanced Features',
-      articles: [
-        { title: 'Billing & Subscriptions', link: '#' },
-        { title: 'Workflow Automation Builder', link: '#' },
-        { title: 'API Integration Guide', link: '#' },
-        { title: 'Team Management & Roles', link: '#' }
-      ]
-    },
-    {
-      category: 'Troubleshooting',
-      articles: [
-        { title: 'Common Issues & Fixes', link: '#' },
-        { title: 'API Error Codes', link: '#' },
-        { title: 'Contacting Support', link: '#' }
-      ]
+  const groupedArticles = articles.reduce((acc, article) => {
+    if (!acc[article.category]) {
+      acc[article.category] = [];
     }
-  ]
+    acc[article.category].push(article);
+    return acc;
+  }, {});
   
   const handleToggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index)
@@ -122,27 +111,31 @@ export default function HelpPage() {
           {/* Documentation */}
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-white mb-4">Documentation</h2>
-            {docs.map((category, index) => (
-              <Card key={index} className="bg-white/10 backdrop-blur-lg border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Book className="w-5 h-5" />
-                    {category.category}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {category.articles.map((article, idx) => (
-                      <li key={idx}>
-                        <a href={article.link} className="flex items-center gap-2 text-purple-300 hover:text-purple-400 transition-colors">
-                          <span>{article.title}</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
+            {loading ? (
+              <p className="text-gray-300">Loading documentation...</p>
+            ) : (
+              Object.entries(groupedArticles).map(([category, categoryArticles], index) => (
+                <Card key={index} className="bg-white/10 backdrop-blur-lg border-white/20">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Book className="w-5 h-5" />
+                      {category}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {categoryArticles.map((article, idx) => (
+                        <li key={idx}>
+                          <a href={article.link} className="flex items-center gap-2 text-purple-300 hover:text-purple-400 transition-colors">
+                            <span>{article.title}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
         
