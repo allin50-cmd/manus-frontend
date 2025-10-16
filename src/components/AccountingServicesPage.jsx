@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import BookingModal from './BookingModal.jsx'
 import AIAccountingRecommendations from './AIAccountingRecommendations.jsx'
