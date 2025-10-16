@@ -160,6 +160,29 @@ class APIClient {
   async getBookings() {
     return await this.request('/api/bookings');
   }
+
+  // Generic HTTP methods for flexibility
+  async get(endpoint) {
+    return await this.request(endpoint, { method: 'GET' });
+  }
+
+  async post(endpoint, data) {
+    return await this.request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async put(endpoint, data) {
+    return await this.request(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async delete(endpoint) {
+    return await this.request(endpoint, { method: 'DELETE' });
+  }
 }
 
 // Export singleton instance
