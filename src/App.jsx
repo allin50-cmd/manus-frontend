@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User, Users } from 'lucide-react'
+import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User, Users, CreditCard, Code, Workflow, HelpCircle, Calculator, BarChart3 } from 'lucide-react'
 import './App.css'
 
 // Import images
@@ -26,6 +26,18 @@ import MemberDashboard from './components/MemberDashboard.jsx'
 import AdvancedCRM from './components/AdvancedCRM.jsx'
 import VaultPage from './components/VaultPage.jsx'
 import ContactForm from './components/ContactForm.jsx'
+import SettingsPage from './components/SettingsPage.jsx'
+import AnalyticsPage from './components/AnalyticsPage.jsx'
+import BillingPage from './components/BillingPage.jsx'
+import NotificationsPage from './components/NotificationsPage.jsx'
+import APIManagerPage from './components/APIManagerPage.jsx'
+import WorkflowPage from './components/WorkflowPage.jsx'
+import TeamPage from './components/TeamPage.jsx'
+import HelpPage from './components/HelpPage.jsx'
+import AccountingServicesPage from './components/AccountingServicesPage.jsx'
+import CRMDashboardPage from './components/CRMDashboardPage.jsx'
+import EnhancedAnalyticsPage from './components/EnhancedAnalyticsPage.jsx'
+import AccountantTeamPage from './components/AccountantTeamPage.jsx'
 
 // Demo data
 const initialData = {
@@ -299,7 +311,19 @@ function App() {
     { id: 'crm', label: 'CRM', icon: Users },
     { id: 'admin', label: 'Admin', icon: Cog },
     { id: 'live-data', label: 'Live Data', icon: Calendar },
-    { id: 'vault', label: 'Vault', icon: Shield }
+    { id: 'vault', label: 'Vault', icon: Shield },
+    { id: 'settings', label: 'Settings', icon: Cog },
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'api-manager', label: 'API Manager', icon: Code },
+    { id: 'workflows', label: 'Workflows', icon: Workflow },
+    { id: 'team', label: 'Team', icon: Users },
+    { id: 'help', label: 'Help', icon: HelpCircle },
+    { id: 'accounting', label: 'Accounting Services', icon: Calculator },
+    { id: 'crm-dashboard', label: 'CRM Dashboard', icon: TrendingUp },
+    { id: 'enhanced-analytics', label: 'Enhanced Analytics', icon: BarChart3 },
+    { id: 'accountant-team', label: 'Accountant Team', icon: Users }
   ]
 
   const renderPage = () => {
@@ -328,6 +352,30 @@ function App() {
         return <AdvancedCRM />
       case 'vault':
         return <VaultPage />
+      case 'settings':
+        return <SettingsPage user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />
+      case 'analytics':
+        return <AnalyticsPage />
+      case 'billing':
+        return <BillingPage user={user} />
+      case 'notifications':
+        return <NotificationsPage />
+      case 'api-manager':
+        return <APIManagerPage />
+      case 'workflows':
+        return <WorkflowPage />
+      case 'team':
+        return <TeamPage />
+      case 'help':
+        return <HelpPage />
+      case 'accounting':
+        return <AccountingServicesPage />
+      case 'crm-dashboard':
+        return <CRMDashboardPage />
+      case 'enhanced-analytics':
+        return <EnhancedAnalyticsPage />
+      case 'accountant-team':
+        return <AccountantTeamPage />
       case 'member':
         return user ? (
           <MemberDashboard 
