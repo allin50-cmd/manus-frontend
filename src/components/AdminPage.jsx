@@ -1,33 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Database, Settings, Users, FileText, Plus, Trash2, Edit, Save, X, Shield, Bot, Mail } from 'lucide-react';
+import api from '../utils/api';
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState('users');
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
+  const [loading, setLoading] = useState(false);
   
-  // Sample data with state management
-  const [users, setUsers] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'active', created: '2024-10-01' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'active', created: '2024-10-05' },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'User', status: 'inactive', created: '2024-10-10' }
-  ]);
-
-  const [companies, setCompanies] = useState([
-    { id: 1, name: 'Tech Corp Ltd', number: '12345678', status: 'active', compliance: 95, risk: 'low' },
-    { id: 2, name: 'Finance Solutions', number: '87654321', status: 'active', compliance: 78, risk: 'medium' },
-    { id: 3, name: 'Retail Group', number: '11223344', status: 'inactive', compliance: 45, risk: 'high' }
-  ]);
-
-  const [agents, setAgents] = useState([
-    { id: 1, name: 'Compliance Monitor', status: 'running', tasks: 247, accuracy: 99.8, enabled: true },
-    { id: 2, name: 'Data Enrichment', status: 'running', tasks: 156, accuracy: 96.1, enabled: true },
-    { id: 3, name: 'Lead Scoring', status: 'paused', tasks: 89, accuracy: 94.5, enabled: false }
-  ]);
-
+  // State with REAL data from API
+  const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [agents, setAgents] = useState([]);
   const [settings, setSettings] = useState({
     siteName: 'FineGuard',
     adminEmail: 'admin@fineguard.com',
@@ -37,54 +24,106 @@ const AdminPage = () => {
     maxUsers: 100
   });
 
+  // Load data from API on mount
+  useEffect(() => {
+    loadData();
+  }, [activeTab]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'users') {
+        const data = await api.getUsers();
+        setUsers(data);
+      } else if (activeTab === 'companies') {
+        const data = await api.getCompanies();
+        setCompanies(data);
+      } else if (activeTab === 'agents') {
+        // Agents endpoint
+        const response = await fetch('https://8000-ikoeu54axz2kkjnwr9zzk-5807ad40.manusvm.computer/api/agents');
+        const data = await response.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      alert('Failed to load data from server');
+    }
+    setLoading(false);
+  };
+
   // Handle add new item
   const handleAdd = () => {
     if (activeTab === 'users') {
-      setFormData({ name: '', email: '', role: 'User', status: 'active' });
+      setFormData({ name: '', email: '', role: 'User', status: 'active', created: new Date().toISOString().split('T')[0] });
     } else if (activeTab === 'companies') {
       setFormData({ name: '', number: '', status: 'active', compliance: 100, risk: 'low' });
     } else if (activeTab === 'agents') {
-      setFormData({ name: '', status: 'paused', tasks: 0, accuracy: 0, enabled: false });
+      setFormData({ name: '', status: 'paused', tasks: 0, accuracy: 0, enabled: 0 });
     }
     setEditingItem('new');
   };
 
   // Handle save
-  const handleSave = () => {
-    if (activeTab === 'users') {
-      if (editingItem === 'new') {
-        setUsers([...users, { ...formData, id: Date.now(), created: new Date().toISOString().split('T')[0] }]);
-      } else {
-        setUsers(users.map(u => u.id === editingItem ? { ...u, ...formData } : u));
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'users') {
+        if (editingItem === 'new') {
+          await api.createUser(formData);
+        } else {
+          await api.updateUser(editingItem, formData);
+        }
+        await loadData();
+      } else if (activeTab === 'companies') {
+        if (editingItem === 'new') {
+          await api.createCompany(formData);
+        } else {
+          await api.updateCompany(editingItem, formData);
+        }
+        await loadData();
+      } else if (activeTab === 'agents') {
+        const url = editingItem === 'new' 
+          ? 'https://8000-ikoeu54axz2kkjnwr9zzk-5807ad40.manusvm.computer/api/agents'
+          : `https://8000-ikoeu54axz2kkjnwr9zzk-5807ad40.manusvm.computer/api/agents/${editingItem}`;
+        await fetch(url, {
+          method: editingItem === 'new' ? 'POST' : 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        await loadData();
       }
-    } else if (activeTab === 'companies') {
-      if (editingItem === 'new') {
-        setCompanies([...companies, { ...formData, id: Date.now() }]);
-      } else {
-        setCompanies(companies.map(c => c.id === editingItem ? { ...c, ...formData } : c));
-      }
-    } else if (activeTab === 'agents') {
-      if (editingItem === 'new') {
-        setAgents([...agents, { ...formData, id: Date.now() }]);
-      } else {
-        setAgents(agents.map(a => a.id === editingItem ? { ...a, ...formData } : a));
-      }
+      setEditingItem(null);
+      setFormData({});
+      alert('Saved successfully!');
+    } catch (error) {
+      console.error('Failed to save:', error);
+      alert('Failed to save: ' + error.message);
     }
-    setEditingItem(null);
-    setFormData({});
+    setLoading(false);
   };
 
   // Handle delete
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
     
-    if (activeTab === 'users') {
-      setUsers(users.filter(u => u.id !== id));
-    } else if (activeTab === 'companies') {
-      setCompanies(companies.filter(c => c.id !== id));
-    } else if (activeTab === 'agents') {
-      setAgents(agents.filter(a => a.id !== id));
+    setLoading(true);
+    try {
+      if (activeTab === 'users') {
+        await api.deleteUser(id);
+      } else if (activeTab === 'companies') {
+        await api.deleteCompany(id);
+      } else if (activeTab === 'agents') {
+        await fetch(`https://8000-ikoeu54axz2kkjnwr9zzk-5807ad40.manusvm.computer/api/agents/${id}`, {
+          method: 'DELETE'
+        });
+      }
+      await loadData();
+      alert('Deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      alert('Failed to delete: ' + error.message);
     }
+    setLoading(false);
   };
 
   // Handle edit
@@ -233,8 +272,8 @@ const AdminPage = () => {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={formData.enabled || false}
-                      onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
+                      checked={formData.enabled === 1}
+                      onChange={(e) => setFormData({ ...formData, enabled: e.target.checked ? 1 : 0 })}
                       className="w-4 h-4"
                     />
                     <span className="text-sm font-medium">Enabled</span>
@@ -244,11 +283,11 @@ const AdminPage = () => {
             )}
 
             <div className="flex gap-2">
-              <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleSave} disabled={loading} className="bg-green-600 hover:bg-green-700">
                 <Save className="h-4 w-4 mr-2" />
-                Save
+                {loading ? 'Saving...' : 'Save'}
               </Button>
-              <Button onClick={() => { setEditingItem(null); setFormData({}); }} variant="outline">
+              <Button onClick={() => { setEditingItem(null); setFormData({}); }} variant="outline" disabled={loading}>
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
@@ -261,6 +300,10 @@ const AdminPage = () => {
 
   // Render content based on active tab
   const renderContent = () => {
+    if (loading && !editingItem) {
+      return <div className="text-center py-8">Loading...</div>;
+    }
+
     if (activeTab === 'users') {
       return (
         <div className="space-y-4">
@@ -279,10 +322,10 @@ const AdminPage = () => {
                   <div className="flex items-center gap-3">
                     <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>{user.role}</Badge>
                     <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>{user.status}</Badge>
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(user)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(user)} disabled={loading}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(user.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(user.id)} disabled={loading}>
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
                   </div>
@@ -320,10 +363,10 @@ const AdminPage = () => {
                     }>
                       {company.risk} risk
                     </Badge>
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(company)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(company)} disabled={loading}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(company.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(company.id)} disabled={loading}>
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
                   </div>
@@ -354,10 +397,10 @@ const AdminPage = () => {
                     <Badge variant={agent.enabled ? 'default' : 'secondary'}>
                       {agent.enabled ? 'Enabled' : 'Disabled'}
                     </Badge>
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(agent)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(agent)} disabled={loading}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(agent.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(agent.id)} disabled={loading}>
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
                   </div>
@@ -458,9 +501,10 @@ const AdminPage = () => {
         <div>
           <h1 className="text-3xl font-bold">Admin Control Panel</h1>
           <p className="text-muted-foreground">Manage users, companies, AI agents, and settings</p>
+          <p className="text-xs text-green-600 mt-1">✅ Connected to live database</p>
         </div>
         {activeTab !== 'settings' && (
-          <Button onClick={handleAdd} className="bg-primary">
+          <Button onClick={handleAdd} className="bg-primary" disabled={loading}>
             <Plus className="h-4 w-4 mr-2" />
             Add New
           </Button>
