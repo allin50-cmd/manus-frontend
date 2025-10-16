@@ -130,7 +130,8 @@ export default function DatabaseDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.total_users || users.length}</div>
             <Badge variant="outline" className="mt-2">From Database</Badge>
-          </CardContent>
+            {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+        </CardContent>
         </Card>
 
         <Card>

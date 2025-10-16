@@ -162,7 +162,8 @@ export default function NotificationsPage() {
                 </Button>
               </div>
             </div>
-          </CardContent>
+            {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+        </CardContent>
         </Card>
         
         {/* Notifications List */}

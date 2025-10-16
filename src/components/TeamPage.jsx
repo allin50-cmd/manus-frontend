@@ -122,7 +122,8 @@ export default function TeamPage() {
                 {teamMembers.length}
               </div>
               <div className="text-sm text-gray-300">Team Members</div>
-            </CardContent>
+              {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+        </CardContent>
           </Card>
           
           <Card className="bg-white/10 backdrop-blur-lg border-white/20">

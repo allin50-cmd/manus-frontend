@@ -65,7 +65,8 @@ const CalendarPage = () => {
             ) : (
               <p>No upcoming events.</p>
             )}
-          </CardContent>
+            {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+        </CardContent>
         </Card>
       </div>
     </div>

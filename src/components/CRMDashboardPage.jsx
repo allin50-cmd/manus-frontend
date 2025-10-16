@@ -208,6 +208,20 @@ const CRMDashboardPage = () => {
     );
   }
 
+  if (!loading && !error && leads.length === 0 && opportunities.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center text-white">
+            <Users className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <div className="text-xl">No CRM data found</div>
+            <p className="text-gray-400 mt-2">Start by adding leads and opportunities</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-8">
       {/* Header */}

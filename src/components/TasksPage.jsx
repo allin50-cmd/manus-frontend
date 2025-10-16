@@ -57,6 +57,7 @@ const TasksPage = () => {
               </span>
             </div>
           ))}
+          {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
         </CardContent>
       </Card>
     </div>

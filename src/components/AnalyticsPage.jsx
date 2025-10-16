@@ -98,7 +98,8 @@ export default function AnalyticsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{statsLoading ? '...' : stats.totalCompanies}</div>
             <p className="text-xs text-muted-foreground">Active monitoring</p>
-          </CardContent>
+            {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+        </CardContent>
         </Card>
 
         <Card>

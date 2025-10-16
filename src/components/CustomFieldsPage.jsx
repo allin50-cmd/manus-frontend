@@ -63,7 +63,8 @@ const CustomFieldsPage = () => {
                     <Button size="sm" variant="ghost"><Trash className="h-4 w-4" /></Button>
                   </div>
                 </div>
-              </CardContent>
+                {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+        </CardContent>
             </Card>
           ))}
         </div>

@@ -125,7 +125,8 @@ const AdvancedCRM = () => {
                 </div>
                 <Bot className="h-10 w-10 text-cyan-500" />
               </div>
-            </CardContent>
+              {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+        </CardContent>
           </Card>
           
           <Card>

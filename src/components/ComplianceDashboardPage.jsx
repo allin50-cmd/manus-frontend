@@ -76,6 +76,7 @@ const ComplianceDashboardPage = () => {
               No compliance data available. Full functionality coming soon.
             </p>
           )}
+          {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
         </CardContent>
       </Card>
     </div>
