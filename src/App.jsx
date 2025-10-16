@@ -20,6 +20,7 @@ import engineRoom from './assets/IMG_3574(1).jpeg'
 import navbarDesign from './assets/IMG_3575(2).jpeg'
 import footerDesign from './assets/IMG_3577(2).jpeg'
 import AdminPage from './components/AdminPage.jsx'
+import LiveDataPage from './components/LiveDataPage.jsx'
 
 // Demo data
 const initialData = {
@@ -280,7 +281,8 @@ function App() {
     { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
     { id: 'contact', label: 'Contact', icon: Phone },
     { id: 'dashboard', label: 'Dashboard', icon: Shield },
-    { id: 'admin', label: 'Admin', icon: Cog }
+    { id: 'admin', label: 'Admin', icon: Cog },
+    { id: 'live-data', label: 'Live Data', icon: Calendar }
   ]
 
   const renderPage = () => {
@@ -303,6 +305,8 @@ function App() {
         return <DashboardPage />
       case 'admin':
         return <AdminPage />
+      case 'live-data':
+        return <LiveDataPage />
       default:
         return <HomePage />
     }
