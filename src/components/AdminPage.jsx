@@ -18,6 +18,8 @@ const AdminPage = () => {
   const [companies, setCompanies] = useState([]);
   const [obligations, setObligations] = useState([]);
   const [activeTab, setActiveTab] = useState('companies');
+  const [aiCrmEnabled, setAiCrmEnabled] = useState(false);
+  const [marketingEnabled, setMarketingEnabled] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
 
@@ -304,11 +306,193 @@ const AdminPage = () => {
               >
                 Obligations ({obligations.length})
               </button>
+              <button
+                onClick={() => setActiveTab('ai-crm')}
+                className={`px-6 py-3 font-medium transition-colors ${
+                  activeTab === 'ai-crm' 
+                    ? 'border-b-2 border-cyan-400 text-cyan-400' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                AI CRM 🤖
+              </button>
+              <button
+                onClick={() => setActiveTab('marketing')}
+                className={`px-6 py-3 font-medium transition-colors ${
+                  activeTab === 'marketing' 
+                    ? 'border-b-2 border-cyan-400 text-cyan-400' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Marketing 📧
+              </button>
             </div>
 
             {/* Data Table */}
             <div className="space-y-4">
-              {activeTab === 'companies' ? (
+              {activeTab === 'ai-crm' ? (
+                <div className="space-y-6">
+                  <div className="p-6 bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950 dark:to-blue-950 rounded-lg border-2 border-cyan-200 dark:border-cyan-800">
+                    <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                      🤖 AI CRM Module
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Intelligent customer relationship management powered by AI. Automatically score leads, predict churn, and recommend next best actions.
+                    </p>
+                    
+                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">AI Lead Scoring</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Automatically score and prioritize leads based on engagement, company data, and compliance history.</p>
+                          <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                            Enable AI Scoring
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Churn Prediction</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Predict which clients are at risk of leaving and receive proactive retention recommendations.</p>
+                          <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                            Enable Churn Detection
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Next Best Action</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">AI-powered recommendations for the best next step with each client based on their compliance status.</p>
+                          <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                            Enable NBA Engine
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Smart Segmentation</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Automatically segment clients by risk level, industry, compliance score, and engagement.</p>
+                          <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                            Configure Segments
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border">
+                      <h4 className="font-semibold mb-2">🔐 Premium Feature</h4>
+                      <p className="text-sm text-muted-foreground">
+                        AI CRM features require a FineGuard Premium license. 
+                        <a href="/pricing" className="text-cyan-500 hover:underline ml-1">Upgrade now</a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : activeTab === 'marketing' ? (
+                <div className="space-y-6">
+                  <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+                    <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                      📧 Marketing Admin Module
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      Automated marketing campaigns, email sequences, and client communications powered by AI copywriting.
+                    </p>
+                    
+                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Email Campaigns</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Create and send automated email campaigns to clients based on compliance deadlines and risk levels.</p>
+                          <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                            Create Campaign
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">AI Copywriting</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Generate professional email content automatically using AI, tailored to each client's situation.</p>
+                          <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                            Enable AI Writer
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">SMS & WhatsApp</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Send urgent compliance alerts via SMS and WhatsApp for critical deadlines.</p>
+                          <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                            Configure Messaging
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Drip Sequences</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Set up automated email sequences for onboarding, reminders, and follow-ups.</p>
+                          <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                            Create Sequence
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Analytics Dashboard</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Track email open rates, click-through rates, and campaign performance.</p>
+                          <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                            View Analytics
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Template Library</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-4">Access pre-built email templates for common compliance scenarios.</p>
+                          <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                            Browse Templates
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border">
+                      <h4 className="font-semibold mb-2">🔐 Premium Feature</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Marketing features require a FineGuard Premium license. 
+                        <a href="/pricing" className="text-purple-500 hover:underline ml-1">Upgrade now</a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : activeTab === 'companies' ? (
                 companies.length > 0 ? (
                   companies.map(company => (
                     <div key={company.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
@@ -506,6 +690,168 @@ const AdminPage = () => {
           </Card>
         </div>
       )}
+
+      {/* AI CRM Module - Always Visible */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            🤖 AI CRM Module
+          </CardTitle>
+          <CardDescription>Intelligent customer relationship management powered by AI</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">AI Lead Scoring</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Automatically score and prioritize leads based on engagement, company data, and compliance history.</p>
+                <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                  Enable AI Scoring
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Churn Prediction</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Predict which clients are at risk of leaving and receive proactive retention recommendations.</p>
+                <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                  Enable Churn Detection
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Next Best Action</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">AI-powered recommendations for the best next step with each client based on their compliance status.</p>
+                <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                  Enable NBA Engine
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Smart Segmentation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Automatically segment clients by risk level, industry, compliance score, and engagement.</p>
+                <Button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500">
+                  Configure Segments
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="mt-6 bg-muted p-4 rounded-lg border">
+            <h4 className="font-semibold mb-2">🔐 Premium Feature</h4>
+            <p className="text-sm text-muted-foreground">
+              AI CRM features require a FineGuard Premium license. 
+              <a href="/pricing" className="text-cyan-500 hover:underline ml-1">Upgrade now</a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Marketing Admin Module - Always Visible */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            📧 Marketing Admin Module
+          </CardTitle>
+          <CardDescription>Automated marketing campaigns and client communications</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Email Campaigns</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Create and send automated email campaigns to clients based on compliance deadlines and risk levels.</p>
+                <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                  Create Campaign
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">AI Copywriting</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Generate professional email content automatically using AI, tailored to each client's situation.</p>
+                <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                  Enable AI Writer
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">SMS & WhatsApp</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Send urgent compliance alerts via SMS and WhatsApp for critical deadlines.</p>
+                <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                  Configure Messaging
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Drip Sequences</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Set up automated email sequences for onboarding, reminders, and follow-ups.</p>
+                <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                  Create Sequence
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Analytics Dashboard</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Track email open rates, click-through rates, and campaign performance.</p>
+                <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                  View Analytics
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Template Library</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Access pre-built email templates for common compliance scenarios.</p>
+                <Button className="w-full bg-gradient-to-r from-purple-400 to-pink-500">
+                  Browse Templates
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="mt-6 bg-muted p-4 rounded-lg border">
+            <h4 className="font-semibold mb-2">🔐 Premium Feature</h4>
+            <p className="text-sm text-muted-foreground">
+              Marketing features require a FineGuard Premium license. 
+              <a href="/pricing" className="text-purple-500 hover:underline ml-1">Upgrade now</a>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
