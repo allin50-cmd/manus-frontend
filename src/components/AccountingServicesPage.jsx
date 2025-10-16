@@ -97,7 +97,7 @@ export default function AccountingServicesPage({ companyData }) {
       try {
         setLoadingTestimonials(true)
         const response = await api.request('get', '/api/accounting/testimonials')
-        setTestimonials(response.data)
+        setTestimonials(response)
       } catch (error) {
         console.error('Error fetching testimonials:', error)
         setErrorTestimonials('Failed to load testimonials.')

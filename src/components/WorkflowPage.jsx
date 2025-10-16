@@ -21,7 +21,7 @@ export default function WorkflowPage() {
     const fetchWorkflows = async () => {
       try {
         const response = await api.get('/api/workflows');
-        setWorkflows(response.data);
+        setWorkflows(response);
       } catch (err) {
         console.error('Error fetching workflows:', err);
         setErrorWorkflows('Failed to load workflows.');
@@ -33,7 +33,7 @@ export default function WorkflowPage() {
     const fetchTriggerTypes = async () => {
       try {
         const response = await api.get('/api/triggerTypes');
-        setTriggerTypes(response.data);
+        setTriggerTypes(response);
       } catch (err) {
         console.error('Error fetching trigger types:', err);
         setErrorTriggerTypes('Failed to load trigger types.');
@@ -45,7 +45,7 @@ export default function WorkflowPage() {
     const fetchActionTypes = async () => {
       try {
         const response = await api.get('/api/actionTypes');
-        setActionTypes(response.data);
+        setActionTypes(response);
       } catch (err) {
         console.error('Error fetching action types:', err);
         setErrorActionTypes('Failed to load action types.');

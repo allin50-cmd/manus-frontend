@@ -14,7 +14,7 @@ const WebhooksManagerPage = () => {
     setError(null);
     try {
       const response = await api.request('/api/webhooks');
-      setItems(response.data);
+      setItems(response);
     } catch (err) {
       console.error('Failed to fetch webhooks:', err);
       setError('Failed to load webhooks. Please try again later.');

@@ -14,7 +14,7 @@ const IntegrationsPage = () => {
       try {
         setLoading(true);
         const response = await api.request('/integrations'); // Assuming an endpoint for integrations
-        setIntegrations(response.data);
+        setIntegrations(response);
       } catch (err) {
         setError('Failed to fetch integrations.');
         console.error('Error fetching integrations:', err);

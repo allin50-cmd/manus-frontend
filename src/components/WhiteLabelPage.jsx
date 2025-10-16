@@ -13,7 +13,7 @@ const WhiteLabelPage = () => {
     const fetchItems = async () => {
       try {
         const response = await api.request('/whitelabel'); // Assuming /whitelabel is the correct endpoint
-        setItems(response.data);
+        setItems(response);
       } catch (err) {
         setError(err);
       } finally {

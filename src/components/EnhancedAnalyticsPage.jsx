@@ -19,7 +19,7 @@ const EnhancedAnalyticsPage = () => {
       setError(null);
       try {
         const response = await api.request(`/analytics?timeRange=${timeRange}`);
-        setAnalytics(response.data);
+        setAnalytics(response);
       } catch (err) {
         console.error('Error fetching analytics:', err);
         setError('Failed to load analytics data.');

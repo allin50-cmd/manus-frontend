@@ -14,7 +14,7 @@ const DataImportExportPage = () => {
       try {
         setLoading(true);
         const response = await api.request('/api/data-items'); // Assuming this is the endpoint
-        setItems(response.data);
+        setItems(response);
       } catch (err) {
         setError(err);
       } finally {

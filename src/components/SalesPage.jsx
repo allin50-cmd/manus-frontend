@@ -13,7 +13,7 @@ const SalesPage = () => {
     const fetchSalesData = async () => {
       try {
         const response = await api.get('/api/sales');
-        setSalesData(response.data);
+        setSalesData(response);
       } catch (err) {
         setError(err);
       } finally {

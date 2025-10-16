@@ -20,7 +20,7 @@ const ReportsPage = () => {
       try {
         setLoadingReports(true);
         const response = await api.get('/reports');
-        setReports(response.data);
+        setReports(response);
       } catch (err) {
         setErrorReports(err);
       } finally {
@@ -32,7 +32,7 @@ const ReportsPage = () => {
       try {
         setLoadingReportTypes(true);
         const response = await api.get('/report-types');
-        setReportTypes(response.data);
+        setReportTypes(response);
       } catch (err) {
         setErrorReportTypes(err);
       } finally {

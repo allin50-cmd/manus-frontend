@@ -14,7 +14,7 @@ const ReportsBuilderPage = () => {
       try {
         setLoading(true);
         const response = await api.request('/reports'); // Assuming /reports is the endpoint
-        setItems(response.data);
+        setItems(response);
       } catch (err) {
         setError(err);
         console.error('Error fetching reports:', err);

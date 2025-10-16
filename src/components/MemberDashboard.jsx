@@ -12,7 +12,7 @@ const MemberDashboard = ({ user, onLogout, onUpgrade }) => {
       try {
         setLoading(true);
         const response = await api.request('/api/subscription-tiers', { method: 'GET' });
-        setSubscriptionTiers(response.data);
+        setSubscriptionTiers(response);
       } catch (err) {
         setError('Failed to fetch subscription tiers.');
         console.error('Error fetching subscription tiers:', err);

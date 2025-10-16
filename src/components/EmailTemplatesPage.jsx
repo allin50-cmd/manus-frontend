@@ -14,7 +14,7 @@ const EmailTemplatesPage = () => {
       try {
         setLoading(true);
         const response = await api.request('/api/email-templates');
-        setItems(response.data);
+        setItems(response);
       } catch (err) {
         setError(err);
       } finally {

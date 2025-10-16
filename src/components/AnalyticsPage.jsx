@@ -13,7 +13,7 @@ export default function AnalyticsPage() {
       try {
         setStatsLoading(true);
         const response = await api.request("/api/analytics/stats");
-        setStats(response.data);
+        setStats(response);
       } catch (error) {
         console.error("Error fetching stats:", error);
       } finally {
@@ -31,7 +31,7 @@ export default function AnalyticsPage() {
       try {
         setMonthlyDataLoading(true);
         const response = await api.request("/api/analytics/monthlyData");
-        setMonthlyData(response.data);
+        setMonthlyData(response);
       } catch (error) {
         console.error("Error fetching monthly data:", error);
       } finally {
@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
       try {
         setCompanyPerformanceLoading(true);
         const response = await api.request("/api/analytics/companyPerformance");
-        setCompanyPerformance(response.data);
+        setCompanyPerformance(response);
       } catch (error) {
         console.error("Error fetching company performance:", error);
       } finally {
@@ -67,7 +67,7 @@ export default function AnalyticsPage() {
       try {
         setUpcomingDeadlinesLoading(true);
         const response = await api.request("/api/analytics/upcomingDeadlines");
-        setUpcomingDeadlines(response.data);
+        setUpcomingDeadlines(response);
       } catch (error) {
         console.error("Error fetching upcoming deadlines:", error);
       } finally {

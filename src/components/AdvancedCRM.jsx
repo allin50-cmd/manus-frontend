@@ -46,7 +46,7 @@ const AdvancedCRM = () => {
     setServicesError(null);
     try {
       const response = await api.request('get', '/services');
-      setServices(response.data);
+      setServices(response);
     } catch (error) {
       console.error('Error fetching services:', error);
       setServicesError('Failed to load services.');
@@ -60,7 +60,7 @@ const AdvancedCRM = () => {
     setAgentsError(null);
     try {
       const response = await api.request('get', '/agents');
-      setActiveAgents(response.data);
+      setActiveAgents(response);
     } catch (error) {
       console.error("Error fetching agents:", error);
       setAgentsError("Failed to load agents.");
@@ -92,7 +92,7 @@ const AdvancedCRM = () => {
     setAutomationsError(null);
     try {
       const response = await api.request("get", "/automations");
-      setAutomations(response.data);
+      setAutomations(response);
     } catch (error) {
       console.error("Error fetching automations:", error);
       setAutomationsError("Failed to load automations.");

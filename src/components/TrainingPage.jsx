@@ -14,7 +14,7 @@ const TrainingPage = () => {
       try {
         setLoading(true);
         const response = await api.request('/training', 'GET'); // Assuming /training is the endpoint
-        setTrainingMaterials(response.data);
+        setTrainingMaterials(response);
       } catch (err) {
         setError('Failed to fetch training materials.');
         console.error('Error fetching training materials:', err);

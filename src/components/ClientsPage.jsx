@@ -13,7 +13,7 @@ const ClientsPage = () => {
     const fetchClients = async () => {
       try {
         const response = await api.get('/clients');
-        setClients(response.data);
+        setClients(response);
       } catch (err) {
         setError('Failed to fetch clients.');
         console.error('Error fetching clients:', err);

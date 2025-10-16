@@ -18,7 +18,7 @@ export default function APIManagerPage() {
       try {
         setLoadingApiKeys(true)
         const response = await api.request('/api/v1/api-keys')
-        setApiKeys(response.data)
+        setApiKeys(response)
       } catch (error) {
         console.error('Error fetching API keys:', error)
         setApiKeysError('Failed to load API keys.')
@@ -38,7 +38,7 @@ export default function APIManagerPage() {
       try {
         setLoadingEndpoints(true)
         const response = await api.request('/api/v1/endpoints')
-        setEndpoints(response.data)
+        setEndpoints(response)
       } catch (error) {
         console.error('Error fetching endpoints:', error)
         setEndpointsError('Failed to load endpoints.')
@@ -58,7 +58,7 @@ export default function APIManagerPage() {
       try {
         setLoadingWebhooks(true)
         const response = await api.request('/api/v1/webhooks')
-        setWebhooks(response.data)
+        setWebhooks(response)
       } catch (error) {
         console.error('Error fetching webhooks:', error)
         setWebhooksError('Failed to load webhooks.')
@@ -85,7 +85,7 @@ export default function APIManagerPage() {
       try {
         setLoadingUsageStats(true)
         const response = await api.request('/api/v1/usage-stats')
-        setUsageStats(response.data)
+        setUsageStats(response)
       } catch (error) {
         console.error('Error fetching usage stats:', error)
         setUsageStatsError('Failed to load usage stats.')

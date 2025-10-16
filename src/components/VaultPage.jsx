@@ -12,7 +12,7 @@ export default function VaultPage() {
       try {
         setLoadingSecrets(true);
         const response = await api.request('/api/secrets');
-        setSecrets(response.data);
+        setSecrets(response);
       } catch (error) {
         console.error('Error fetching secrets:', error);
         setErrorSecrets('Failed to load secrets.');
@@ -37,7 +37,7 @@ export default function VaultPage() {
       try {
         setLoadingAuditLog(true);
         const response = await api.request('/api/auditlog');
-        setAuditLog(response.data);
+        setAuditLog(response);
       } catch (error) {
         console.error('Error fetching audit log:', error);
         setErrorAuditLog('Failed to load audit log.');
@@ -56,7 +56,7 @@ export default function VaultPage() {
         setShowAddModal(false);
         // Re-fetch secrets after adding a new one
         const response = await api.request('/api/secrets');
-        setSecrets(response.data);
+        setSecrets(response);
       } catch (error) {
         console.error('Error adding secret:', error);
         // Optionally, show an error message to the user
@@ -70,7 +70,7 @@ export default function VaultPage() {
         await api.request(`/api/secrets/${key}`, { method: 'DELETE' });
         // Re-fetch secrets after deleting one
         const response = await api.request('/api/secrets');
-        setSecrets(response.data);
+        setSecrets(response);
       } catch (error) {
         console.error('Error deleting secret:', error);
         // Optionally, show an error message to the user

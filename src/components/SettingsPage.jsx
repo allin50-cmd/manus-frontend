@@ -33,7 +33,7 @@ export default function SettingsPage({ user, onUpdate }) {
       try {
         setLoadingApiKeys(true);
         const response = await api.get('/api/v1/api-keys'); // Assuming this is the endpoint for API keys
-        setApiKeys(response.data);
+        setApiKeys(response);
       } catch (error) {
         console.error('Error fetching API keys:', error);
         setErrorApiKeys('Failed to load API keys.');

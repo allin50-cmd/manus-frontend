@@ -17,7 +17,7 @@ const CalendarPage = () => {
           url: '/api/events',
           method: 'GET'
         });
-        setEvents(response.data);
+        setEvents(response);
       } catch (err) {
         setError(err);
       } finally {

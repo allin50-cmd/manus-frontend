@@ -36,7 +36,7 @@ const AdminControlPanel = () => {
           url: '/admin/stats',
           method: 'GET',
         });
-        setStats(response.data);
+        setStats(response);
       } catch (error) {
         console.error('Error fetching stats:', error);
         setStatsError('Failed to load stats.');
@@ -56,7 +56,7 @@ const AdminControlPanel = () => {
           url: '/admin/users',
           method: 'GET',
         });
-        setUsers(response.data);
+        setUsers(response);
       } catch (error) {
         console.error('Error fetching users:', error);
         setUsersError('Failed to load users.');
@@ -76,7 +76,7 @@ const AdminControlPanel = () => {
           url: '/admin/logs',
           method: 'GET',
         });
-        setSystemLogs(response.data);
+        setSystemLogs(response);
       } catch (error) {
         console.error('Error fetching system logs:', error);
         setSystemLogsError('Failed to load system logs.');

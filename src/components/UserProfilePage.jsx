@@ -17,7 +17,7 @@ const UserProfilePage = () => {
     const fetchUserData = async () => {
       try {
         const response = await api.request('/api/user');
-        setUser(response.data);
+        setUser(response);
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {
@@ -28,7 +28,7 @@ const UserProfilePage = () => {
     const fetchActivitiesData = async () => {
       try {
         const response = await api.request('/api/activities');
-        setActivities(response.data);
+        setActivities(response);
       } catch (error) {
         console.error('Error fetching activities data:', error);
       } finally {

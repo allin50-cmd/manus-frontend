@@ -14,7 +14,7 @@ const TaxPlanningPage = () => {
       try {
         setLoading(true);
         const response = await api.request('/tax-plans'); // Assuming this is the endpoint
-        setTaxPlans(response.data);
+        setTaxPlans(response);
       } catch (err) {
         setError(err);
       } finally {

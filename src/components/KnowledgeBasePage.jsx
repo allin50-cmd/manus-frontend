@@ -13,7 +13,7 @@ const KnowledgeBasePage = () => {
     const fetchKnowledgeBase = async () => {
       try {
         const response = await api.request('/knowledgebase');
-        setKnowledgeBaseItems(response.data);
+        setKnowledgeBaseItems(response);
       } catch (err) {
         setError(err);
       } finally {

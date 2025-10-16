@@ -17,7 +17,7 @@ const AutomationRulesPage = () => {
           url: '/automation-rules',
           method: 'GET',
         });
-        setItems(response.data);
+        setItems(response);
       } catch (err) {
         setError(err);
       } finally {

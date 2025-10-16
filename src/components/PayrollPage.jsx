@@ -14,7 +14,7 @@ const PayrollPage = () => {
       try {
         setLoading(true);
         const response = await api.request('/api/payroll'); // Assuming /api/payroll is the endpoint
-        setPayrollData(response.data);
+        setPayrollData(response);
       } catch (err) {
         setError(err);
       } finally {

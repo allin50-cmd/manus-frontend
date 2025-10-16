@@ -29,7 +29,7 @@ export default function BillingPage({ user }) {
       try {
         setLoadingSubscription(true);
         const response = await api.get('/api/subscription');
-        setSubscriptionData(response.data);
+        setSubscriptionData(response);
       } catch (error) {
         console.error('Error fetching subscription data:', error);
         setErrorSubscription('Failed to load subscription data.');
@@ -42,7 +42,7 @@ export default function BillingPage({ user }) {
       try {
         setLoadingPlans(true);
         const response = await api.get('/api/plans');
-        setPlans(response.data);
+        setPlans(response);
       } catch (error) {
         console.error('Error fetching plans:', error);
         setErrorPlans('Failed to load plans.');
@@ -55,7 +55,7 @@ export default function BillingPage({ user }) {
       try {
         setLoadingInvoices(true);
         const response = await api.get('/api/invoices');
-        setInvoices(response.data);
+        setInvoices(response);
       } catch (error) {
         console.error('Error fetching invoices:', error);
         setErrorInvoices('Failed to load invoices.');
@@ -68,7 +68,7 @@ export default function BillingPage({ user }) {
       try {
         setLoadingUsageStats(true);
         const response = await api.get('/api/usage-stats');
-        setUsageStats(response.data);
+        setUsageStats(response);
       } catch (error) {
         console.error('Error fetching usage stats:', error);
         setErrorUsageStats('Failed to load usage statistics.');

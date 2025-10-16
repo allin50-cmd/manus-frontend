@@ -37,7 +37,7 @@ const DocumentsPage = () => {
       try {
         setLoadingDocuments(true);
         const response = await api.get('/api/documents');
-        setDocuments(response.data);
+        setDocuments(response);
       } catch (err) {
         setErrorDocuments('Failed to load documents.');
         console.error('Failed to fetch documents:', err);

@@ -14,7 +14,7 @@ const BackupRestorePage = () => {
       try {
         setLoading(true);
         const response = await api.request('get', '/api/backup-restore-items');
-        setItems(response.data);
+        setItems(response);
       } catch (err) {
         setError(err);
       } finally {

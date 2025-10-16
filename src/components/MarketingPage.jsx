@@ -16,7 +16,7 @@ const MarketingPage = () => {
         setLoading(true);
         // Assuming an API endpoint for marketing data
         const response = await api.request('/api/marketing', { method: 'GET' });
-        setMarketingData(response.data);
+        setMarketingData(response);
       } catch (err) {
         setError(err);
       } finally {

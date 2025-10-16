@@ -13,7 +13,7 @@ const SiteMapPage = () => {
       try {
         setLoading(true);
         const response = await api.request('get', '/api/sitemap-sections');
-        setSections(response.data);
+        setSections(response);
       } catch (err) {
         setError('Failed to fetch sitemap sections.');
         console.error('Error fetching sitemap sections:', err);

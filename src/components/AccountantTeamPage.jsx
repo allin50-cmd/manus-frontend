@@ -37,7 +37,7 @@ const AccountantTeamPage = () => {
       try {
         setLoadingAccountants(true);
         const response = await api.get('/accountants');
-        setAccountants(response.data);
+        setAccountants(response);
       } catch (err) {
         setErrorAccountants('Failed to fetch accountants.');
         console.error('Error fetching accountants:', err);
@@ -54,7 +54,7 @@ const AccountantTeamPage = () => {
       try {
         setLoadingServices(true);
         const response = await api.get('/services');
-        setServices(response.data);
+        setServices(response);
       } catch (err) {
         setErrorServices('Failed to fetch services.');
         console.error('Error fetching services:', err);
@@ -71,7 +71,7 @@ const AccountantTeamPage = () => {
       try {
         setLoadingTeamCapacity(true);
         const response = await api.get('/team-capacity');
-        setTeamCapacity(response.data);
+        setTeamCapacity(response);
       } catch (err) {
         setErrorTeamCapacity('Failed to fetch team capacity.');
         console.error('Error fetching team capacity:', err);

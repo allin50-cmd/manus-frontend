@@ -13,7 +13,7 @@ const ComplianceDashboardPage = () => {
     const fetchComplianceData = async () => {
       try {
         const response = await api.get('/api/compliance');
-        setComplianceData(response.data);
+        setComplianceData(response);
       } catch (err) {
         setError(err);
       } finally {

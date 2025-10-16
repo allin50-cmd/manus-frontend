@@ -45,7 +45,7 @@ export default function LiveDataPage() {
                 'GET',
                 '/api/processed-companies' // Hypothetical endpoint
             );
-            setProcessedCompanies(response.data);
+            setProcessedCompanies(response);
         } catch (err) {
             setDbError(err.message);
             logMessage(`Error fetching processed companies: ${err.message}`);

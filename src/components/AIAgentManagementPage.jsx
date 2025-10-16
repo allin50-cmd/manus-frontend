@@ -21,7 +21,7 @@ const AIAgentManagementPage = () => {
       try {
         setLoadingAgents(true);
         const response = await api.get('/api/agents');
-        setAgents(response.data);
+        setAgents(response);
       } catch (error) {
         console.error('Error fetching agents:', error);
       } finally {
@@ -33,7 +33,7 @@ const AIAgentManagementPage = () => {
       try {
         setLoadingTasks(true);
         const response = await api.get('/api/tasks');
-        setTasks(response.data);
+        setTasks(response);
       } catch (error) {
         console.error('Error fetching tasks:', error);
       } finally {
@@ -45,7 +45,7 @@ const AIAgentManagementPage = () => {
       try {
         setLoadingActivities(true);
         const response = await api.get('/api/activities');
-        setActivities(response.data);
+        setActivities(response);
       } catch (error) {
         console.error('Error fetching activities:', error);
       } finally {
@@ -57,7 +57,7 @@ const AIAgentManagementPage = () => {
       try {
         setLoadingCommands(true);
         const response = await api.get('/api/commands');
-        setCommands(response.data);
+        setCommands(response);
       } catch (error) {
         console.error('Error fetching commands:', error);
       } finally {

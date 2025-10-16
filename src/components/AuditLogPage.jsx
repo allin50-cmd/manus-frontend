@@ -14,7 +14,7 @@ const AuditLogPage = () => {
       try {
         setIsLoading(true);
         const response = await api.request('/api/auditlogs'); // Assuming this is the endpoint
-        setAuditLogs(response.data);
+        setAuditLogs(response);
       } catch (err) {
         setError(err);
         console.error('Error fetching audit logs:', err);
