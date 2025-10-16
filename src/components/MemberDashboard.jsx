@@ -35,7 +35,14 @@ const MemberDashboard = ({ user, onLogout, onUpgrade }) => {
   const currentTier = subscriptionTiers[user.subscription || 'free'];
 
   if (!currentTier) {
-    return <div className="min-h-screen flex items-center justify-center text-xl text-red-500">Subscription tier data not available.</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center py-8">
+          <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground mb-4">No subscription data found.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

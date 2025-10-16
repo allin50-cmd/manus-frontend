@@ -53,9 +53,13 @@ const PayrollPage = () => {
             </div>
           )}
           {!loading && !error && !payrollData && (
-            <p className="text-muted-foreground">
-              No payroll data available.
-            </p>
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">
+                No payroll records found. Add your first payroll entry to get started.
+              </p>
+              <Button><Plus className="mr-2 h-4 w-4" />Add Payroll Entry</Button>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -53,15 +53,19 @@ const MarketingPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {marketingData ? (
+          {marketingData && marketingData.length > 0 ? (
             <div>
               <p>Data fetched successfully:</p>
               <pre>{JSON.stringify(marketingData, null, 2)}</pre>
             </div>
           ) : (
-            <p className="text-muted-foreground">
-              No marketing data available. Full functionality coming soon.
-            </p>
+            <div className="text-center py-8">
+              <Megaphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">
+                No marketing campaigns found. Create your first campaign to get started.
+              </p>
+              <Button><Plus className="mr-2 h-4 w-4" />Create Campaign</Button>
+            </div>
           )}
         </CardContent>
       </Card>

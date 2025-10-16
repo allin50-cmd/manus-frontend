@@ -41,17 +41,22 @@ const SalesPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            {loading && "Loading sales data..."}
-            {error && `Error: ${error.message}`}
-            {!loading && !error && (
-              salesData.length > 0 ? (
-                `Sales pipeline data loaded. Total sales: ${salesData.length}`
-              ) : (
-                "No sales data available."
-              )
-            )}
-          </p>
+          {loading && <p className="text-muted-foreground">Loading sales data...</p>}
+          {error && <p className="text-red-500">Error: {error.message}</p>}
+          {!loading && !error && salesData.length > 0 && (
+            <p className="text-muted-foreground">
+              Sales pipeline data loaded. Total sales: {salesData.length}
+            </p>
+          )}
+          {!loading && !error && salesData.length === 0 && (
+            <div className="text-center py-8">
+              <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">
+                No sales data found. Create your first sale to get started.
+              </p>
+              <Button><Plus className="mr-2 h-4 w-4" />Add Sale</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

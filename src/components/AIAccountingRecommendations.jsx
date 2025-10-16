@@ -17,15 +17,26 @@ export default function AIAccountingRecommendations({ companyData, onBookConsult
     }
   }, [companyData])
 
-  const analyzeCompany = () => {
+  const analyzeCompany = async () => {
     setLoading(true)
-    
-    // Simulate AI processing time
-    setTimeout(() => {
-      const result = accountingAI.analyzeCompany(companyData)
+    try {
+      // Fetch company data from API
+      const companies = await api.request('/api/companies');
+      const company = companies[0] || companyData;
+      
+      // Use AI to analyze
+      const result = accountingAI.analyzeCompany(company)
       setAnalysis(result)
+    } catch (error) {
+      console.error('Failed to analyze company:', error);
+      // Fallback to local analysis if API fails
+      if (companyData) {
+        const result = accountingAI.analyzeCompany(companyData)
+        setAnalysis(result)
+      }
+    } finally {
       setLoading(false)
-    }, 800)
+    }
   }
 
   if (loading) {
