@@ -11,7 +11,24 @@ class APIClient {
     this.token = localStorage.getItem('auth_token');
   }
 
-  async request(endpoint, options = {}) {
+  async request(methodOrEndpoint, endpointOrOptions = {}, optionsParam = {}) {
+    // Support both signatures:
+    // request(endpoint, options) - original
+    // request(method, endpoint, options) - new
+    let method, endpoint, options;
+    
+    if (typeof endpointOrOptions === 'string') {
+      // New signature: request('get', '/api/endpoint', options)
+      method = methodOrEndpoint.toUpperCase();
+      endpoint = endpointOrOptions;
+      options = optionsParam;
+    } else {
+      // Original signature: request('/api/endpoint', {method: 'GET', ...})
+      endpoint = methodOrEndpoint;
+      options = endpointOrOptions;
+      method = options.method || 'GET';
+    }
+
     const url = `${this.baseURL}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
@@ -25,6 +42,7 @@ class APIClient {
     try {
       const response = await fetch(url, {
         ...options,
+        method,
         headers,
       });
 

@@ -37,7 +37,7 @@ export default function AccountingServicesPage({ companyData }) {
       try {
         setLoadingServiceCategories(true)
         const response = await api.request('get', '/api/accounting/service-categories')
-        setServiceCategories(response.data)
+        setServiceCategories(response)
       } catch (error) {
         console.error('Error fetching service categories:', error)
         setErrorServiceCategories('Failed to load service categories.')
@@ -57,7 +57,7 @@ export default function AccountingServicesPage({ companyData }) {
       try {
         setLoadingPackages(true)
         const response = await api.request('get', '/api/accounting/packages')
-        setPackages(response.data)
+        setPackages(response)
       } catch (error) {
         console.error('Error fetching packages:', error)
         setErrorPackages('Failed to load packages.')
@@ -77,7 +77,7 @@ export default function AccountingServicesPage({ companyData }) {
       try {
         setLoadingAddOnServices(true)
         const response = await api.request('get', '/api/accounting/add-on-services')
-        setAddOnServices(response.data)
+        setAddOnServices(response)
       } catch (error) {
         console.error('Error fetching add-on services:', error)
         setErrorAddOnServices('Failed to load add-on services.')

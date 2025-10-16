@@ -189,6 +189,32 @@ function App() {
     }
   }, [])
 
+  // Sync URL hash with currentPage state
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1) // Remove the #
+      if (hash) {
+        setCurrentPage(hash)
+      }
+    }
+    
+    // Set initial page from hash
+    handleHashChange()
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  // Update hash when currentPage changes
+  useEffect(() => {
+    if (currentPage && currentPage !== 'home') {
+      window.location.hash = currentPage
+    } else {
+      window.location.hash = ''
+    }
+  }, [currentPage])
+
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark')
