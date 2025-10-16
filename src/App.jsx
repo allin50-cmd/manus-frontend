@@ -19,6 +19,7 @@ import workshopImage from './assets/IMG_3576(1).jpeg'
 import engineRoom from './assets/IMG_3574(1).jpeg'
 import navbarDesign from './assets/IMG_3575(2).jpeg'
 import footerDesign from './assets/IMG_3577(2).jpeg'
+import AdminPage from './components/AdminPage.jsx'
 
 // Demo data
 const initialData = {
@@ -278,7 +279,8 @@ function App() {
     { id: 'pricing', label: 'Pricing', icon: DollarSign },
     { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
     { id: 'contact', label: 'Contact', icon: Phone },
-    { id: 'dashboard', label: 'Dashboard', icon: Shield }
+    { id: 'dashboard', label: 'Dashboard', icon: Shield },
+    { id: 'admin', label: 'Admin', icon: Cog }
   ]
 
   const renderPage = () => {
@@ -299,6 +301,8 @@ function App() {
         return <ContactPage />
       case 'dashboard':
         return <DashboardPage />
+      case 'admin':
+        return <AdminPage />
       default:
         return <HomePage />
     }
@@ -364,6 +368,25 @@ function App() {
               <p className="text-muted-foreground">Focus on growing your business while we handle compliance automatically.</p>
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      {/* Demo Video Section */}
+      <section className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-4">See FineGuard in Action</h2>
+          <p className="text-center text-muted-foreground mb-8 text-lg">Watch how Ultra protects your business from compliance penalties</p>
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-cyan-400/30">
+            <video 
+              controls 
+              className="w-full"
+              poster={heroImage}
+            >
+              <source src="/demo-video.mov" type="video/quicktime" />
+              <source src="/demo-video.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
         </div>
       </section>
 
@@ -547,7 +570,7 @@ function App() {
               features: [
                 "Up to 5 companies",
                 "AI-powered insights",
-                "SMS + Email alerts",
+                "Email alerts",
                 "Priority support",
                 "AI compliance checklists",
                 "Risk scoring"
