@@ -385,7 +385,7 @@ function App() {
               <CardTitle>AI-Powered Protection</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Ultra, your AI guardian, monitors deadlines 24/7 so you never miss a filing.</p>
+              <p className="text-muted-foreground">FineGuard AI, monitors deadlines 24/7 so you never miss a filing.</p>
             </CardContent>
           </Card>
           <Card className="hover:shadow-xl transition-shadow">
@@ -413,7 +413,7 @@ function App() {
       <section className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-4">See FineGuard in Action</h2>
-          <p className="text-center text-muted-foreground mb-8 text-lg">Watch how Ultra protects your business from compliance penalties</p>
+          <p className="text-center text-muted-foreground mb-8 text-lg">Watch how FineGuard protects your business from compliance penalties</p>
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-cyan-400/30">
             <video 
               controls 
@@ -448,7 +448,7 @@ function App() {
   const AboutPage = () => (
     <div className="space-y-12">
       <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
-        <img src={aboutImage} alt="Ultra Guardian" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={aboutImage} alt="FineGuard AI Guardian" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/30 to-purple-900/30"></div>
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">The Story of Protection</h1>
@@ -466,7 +466,7 @@ function App() {
               what they do best—building amazing businesses.
             </p>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              That's where Ultra comes in. Our AI guardian watches over your compliance obligations 24/7, ensuring you 
+              That's where FineGuard comes in. Our AI guardian watches over your compliance obligations 24/7, ensuring you 
               never miss a deadline, never face unnecessary penalties, and always stay protected. From Companies House 
               filings to HMRC submissions, we've got you covered.
             </p>
@@ -507,7 +507,7 @@ function App() {
             },
             {
               step: 2,
-              title: "Ultra Monitors Everything",
+              title: "FineGuard Monitors Everything",
               description: "Our AI guardian tracks every deadline, regulation change, and filing requirement specific to your business."
             },
             {
@@ -552,7 +552,7 @@ function App() {
       <section className="container mx-auto px-4">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { icon: Shield, title: "AI Guardian", desc: "Ultra monitors your obligations 24/7" },
+            { icon: Shield, title: "AI Guardian", desc: "FineGuard monitors your obligations 24/7" },
             { icon: Bell, title: "Smart Alerts", desc: "Multi-channel notifications (email, SMS, dashboard)" },
             { icon: Calendar, title: "Deadline Tracking", desc: "Never miss Companies House or HMRC filings" },
             { icon: Brain, title: "AI Checklists", desc: "Step-by-step compliance guidance" },
@@ -678,7 +678,7 @@ function App() {
             {
               name: "Sarah Mitchell",
               role: "Bakery Owner, London",
-              quote: "FineGuard saved me from a £1,500 penalty. Ultra reminded me about my accounts filing just in time!"
+              quote: "FineGuard saved me from a £1,500 penalty. FineGuard reminded me about my accounts filing just in time!"
             },
             {
               name: "James Chen",
@@ -693,7 +693,7 @@ function App() {
             {
               name: "David Patel",
               role: "Coffee Shop Chain Owner",
-              quote: "Managing 3 companies was a nightmare. Now Ultra handles everything automatically."
+              quote: "Managing 3 companies was a nightmare. Now FineGuard handles everything automatically."
             }
           ].map((testimonial, idx) => (
             <Card key={idx} className="hover:shadow-xl transition-shadow">
@@ -941,7 +941,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">FineGuard</h1>
-                <p className="text-xs text-muted-foreground">by UltraTech AI</p>
+                <p className="text-xs text-muted-foreground">by FineGuard</p>
               </div>
             </div>
 
@@ -1226,7 +1226,7 @@ function App() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">FineGuard</h3>
-                  <p className="text-xs text-muted-foreground">by UltraTech AI</p>
+                  <p className="text-xs text-muted-foreground">by FineGuard</p>
                 </div>
               </div>
 
@@ -1260,7 +1260,7 @@ function App() {
 
             <div className="mt-6 pt-6 border-t border-cyan-400/20 text-center">
               <p className="text-sm text-muted-foreground">
-                © 2024 UltraTech AI. All rights reserved.
+                © 2024 FineGuard. All rights reserved.
               </p>
             </div>
           </div>
