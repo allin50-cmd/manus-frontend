@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X } from 'lucide-react'
+import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User } from 'lucide-react'
 import './App.css'
 
 // Import images
@@ -21,6 +21,8 @@ import navbarDesign from './assets/IMG_3575(2).jpeg'
 import footerDesign from './assets/IMG_3577(2).jpeg'
 import AdminPage from './components/AdminPage.jsx'
 import LiveDataPage from './components/LiveDataPage.jsx'
+import AuthModal from './components/AuthModal.jsx'
+import MemberDashboard from './components/MemberDashboard.jsx'
 
 // Demo data
 const initialData = {
@@ -129,6 +131,16 @@ function App() {
   const [selectedObligation, setSelectedObligation] = useState(null)
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const [aiContent, setAiContent] = useState({ title: '', content: '', loading: false })
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [user, setUser] = useState(null)
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem('fineguard_user')
+    if (savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
+  }, [])
 
   useEffect(() => {
     if (darkMode) {
@@ -307,6 +319,20 @@ function App() {
         return <AdminPage />
       case 'live-data':
         return <LiveDataPage />
+      case 'member':
+        return user ? (
+          <MemberDashboard 
+            user={user} 
+            onLogout={() => {
+              localStorage.removeItem('fineguard_user')
+              setUser(null)
+              setCurrentPage('home')
+            }}
+            onUpgrade={() => setCurrentPage('pricing')}
+          />
+        ) : (
+          <HomePage />
+        )
       default:
         return <HomePage />
     }
@@ -929,14 +955,28 @@ function App() {
             </nav>
 
             <div className="flex items-center gap-3">
-              <Button
-                size="sm"
-                className="hidden md:flex bg-gradient-to-r from-cyan-400 to-blue-500 text-white border-0 rounded-full px-6 hover:shadow-lg hover:shadow-cyan-400/30 transition-all"
-                onClick={() => setCurrentPage('pricing')}
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Sign Up
-              </Button>
+              {user ? (
+                <div className="hidden md:flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full border-cyan-400/30"
+                    onClick={() => setCurrentPage('member')}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    {user.name}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  className="hidden md:flex bg-gradient-to-r from-cyan-400 to-blue-500 text-white border-0 rounded-full px-6 hover:shadow-lg hover:shadow-cyan-400/30 transition-all"
+                  onClick={() => setAuthModalOpen(true)}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Sign Up
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -1218,9 +1258,18 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onAuthSuccess={(userData) => {
+          setUser(userData)
+          setCurrentPage('member')
+        }}
+      />
     </div>
   )
 }
-
 export default App
 
