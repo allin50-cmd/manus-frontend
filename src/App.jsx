@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User } from 'lucide-react'
+import { Moon, Sun, Shield, Building2, AlertTriangle, TrendingUp, Brain, CheckCircle2, Calendar, Bell, Home, Info, Cog, Star, DollarSign, MessageSquare, Phone, Menu, X, User, Users } from 'lucide-react'
 import './App.css'
 
 // Import images
@@ -23,6 +23,7 @@ import AdminPage from './components/AdminPage.jsx'
 import LiveDataPage from './components/LiveDataPage.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import MemberDashboard from './components/MemberDashboard.jsx'
+import AdvancedCRM from './components/AdvancedCRM.jsx'
 
 // Demo data
 const initialData = {
@@ -293,6 +294,7 @@ function App() {
     { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
     { id: 'contact', label: 'Contact', icon: Phone },
     { id: 'dashboard', label: 'Dashboard', icon: Shield },
+    { id: 'crm', label: 'CRM', icon: Users },
     { id: 'admin', label: 'Admin', icon: Cog },
     { id: 'live-data', label: 'Live Data', icon: Calendar }
   ]
@@ -319,6 +321,8 @@ function App() {
         return <AdminPage />
       case 'live-data':
         return <LiveDataPage />
+      case 'crm':
+        return <AdvancedCRM />
       case 'member':
         return user ? (
           <MemberDashboard 
