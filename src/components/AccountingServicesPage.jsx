@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge.jsx'
 import { Calculator, TrendingUp, FileText, Users, Briefcase, HardHat, DollarSign, CheckCircle2, Phone, Mail, MapPin, Calendar, ArrowRight, Star } from 'lucide-react'
 
 export default function AccountingServicesPage({ companyData }) {
+  console.log('AccountingServicesPage rendering...');
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
@@ -125,10 +126,12 @@ export default function AccountingServicesPage({ companyData }) {
     ? serviceCategories 
     : serviceCategories.filter(cat => cat.id === selectedCategory)
 
+  console.log('Loading states:', {loadingServiceCategories, loadingPackages, loadingAddOnServices, loadingTestimonials});
   if (loadingServiceCategories || loadingPackages || loadingAddOnServices || loadingTestimonials) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-8 text-white flex items-center justify-center text-xl">Loading accounting services...</div>
   }
 
+  console.log('Error states:', {errorServiceCategories, errorPackages, errorAddOnServices, errorTestimonials});
   if (errorServiceCategories || errorPackages || errorAddOnServices || errorTestimonials) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-8 text-red-400 flex items-center justify-center text-xl">Error: {errorServiceCategories || errorPackages || errorAddOnServices || errorTestimonials}</div>
   }
@@ -142,11 +145,12 @@ export default function AccountingServicesPage({ companyData }) {
     alert(`Selected ${packageName} package. Proceeding to checkout...`)
   }
   
+  console.log('Rendering main content');
   return (
-    <>
-      <BookingModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-8">
       <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-bold text-white mb-8">Accounting Services TEST</h1>
+        <p className="text-white">If you see this, the page is rendering!</p>
         
         {/* AI Recommendations Section */}
         {showAIRecommendations && demoCompanyData && (
@@ -212,7 +216,7 @@ export default function AccountingServicesPage({ companyData }) {
                 </div>
               </div>
             </div>
-            {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
+            {!loadingServiceCategories && !errorServiceCategories && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
         </CardContent>
         </Card>
         
@@ -363,7 +367,6 @@ export default function AccountingServicesPage({ companyData }) {
         </div>
 
       </div>
-      </div>
-    </>
+    </div>
   )
 }

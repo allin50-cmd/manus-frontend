@@ -17,7 +17,7 @@ const DocumentsPage = () => {
       try {
         setLoadingFolders(true);
         const response = await api.get('/api/folders');
-        setFolders([{ id: 'all', name: 'All Documents', count: response.data.reduce((acc, folder) => acc + folder.count, 0) }, ...response.data]);
+        setFolders([{ id: 'all', name: 'All Documents', count: response.reduce((acc, folder) => acc + folder.count, 0) }, ...response]);
       } catch (err) {
         setErrorFolders('Failed to load folders.');
         console.error('Failed to fetch folders:', err);
