@@ -788,45 +788,21 @@ function App() {
       </section>
 
       <section className="container mx-auto px-4">
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-1 gap-8 max-w-2xl mx-auto">
           {[
             {
               name: "Starter",
               price: "£1",
               period: "/month",
+              popular: true,
               features: [
                 "1 company",
                 "Basic deadline tracking",
                 "Email notifications",
                 "Compliance dashboard",
-                "Monthly reports"
-              ]
-            },
-            {
-              name: "Pro",
-              price: "£15",
-              period: "/month",
-              popular: true,
-              features: [
-                "Up to 5 companies",
+                "Monthly reports",
                 "AI-powered insights",
-                "Email alerts",
-                "Priority support",
-                "AI compliance checklists",
-                "Risk scoring"
-              ]
-            },
-            {
-              name: "Ultimate",
-              price: "£99",
-              period: "/month",
-              features: [
-                "Unlimited companies",
-                "Dedicated account manager",
-                "White-label option",
-                "API access",
-                "Custom integrations",
-                "24/7 phone support"
+                "Priority support"
               ]
             }
           ].map((plan) => (
