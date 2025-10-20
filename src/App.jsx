@@ -798,10 +798,9 @@ function App() {
                 "1 company",
                 "Basic deadline tracking",
                 "Email notifications",
-                "Compliance dashboard",
-                "Monthly reports",
-                "AI-powered insights",
-                "Priority support"
+                "SMS message alert",
+                "Phone call alert",
+                "Compliance dashboard"
               ]
             }
           ].map((plan) => (
