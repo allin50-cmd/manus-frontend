@@ -378,7 +378,6 @@ function App() {
     { id: 'workflows', label: 'Workflows', icon: Workflow },
     { id: 'team', label: 'Team', icon: Users },
     { id: 'help', label: 'Help', icon: HelpCircle },
-    { id: 'accounting', label: 'Accounting Services', icon: Calculator },
     { id: 'crm-dashboard', label: 'CRM Dashboard', icon: TrendingUp },
     { id: 'enhanced-analytics', label: 'Enhanced Analytics', icon: BarChart3 },
     { id: 'accountant-team', label: 'Accountant Team', icon: Users },
@@ -459,8 +458,8 @@ function App() {
         return <TeamPage />
       case 'help':
         return <HelpPage />
-      case 'accounting':
-        return <AccountingServicesPage />
+      // case 'accounting':
+      //   return <AccountingServicesPage />
       case 'crm-dashboard':
         return <CRMDashboardPage />
       case 'enhanced-analytics':
