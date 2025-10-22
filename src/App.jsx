@@ -671,16 +671,7 @@ function App() {
               never miss a deadline, never face unnecessary penalties, and always stay protected. From Companies House 
               filings to HMRC submissions, we've got you covered.
             </p>
-            <div className="grid md:grid-cols-2 gap-6 mt-8">
-              <div className="p-6 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <h3 className="text-xl font-bold mb-2">10,000+</h3>
-                <p className="text-muted-foreground">Businesses Protected</p>
-              </div>
-              <div className="p-6 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                <h3 className="text-xl font-bold mb-2">£2.5M+</h3>
-                <p className="text-muted-foreground">Penalties Prevented</p>
-              </div>
-            </div>
+
           </CardContent>
         </Card>
       </section>
