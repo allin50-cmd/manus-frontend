@@ -458,8 +458,8 @@ function App() {
         return <TeamPage />
       case 'help':
         return <HelpPage />
-      // case 'accounting':
-      //   return <AccountingServicesPage />
+      case 'accounting-services':
+        return <AccountingServicesPage />
       case 'crm-dashboard':
         return <CRMDashboardPage />
       case 'enhanced-analytics':
@@ -832,6 +832,57 @@ function App() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      </section>
+
+      {/* Premium Add-ons Section */}
+      <section className="container mx-auto px-4">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-8">Premium Add-On Modules</h2>
+          <Card className="border-purple-600 border-2 hover:shadow-2xl transition-all">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <TrendingUp className="h-6 w-6 text-purple-600" />
+                    Accounting Services
+                  </CardTitle>
+                  <p className="text-muted-foreground mt-2">Professional bookkeeping and financial management</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-purple-600">£99</div>
+                  <div className="text-sm text-muted-foreground">/month</div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3 mb-6">
+                {[
+                  "Full bookkeeping services",
+                  "Monthly financial reports",
+                  "VAT return preparation",
+                  "Payroll management",
+                  "Tax planning & advice",
+                  "Dedicated accountant support",
+                  "Quarterly business reviews",
+                  "Year-end accounts preparation"
+                ].map((feature, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-purple-900">
+                  <strong>💡 Add-on Module:</strong> This premium service can be added to any plan for comprehensive financial management alongside your compliance protection.
+                </p>
+              </div>
+              <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={() => setCurrentPage('accounting-services')}>
+                Learn More About Accounting Services
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </section>
     </div>
