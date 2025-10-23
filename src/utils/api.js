@@ -3,7 +3,7 @@
  * Connects frontend to real backend APIs
  */
 
-const API_BASE_URL = 'https://8000-ikoeu54axz2kkjnwr9zzk-5807ad40.manusvm.computer';
+const API_BASE_URL = 'https://8001-ikoeu54axz2kkjnwr9zzk-5807ad40.manusvm.computer';
 
 class APIClient {
   constructor() {
