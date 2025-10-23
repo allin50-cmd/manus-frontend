@@ -175,11 +175,11 @@ export default function AccountingServicesPage({ companyData }) {
           </p>
           <div className="flex justify-center gap-4">
             <Button
-              onClick={handleBookConsultation}
+              onClick={() => window.open('https://calendly.com/devonshiregreen/accounting-consultation', '_blank')}
               className="bg-green-600 hover:bg-green-700 text-white text-lg px-8 py-6"
             >
               <Calendar className="w-5 h-5 mr-2" />
-              Book Free Consultation
+              Book Your Free Consultation
             </Button>
             <Button
               className="bg-white/10 hover:bg-white/20 text-white text-lg px-8 py-6"
