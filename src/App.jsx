@@ -357,62 +357,29 @@ function App() {
     return new Date(a.dueDate) - new Date(b.dueDate)
   })
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'about', label: 'About', icon: Info },
-    { id: 'how-it-works', label: 'How It Works', icon: Cog },
-    { id: 'features', label: 'Features', icon: Star },
-    { id: 'pricing', label: 'Pricing', icon: DollarSign },
-    { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
-    { id: 'contact', label: 'Contact', icon: Phone },
+  // Public navigation (marketing pages)
+  const publicNavItems = [
+    { id: 'home', label: 'Home' },
+    { id: 'features', label: 'Features' },
+    { id: 'pricing', label: 'Pricing' },
+    { id: 'about', label: 'About' },
+    { id: 'contact', label: 'Contact' }
+  ]
+
+  // App navigation (dashboard/tools)
+  const appNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Shield },
     { id: 'crm', label: 'CRM', icon: Users },
     { id: 'admin', label: 'Admin', icon: Cog },
-    { id: 'live-data', label: 'Live Data', icon: Calendar },
+    { id: 'live-data', label: 'Live Data', icon: Database },
     { id: 'vault', label: 'Vault', icon: Shield },
-    { id: 'settings', label: 'Settings', icon: Cog },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'api-manager', label: 'API Manager', icon: Code },
-    { id: 'workflows', label: 'Workflows', icon: Workflow },
-    { id: 'team', label: 'Team', icon: Users },
-    { id: 'help', label: 'Help', icon: HelpCircle },
-    { id: 'crm-dashboard', label: 'CRM Dashboard', icon: TrendingUp },
-    { id: 'enhanced-analytics', label: 'Enhanced Analytics', icon: BarChart3 },
-    { id: 'accountant-team', label: 'Accountant Team', icon: Users },
-    { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'documents', label: 'Documents', icon: FolderOpen },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-    { id: 'invoices', label: 'Invoices', icon: FileText },
-    { id: 'clients', label: 'Clients', icon: Users },
-    { id: 'projects', label: 'Projects', icon: Briefcase },
-    { id: 'integrations', label: 'Integrations', icon: Plug },
-    { id: 'audit-log', label: 'Audit Log', icon: Shield },
-    { id: 'support', label: 'Support', icon: HelpCircle },
-    { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen },
-    { id: 'training', label: 'Training', icon: GraduationCap },
-    { id: 'compliance-dashboard', label: 'Compliance Dashboard', icon: CheckCircle2 },
-    { id: 'tax-planning', label: 'Tax Planning', icon: Calculator },
-    { id: 'payroll', label: 'Payroll', icon: Users },
-    { id: 'marketing', label: 'Marketing', icon: Megaphone },
-    { id: 'sales', label: 'Sales', icon: TrendingUp },
-    { id: 'user-profile', label: 'User Profile', icon: User },
-    { id: 'admin-control', label: 'Admin Control', icon: Shield },
-    { id: 'ai-agents', label: 'AI Agents', icon: Bot },
-    { id: 'site-map', label: 'Site Map', icon: Map },
-    { id: 'email-templates', label: 'Email Templates', icon: Mail },
-    { id: 'automation-rules', label: 'Automation Rules', icon: Zap },
-    { id: 'data-import-export', label: 'Data Import/Export', icon: Download },
-    { id: 'backup-restore', label: 'Backup & Restore', icon: Database },
-    { id: 'api-docs', label: 'API Documentation', icon: Code },
-    { id: 'webhooks', label: 'Webhooks', icon: Webhook },
-    { id: 'custom-fields', label: 'Custom Fields', icon: Cog },
-    { id: 'reports-builder', label: 'Reports Builder', icon: FileText },
-    { id: 'dashboard-builder', label: 'Dashboard Builder', icon: Layout },
-    { id: 'white-label', label: 'White Label', icon: Palette }
+    { id: 'clients', label: 'Clients', icon: Users }
   ]
+
+  // Determine which nav to show based on current page
+  const isPublicPage = ['home', 'about', 'how-it-works', 'features', 'pricing', 'testimonials', 'contact'].includes(currentPage)
+  const navItems = isPublicPage ? publicNavItems : appNavItems
 
   const renderPage = () => {
     switch(currentPage) {
@@ -553,24 +520,25 @@ function App() {
       {/* Hero Section */}
       <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden rounded-2xl">
         <img src={heroImage} alt="FineGuard Workshop" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 to-purple-900/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/60 via-blue-900/70 to-blue-900/80"></div>
         <div className="relative z-10 text-center text-white px-4 max-w-4xl">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">Welcome to FineGuard</h1>
-          <p className="text-xl md:text-2xl mb-8 opacity-90">Where paperwork has personality and compliance is effortless</p>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6">Never Miss a Compliance Deadline Again</h1>
+          <p className="text-xl md:text-2xl mb-8 opacity-95">AI-powered compliance management for UK businesses. Automatic deadline tracking, smart reminders, and complete peace of mind.</p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-cyan-400 to-blue-500 text-white border-0 rounded-full px-10 py-6 text-lg font-semibold hover:shadow-2xl hover:shadow-cyan-400/40 transition-all hover:scale-105" 
-              onClick={() => setCurrentPage('dashboard')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-6 text-lg font-semibold" 
+              onClick={() => setCurrentPage('pricing')}
             >
-              Get Started
+              Start Free Trial
             </Button>
             <Button 
               size="lg" 
-              className="border-2 border-cyan-400/50 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 rounded-full px-10 py-6 text-lg font-semibold transition-all hover:scale-105" 
-              onClick={() => setCurrentPage('how-it-works')}
+              variant="outline"
+              className="border-2 border-white/80 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 px-10 py-6 text-lg font-semibold" 
+              onClick={() => document.querySelector('video')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Learn More
+              Watch Demo
             </Button>
           </div>
         </div>
@@ -615,11 +583,10 @@ function App() {
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-4">See FineGuard in Action</h2>
           <p className="text-center text-muted-foreground mb-8 text-lg">Watch how FineGuard protects your business from compliance penalties</p>
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-cyan-400/30">
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl">
             <video 
               controls 
               className="w-full"
-              poster={heroImage}
             >
               <source src="/demo-video.mov" type="video/quicktime" />
               <source src="/demo-video.mp4" type="video/mp4" />
@@ -829,49 +796,39 @@ function App() {
       {/* Premium Add-ons Section */}
       <section className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8">Premium Add-On Modules</h2>
+          <h2 className="text-3xl font-bold text-center mb-8">Need Accounting Services?</h2>
           <Card className="border-purple-600 border-2 hover:shadow-2xl transition-all">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl flex items-center gap-2">
-                    <TrendingUp className="h-6 w-6 text-purple-600" />
-                    Accounting Services
-                  </CardTitle>
-                  <p className="text-muted-foreground mt-2">Professional bookkeeping and financial management</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-purple-600">£99</div>
-                  <div className="text-sm text-muted-foreground">/month</div>
-                </div>
+              <div className="text-center">
+                <CardTitle className="text-2xl flex items-center justify-center gap-2">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                  Devonshire Green Accountants
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">Professional accounting and financial services in Kent</p>
               </div>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 mb-6">
-                {[
-                  "Full bookkeeping services",
-                  "Monthly financial reports",
-                  "VAT return preparation",
-                  "Payroll management",
-                  "Tax planning & advice",
-                  "Dedicated accountant support",
-                  "Quarterly business reviews",
-                  "Year-end accounts preparation"
-                ].map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-                <p className="text-sm text-purple-900">
-                  <strong>💡 Add-on Module:</strong> This premium service can be added to any plan for comprehensive financial management alongside your compliance protection.
+              <div className="text-center space-y-4">
+                <p className="text-gray-700">
+                  Over 90 years of combined professional experience serving businesses across Kent and beyond. 
+                  Expert accounting, taxation, and financial planning services tailored to your needs.
                 </p>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <p className="text-sm text-purple-900">
+                    <strong>💡 Partner Service:</strong> Get professional accounting support from our trusted partner, Devonshire Green Accountants.
+                  </p>
+                </div>
+                <a 
+                  href="https://devonshiregreen.uk/accountants-kent/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-block w-full"
+                >
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-lg py-6">
+                    Visit Devonshire Green Accountants →
+                  </Button>
+                </a>
               </div>
-              <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={() => setCurrentPage('accounting-services')}>
-                Learn More About Accounting Services
-              </Button>
             </CardContent>
           </Card>
         </div>
@@ -1138,23 +1095,23 @@ function App() {
     <div className="min-h-screen bg-background">
       {/* Header with Glassmorphism */}
       <header className="sticky top-0 z-50 w-full">
-        <div className="mx-0 border-b border-cyan-400/20 bg-background/95 backdrop-blur-xl shadow-lg shadow-cyan-500/10">
+        <div className="mx-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container mx-auto flex h-16 items-center justify-between px-6">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
-              <Shield className="h-8 w-8 text-cyan-400" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">FineGuard</h1>
+              <Shield className="h-8 w-8 text-blue-600" />
+              <h1 className="text-2xl font-bold text-foreground">FineGuard</h1>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-2">
               {navItems.map(item => (
                 <button
                   key={item.id}
                   onClick={() => setCurrentPage(item.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     currentPage === item.id 
-                      ? 'bg-cyan-400/10 text-cyan-400 border-b-2 border-cyan-400' 
-                      : 'text-foreground/60 hover:text-foreground hover:bg-muted'
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
                   {item.label}
@@ -1178,10 +1135,9 @@ function App() {
               ) : (
                 <Button
                   size="sm"
-                  className="hidden md:flex bg-gradient-to-r from-cyan-400 to-blue-500 text-white border-0 rounded-full px-6 hover:shadow-lg hover:shadow-cyan-400/30 transition-all"
+                  className="hidden md:flex bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => setAuthModalOpen(true)}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
                   Sign Up
                 </Button>
               )}
@@ -1216,9 +1172,9 @@ function App() {
                     setCurrentPage(item.id)
                     setMobileMenuOpen(false)
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
                     currentPage === item.id 
-                      ? 'bg-blue-100 dark:bg-blue-950 text-blue-600' 
+                      ? 'bg-blue-600 text-white' 
                       : 'hover:bg-muted'
                   }`}
                 >
