@@ -20,6 +20,12 @@ This comprehensive guide will walk you through deploying your React/Vite applica
 
 Azure Static Web Apps is a service that automatically builds and deploys full-stack web apps to Azure from a GitHub repository. This guide uses an automated deployment script that sets up everything for you.
 
+**Current Deployment:**
+- Production: https://zhoqgoan.manus.space/
+- Compliance Environment: https://compliance-t2rtvc.manus.space/
+
+This guide will help you migrate to or run alongside Azure Static Web Apps for enhanced CI/CD capabilities.
+
 **What the deployment includes:**
 - Azure Static Web App resource
 - GitHub Actions workflow for CI/CD

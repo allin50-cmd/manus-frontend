@@ -2,6 +2,13 @@
 
 A React/Vite application deployed to Azure Static Web Apps.
 
+## Current Deployments
+
+- **Production:** https://zhoqgoan.manus.space/
+- **Compliance:** https://compliance-t2rtvc.manus.space/
+
+This repository includes automated Azure deployment to run alongside or migrate from existing Manus deployments.
+
 ## Quick Start
 
 ### 1. Check Prerequisites
@@ -24,9 +31,8 @@ gh run watch
 
 ## Documentation
 
-For complete step-by-step instructions, troubleshooting, and FAQs, see:
-
-**[AZURE-DEPLOYMENT-GUIDE.md](./AZURE-DEPLOYMENT-GUIDE.md)**
+**[AZURE-DEPLOYMENT-GUIDE.md](./AZURE-DEPLOYMENT-GUIDE.md)** - Complete deployment guide
+**[MIGRATION-GUIDE.md](./MIGRATION-GUIDE.md)** - Migration from Manus to Azure
 
 ## Prerequisites
 
@@ -44,6 +50,7 @@ For complete step-by-step instructions, troubleshooting, and FAQs, see:
 - **.github/workflows/azure-static-web-apps-ci-cd.yml** - GitHub Actions CI/CD
 - **staticwebapp.config.json** - Azure Static Web Apps configuration
 - **AZURE-DEPLOYMENT-GUIDE.md** - Comprehensive deployment guide
+- **MIGRATION-GUIDE.md** - Migration from Manus to Azure
 
 ## Features
 
