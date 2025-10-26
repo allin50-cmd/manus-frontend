@@ -359,11 +359,11 @@ function App() {
 
   // Public navigation (marketing pages)
   const publicNavItems = [
-    { id: 'home', label: 'Home' },
-    { id: 'features', label: 'Features' },
-    { id: 'pricing', label: 'Pricing' },
-    { id: 'about', label: 'About' },
-    { id: 'contact', label: 'Contact' }
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'features', label: 'Features', icon: Star },
+    { id: 'pricing', label: 'Pricing', icon: DollarSign },
+    { id: 'about', label: 'About', icon: Info },
+    { id: 'contact', label: 'Contact', icon: MessageSquare }
   ]
 
   // App navigation (dashboard/tools)
