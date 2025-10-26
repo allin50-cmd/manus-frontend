@@ -118,3 +118,103 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Mobile Optimizations */
+@layer utilities {
+  /* Prevent horizontal scroll on mobile */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Better touch targets for mobile */
+  @media (max-width: 768px) {
+    button, a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Prevent text size adjustment on iOS */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  /* Better tap highlighting */
+  * {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Optimize font rendering on mobile */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Prevent zoom on input focus (iOS) */
+  @media (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+  
+  /* Better mobile viewport handling */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS specific */
+    .min-h-screen {
+      min-height: -webkit-fill-available;
+    }
+  }
+  
+  /* Smooth mobile menu animation */
+  @keyframes slideInFromTop {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-in {
+    animation: slideInFromTop 0.3s ease-out;
+  }
+  
+  /* Mobile-friendly card shadows */
+  @media (max-width: 768px) {
+    .hover\:shadow-xl:hover {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+  }
+  
+  /* Better mobile spacing */
+  @media (max-width: 640px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+}
+
+/* Performance optimizations */
+@layer base {
+  /* GPU acceleration for animations */
+  .transition-all,
+  .transition-colors,
+  .transition-transform {
+    will-change: transform;
+  }
+  
+  /* Lazy load images */
+  img {
+    loading: lazy;
+  }
+}
+

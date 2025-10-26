@@ -517,26 +517,28 @@ function App() {
   // Page Components
   const HomePage = () => (
     <div className="space-y-16">
-      {/* Hero Section */}
-      <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden rounded-2xl">
+      {/* Hero Section - Mobile Optimized */}
+      <section className="relative min-h-[500px] md:min-h-[600px] flex items-center justify-center overflow-hidden rounded-xl md:rounded-2xl">
         <img src={heroImage} alt="FineGuard Workshop" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/60 via-blue-900/70 to-blue-900/80"></div>
-        <div className="relative z-10 text-center text-white px-4 max-w-4xl">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6">Never Miss a Compliance Deadline Again</h1>
-          <p className="text-xl md:text-2xl mb-8 opacity-95">AI-powered compliance management for UK businesses. Automatic deadline tracking, smart reminders, and complete peace of mind.</p>
-          <div className="flex gap-4 justify-center flex-wrap">
+        <div className="relative z-10 text-center text-white px-4 md:px-6 max-w-4xl">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight">Never Miss a Compliance Deadline Again</h1>
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 opacity-95 max-w-2xl mx-auto">AI-powered compliance management for UK businesses. Automatic deadline tracking, smart reminders, and complete peace of mind.</p>
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
             <Button 
               size="lg" 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-6 text-lg font-semibold" 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 md:px-10 py-5 md:py-6 text-base md:text-lg font-semibold w-full sm:w-auto" 
               onClick={() => setCurrentPage('pricing')}
+              style={{ minHeight: '48px' }}
             >
               Start Free Trial
             </Button>
             <Button 
               size="lg" 
               variant="outline"
-              className="border-2 border-white/80 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 px-10 py-6 text-lg font-semibold" 
+              className="border-2 border-white/80 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 px-8 md:px-10 py-5 md:py-6 text-base md:text-lg font-semibold w-full sm:w-auto" 
               onClick={() => document.querySelector('video')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{ minHeight: '48px' }}
             >
               Watch Demo
             </Button>
@@ -544,10 +546,10 @@ function App() {
         </div>
       </section>
 
-      {/* Features Preview */}
-      <section className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-12">Why Choose FineGuard?</h2>
-        <div className="grid md:grid-cols-3 gap-8">
+      {/* Features Preview - Mobile Optimized */}
+      <section className="container mx-auto px-4 md:px-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12">Why Choose FineGuard?</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           <Card className="hover:shadow-xl transition-shadow">
             <CardHeader>
               <Shield className="h-12 w-12 text-blue-600 mb-4" />
@@ -734,17 +736,17 @@ function App() {
   )
 
   const PricingPage = () => (
-    <div className="space-y-12">
-      <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden rounded-2xl">
+    <div className="space-y-8 md:space-y-12">
+      <section className="relative min-h-[300px] md:min-h-[400px] flex items-center justify-center overflow-hidden rounded-xl md:rounded-2xl">
         <img src={pricingImage} alt="Pricing" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-purple-900/30 to-blue-900/30"></div>
-        <div className="relative z-10 text-center text-white px-4">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">Protection for Every Dream</h1>
-          <p className="text-xl opacity-90">Transparent pricing, no hidden fees</p>
+        <div className="relative z-10 text-center text-white px-4 md:px-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 md:mb-4">Protection for Every Dream</h1>
+          <p className="text-base sm:text-lg md:text-xl opacity-90">Transparent pricing, no hidden fees</p>
         </div>
       </section>
 
-      <section className="container mx-auto px-4">
+      <section className="container mx-auto px-4 md:px-6">
         <div className="grid md:grid-cols-1 gap-8 max-w-2xl mx-auto">
           {[
             {
@@ -768,15 +770,15 @@ function App() {
                   Most Popular
                 </div>
               )}
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <div className="mt-4">
-                  <span className="text-5xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+               <CardHeader className="text-center">
+                <CardTitle className="text-xl md:text-2xl">{plan.name}</CardTitle>
+                <div className="mt-3 md:mt-4">
+                  <span className="text-4xl md:text-5xl font-bold">{plan.price}</span>
+                  <span className="text-muted-foreground text-base md:text-lg">{plan.period}</span>
                 </div>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-3">
+                <ul className="space-y-2 md:space-y-3">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -784,7 +786,11 @@ function App() {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full mt-6" variant={plan.popular ? "default" : "outline"}>
+                <Button 
+                  className="w-full mt-6 py-6 text-base md:text-lg font-semibold" 
+                  variant={plan.popular ? "default" : "outline"}
+                  style={{ minHeight: '48px' }}
+                >
                   Get Started
                 </Button>
               </CardContent>
@@ -1161,10 +1167,10 @@ function App() {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - Full Screen Overlay */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t bg-background">
-            <nav className="container px-4 py-4 space-y-2">
+          <div className="md:hidden fixed inset-0 top-16 z-40 bg-background/98 backdrop-blur-lg animate-in slide-in-from-top">
+            <nav className="container px-6 py-8 space-y-3 h-full overflow-y-auto">
               {navItems.map(item => (
                 <button
                   key={item.id}
@@ -1172,16 +1178,45 @@ function App() {
                     setCurrentPage(item.id)
                     setMobileMenuOpen(false)
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                  className={`w-full flex items-center gap-4 px-6 py-4 rounded-lg text-lg font-medium transition-all duration-200 ${
                     currentPage === item.id 
-                      ? 'bg-blue-600 text-white' 
-                      : 'hover:bg-muted'
+                      ? 'bg-blue-600 text-white shadow-lg scale-105' 
+                      : 'hover:bg-muted active:scale-95'
                   }`}
+                  style={{ minHeight: '56px' }}
                 >
-                  <item.icon className="h-4 w-4" />
-                  <span className="text-sm font-medium">{item.label}</span>
+                  <item.icon className="h-6 w-6" />
+                  <span>{item.label}</span>
                 </button>
               ))}
+              
+              {/* Mobile Sign Up/Profile Button */}
+              <div className="pt-4 border-t">
+                {user ? (
+                  <button
+                    onClick={() => {
+                      setCurrentPage('member')
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full flex items-center gap-4 px-6 py-4 rounded-lg text-lg font-medium bg-blue-600 text-white"
+                    style={{ minHeight: '56px' }}
+                  >
+                    <User className="h-6 w-6" />
+                    <span>{user.name}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setAuthModalOpen(true)
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg text-lg font-medium bg-blue-600 text-white shadow-lg"
+                    style={{ minHeight: '56px' }}
+                  >
+                    Sign Up
+                  </button>
+                )}
+              </div>
             </nav>
           </div>
         )}
