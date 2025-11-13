@@ -72,6 +72,8 @@ import WhiteLabelPage from './components/WhiteLabelPage.jsx'
 
 import DatabaseDashboard from './components/DatabaseDashboard.jsx'
 import ComplianceCalendarPage from './components/ComplianceCalendarPage.jsx'
+import { AuthProvider } from './context/AuthContext.jsx'
+import { DataProvider } from './context/DataContext.jsx'
 import DeadlineTrackerPage from './components/DeadlineTrackerPage.jsx'
 import EnhancedDocumentVault from './components/EnhancedDocumentVault.jsx'
 import AuditTrailPage from './components/AuditTrailPage.jsx'
@@ -1488,5 +1490,14 @@ function App() {
     </div>
   )
 }
-export default App
+// Wrap App with context providers
+const AppWithProviders = () => (
+  <AuthProvider>
+    <DataProvider>
+      <App />
+    </DataProvider>
+  </AuthProvider>
+)
+
+export default AppWithProviders
 
