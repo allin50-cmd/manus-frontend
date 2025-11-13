@@ -71,6 +71,12 @@ import DashboardBuilderPage from './components/DashboardBuilderPage.jsx'
 import WhiteLabelPage from './components/WhiteLabelPage.jsx'
 
 import DatabaseDashboard from './components/DatabaseDashboard.jsx'
+import ComplianceCalendarPage from './components/ComplianceCalendarPage.jsx'
+import DeadlineTrackerPage from './components/DeadlineTrackerPage.jsx'
+import EnhancedDocumentVault from './components/EnhancedDocumentVault.jsx'
+import AuditTrailPage from './components/AuditTrailPage.jsx'
+import ReportsDashboardPage from './components/ReportsDashboardPage.jsx'
+import NotificationsSettingsPage from './components/NotificationsSettingsPage.jsx'
 // Demo data
 const initialData = {
   companies: [
@@ -495,6 +501,18 @@ function App() {
         return <DashboardBuilderPage />
       case 'white-label':
         return <WhiteLabelPage />
+      case 'compliance-calendar':
+        return <ComplianceCalendarPage />
+      case 'deadline-tracker':
+        return <DeadlineTrackerPage />
+      case 'document-vault':
+        return <EnhancedDocumentVault />
+      case 'audit-trail':
+        return <AuditTrailPage />
+      case 'reports-dashboard':
+        return <ReportsDashboardPage />
+      case 'notifications-settings':
+        return <NotificationsSettingsPage />
       case 'member':
         return user ? (
           <MemberDashboard 
