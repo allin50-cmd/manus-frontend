@@ -1,3 +1,4 @@
+import LoadingSpinner from './LoadingSpinner.jsx'
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import api from '../utils/api';
@@ -27,8 +28,8 @@ const FineGuardDashboardPage = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">FineGuard Dashboard</h1>
-        <p className="text-muted-foreground">Loading fineguard data...</p>
+        <h1 className="text-3xl font-bold">Fine Management Dashboard</h1>
+        <LoadingSpinner text="Loading fine management data..." />
       </div>
     );
   }
@@ -36,7 +37,7 @@ const FineGuardDashboardPage = () => {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">FineGuard Dashboard</h1>
+        <h1 className="text-3xl font-bold">Fine Management Dashboard</h1>
         <p className="text-red-500">Error loading fineguard data: {error.message}</p>
       </div>
     );
@@ -46,7 +47,7 @@ const FineGuardDashboardPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">FineGuard Dashboard</h1>
+          <h1 className="text-3xl font-bold">Fine Management Dashboard</h1>
           <p className="text-muted-foreground">Monitor fineguard status</p>
         </div>
         <Button><Plus className="mr-2 h-4 w-4" />Add New</Button>
@@ -56,7 +57,7 @@ const FineGuardDashboardPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
-            FineGuard Dashboard Overview
+            Fine Management Dashboard Overview
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -219,7 +219,7 @@ const AdminPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">FineGuard Score</label>
+                  <label className="block text-sm font-medium mb-2">Fine Risk Score</label>
                   <input
                     type="number"
                     value={formData.fineguard || 100}

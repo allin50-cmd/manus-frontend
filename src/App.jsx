@@ -304,7 +304,7 @@ function App() {
 
 ### Immediate Actions Required:
 1. **Review Overdue Filings** - Address all overdue obligations within 7 days
-2. **Engage FineGuard Officer** - Assign dedicated resource for monitoring
+2. **Engage Fine Management Officer** - Assign dedicated resource for monitoring
 3. **Implement Early Warning System** - Set up 30-day advance reminders
 
 ### Strategic Recommendations:
@@ -316,7 +316,7 @@ function App() {
 ### Priority Timeline:
 - **Week 1:** Clear all critical overdue items
 - **Month 1:** Implement monitoring system
-- **Quarter 1:** Achieve 85%+ fineguard score
+- **Quarter 1:** Achieve 85%+ fine risk score
         `
       })
     }, 2000)
@@ -542,8 +542,8 @@ function App() {
         <img src={heroImage} alt="FineGuard Workshop" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/60 via-blue-900/70 to-blue-900/80"></div>
         <div className="relative z-10 text-center text-white px-4 md:px-6 max-w-4xl">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight">Never Miss a FineGuard Deadline Again</h1>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 opacity-95 max-w-2xl mx-auto">AI-powered fineguard management for UK businesses. Automatic deadline tracking, smart reminders, and complete peace of mind.</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight">Never Miss a Fine Deadline Again</h1>
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 opacity-95 max-w-2xl mx-auto">AI-powered fine management for UK businesses. Automatic deadline tracking, smart reminders, and complete peace of mind.</p>
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
             <Button 
               size="lg" 
@@ -963,7 +963,7 @@ function App() {
                 <Building2 className="h-5 w-5 text-blue-600 mt-1" />
                 <div>
                   <p className="font-semibold">Address</p>
-                  <p className="text-muted-foreground">123 FineGuard Street<br/>London, SW1A 1AA</p>
+                  <p className="text-muted-foreground">123 Fine Management Street<br/>London, SW1A 1AA</p>
                 </div>
               </div>
             </CardContent>
@@ -1001,7 +1001,7 @@ function App() {
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg FineGuard</CardTitle>
+            <CardTitle className="text-sm font-medium">Avg Fine Risk</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>

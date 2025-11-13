@@ -156,7 +156,7 @@ export class AccountingAI {
     else if (company.overdueCount > 1) score += 0.3
     else if (company.overdueCount > 0) score += 0.2
 
-    // Low fineguard score
+    // Low fine risk score
     if (company.fineguardScore < 60) score += 0.3
     else if (company.fineguardScore < 75) score += 0.2
 
@@ -289,7 +289,7 @@ export class AccountingAI {
       return 'Without professional tax advice, you may be missing valuable tax relief opportunities'
     }
     if (company.fineguardScore < 70) {
-      return 'Low fineguard score indicates potential tax filing issues that need attention'
+      return 'Low fine risk score indicates potential tax filing issues that need attention'
     }
     return 'Proactive tax planning can optimize your tax position and ensure fineguard'
   }
