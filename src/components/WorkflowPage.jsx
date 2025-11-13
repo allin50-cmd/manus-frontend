@@ -120,7 +120,7 @@ export default function WorkflowPage() {
               <Workflow className="w-10 h-10" />
               Workflow Automation
             </h1>
-            <p className="text-gray-300">Create and manage automated workflows for your compliance processes</p>
+            <p className="text-gray-300">Create and manage automated workflows for your fineguard processes</p>
           </div>
           <Button
             onClick={handleCreateWorkflow}

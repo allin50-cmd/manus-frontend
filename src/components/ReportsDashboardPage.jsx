@@ -12,8 +12,8 @@ const ReportsDashboardPage = () => {
   const reports = [
     {
       id: 1,
-      name: 'Compliance Overview Report',
-      description: 'Comprehensive overview of all compliance activities',
+      name: 'FineGuard Overview Report',
+      description: 'Comprehensive overview of all fineguard activities',
       type: 'overview',
       frequency: 'monthly',
       lastGenerated: '2024-11-01',
@@ -37,7 +37,7 @@ const ReportsDashboardPage = () => {
     {
       id: 3,
       name: 'Risk Assessment Report',
-      description: 'Analysis of compliance risks and mitigation strategies',
+      description: 'Analysis of fineguard risks and mitigation strategies',
       type: 'risk',
       frequency: 'quarterly',
       lastGenerated: '2024-10-01',
@@ -93,7 +93,7 @@ const ReportsDashboardPage = () => {
   }
 
   // Sample chart data
-  const complianceData = {
+  const fineguardData = {
     completed: 75,
     overdue: 10,
     upcoming: 15
@@ -127,7 +127,7 @@ const ReportsDashboardPage = () => {
               Create Custom Report
             </Button>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Generate and download compliance reports</p>
+          <p className="text-gray-600 dark:text-gray-400">Generate and download fineguard reports</p>
         </div>
 
         {/* Stats Cards */}
@@ -182,10 +182,10 @@ const ReportsDashboardPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Compliance Status Chart */}
+          {/* FineGuard Status Chart */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Compliance Status</CardTitle>
+              <CardTitle className="text-lg">FineGuard Status</CardTitle>
               <CardDescription>Current period breakdown</CardDescription>
             </CardHeader>
             <CardContent>
@@ -193,30 +193,30 @@ const ReportsDashboardPage = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Completed</span>
-                    <span className="text-sm font-semibold text-green-600">{complianceData.completed}%</span>
+                    <span className="text-sm font-semibold text-green-600">{fineguardData.completed}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: `${complianceData.completed}%`}}></div>
+                    <div className="bg-green-500 h-2 rounded-full" style={{width: `${fineguardData.completed}%`}}></div>
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Upcoming</span>
-                    <span className="text-sm font-semibold text-blue-600">{complianceData.upcoming}%</span>
+                    <span className="text-sm font-semibold text-blue-600">{fineguardData.upcoming}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{width: `${complianceData.upcoming}%`}}></div>
+                    <div className="bg-blue-500 h-2 rounded-full" style={{width: `${fineguardData.upcoming}%`}}></div>
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Overdue</span>
-                    <span className="text-sm font-semibold text-red-600">{complianceData.overdue}%</span>
+                    <span className="text-sm font-semibold text-red-600">{fineguardData.overdue}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-red-500 h-2 rounded-full" style={{width: `${complianceData.overdue}%`}}></div>
+                    <div className="bg-red-500 h-2 rounded-full" style={{width: `${fineguardData.overdue}%`}}></div>
                   </div>
                 </div>
               </div>
@@ -269,7 +269,7 @@ const ReportsDashboardPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Available Reports</CardTitle>
-                <CardDescription>Pre-configured compliance reports</CardDescription>
+                <CardDescription>Pre-configured fineguard reports</CardDescription>
               </div>
               <select
                 className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"

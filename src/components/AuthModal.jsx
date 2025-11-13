@@ -99,7 +99,7 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
             {isLogin ? 'Welcome Back' : 'Create Account'}
           </h3>
           <p className="text-muted-foreground text-sm">
-            {isLogin ? 'Sign in to access your compliance dashboard' : 'Start protecting your business today'}
+            {isLogin ? 'Sign in to access your fineguard dashboard' : 'Start protecting your business today'}
           </p>
         </div>
 

@@ -184,7 +184,7 @@ export default function SettingsPage({ user, onUpdate }) {
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <p className="font-medium">Email Notifications</p>
-                  <p className="text-sm text-muted-foreground">Receive compliance alerts via email</p>
+                  <p className="text-sm text-muted-foreground">Receive fineguard alerts via email</p>
                 </div>
                 <input
                   type="checkbox"

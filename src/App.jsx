@@ -88,7 +88,7 @@ const initialData = {
       companyNumber: "12345678",
       address: "123 Business Park, London, SW1A 1AA",
       riskLevel: "high",
-      complianceScore: 65,
+      fineguardScore: 65,
       overdueCount: 2,
       obligationCount: 8
     },
@@ -98,7 +98,7 @@ const initialData = {
       companyNumber: "87654321",
       address: "456 Enterprise Road, Manchester, M1 1AB",
       riskLevel: "medium",
-      complianceScore: 78,
+      fineguardScore: 78,
       overdueCount: 0,
       obligationCount: 6
     },
@@ -108,7 +108,7 @@ const initialData = {
       companyNumber: "11223344",
       address: "789 Innovation Street, Bristol, BS1 1CD",
       riskLevel: "critical",
-      complianceScore: 45,
+      fineguardScore: 45,
       overdueCount: 3,
       obligationCount: 5
     }
@@ -265,7 +265,7 @@ function App() {
   const stats = {
     overdueCount: data.obligations.filter(o => o.status === 'overdue').length,
     totalCompanies: data.companies.length,
-    avgScore: (data.companies.reduce((sum, c) => sum + c.complianceScore, 0) / data.companies.length).toFixed(1),
+    avgScore: (data.companies.reduce((sum, c) => sum + c.fineguardScore, 0) / data.companies.length).toFixed(1),
     penaltyRisk: data.obligations.filter(o => o.status === 'overdue').reduce((sum, o) => sum + o.penalty, 0)
   }
 
@@ -278,7 +278,7 @@ function App() {
       companies: prev.companies.map(c => {
         const obligation = prev.obligations.find(o => o.id === obligationId)
         if (c.id === obligation?.companyId) {
-          return { ...c, complianceScore: Math.min(100, c.complianceScore + 5) }
+          return { ...c, fineguardScore: Math.min(100, c.fineguardScore + 5) }
         }
         return c
       })
@@ -304,35 +304,35 @@ function App() {
 
 ### Immediate Actions Required:
 1. **Review Overdue Filings** - Address all overdue obligations within 7 days
-2. **Engage Compliance Officer** - Assign dedicated resource for monitoring
+2. **Engage FineGuard Officer** - Assign dedicated resource for monitoring
 3. **Implement Early Warning System** - Set up 30-day advance reminders
 
 ### Strategic Recommendations:
-- Conduct comprehensive compliance audit
+- Conduct comprehensive fineguard audit
 - Implement automated tracking system
-- Schedule quarterly compliance reviews
+- Schedule quarterly fineguard reviews
 - Establish escalation procedures for high-risk items
 
 ### Priority Timeline:
 - **Week 1:** Clear all critical overdue items
 - **Month 1:** Implement monitoring system
-- **Quarter 1:** Achieve 85%+ compliance score
+- **Quarter 1:** Achieve 85%+ fineguard score
         `
       })
     }, 2000)
   }
 
-  const getAIComplianceChecklist = (obligation) => {
+  const getAIFineGuardChecklist = (obligation) => {
     setAiModalOpen(true)
     setAiContent({
-      title: `AI Compliance Checklist: ${obligation.title}`,
+      title: `AI FineGuard Checklist: ${obligation.title}`,
       content: '',
       loading: true
     })
 
     setTimeout(() => {
       setAiContent({
-        title: `AI Compliance Checklist: ${obligation.title}`,
+        title: `AI FineGuard Checklist: ${obligation.title}`,
         loading: false,
         content: `
 ### Pre-Submission Requirements:
@@ -351,7 +351,7 @@ function App() {
 
 ### Post-Submission Actions:
 - File confirmation email in company records
-- Update internal compliance tracking system
+- Update internal fineguard tracking system
 - Schedule reminder for next filing period
 - Notify relevant stakeholders of completion
         `
@@ -465,7 +465,7 @@ function App() {
         return <KnowledgeBasePage />
       case 'training':
         return <TrainingPage />
-      case 'compliance-dashboard':
+      case 'fineguard-dashboard':
         return <ComplianceDashboardPage />
       case 'tax-planning':
         return <TaxPlanningPage />
@@ -503,7 +503,7 @@ function App() {
         return <DashboardBuilderPage />
       case 'white-label':
         return <WhiteLabelPage />
-      case 'compliance-calendar':
+      case 'fineguard-calendar':
         return <ComplianceCalendarPage />
       case 'deadline-tracker':
         return <DeadlineTrackerPage />
@@ -542,8 +542,8 @@ function App() {
         <img src={heroImage} alt="FineGuard Workshop" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/60 via-blue-900/70 to-blue-900/80"></div>
         <div className="relative z-10 text-center text-white px-4 md:px-6 max-w-4xl">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight">Never Miss a Compliance Deadline Again</h1>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 opacity-95 max-w-2xl mx-auto">AI-powered compliance management for UK businesses. Automatic deadline tracking, smart reminders, and complete peace of mind.</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 leading-tight">Never Miss a FineGuard Deadline Again</h1>
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 opacity-95 max-w-2xl mx-auto">AI-powered fineguard management for UK businesses. Automatic deadline tracking, smart reminders, and complete peace of mind.</p>
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
             <Button 
               size="lg" 
@@ -585,7 +585,7 @@ function App() {
               <CardTitle>Smart Reminders</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Get timely notifications before deadlines with actionable compliance checklists.</p>
+              <p className="text-muted-foreground">Get timely notifications before deadlines with actionable fineguard checklists.</p>
             </CardContent>
           </Card>
           <Card className="hover:shadow-xl transition-shadow">
@@ -594,7 +594,7 @@ function App() {
               <CardTitle>Peace of Mind</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Focus on growing your business while we handle compliance automatically.</p>
+              <p className="text-muted-foreground">Focus on growing your business while we handle fineguard automatically.</p>
             </CardContent>
           </Card>
         </div>
@@ -604,7 +604,7 @@ function App() {
       <section className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-4">See FineGuard in Action</h2>
-          <p className="text-center text-muted-foreground mb-8 text-lg">Watch how FineGuard protects your business from compliance penalties</p>
+          <p className="text-center text-muted-foreground mb-8 text-lg">Watch how FineGuard protects your business from fineguard penalties</p>
           <div className="relative rounded-2xl overflow-hidden shadow-2xl">
             <video 
               controls 
@@ -651,12 +651,12 @@ function App() {
           <CardContent className="p-8 space-y-6">
             <h2 className="text-3xl font-bold">Our Mission</h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              FineGuard was born from a simple truth: small business owners shouldn't lose sleep over compliance deadlines. 
+              FineGuard was born from a simple truth: small business owners shouldn't lose sleep over fineguard deadlines. 
               Every day, brilliant entrepreneurs face the burden of paperwork, filings, and regulations that distract from 
               what they do best—building amazing businesses.
             </p>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              That's where FineGuard comes in. Our AI guardian watches over your compliance obligations 24/7, ensuring you 
+              That's where FineGuard comes in. Our AI guardian watches over your fineguard obligations 24/7, ensuring you 
               never miss a deadline, never face unnecessary penalties, and always stay protected. From Companies House 
               filings to HMRC submissions, we've got you covered.
             </p>
@@ -694,12 +694,12 @@ function App() {
             {
               step: 3,
               title: "Smart Reminders",
-              description: "Get timely notifications via email, SMS, and dashboard alerts with AI-generated compliance checklists."
+              description: "Get timely notifications via email, SMS, and dashboard alerts with AI-generated fineguard checklists."
             },
             {
               step: 4,
               title: "Stay Protected",
-              description: "Never miss a deadline again. Focus on growth while we handle the compliance burden automatically."
+              description: "Never miss a deadline again. Focus on growth while we handle the fineguard burden automatically."
             }
           ].map((item) => (
             <Card key={item.step} className="hover:shadow-lg transition-shadow">
@@ -736,8 +736,8 @@ function App() {
             { icon: Shield, title: "AI Guardian", desc: "FineGuard monitors your obligations 24/7" },
             { icon: Bell, title: "Smart Alerts", desc: "Multi-channel notifications (email, SMS, dashboard)" },
             { icon: Calendar, title: "Deadline Tracking", desc: "Never miss Companies House or HMRC filings" },
-            { icon: Brain, title: "AI Checklists", desc: "Step-by-step compliance guidance" },
-            { icon: TrendingUp, title: "Risk Scoring", desc: "Real-time compliance health monitoring" },
+            { icon: Brain, title: "AI Checklists", desc: "Step-by-step fineguard guidance" },
+            { icon: TrendingUp, title: "Risk Scoring", desc: "Real-time fineguard health monitoring" },
             { icon: CheckCircle2, title: "Auto-Sync", desc: "Automatic updates from official sources" }
           ].map((feature, idx) => (
             <Card key={idx} className="hover:shadow-xl transition-all hover:-translate-y-1">
@@ -780,7 +780,7 @@ function App() {
                 "Email notifications",
                 "SMS message alert",
                 "Phone call alert",
-                "Compliance dashboard"
+                "FineGuard dashboard"
               ]
             }
           ].map((plan) => (
@@ -884,7 +884,7 @@ function App() {
             {
               name: "James Chen",
               role: "Tech Startup Founder",
-              quote: "As a first-time founder, compliance was overwhelming. FineGuard made it effortless."
+              quote: "As a first-time founder, fineguard was overwhelming. FineGuard made it effortless."
             },
             {
               name: "Emma Thompson",
@@ -963,7 +963,7 @@ function App() {
                 <Building2 className="h-5 w-5 text-blue-600 mt-1" />
                 <div>
                   <p className="font-semibold">Address</p>
-                  <p className="text-muted-foreground">123 Compliance Street<br/>London, SW1A 1AA</p>
+                  <p className="text-muted-foreground">123 FineGuard Street<br/>London, SW1A 1AA</p>
                 </div>
               </div>
             </CardContent>
@@ -1001,7 +1001,7 @@ function App() {
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Compliance</CardTitle>
+            <CardTitle className="text-sm font-medium">Avg FineGuard</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -1048,7 +1048,7 @@ function App() {
                 <div className="text-sm text-muted-foreground space-y-1">
                   <div>#{company.companyNumber}</div>
                   <div className="flex items-center justify-between">
-                    <span>Compliance: {company.complianceScore}%</span>
+                    <span>FineGuard: {company.fineguardScore}%</span>
                     <span className="flex items-center gap-1">
                       <i className="fas fa-tasks text-xs"></i>
                       {company.obligationCount} obligations
@@ -1072,7 +1072,7 @@ function App() {
               <Calendar className="h-5 w-5" />
               Obligations
             </CardTitle>
-            <CardDescription>Track compliance deadlines</CardDescription>
+            <CardDescription>Track fineguard deadlines</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {sortedObligations.map(obligation => {
@@ -1351,10 +1351,10 @@ function App() {
 
               <Button 
                 className="w-full" 
-                onClick={() => getAIComplianceChecklist(selectedObligation)}
+                onClick={() => getAIFineGuardChecklist(selectedObligation)}
               >
                 <Brain className="mr-2 h-4 w-4" />
-                AI Compliance Checklist
+                AI FineGuard Checklist
               </Button>
 
               <div>
@@ -1400,7 +1400,7 @@ function App() {
               {aiContent.loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                  <p className="text-muted-foreground">Analyzing compliance data...</p>
+                  <p className="text-muted-foreground">Analyzing fineguard data...</p>
                 </div>
               ) : (
                 <div className="prose prose-sm dark:prose-invert max-w-none">

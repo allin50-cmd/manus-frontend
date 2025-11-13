@@ -35,11 +35,11 @@ export default function HelpPage() {
     },
     {
       q: 'What do the different risk levels mean?',
-      a: 'Risk levels (low, medium, high) are determined by our AI Lead Scoring Agent based on various factors including compliance history, company size, and industry. High-risk companies may require closer monitoring.'
+      a: 'Risk levels (low, medium, high) are determined by our AI Lead Scoring Agent based on various factors including fineguard history, company size, and industry. High-risk companies may require closer monitoring.'
     },
     {
       q: 'How can I customize my notification preferences?',
-      a: 'Go to the Notifications page and scroll down to "Notification Preferences". You can toggle email, push, and SMS notifications for different categories like compliance alerts, payment updates, and AI insights.'
+      a: 'Go to the Notifications page and scroll down to "Notification Preferences". You can toggle email, push, and SMS notifications for different categories like fineguard alerts, payment updates, and AI insights.'
     },
     {
       q: 'How do I generate a new API key?',

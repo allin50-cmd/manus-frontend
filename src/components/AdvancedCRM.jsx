@@ -73,7 +73,7 @@ const AdvancedCRM = () => {
     const logs = [
       { agent: 'AI Lead Scoring Agent', action: 'Scored lead: Tech Startup Ltd - Score: 85/100', type: 'success' },
       { agent: 'Churn Prediction Agent', action: 'Alert: Global Solutions Ltd showing churn signals', type: 'warning' },
-      { agent: 'Compliance Monitoring Agent', action: 'Deadline approaching: Annual Accounts for 3 companies', type: 'info' },
+      { agent: 'FineGuard Monitoring Agent', action: 'Deadline approaching: Annual Accounts for 3 companies', type: 'info' },
       { agent: 'Email Campaign Agent', action: 'Sent reminder email to Startup Ventures Ltd', type: 'success' },
       { agent: 'Data Enrichment Agent', action: 'Updated company profile: New director added', type: 'info' },
       { agent: 'Next Best Action Agent', action: 'Recommendation: Schedule call with high-value client', type: 'success' }

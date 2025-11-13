@@ -96,7 +96,7 @@ const NotificationsSettingsPage = () => {
               Save Changes
             </Button>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Configure how you receive compliance alerts and reminders</p>
+          <p className="text-gray-600 dark:text-gray-400">Configure how you receive fineguard alerts and reminders</p>
         </div>
 
         {/* Test Notification Alert */}

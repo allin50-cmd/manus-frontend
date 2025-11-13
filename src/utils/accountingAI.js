@@ -20,7 +20,7 @@ export class AccountingAI {
     const {
       companyNumber,
       riskLevel,
-      complianceScore,
+      fineguardScore,
       overdueCount,
       obligationCount,
       annualTurnover,
@@ -44,18 +44,18 @@ export class AccountingAI {
       totalScore += taxScore
     }
 
-    // 2. Compliance & Company Secretarial
-    const complianceNeedScore = this.analyzeComplianceNeeds(companyData)
-    if (complianceNeedScore > 0.5) {
+    // 2. FineGuard & Company Secretarial
+    const fineguardNeedScore = this.analyzeFineGuardNeeds(companyData)
+    if (fineguardNeedScore > 0.5) {
       recommendations.push({
         service: 'Company Secretarial & Legal',
-        priority: complianceNeedScore > 0.7 ? 'high' : 'medium',
-        confidence: Math.round(complianceNeedScore * 100),
-        reason: this.getComplianceReason(companyData),
-        suggestedActions: this.getComplianceActions(companyData),
+        priority: fineguardNeedScore > 0.7 ? 'high' : 'medium',
+        confidence: Math.round(fineguardNeedScore * 100),
+        reason: this.getFineGuardReason(companyData),
+        suggestedActions: this.getFineGuardActions(companyData),
         estimatedSavings: null
       })
-      totalScore += complianceNeedScore
+      totalScore += fineguardNeedScore
     }
 
     // 3. Payroll & Bookkeeping
@@ -135,8 +135,8 @@ export class AccountingAI {
     else if (company.employees > 10) score += 0.15
     else if (company.employees > 5) score += 0.1
 
-    // Poor compliance = tax risk
-    if (company.complianceScore < 70) score += 0.2
+    // Poor fineguard = tax risk
+    if (company.fineguardScore < 70) score += 0.2
     if (company.overdueCount > 2) score += 0.15
 
     // No current accountant = likely missing tax opportunities
@@ -146,9 +146,9 @@ export class AccountingAI {
   }
 
   /**
-   * Analyze compliance needs
+   * Analyze fineguard needs
    */
-  analyzeComplianceNeeds(company) {
+  analyzeFineGuardNeeds(company) {
     let score = 0
 
     // Overdue obligations = immediate need
@@ -156,9 +156,9 @@ export class AccountingAI {
     else if (company.overdueCount > 1) score += 0.3
     else if (company.overdueCount > 0) score += 0.2
 
-    // Low compliance score
-    if (company.complianceScore < 60) score += 0.3
-    else if (company.complianceScore < 75) score += 0.2
+    // Low fineguard score
+    if (company.fineguardScore < 60) score += 0.3
+    else if (company.fineguardScore < 75) score += 0.2
 
     // High risk level
     if (company.riskLevel === 'high') score += 0.3
@@ -201,8 +201,8 @@ export class AccountingAI {
     // High risk = need strategic guidance
     if (company.riskLevel === 'high') score += 0.4
 
-    // Poor compliance = operational issues
-    if (company.complianceScore < 65) score += 0.3
+    // Poor fineguard = operational issues
+    if (company.fineguardScore < 65) score += 0.3
 
     // High turnover = growth opportunities
     if (company.annualTurnover > 1000000) score += 0.3
@@ -228,8 +228,8 @@ export class AccountingAI {
     // Large employee base = pension planning
     if (company.employees > 25) score += 0.2
 
-    // Good compliance = ready for growth
-    if (company.complianceScore > 80) score += 0.2
+    // Good fineguard = ready for growth
+    if (company.fineguardScore > 80) score += 0.2
 
     return Math.min(score, 1.0)
   }
@@ -250,7 +250,7 @@ export class AccountingAI {
     else if (company.employees > 10) score += 1
 
     if (company.riskLevel === 'high') score += 2
-    if (company.complianceScore < 70) score += 1
+    if (company.fineguardScore < 70) score += 1
     if (company.obligationCount > 15) score += 1
 
     // Recommend package based on score
@@ -288,18 +288,18 @@ export class AccountingAI {
     if (!company.hasAccountant) {
       return 'Without professional tax advice, you may be missing valuable tax relief opportunities'
     }
-    if (company.complianceScore < 70) {
-      return 'Low compliance score indicates potential tax filing issues that need attention'
+    if (company.fineguardScore < 70) {
+      return 'Low fineguard score indicates potential tax filing issues that need attention'
     }
-    return 'Proactive tax planning can optimize your tax position and ensure compliance'
+    return 'Proactive tax planning can optimize your tax position and ensure fineguard'
   }
 
-  getComplianceReason(company) {
+  getFineGuardReason(company) {
     if (company.overdueCount > 2) {
       return `You have ${company.overdueCount} overdue obligations requiring immediate attention`
     }
-    if (company.complianceScore < 65) {
-      return `Compliance score of ${company.complianceScore}% indicates significant risk exposure`
+    if (company.fineguardScore < 65) {
+      return `FineGuard score of ${company.fineguardScore}% indicates significant risk exposure`
     }
     return 'Professional company secretarial services ensure you never miss a filing deadline'
   }
@@ -309,7 +309,7 @@ export class AccountingAI {
       return `Managing payroll for ${company.employees} employees requires professional automation`
     }
     if (!company.hasAccountant) {
-      return 'Professional payroll services save time and ensure HMRC compliance'
+      return 'Professional payroll services save time and ensure HMRC fineguard'
     }
     return 'Outsourced payroll reduces errors and frees up your time for core business'
   }
@@ -347,12 +347,12 @@ export class AccountingAI {
     ]
   }
 
-  getComplianceActions(company) {
+  getFineGuardActions(company) {
     return [
       'Clear overdue obligations',
       'Set up filing calendar',
       'Review statutory requirements',
-      'Implement compliance system',
+      'Implement fineguard system',
       'Schedule regular reviews'
     ]
   }
@@ -361,7 +361,7 @@ export class AccountingAI {
     return [
       'Audit current payroll process',
       'Implement automated system',
-      'Ensure RTI compliance',
+      'Ensure RTI fineguard',
       'Set up pension auto-enrolment',
       'Review payroll tax efficiency'
     ]

@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Calendar, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Clock, Filter, Download } from 'lucide-react'
 
-const ComplianceCalendarPage = () => {
+const FineGuardCalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState('month') // month, week, year
   const [filterStatus, setFilterStatus] = useState('all') // all, overdue, upcoming, completed
 
-  // Sample compliance deadlines
+  // Sample fineguard deadlines
   const deadlines = [
     { id: 1, title: 'VAT Return Q4', date: '2024-11-15', status: 'upcoming', type: 'tax', priority: 'high' },
     { id: 2, title: 'Annual Accounts Filing', date: '2024-11-20', status: 'upcoming', type: 'filing', priority: 'critical' },
@@ -20,7 +20,7 @@ const ComplianceCalendarPage = () => {
     { id: 7, title: 'VAT Return Q3', date: '2024-10-15', status: 'completed', type: 'tax', priority: 'high' },
     { id: 8, title: 'Payroll Report', date: '2024-12-05', status: 'upcoming', type: 'report', priority: 'medium' },
     { id: 9, title: 'Directors Meeting Minutes', date: '2024-12-10', status: 'upcoming', type: 'governance', priority: 'low' },
-    { id: 10, title: 'Insurance Renewal', date: '2024-12-15', status: 'upcoming', type: 'compliance', priority: 'medium' },
+    { id: 10, title: 'Insurance Renewal', date: '2024-12-15', status: 'upcoming', type: 'fineguard', priority: 'medium' },
   ]
 
   const getMonthName = (date) => {
@@ -196,8 +196,8 @@ const ComplianceCalendarPage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Compliance Calendar</h1>
-          <p className="text-gray-600 dark:text-gray-400">Track and manage all your compliance deadlines in one place</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">FineGuard Calendar</h1>
+          <p className="text-gray-600 dark:text-gray-400">Track and manage all your fineguard deadlines in one place</p>
         </div>
 
         {/* Stats Cards */}
@@ -363,5 +363,5 @@ const ComplianceCalendarPage = () => {
   )
 }
 
-export default ComplianceCalendarPage
+export default FineGuardCalendarPage
 

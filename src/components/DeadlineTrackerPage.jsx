@@ -140,7 +140,7 @@ const DeadlineTrackerPage = () => {
       case 'payment': return '💳'
       case 'report': return '📊'
       case 'governance': return '⚖️'
-      case 'compliance': return '✓'
+      case 'fineguard': return '✓'
       default: return '📋'
     }
   }
@@ -200,7 +200,7 @@ const DeadlineTrackerPage = () => {
               Add Deadline
             </Button>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Manage and track all compliance deadlines</p>
+          <p className="text-gray-600 dark:text-gray-400">Manage and track all fineguard deadlines</p>
         </div>
 
         {/* Stats Cards */}
@@ -294,7 +294,7 @@ const DeadlineTrackerPage = () => {
                 <option value="payment">Payment</option>
                 <option value="report">Report</option>
                 <option value="governance">Governance</option>
-                <option value="compliance">Compliance</option>
+                <option value="fineguard">FineGuard</option>
               </select>
 
               <select

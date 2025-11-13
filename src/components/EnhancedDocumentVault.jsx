@@ -17,7 +17,7 @@ const EnhancedDocumentVault = () => {
     { id: 2, name: 'Annual Accounts', count: 8, icon: '📊', color: 'bg-green-100' },
     { id: 3, name: 'Contracts', count: 15, icon: '📝', color: 'bg-purple-100' },
     { id: 4, name: 'Insurance', count: 6, icon: '🛡️', color: 'bg-yellow-100' },
-    { id: 5, name: 'Compliance Certificates', count: 10, icon: '✓', color: 'bg-red-100' },
+    { id: 5, name: 'FineGuard Certificates', count: 10, icon: '✓', color: 'bg-red-100' },
     { id: 6, name: 'Board Minutes', count: 24, icon: '📋', color: 'bg-indigo-100' },
   ]
 
@@ -105,7 +105,7 @@ const EnhancedDocumentVault = () => {
       size: '1.2 MB',
       uploadedBy: 'Mike Davis',
       uploadedDate: '2024-09-30',
-      folder: 'Compliance Certificates',
+      folder: 'FineGuard Certificates',
       tags: ['ISO', 'Certificate', 'Quality'],
       isLocked: true,
       isStarred: true,
@@ -186,7 +186,7 @@ const EnhancedDocumentVault = () => {
               </Button>
             </div>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Secure storage for all your compliance documents</p>
+          <p className="text-gray-600 dark:text-gray-400">Secure storage for all your fineguard documents</p>
         </div>
 
         {/* Stats Cards */}

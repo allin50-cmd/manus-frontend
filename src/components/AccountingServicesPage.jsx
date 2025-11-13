@@ -19,7 +19,7 @@ export default function AccountingServicesPage({ companyData }) {
     companyNumber: '12345678',
     name: 'Your Company',
     riskLevel: 'medium',
-    complianceScore: 72,
+    fineguardScore: 72,
     overdueCount: 2,
     obligationCount: 8,
     annualTurnover: 350000,

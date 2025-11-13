@@ -56,7 +56,7 @@ const AdminPage = () => {
     if (activeTab === 'users') {
       setFormData({ name: '', email: '', role: 'User', status: 'active', created: new Date().toISOString().split('T')[0] });
     } else if (activeTab === 'companies') {
-      setFormData({ name: '', number: '', status: 'active', compliance: 100, risk: 'low' });
+      setFormData({ name: '', number: '', status: 'active', fineguard: 100, risk: 'low' });
     } else if (activeTab === 'agents') {
       setFormData({ name: '', status: 'paused', tasks: 0, accuracy: 0, enabled: 0 });
     }
@@ -219,11 +219,11 @@ const AdminPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Compliance Score</label>
+                  <label className="block text-sm font-medium mb-2">FineGuard Score</label>
                   <input
                     type="number"
-                    value={formData.compliance || 100}
-                    onChange={(e) => setFormData({ ...formData, compliance: parseInt(e.target.value) })}
+                    value={formData.fineguard || 100}
+                    onChange={(e) => setFormData({ ...formData, fineguard: parseInt(e.target.value) })}
                     className="w-full px-4 py-2 border rounded-lg"
                     min="0"
                     max="100"
@@ -354,8 +354,8 @@ const AdminPage = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Compliance</p>
-                      <p className="font-semibold">{company.compliance}%</p>
+                      <p className="text-sm text-muted-foreground">FineGuard</p>
+                      <p className="font-semibold">{company.fineguard}%</p>
                     </div>
                     <Badge variant={
                       company.risk === 'low' ? 'default' : 

@@ -101,7 +101,7 @@ const MemberDashboard = ({ user, onLogout, onUpgrade }) => {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>Basic compliance tracking</span>
+                      <span>Basic fineguard tracking</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <AlertCircle className="h-4 w-4" />
@@ -120,7 +120,7 @@ const MemberDashboard = ({ user, onLogout, onUpgrade }) => {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>AI compliance checklists</span>
+                      <span>AI fineguard checklists</span>
                     </div>
                   </>
                 ) : user.subscription === 'pro' ? (
