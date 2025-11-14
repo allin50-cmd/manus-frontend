@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Plus, Search, Filter, Calendar, AlertTriangle, CheckCircle2, Clock, Edit, Trash2, Eye, Bell, FileText, Download, Upload } from 'lucide-react'
+import GlobalSearch from './GlobalSearch.jsx'
+import AdvancedFilters from './AdvancedFilters.jsx'
+import { exportFinesToCSV, exportFinesToPDF } from '../utils/exportData.js'
 
 const DeadlineTrackerPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
@@ -199,6 +202,16 @@ const DeadlineTrackerPage = () => {
               <Plus className="w-4 h-4 mr-2" />
               Add Deadline
             </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => exportFinesToCSV(filteredDeadlines, "deadlines_export")}>
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button variant="outline" onClick={() => exportFinesToPDF(filteredDeadlines, "deadlines_export")}>
+                <FileText className="w-4 h-4 mr-2" />
+                Export PDF
+              </Button>
+            </div>
           </div>
           <p className="text-gray-600 dark:text-gray-400">Manage and track all fineguard deadlines</p>
         </div>
