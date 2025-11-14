@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import EnhancedNavigation from './components/EnhancedNavigation.jsx'
+import { registerServiceWorker, setupInstallPrompt } from './registerSW.js'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
