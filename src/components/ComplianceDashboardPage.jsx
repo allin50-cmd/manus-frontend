@@ -4,6 +4,7 @@ import QuickStatsCards from './QuickStatsCards.jsx'
 import QuickActions from './QuickActions.jsx'
 import RecentActivity from './RecentActivity.jsx'
 import UpcomingDeadlines from './UpcomingDeadlines.jsx'
+import AIInsights from './AIInsights.jsx'
 import { demoStats, demoAuditLogs, demoFines } from '../data/demoData.js'
 import api from '../utils/api'
 
@@ -103,6 +104,9 @@ const FineGuardDashboardPage = () => {
 
       {/* Quick Actions */}
       <QuickActions onAction={handleQuickAction} />
+
+      {/* AI Insights */}
+      <AIInsights fines={upcomingFines} />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
