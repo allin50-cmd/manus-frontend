@@ -1,264 +1,250 @@
-import { BarChart3, TrendingUp, TrendingDown, Activity, Users, Building2, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import api from '../utils/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
+import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Button } from '@/components/ui/button.jsx'
+import { BarChart3, PieChart, TrendingUp, Calendar, Download } from 'lucide-react'
+import FinesTrendChart from './FinesTrendChart.jsx'
+import CostAnalysisPieChart from './CostAnalysisPieChart.jsx'
+import RiskAssessmentChart from './RiskAssessmentChart.jsx'
+import { exportSummaryReport } from '../utils/exportData.js'
 
-export default function AnalyticsPage() {
-  const [stats, setStats] = useState({});
-  const [statsLoading, setStatsLoading] = useState(true);
+// Import demo data
+import { demoFines, demoStats } from '../data/demoData.js'
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setStatsLoading(true);
-        const response = await api.request("/api/analytics/stats");
-        setStats(response);
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
+const AnalyticsPage = () => {
+  const [timeRange, setTimeRange] = useState('6months')
+  const [groupBy, setGroupBy] = useState('authority')
 
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [monthlyDataLoading, setMonthlyDataLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchMonthlyData = async () => {
-      try {
-        setMonthlyDataLoading(true);
-        const response = await api.request("/api/analytics/monthlyData");
-        setMonthlyData(response);
-      } catch (error) {
-        console.error("Error fetching monthly data:", error);
-      } finally {
-        setMonthlyDataLoading(false);
-      }
-    };
-    fetchMonthlyData();
-  }, []);
-
-  const [companyPerformance, setCompanyPerformance] = useState([]);
-  const [companyPerformanceLoading, setCompanyPerformanceLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCompanyPerformance = async () => {
-      try {
-        setCompanyPerformanceLoading(true);
-        const response = await api.request("/api/analytics/companyPerformance");
-        setCompanyPerformance(response);
-      } catch (error) {
-        console.error("Error fetching company performance:", error);
-      } finally {
-        setCompanyPerformanceLoading(false);
-      }
-    };
-    fetchCompanyPerformance();
-  }, []);
-
-  const [upcomingDeadlines, setUpcomingDeadlines] = useState([]);
-  const [upcomingDeadlinesLoading, setUpcomingDeadlinesLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUpcomingDeadlines = async () => {
-      try {
-        setUpcomingDeadlinesLoading(true);
-        const response = await api.request("/api/analytics/upcomingDeadlines");
-        setUpcomingDeadlines(response);
-      } catch (error) {
-        console.error("Error fetching upcoming deadlines:", error);
-      } finally {
-        setUpcomingDeadlinesLoading(false);
-      }
-    };
-    fetchUpcomingDeadlines();
-  }, []);
+  const handleExportReport = () => {
+    exportSummaryReport(demoStats, demoFines)
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <BarChart3 className="w-8 h-8 text-cyan-500" />
-          Analytics Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-2">Track your fineguard performance and trends</p>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{statsLoading ? '...' : stats.totalCompanies}</div>
-            <p className="text-xs text-muted-foreground">Active monitoring</p>
-            {!loading && !error && <div className="text-center py-4 text-muted-foreground">No data available.</div>}
-        </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed This Month</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{statsLoading ? '...' : stats.completedThisMonth}</div>
-            <p className="text-xs text-muted-foreground">+20% from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Items</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{statsLoading ? '...' : stats.overdueItems}</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Fine Risk Score</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{statsLoading ? '...' : stats.avgFineGuardScore}%</div>
-            <p className="text-xs text-muted-foreground">Overall health</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Monthly Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Performance</CardTitle>
-            <CardDescription>Completed vs Overdue obligations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {monthlyDataLoading ? <p>Loading monthly data...</p> : monthlyData.map((data, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{data.month}</span>
-                    <span className="text-muted-foreground">{data.completed + data.overdue} total</span>
-                  </div>
-                  <div className="flex gap-1 h-8">
-                    <div
-                      className="bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
-                      style={{ width: `${(data.completed / (data.completed + data.overdue)) * 100}%` }}
-                    >
-                      {data.completed}
-                    </div>
-                    <div
-                      className="bg-red-500 rounded flex items-center justify-center text-white text-xs font-medium"
-                      style={{ width: `${(data.overdue / (data.completed + data.overdue)) * 100}%` }}
-                    >
-                      {data.overdue}
-                    </div>
-                  </div>
-                </div>
-              ))}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <BarChart3 className="w-8 h-8 text-blue-600" />
+                Advanced Analytics
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Comprehensive insights and data visualization for fine management
+              </p>
             </div>
-            <div className="flex gap-4 mt-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <span>Completed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded"></div>
-                <span>Overdue</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Company Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Company Performance</CardTitle>
-            <CardDescription>FineGuard scores and trends</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {companyPerformanceLoading ? <p>Loading company performance...</p> : companyPerformance.map((company, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{company.name}</span>
-                    <div className="flex items-center gap-2">
-                      {company.trend === 'up' ? (
-                        <TrendingUp className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className={`text-sm font-medium ${
-                        company.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {company.change}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${
-                          company.score >= 70 ? 'bg-green-500' :
-                          company.score >= 50 ? 'bg-yellow-500' :
-                          'bg-red-500'
-                        }`}
-                        style={{ width: `${company.score}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm font-medium w-12 text-right">{company.score}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Upcoming Deadlines */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Upcoming Deadlines</CardTitle>
-          <CardDescription>Next 30 days</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {upcomingDeadlinesLoading ? <p>Loading upcoming deadlines...</p> : upcomingDeadlines.map((deadline, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors">
-                <div className="flex-1">
-                  <p className="font-medium">{deadline.task}</p>
-                  <p className="text-sm text-muted-foreground">{deadline.company}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{deadline.daysLeft} days</p>
-                    <p className="text-xs text-muted-foreground">remaining</p>
-                  </div>
-                  <Badge className={
-                    deadline.priority === 'high' ? 'bg-red-500' :
-                    deadline.priority === 'medium' ? 'bg-yellow-500' :
-                    'bg-green-500'
-                  }>
-                    {deadline.priority}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+            <Button onClick={handleExportReport} className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export Report
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Controls */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Time Range:</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={timeRange === '6months' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeRange('6months')}
+                  >
+                    6 Months
+                  </Button>
+                  <Button
+                    variant={timeRange === '12months' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeRange('12months')}
+                  >
+                    12 Months
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 ml-auto">
+                <PieChart className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Group By:</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={groupBy === 'authority' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setGroupBy('authority')}
+                  >
+                    Authority
+                  </Button>
+                  <Button
+                    variant={groupBy === 'category' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setGroupBy('category')}
+                  >
+                    Category
+                  </Button>
+                  <Button
+                    variant={groupBy === 'companyName' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setGroupBy('companyName')}
+                  >
+                    Company
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Key Metrics Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Fines</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {demoStats.activeFines}
+                  </p>
+                </div>
+                <BarChart3 className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    £{demoStats.totalFineValue.toLocaleString()}
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Avg Fine</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    £{Math.round(demoStats.totalFineValue / demoStats.activeFines).toLocaleString()}
+                  </p>
+                </div>
+                <PieChart className="w-8 h-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Risk Score</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {demoStats.avgFineRiskScore}/100
+                  </p>
+                </div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  demoStats.avgFineRiskScore >= 75 ? 'bg-red-100' :
+                  demoStats.avgFineRiskScore >= 50 ? 'bg-orange-100' :
+                  'bg-green-100'
+                }`}>
+                  <span className={`text-sm font-bold ${
+                    demoStats.avgFineRiskScore >= 75 ? 'text-red-600' :
+                    demoStats.avgFineRiskScore >= 50 ? 'text-orange-600' :
+                    'text-green-600'
+                  }`}>
+                    {demoStats.avgFineRiskScore}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Trend Chart */}
+          <FinesTrendChart fines={demoFines} timeRange={timeRange} />
+
+          {/* Risk Assessment */}
+          <RiskAssessmentChart fines={demoFines} />
+        </div>
+
+        {/* Cost Analysis - Full Width */}
+        <div className="mb-6">
+          <CostAnalysisPieChart fines={demoFines} groupBy={groupBy} />
+        </div>
+
+        {/* Additional Insights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Top Authority</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-blue-600 mb-2">HMRC</p>
+                <p className="text-sm text-gray-600">
+                  {demoFines.filter(f => f.authority === 'HMRC').length} fines
+                </p>
+                <p className="text-lg font-semibold text-gray-900 mt-2">
+                  £{demoFines.filter(f => f.authority === 'HMRC')
+                    .reduce((sum, f) => sum + f.potentialFine, 0).toLocaleString()}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Most Common Category</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-purple-600 mb-2">Tax</p>
+                <p className="text-sm text-gray-600">
+                  {demoFines.filter(f => f.category === 'Tax').length} fines
+                </p>
+                <p className="text-lg font-semibold text-gray-900 mt-2">
+                  £{demoFines.filter(f => f.category === 'Tax')
+                    .reduce((sum, f) => sum + f.potentialFine, 0).toLocaleString()}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Completion Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-green-600 mb-2">
+                  {Math.round((demoStats.completedFines / demoStats.activeFines) * 100)}%
+                </p>
+                <p className="text-sm text-gray-600">
+                  {demoStats.completedFines} of {demoStats.activeFines} completed
+                </p>
+                <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500"
+                    style={{ width: `${(demoStats.completedFines / demoStats.activeFines) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
+
+export default AnalyticsPage
+
