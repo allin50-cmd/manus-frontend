@@ -79,6 +79,16 @@ import EnhancedDocumentVault from './components/EnhancedDocumentVault.jsx'
 import AuditTrailPage from './components/AuditTrailPage.jsx'
 import ReportsDashboardPage from './components/ReportsDashboardPage.jsx'
 import NotificationsSettingsPage from './components/NotificationsSettingsPage.jsx'
+import LoginPage from './components/LoginPage.jsx'
+import RegisterPage from './components/RegisterPage.jsx'
+import ForgotPasswordPage from './components/ForgotPasswordPage.jsx'
+import CompanyDetailsPage from './components/CompanyDetailsPage.jsx'
+import FineDetailsPage from './components/FineDetailsPage.jsx'
+import UserManagementPage from './components/UserManagementPage.jsx'
+import PermissionsPage from './components/PermissionsPage.jsx'
+import ActivityDashboardPage from './components/ActivityDashboardPage.jsx'
+import ComplianceReportsPage from './components/ComplianceReportsPage.jsx'
+import ExportCenterPage from './components/ExportCenterPage.jsx'
 // Demo data
 const initialData = {
   companies: [
