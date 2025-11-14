@@ -89,6 +89,10 @@ import PermissionsPage from './components/PermissionsPage.jsx'
 import ActivityDashboardPage from './components/ActivityDashboardPage.jsx'
 import ComplianceReportsPage from './components/ComplianceReportsPage.jsx'
 import ExportCenterPage from './components/ExportCenterPage.jsx'
+import NotFoundPage from './components/NotFoundPage.jsx'
+import ErrorPage from './components/ErrorPage.jsx'
+import MaintenancePage from './components/MaintenancePage.jsx'
+import LoadingPage from './components/LoadingPage.jsx'
 // Demo data
 const initialData = {
   companies: [
@@ -524,6 +528,36 @@ function App() {
       case 'reports-dashboard':
         return <ReportsDashboardPage />
       case 'notifications-settings':
+      case 'login':
+        return <LoginPage />
+      case 'register':
+        return <RegisterPage />
+      case 'forgot-password':
+        return <ForgotPasswordPage />
+      case 'company-details':
+        return <CompanyDetailsPage />
+      case 'fine-details':
+        return <FineDetailsPage />
+      case 'user-management':
+        return <UserManagementPage />
+      case 'permissions':
+        return <PermissionsPage />
+      case 'activity-dashboard':
+        return <ActivityDashboardPage />
+      case 'compliance-reports':
+        return <ComplianceReportsPage />
+      case 'export-center':
+      case '404':
+      case 'not-found':
+        return <NotFoundPage />
+      case '500':
+      case 'error':
+        return <ErrorPage />
+      case 'maintenance':
+        return <MaintenancePage />
+      case 'loading':
+        return <LoadingPage />
+        return <ExportCenterPage />
         return <NotificationsSettingsPage />
       case 'member':
         return user ? (
