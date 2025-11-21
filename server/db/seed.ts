@@ -36,26 +36,29 @@ async function seed() {
     console.log('📝 Seeding leads...');
     await db.insert(leads).values([
       {
-        product: 'vaultline',
-        fullName: 'John Doe',
+        leadId: 'LEAD-1704000000001',
+        name: 'John Doe',
         email: 'john.doe@example.com',
         company: 'Acme Corp',
+        product: 'vaultline',
         phone: '+1-555-0100',
         message: 'Interested in VaultLine Cloud for our compliance needs',
       },
       {
-        product: 'ultai',
-        fullName: 'Jane Smith',
+        leadId: 'LEAD-1704000000002',
+        name: 'Jane Smith',
         email: 'jane.smith@lawfirm.com',
         company: 'Smith & Associates',
+        product: 'ultai',
         phone: '+1-555-0101',
         message: 'Need secure client intake solution',
       },
       {
-        product: 'fineguard',
-        fullName: 'Bob Johnson',
+        leadId: 'LEAD-1704000000003',
+        name: 'Bob Johnson',
         email: 'bob@propertyco.uk',
         company: 'Property Management Ltd',
+        product: 'fineguard',
         phone: '+44-20-1234-5678',
         message: 'Looking for Companies House compliance automation',
       },
@@ -65,20 +68,24 @@ async function seed() {
     console.log('📝 Seeding intake forms...');
     await db.insert(intakeForms).values([
       {
+        matterRef: 'MAT-1704000000001',
         clientName: 'Alice Williams',
+        clientEmail: 'alice@example.com',
+        clientPhone: '+1-555-0102',
         matterType: 'Corporate',
-        email: 'alice@example.com',
-        phone: '+1-555-0102',
-        description: 'Merger and acquisition consultation',
         urgency: 'high',
+        description: 'Merger and acquisition consultation',
+        claimValue: '$500,000',
       },
       {
+        matterRef: 'MAT-1704000000002',
         clientName: 'Charlie Brown',
+        clientEmail: 'charlie@example.com',
+        clientPhone: '+1-555-0103',
         matterType: 'Litigation',
-        email: 'charlie@example.com',
-        phone: '+1-555-0103',
-        description: 'Contract dispute case',
         urgency: 'medium',
+        description: 'Contract dispute case',
+        claimValue: '$250,000',
       },
     ]);
 
@@ -86,20 +93,22 @@ async function seed() {
     console.log('📝 Seeding compliance bundles...');
     await db.insert(complianceBundles).values([
       {
+        bundleId: 'BUNDLE-1704000000001',
         companyName: 'Tech Innovations Ltd',
-        contactName: 'Sarah Davis',
-        email: 'sarah@techinnovations.com',
-        phone: '+44-20-9876-5432',
-        industry: 'Technology',
-        employeeCount: '50-100',
+        companyNumber: '12345678',
+        requestorName: 'Sarah Davis',
+        requestorEmail: 'sarah@techinnovations.com',
+        bundleType: 'full',
+        estimatedTime: '2-3 business days',
       },
       {
+        bundleId: 'BUNDLE-1704000000002',
         companyName: 'Green Energy Solutions',
-        contactName: 'Michael Green',
-        email: 'michael@greenenergy.co.uk',
-        phone: '+44-161-234-5678',
-        industry: 'Energy',
-        employeeCount: '100-250',
+        companyNumber: '87654321',
+        requestorName: 'Michael Green',
+        requestorEmail: 'michael@greenenergy.co.uk',
+        bundleType: 'full',
+        estimatedTime: '2-3 business days',
       },
     ]);
 
@@ -107,6 +116,7 @@ async function seed() {
     console.log('📝 Seeding contacts...');
     await db.insert(contacts).values([
       {
+        ticketId: 'TICKET-1704000000001',
         name: 'Emma Thompson',
         email: 'emma@example.com',
         subject: 'Partnership Inquiry',
@@ -114,6 +124,7 @@ async function seed() {
         status: 'new',
       },
       {
+        ticketId: 'TICKET-1704000000002',
         name: 'David Wilson',
         email: 'david@example.com',
         subject: 'Technical Support',

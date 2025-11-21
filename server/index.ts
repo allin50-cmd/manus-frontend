@@ -29,6 +29,33 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ============================================================================
+// HEALTH CHECK ENDPOINT
+// ============================================================================
+
+/**
+ * GET /api/health
+ * Health check endpoint
+ */
+app.get('/api/health', async (req: Request, res: Response) => {
+  try {
+    // Check database connection
+    await db.select().from(deploymentStatus).limit(1);
+
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+    });
+  }
+});
+
+// ============================================================================
 // DEPLOYMENT TRACKING API ENDPOINTS
 // ============================================================================
 
@@ -151,58 +178,67 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
 // ============================================================================
 
 /**
- * POST /api/leads
+ * POST /api/lead
  * Submit a demo booking lead
  */
-app.post('/api/leads', async (req: Request, res: Response) => {
+app.post('/api/lead', async (req: Request, res: Response) => {
   try {
-    const { product, fullName, email, company, phone, message } = req.body;
+    const { name, email, company, product, phone, message } = req.body;
 
-    if (!product || !fullName || !email) {
+    if (!name || !email) {
       return res.status(400).json({
-        error: 'Missing required fields: product, fullName, email',
+        ok: false,
+        error: 'Name and email are required',
       });
     }
+
+    // Generate unique lead ID
+    const leadId = `LEAD-${Date.now()}`;
 
     const [lead] = await db
       .insert(leads)
       .values({
-        product,
-        fullName,
+        leadId,
+        name,
         email,
-        company,
-        phone,
-        message,
+        company: company || null,
+        product: product || null,
+        phone: phone || null,
+        message: message || null,
       })
       .returning();
 
-    console.log(`📧 New lead captured: ${fullName} - ${product}`);
+    console.log(`📧 New lead captured: ${name} - ${product || 'N/A'}`);
 
     res.status(201).json({
-      success: true,
-      id: lead.id,
+      ok: true,
+      message: "Thank you for your interest! We'll be in touch soon.",
+      leadId: lead.leadId,
     });
   } catch (error) {
     console.error('Error creating lead:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to save lead. Please try again.',
+    });
   }
 });
 
 /**
- * GET /api/leads
+ * GET /api/admin/leads
  * Get all leads (admin endpoint)
  */
-app.get('/api/leads', async (req: Request, res: Response) => {
+app.get('/api/admin/leads', async (req: Request, res: Response) => {
   try {
     const allLeads = await db
       .select()
       .from(leads)
       .orderBy(desc(leads.createdAt));
 
-    res.json({ leads: allLeads });
+    res.json(allLeads);
   } catch (error) {
     console.error('Error fetching leads:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch leads' });
   }
 });
 
@@ -216,53 +252,72 @@ app.get('/api/leads', async (req: Request, res: Response) => {
  */
 app.post('/api/intake', async (req: Request, res: Response) => {
   try {
-    const { clientName, matterType, email, phone, description, urgency } = req.body;
+    const {
+      clientName,
+      clientEmail,
+      clientPhone,
+      matterType,
+      urgency,
+      description,
+      claimValue
+    } = req.body;
 
-    if (!clientName || !matterType || !email || !urgency) {
+    if (!clientName || !matterType || !urgency) {
       return res.status(400).json({
-        error: 'Missing required fields: clientName, matterType, email, urgency',
+        ok: false,
+        error: 'Client name, matter type, and urgency are required',
       });
     }
+
+    // Generate unique matter reference
+    const matterRef = `MAT-${Date.now()}`;
 
     const [intake] = await db
       .insert(intakeForms)
       .values({
+        matterRef,
         clientName,
+        clientEmail: clientEmail || null,
+        clientPhone: clientPhone || null,
         matterType,
-        email,
-        phone,
-        description,
         urgency,
+        description: description || null,
+        claimValue: claimValue || null,
       })
       .returning();
 
     console.log(`📋 New intake form: ${clientName} - ${matterType}`);
 
     res.status(201).json({
-      success: true,
-      id: intake.id,
+      ok: true,
+      message: 'Matter intake recorded successfully',
+      matterRef: intake.matterRef,
+      urgency: intake.urgency,
     });
   } catch (error) {
     console.error('Error creating intake form:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to save intake form. Please try again.',
+    });
   }
 });
 
 /**
- * GET /api/intake
+ * GET /api/admin/intake-forms
  * Get all intake forms (admin endpoint)
  */
-app.get('/api/intake', async (req: Request, res: Response) => {
+app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
   try {
-    const forms = await db
+    const allForms = await db
       .select()
       .from(intakeForms)
       .orderBy(desc(intakeForms.createdAt));
 
-    res.json({ forms });
+    res.json(allForms);
   } catch (error) {
     console.error('Error fetching intake forms:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch intake forms' });
   }
 });
 
@@ -271,58 +326,75 @@ app.get('/api/intake', async (req: Request, res: Response) => {
 // ============================================================================
 
 /**
- * POST /api/compliance-bundles
+ * POST /api/compliance-bundle
  * Submit a compliance bundle request
  */
-app.post('/api/compliance-bundles', async (req: Request, res: Response) => {
+app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
   try {
-    const { companyName, contactName, email, phone, industry, employeeCount } = req.body;
+    const {
+      companyName,
+      companyNumber,
+      requestorName,
+      requestorEmail,
+      bundleType
+    } = req.body;
 
-    if (!companyName || !contactName || !email) {
+    if (!companyName || !companyNumber) {
       return res.status(400).json({
-        error: 'Missing required fields: companyName, contactName, email',
+        ok: false,
+        error: 'Company name and number are required',
       });
     }
+
+    // Generate unique bundle ID
+    const bundleId = `BUNDLE-${Date.now()}`;
+    const estimatedTime = '2-3 business days';
 
     const [bundle] = await db
       .insert(complianceBundles)
       .values({
+        bundleId,
         companyName,
-        contactName,
-        email,
-        phone,
-        industry,
-        employeeCount,
+        companyNumber,
+        requestorName: requestorName || null,
+        requestorEmail: requestorEmail || null,
+        bundleType: bundleType || 'full',
+        estimatedTime,
       })
       .returning();
 
     console.log(`📦 New compliance bundle request: ${companyName}`);
 
     res.status(201).json({
-      success: true,
-      id: bundle.id,
+      ok: true,
+      message: 'Compliance bundle request received',
+      bundleId: bundle.bundleId,
+      estimatedTime: bundle.estimatedTime,
     });
   } catch (error) {
     console.error('Error creating compliance bundle:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to save compliance bundle request. Please try again.',
+    });
   }
 });
 
 /**
- * GET /api/compliance-bundles
+ * GET /api/admin/compliance-bundles
  * Get all compliance bundle requests (admin endpoint)
  */
-app.get('/api/compliance-bundles', async (req: Request, res: Response) => {
+app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => {
   try {
-    const bundles = await db
+    const allBundles = await db
       .select()
       .from(complianceBundles)
       .orderBy(desc(complianceBundles.createdAt));
 
-    res.json({ bundles });
+    res.json(allBundles);
   } catch (error) {
     console.error('Error fetching compliance bundles:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch compliance bundles' });
   }
 });
 
@@ -331,25 +403,30 @@ app.get('/api/compliance-bundles', async (req: Request, res: Response) => {
 // ============================================================================
 
 /**
- * POST /api/contacts
+ * POST /api/contact
  * Submit a contact form
  */
-app.post('/api/contacts', async (req: Request, res: Response) => {
+app.post('/api/contact', async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 
     if (!name || !email || !message) {
       return res.status(400).json({
-        error: 'Missing required fields: name, email, message',
+        ok: false,
+        error: 'Name, email, and message are required',
       });
     }
+
+    // Generate unique ticket ID
+    const ticketId = `TICKET-${Date.now()}`;
 
     const [contact] = await db
       .insert(contacts)
       .values({
+        ticketId,
         name,
         email,
-        subject,
+        subject: subject || null,
         message,
         status: 'new',
       })
@@ -358,30 +435,34 @@ app.post('/api/contacts', async (req: Request, res: Response) => {
     console.log(`💬 New contact: ${name}`);
 
     res.status(201).json({
-      success: true,
-      id: contact.id,
+      ok: true,
+      message: "Thank you for contacting us. We'll respond within 24 hours.",
+      ticketId: contact.ticketId,
     });
   } catch (error) {
     console.error('Error creating contact:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      ok: false,
+      error: 'Failed to save contact form. Please try again.',
+    });
   }
 });
 
 /**
- * GET /api/contacts
+ * GET /api/admin/contacts
  * Get all contacts (admin endpoint)
  */
-app.get('/api/contacts', async (req: Request, res: Response) => {
+app.get('/api/admin/contacts', async (req: Request, res: Response) => {
   try {
     const allContacts = await db
       .select()
       .from(contacts)
       .orderBy(desc(contacts.createdAt));
 
-    res.json({ contacts: allContacts });
+    res.json(allContacts);
   } catch (error) {
     console.error('Error fetching contacts:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch contacts' });
   }
 });
 

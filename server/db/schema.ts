@@ -20,10 +20,11 @@ export const deploymentStatus = pgTable('deployment_status', {
  */
 export const leads = pgTable('leads', {
   id: uuid('id').primaryKey().defaultRandom(),
-  product: varchar('product', { length: 50 }).notNull(), // vaultline, ultai, fineguard
-  fullName: varchar('full_name', { length: 255 }).notNull(),
+  leadId: varchar('lead_id', { length: 50 }).notNull().unique(), // LEAD-1234567890
+  name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   company: varchar('company', { length: 255 }),
+  product: varchar('product', { length: 50 }), // vaultline, ultai, fineguard
   phone: varchar('phone', { length: 50 }),
   message: text('message'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -35,12 +36,14 @@ export const leads = pgTable('leads', {
  */
 export const intakeForms = pgTable('intake_forms', {
   id: uuid('id').primaryKey().defaultRandom(),
+  matterRef: varchar('matter_ref', { length: 50 }).notNull().unique(), // MAT-1234567890
   clientName: varchar('client_name', { length: 255 }).notNull(),
+  clientEmail: varchar('client_email', { length: 255 }),
+  clientPhone: varchar('client_phone', { length: 50 }),
   matterType: varchar('matter_type', { length: 100 }).notNull(),
-  email: varchar('email', { length: 255 }).notNull(),
-  phone: varchar('phone', { length: 50 }),
+  urgency: varchar('urgency', { length: 20 }).notNull(), // low, medium, high, critical
   description: text('description'),
-  urgency: varchar('urgency', { length: 20 }).notNull(), // low, medium, high
+  claimValue: varchar('claim_value', { length: 50 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -50,12 +53,13 @@ export const intakeForms = pgTable('intake_forms', {
  */
 export const complianceBundles = pgTable('compliance_bundles', {
   id: uuid('id').primaryKey().defaultRandom(),
+  bundleId: varchar('bundle_id', { length: 50 }).notNull().unique(), // BUNDLE-1234567890
   companyName: varchar('company_name', { length: 255 }).notNull(),
-  contactName: varchar('contact_name', { length: 255 }).notNull(),
-  email: varchar('email', { length: 255 }).notNull(),
-  phone: varchar('phone', { length: 50 }),
-  industry: varchar('industry', { length: 100 }),
-  employeeCount: varchar('employee_count', { length: 50 }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  requestorName: varchar('requestor_name', { length: 255 }),
+  requestorEmail: varchar('requestor_email', { length: 255 }),
+  bundleType: varchar('bundle_type', { length: 50 }).default('full'),
+  estimatedTime: varchar('estimated_time', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -65,6 +69,7 @@ export const complianceBundles = pgTable('compliance_bundles', {
  */
 export const contacts = pgTable('contacts', {
   id: uuid('id').primaryKey().defaultRandom(),
+  ticketId: varchar('ticket_id', { length: 50 }).notNull().unique(), // TICKET-1234567890
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   subject: varchar('subject', { length: 255 }),
