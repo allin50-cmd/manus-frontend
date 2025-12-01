@@ -76,7 +76,7 @@ interface FilingHistoryItem {
 interface ComplianceStatus {
   companyNumber: string;
   companyName: string;
-  status: 'compliant' | 'overdue' | 'warning' | 'critical';
+  status: 'compliant' | 'warning' | 'overdue';
   overdueFilings: FilingDeadline[];
   upcomingDeadlines: FilingDeadline[];
   lastFiling?: {
@@ -93,7 +93,7 @@ interface ComplianceStatus {
     overdue: boolean;
     daysUntilDue: number;
   };
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: 'none' | 'low' | 'medium' | 'high';
   penalties?: {
     estimated: number;
     description: string;
@@ -133,24 +133,66 @@ export class CompaniesHouseService {
    * Fetch company profile from Companies House
    */
   async getCompanyProfile(companyNumber: string): Promise<CompanyProfile | null> {
-    try {
-      const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
-      const response = await fetch(`${CH_API_BASE}/company/${cleanNumber}`, {
-        headers: this.getAuthHeaders(),
-      });
+    const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // Company not found
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(`${CH_API_BASE}/company/${cleanNumber}`, {
+          headers: this.getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            return null; // Company not found
+          }
+          if (response.status === 401) {
+            throw new Error('Invalid Companies House API key');
+          }
+          if (response.status === 429) {
+            // Rate limited - wait and retry
+            if (attempt < maxRetries) {
+              await this.delay(2000 * attempt);
+              continue;
+            }
+            throw new Error('Companies House API rate limit exceeded');
+          }
+          throw new Error(`Companies House API error: ${response.status}`);
         }
-        throw new Error(`Companies House API error: ${response.status}`);
-      }
 
-      return await response.json() as CompanyProfile;
-    } catch (error) {
-      console.error('Error fetching company profile:', error);
-      throw error;
+        const data = await response.json() as CompanyProfile;
+        console.log(`📊 Company profile fetched: ${data.companyName}`);
+        return data;
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt < maxRetries && this.isRetryableError(error)) {
+          console.log(`⏳ Retry attempt ${attempt}/${maxRetries} for ${cleanNumber}`);
+          await this.delay(1000 * attempt);
+          continue;
+        }
+        break;
+      }
     }
+
+    console.error('Error fetching company profile:', lastError);
+    throw lastError;
+  }
+
+  /**
+   * Check if error is retryable
+   */
+  private isRetryableError(error: any): boolean {
+    if (error.message?.includes('rate limit')) return false;
+    if (error.message?.includes('Invalid')) return false;
+    return true; // Network errors are retryable
+  }
+
+  /**
+   * Delay helper for retries
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -165,14 +207,21 @@ export class CompaniesHouseService {
       );
 
       if (!response.ok) {
+        if (response.status === 404) {
+          console.log(`📈 No filing history for ${cleanNumber}`);
+          return []; // No filing history
+        }
         throw new Error(`Failed to fetch filing history: ${response.status}`);
       }
 
       const data = await response.json() as any;
-      return data.items || [];
+      const items = data.items || [];
+      console.log(`📈 Filing history retrieved: ${items.length} filings`);
+      return items;
     } catch (error) {
       console.error('Error fetching filing history:', error);
-      throw error;
+      // Don't throw - filing history is not critical
+      return [];
     }
   }
 
@@ -244,27 +293,37 @@ export class CompaniesHouseService {
     }
 
     // Determine overall status and risk level
-    let status: 'compliant' | 'overdue' | 'warning' | 'critical' = 'compliant';
-    let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
+    let status: 'compliant' | 'warning' | 'overdue' = 'compliant';
+    let riskLevel: 'none' | 'low' | 'medium' | 'high' = 'none';
 
     if (overdueFilings.length > 0) {
       const maxOverdueDays = Math.max(...overdueFilings.map(f => Math.abs(f.daysUntilDue)));
+      status = 'overdue';
+
+      // Risk level based on days overdue
       if (maxOverdueDays > 90) {
-        status = 'critical';
-        riskLevel = 'critical';
+        riskLevel = 'high'; // 90+ days = high risk (max penalties)
       } else if (maxOverdueDays > 30) {
-        status = 'overdue';
-        riskLevel = 'high';
+        riskLevel = 'high'; // 30-90 days = high risk
       } else {
-        status = 'overdue';
-        riskLevel = 'medium';
+        riskLevel = 'medium'; // 1-30 days = medium risk
       }
     } else if (upcomingDeadlines.some(d => d.daysUntilDue <= 7)) {
+      // Deadline within 7 days
       status = 'warning';
       riskLevel = 'medium';
-    } else if (upcomingDeadlines.length > 0) {
+    } else if (upcomingDeadlines.some(d => d.daysUntilDue <= 14)) {
+      // Deadline within 14 days
       status = 'warning';
       riskLevel = 'low';
+    } else if (upcomingDeadlines.length > 0) {
+      // Deadlines exist but >14 days away
+      status = 'compliant';
+      riskLevel = 'none';
+    } else {
+      // Fully compliant with no upcoming deadlines
+      status = 'compliant';
+      riskLevel = 'none';
     }
 
     const lastFiling = filingHistory[0] ? {
@@ -320,12 +379,19 @@ export class CompaniesHouseService {
 
   /**
    * Calculate penalty for late confirmation statement
+   * Note: Late filing can result in prosecution. Penalties vary.
    */
   private calculateCSPenalty(daysOverdue: number): number {
-    // Confirmation statement penalties can lead to prosecution
-    // Not a fixed fine structure but criminal offense
-    if (daysOverdue <= 28) return 0;
-    return 5000; // Estimated maximum penalty
+    // Confirmation statements don't have automatic fixed penalties like accounts
+    // However, late filing is a criminal offense that can lead to:
+    // - Prosecution and fines up to £5,000
+    // - Director disqualification
+    //
+    // For estimation purposes, we use a graduated scale:
+    if (daysOverdue <= 14) return 0; // Grace period
+    if (daysOverdue <= 28) return 150; // £150 (minor delay)
+    if (daysOverdue <= 90) return 500; // £500 (significant delay)
+    return 1000; // £1,000+ (prosecution risk)
   }
 
   /**
