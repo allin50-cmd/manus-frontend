@@ -26,7 +26,8 @@
     "drizzle-orm": "^0.29.3",
     "postgres": "^3.4.3",
     "dotenv": "^16.4.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

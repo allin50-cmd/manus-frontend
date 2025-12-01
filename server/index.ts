@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { db } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
+import { companiesHouseService } from './services/companiesHouse';
 
 // Load environment variables
 dotenv.config();
@@ -327,7 +328,7 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
 
 /**
  * POST /api/compliance-bundle
- * Submit a compliance bundle request
+ * Submit a compliance bundle request with REAL-TIME Companies House lookup
  */
 app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
   try {
@@ -339,43 +340,122 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
       bundleType
     } = req.body;
 
-    if (!companyName || !companyNumber) {
+    if (!companyNumber) {
       return res.status(400).json({
         ok: false,
-        error: 'Company name and number are required',
+        error: 'Company number is required',
       });
     }
 
+    // Validate company number format
+    if (!companiesHouseService.validateCompanyNumber(companyNumber)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid company number format. Must be 8 digits or 2 letters + 6 digits.',
+      });
+    }
+
+    // Format company number
+    const formattedNumber = companiesHouseService.formatCompanyNumber(companyNumber);
+
+    // REAL-TIME: Fetch company profile from Companies House
+    const companyProfile = await companiesHouseService.getCompanyProfile(formattedNumber);
+
+    if (!companyProfile) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Company not found in Companies House register. Please check the company number.',
+      });
+    }
+
+    // REAL-TIME: Get compliance status with deadlines
+    const complianceStatus = await companiesHouseService.getComplianceStatus(formattedNumber);
+
     // Generate unique bundle ID
     const bundleId = `BUNDLE-${Date.now()}`;
-    const estimatedTime = '2-3 business days';
 
+    // Save to database with REAL company data
     const [bundle] = await db
       .insert(complianceBundles)
       .values({
         bundleId,
-        companyName,
-        companyNumber,
+        companyName: companyProfile.companyName, // Use REAL name from Companies House
+        companyNumber: formattedNumber,
         requestorName: requestorName || null,
         requestorEmail: requestorEmail || null,
         bundleType: bundleType || 'full',
-        estimatedTime,
+        estimatedTime: 'Generated instantly', // No longer fake - we have real data!
       })
       .returning();
 
-    console.log(`📦 New compliance bundle request: ${companyName}`);
+    console.log(`📦 Real-time compliance check: ${companyProfile.companyName} (${formattedNumber})`);
+    console.log(`   Status: ${complianceStatus.status.toUpperCase()}`);
+    console.log(`   Risk Level: ${complianceStatus.riskLevel.toUpperCase()}`);
+    console.log(`   Overdue Filings: ${complianceStatus.overdueFilings.length}`);
+    console.log(`   Upcoming Deadlines: ${complianceStatus.upcomingDeadlines.length}`);
 
     res.status(201).json({
       ok: true,
-      message: 'Compliance bundle request received',
+      message: 'Real-time compliance check complete',
       bundleId: bundle.bundleId,
-      estimatedTime: bundle.estimatedTime,
+
+      // REAL DATA from Companies House:
+      company: {
+        number: companyProfile.companyNumber,
+        name: companyProfile.companyName,
+        status: companyProfile.companyStatus,
+        type: companyProfile.type,
+        incorporationDate: companyProfile.dateOfCreation,
+      },
+
+      compliance: {
+        status: complianceStatus.status,
+        riskLevel: complianceStatus.riskLevel,
+
+        accounts: {
+          nextDue: complianceStatus.accountsStatus.nextDue,
+          daysUntilDue: complianceStatus.accountsStatus.daysUntilDue,
+          overdue: complianceStatus.accountsStatus.overdue,
+        },
+
+        confirmationStatement: {
+          nextDue: complianceStatus.confirmationStatementStatus.nextDue,
+          daysUntilDue: complianceStatus.confirmationStatementStatus.daysUntilDue,
+          overdue: complianceStatus.confirmationStatementStatus.overdue,
+        },
+
+        overdueFilings: complianceStatus.overdueFilings.map(f => ({
+          type: f.type,
+          description: f.description,
+          dueDate: f.dueDate,
+          daysOverdue: Math.abs(f.daysUntilDue),
+          penaltyRisk: f.penaltyRisk,
+        })),
+
+        upcomingDeadlines: complianceStatus.upcomingDeadlines.map(d => ({
+          type: d.type,
+          description: d.description,
+          dueDate: d.dueDate,
+          daysUntilDue: d.daysUntilDue,
+        })),
+
+        penalties: complianceStatus.penalties,
+      },
     });
   } catch (error) {
-    console.error('Error creating compliance bundle:', error);
+    console.error('Error fetching Companies House data:', error);
+
+    // Check if it's an API key error
+    if (error instanceof Error && error.message.includes('COMPANIES_HOUSE_API_KEY')) {
+      return res.status(500).json({
+        ok: false,
+        error: 'Companies House API not configured. Please contact support.',
+      });
+    }
+
     res.status(500).json({
       ok: false,
-      error: 'Failed to save compliance bundle request. Please try again.',
+      error: 'Failed to fetch company information. Please try again.',
     });
   }
 });

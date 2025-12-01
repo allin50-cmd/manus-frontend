@@ -9,12 +9,49 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface CompanyData {
+  number: string;
+  name: string;
+  status: string;
+  type?: string;
+  incorporationDate?: string;
+}
+
+interface FilingDeadline {
+  nextDue: string;
+  daysUntilDue: number;
+  overdue: boolean;
+}
+
+interface OverdueFiling {
+  type: string;
+  description: string;
+  dueDate: string;
+  daysOverdue: number;
+  penaltyRisk: number;
+}
+
+interface Penalty {
+  estimated: number;
+  description: string;
+}
+
+interface ComplianceData {
+  status: 'compliant' | 'warning' | 'overdue';
+  riskLevel: 'none' | 'low' | 'medium' | 'high';
+  accounts: FilingDeadline;
+  confirmationStatement?: FilingDeadline;
+  overdueFilings: OverdueFiling[];
+  penalties: Penalty[];
+}
+
 export default function ComplianceBundle() {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [bundleId, setBundleId] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState('');
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [complianceData, setComplianceData] = useState<ComplianceData | null>(null);
   const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
@@ -44,8 +81,9 @@ export default function ComplianceBundle() {
       if (response.ok && data.ok) {
         setSuccess(true);
         setBundleId(data.bundleId);
-        setEstimatedTime(data.estimatedTime);
-        toast.success(data.message || 'Compliance bundle request submitted!');
+        setCompanyData(data.company);
+        setComplianceData(data.compliance);
+        toast.success(data.message || 'Compliance data retrieved successfully!');
 
         // Reset form
         setFormData({
@@ -68,71 +106,175 @@ export default function ComplianceBundle() {
     }
   };
 
-  if (success) {
+  const getRiskColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'high': return 'bg-red-100 border-red-300 text-red-800';
+      case 'medium': return 'bg-orange-100 border-orange-300 text-orange-800';
+      case 'low': return 'bg-yellow-100 border-yellow-300 text-yellow-800';
+      default: return 'bg-green-100 border-green-300 text-green-800';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'overdue': return 'bg-red-100 border-red-300 text-red-800';
+      case 'warning': return 'bg-orange-100 border-orange-300 text-orange-800';
+      default: return 'bg-green-100 border-green-300 text-green-800';
+    }
+  };
+
+  if (success && companyData && complianceData) {
     return (
-      <div className="min-h-screen bg-[#F8F8F8] flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-white border-[#1A1A1A]/10">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-16 h-16 bg-[#C9A64A]/20 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-[#C9A64A]" />
-            </div>
-            <CardTitle className="text-2xl text-[#1A1A1A]">Request Submitted!</CardTitle>
-            <CardDescription className="text-gray-600">
-              Your compliance bundle request has been received
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-center">
-            <div className="p-4 bg-[#F8F8F8] border border-[#1A1A1A]/10 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">Bundle Reference</p>
-              <p className="text-lg font-mono text-[#C9A64A] font-semibold">{bundleId}</p>
-            </div>
-
-            {estimatedTime && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center justify-center gap-2 text-blue-700">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-semibold">Estimated: {estimatedTime}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="p-4 bg-[#C9A64A]/10 border border-[#C9A64A]/30 rounded-lg">
-              <div className="flex items-start gap-3 text-left">
-                <FileText className="w-5 h-5 text-[#C9A64A] flex-shrink-0 mt-0.5" />
+      <div className="min-h-screen bg-[#F8F8F8] py-8 px-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header */}
+          <Card className="bg-white border-[#1A1A1A]/10">
+            <CardHeader>
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-semibold text-[#1A1A1A] mb-1">What's Included:</p>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• Companies House filing status</li>
-                    <li>• Outstanding compliance requirements</li>
-                    <li>• Deadline calendar</li>
-                    <li>• Automated reminder setup</li>
-                  </ul>
+                  <CardTitle className="text-2xl text-[#1A1A1A] mb-2">{companyData.name}</CardTitle>
+                  <CardDescription className="text-gray-600">
+                    Company No: {companyData.number} • Status: {companyData.status}
+                  </CardDescription>
+                  <p className="text-sm text-gray-500 mt-1">Bundle Reference: <span className="font-mono text-[#C9A64A]">{bundleId}</span></p>
+                </div>
+                <div className={`px-4 py-2 rounded-lg border ${getRiskColor(complianceData.riskLevel)}`}>
+                  <p className="text-sm font-semibold uppercase">{complianceData.riskLevel} Risk</p>
                 </div>
               </div>
-            </div>
+            </CardHeader>
+          </Card>
 
-            <p className="text-gray-600">
-              We'll email you the compliance bundle within the estimated timeframe.
-            </p>
+          {/* Compliance Status */}
+          <Card className="bg-white border-[#1A1A1A]/10">
+            <CardHeader>
+              <CardTitle className="text-xl text-[#1A1A1A]">Compliance Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className={`p-4 rounded-lg border ${getStatusColor(complianceData.status)}`}>
+                <p className="font-semibold text-lg mb-1 capitalize">{complianceData.status}</p>
+                <p className="text-sm">
+                  {complianceData.status === 'compliant' && 'All filings are up to date'}
+                  {complianceData.status === 'warning' && 'Upcoming deadlines - action required soon'}
+                  {complianceData.status === 'overdue' && 'Immediate action required - filings overdue'}
+                </p>
+              </div>
 
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setSuccess(false)}
-                variant="outline"
-                className="flex-1 border-[#1A1A1A]/20 hover:bg-gray-100"
-              >
-                Request Another
-              </Button>
-              <Button
-                onClick={() => setLocation('/fineguard')}
-                className="flex-1 bg-[#C9A64A] hover:bg-[#B8954A] text-white"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to FineGuard
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              {/* Filing Deadlines */}
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Accounts */}
+                <div className={`p-4 rounded-lg border ${complianceData.accounts.overdue ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                  <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Annual Accounts
+                  </p>
+                  <p className={`text-lg font-semibold ${complianceData.accounts.overdue ? 'text-red-700' : 'text-blue-700'}`}>
+                    {complianceData.accounts.overdue ? `${Math.abs(complianceData.accounts.daysUntilDue)} days overdue` : `Due in ${complianceData.accounts.daysUntilDue} days`}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">Due: {new Date(complianceData.accounts.nextDue).toLocaleDateString('en-GB')}</p>
+                </div>
+
+                {/* Confirmation Statement */}
+                {complianceData.confirmationStatement && (
+                  <div className={`p-4 rounded-lg border ${complianceData.confirmationStatement.overdue ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                    <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Confirmation Statement
+                    </p>
+                    <p className={`text-lg font-semibold ${complianceData.confirmationStatement.overdue ? 'text-red-700' : 'text-blue-700'}`}>
+                      {complianceData.confirmationStatement.overdue ? `${Math.abs(complianceData.confirmationStatement.daysUntilDue)} days overdue` : `Due in ${complianceData.confirmationStatement.daysUntilDue} days`}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">Due: {new Date(complianceData.confirmationStatement.nextDue).toLocaleDateString('en-GB')}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Overdue Filings */}
+          {complianceData.overdueFilings.length > 0 && (
+            <Card className="bg-white border-red-300">
+              <CardHeader>
+                <CardTitle className="text-xl text-red-800 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  Overdue Filings
+                </CardTitle>
+                <CardDescription className="text-red-600">
+                  Immediate action required to avoid additional penalties
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {complianceData.overdueFilings.map((filing, idx) => (
+                  <div key={idx} className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-semibold text-red-900">{filing.description}</p>
+                        <p className="text-sm text-red-700">
+                          Due: {new Date(filing.dueDate).toLocaleDateString('en-GB')} ({filing.daysOverdue} days overdue)
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-red-800">£{filing.penaltyRisk.toLocaleString()}</p>
+                        <p className="text-xs text-red-600">penalty risk</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Penalties */}
+          {complianceData.penalties.length > 0 && (
+            <Card className="bg-white border-orange-300">
+              <CardHeader>
+                <CardTitle className="text-xl text-orange-800">Estimated Penalties</CardTitle>
+                <CardDescription className="text-orange-600">
+                  Current or potential late filing penalties
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {complianceData.penalties.map((penalty, idx) => (
+                  <div key={idx} className="p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center justify-between">
+                    <p className="text-sm text-orange-900">{penalty.description}</p>
+                    <p className="text-xl font-bold text-orange-800">£{penalty.estimated.toLocaleString()}</p>
+                  </div>
+                ))}
+                <div className="p-3 bg-orange-100 border border-orange-300 rounded-lg">
+                  <p className="text-sm font-semibold text-orange-900">
+                    Total Estimated Penalties: £{complianceData.penalties.reduce((sum, p) => sum + p.estimated, 0).toLocaleString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Actions */}
+          <Card className="bg-white border-[#1A1A1A]/10">
+            <CardContent className="pt-6">
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => {
+                    setSuccess(false);
+                    setCompanyData(null);
+                    setComplianceData(null);
+                  }}
+                  variant="outline"
+                  className="flex-1 border-[#1A1A1A]/20 hover:bg-gray-100"
+                >
+                  Check Another Company
+                </Button>
+                <Button
+                  onClick={() => setLocation('/fineguard')}
+                  className="flex-1 bg-[#C9A64A] hover:bg-[#B8954A] text-white"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to FineGuard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

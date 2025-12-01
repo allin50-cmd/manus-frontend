@@ -62,12 +62,26 @@ DEPLOY_RECORD_TOKEN="$(openssl rand -hex 32)"
 # Server Configuration
 PORT=3000
 NODE_ENV=development
+
+# Companies House API Key (REQUIRED for FineGuard compliance checking)
+COMPANIES_HOUSE_API_KEY="your-companies-house-api-key-here"
 EOF
 
 # For macOS, your username is usually your computer username
 # For Linux, it might be 'postgres'
 # Update DATABASE_URL accordingly
 ```
+
+**⚠️ IMPORTANT: Companies House API Key Required**
+
+To test the FineGuard compliance bundle feature, you need a FREE Companies House API key:
+
+1. **Register**: https://developer.company-information.service.gov.uk/
+2. **Create application**: "FineGuard Compliance Cloud"
+3. **Copy API key** and add to `.env` file
+4. **See detailed guide**: `COMPANIES-HOUSE-API-SETUP.md`
+
+Without this key, compliance bundle requests will return an error.
 
 **Finding your PostgreSQL username:**
 ```bash
@@ -294,36 +308,64 @@ If you see `"database": "disconnected"`, check your DATABASE_URL in .env
    psql vaultline_db -c "SELECT matter_ref, client_name, matter_type, urgency FROM intake_forms ORDER BY created_at DESC LIMIT 1;"
    ```
 
-### Test 3: Compliance Bundle Request
+### Test 3: Compliance Bundle Request (Real Companies House API)
+
+**⚠️ Requires Companies House API key to be configured**
 
 1. **Open Form**
    ```bash
    open http://localhost:5173/compliance-bundle
    ```
 
-2. **Fill Out Form**
-   - Company Name: `Test Ltd`
-   - Companies House Number: `12345678`
+2. **Fill Out Form with REAL Company**
+   - Company Name: `Google UK` (reference only)
+   - Companies House Number: `03977902` (Google UK - real company)
    - Your Name: `Test Requestor`
    - Email: `requestor@example.com`
    - Bundle Type: Select `Full Compliance Bundle`
 
+**Test Company Numbers:**
+- `03977902` - Google UK (likely compliant)
+- `01624297` - Microsoft Limited
+- `04581765` - Amazon UK
+- `00445790` - Tesco PLC
+
 3. **Submit Form**
    - Click **"Request Bundle"** button
-   - Watch for loading spinner
-   - Should redirect to success screen
+   - Watch for loading spinner (may take 2-3 seconds for API call)
+   - Should redirect to compliance results screen
 
-4. **Verify Success**
-   - Success screen should show
+4. **Verify Success - Real Compliance Data**
+   - **Company name from Companies House** displayed (e.g., "GOOGLE UK LIMITED")
+   - **Risk level badge** shown (None/Low/Medium/High)
+   - **Compliance status** displayed (Compliant/Warning/Overdue)
+   - **Real filing deadlines** with days until due:
+     - Annual Accounts deadline
+     - Confirmation Statement deadline
+   - **Overdue filings** section (if any) with:
+     - Days overdue
+     - Penalty amounts in £
+   - **Total penalties** calculated
    - Bundle ID displayed (e.g., `BUNDLE-1704567890789`)
-   - Estimated time shown (`2-3 business days`)
-   - What's included section visible
    - Toast notification appears
 
 5. **Verify in Database**
    ```bash
    psql vaultline_db -c "SELECT bundle_id, company_name, company_number, bundle_type FROM compliance_bundles ORDER BY created_at DESC LIMIT 1;"
    ```
+
+6. **Check Server Logs**
+   You should see:
+   ```
+   📊 Company profile fetched: GOOGLE UK LIMITED
+   📈 Filing history retrieved: X filings
+   📧 New compliance bundle: BUNDLE-xxx
+   ```
+
+**If API Key Not Configured:**
+- Form submission will fail
+- Error message: "Companies House API key not configured"
+- See `COMPANIES-HOUSE-API-SETUP.md` for setup instructions
 
 ---
 
