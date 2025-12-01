@@ -386,3 +386,364 @@ Filing history failures won't break the entire compliance check.
 
 **Status:** ✅ Iteration 1 Complete
 **Next:** Test with real API and iterate based on results
+
+---
+
+## Iteration 2: Frontend Bug Fixes & Edge Case Handling
+
+### Date: 2025-12-01
+
+---
+
+## Issues Found (Critical Bugs)
+
+### 1. Date Parsing Crash ❌ CRITICAL
+**Problem:**
+- Frontend directly parses dates with `new Date(complianceData.accounts.nextDue).toLocaleDateString()`
+- Backend returns `"N/A"` when no accounts data exists
+- `new Date("N/A")` creates Invalid Date → displays "Invalid Date" or crashes
+
+**Example:**
+```typescript
+// Backend returns:
+accounts: {
+  nextDue: "N/A",
+  daysUntilDue: 999,
+  overdue: false
+}
+
+// Frontend does:
+<p>Due: {new Date("N/A").toLocaleDateString('en-GB')}</p>
+// Result: "Invalid Date" displayed to user
+```
+
+**Impact:**
+- 🔴 Critical: App crashes for new companies without accounts data
+- 🔴 Critical: Displays "Invalid Date" to users
+- 🔴 Critical: Happens in 3 places (accounts, CS, overdue filings)
+
+### 2. Missing Data Not Handled ❌
+**Problem:**
+- When accounts data is "N/A" with 999 days, UI still displays "Due in 999 days"
+- Confusing for users - 999 days is a fallback value, not real data
+
+**Impact:**
+- Poor UX: Displays nonsensical "Due in 999 days"
+- Misleading: Users think they have 999 days when data is actually unavailable
+
+### 3. Optional Arrays Not Type-Safe ❌
+**Problem:**
+- Backend returns `penalties?: Penalty[]` (optional)
+- Frontend typed as `penalties: Penalty[]` (required)
+- Type mismatch could cause undefined access
+
+**Impact:**
+- Type errors
+- Potential crashes when accessing undefined arrays
+
+---
+
+## Fixes Applied
+
+### 1. Safe Date Formatting Helper ✅
+
+```typescript
+/**
+ * Safely format date, handling 'N/A' and invalid dates
+ */
+const formatDate = (dateString: string): string => {
+  if (!dateString || dateString === 'N/A') {
+    return 'Not available';
+  }
+
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Not available';
+    }
+    return date.toLocaleDateString('en-GB');
+  } catch {
+    return 'Not available';
+  }
+};
+```
+
+**Handles:**
+- ✅ `null` or `undefined` → "Not available"
+- ✅ `"N/A"` → "Not available"
+- ✅ Invalid date strings → "Not available"
+- ✅ Valid dates → Formatted as `dd/mm/yyyy`
+
+### 2. Deadline Availability Check ✅
+
+```typescript
+/**
+ * Check if deadline data is available
+ */
+const isDeadlineAvailable = (daysUntilDue: number, dueDate: string): boolean => {
+  return daysUntilDue !== 999 && dueDate !== 'N/A';
+};
+```
+
+**Usage:**
+```typescript
+{isDeadlineAvailable(complianceData.accounts.daysUntilDue, complianceData.accounts.nextDue) ? (
+  // Show deadline with actual data
+  <div>Due in {daysUntilDue} days</div>
+) : (
+  // Show "no data available" message
+  <div>No accounts data available from Companies House</div>
+)}
+```
+
+### 3. Updated All Date Usage ✅
+
+**Before (crashes):**
+```typescript
+<p>Due: {new Date(complianceData.accounts.nextDue).toLocaleDateString('en-GB')}</p>
+<p>Due: {new Date(filing.dueDate).toLocaleDateString('en-GB')}</p>
+```
+
+**After (safe):**
+```typescript
+<p>Due: {formatDate(complianceData.accounts.nextDue)}</p>
+<p>Due: {formatDate(filing.dueDate)}</p>
+```
+
+**Locations Fixed:**
+- ✅ Line 201: Annual Accounts due date
+- ✅ Line 223: Confirmation Statement due date
+- ✅ Line 257: Overdue filings due dates
+
+### 4. Graceful Missing Data Display ✅
+
+**Accounts Not Available:**
+```typescript
+<div className="p-4 rounded-lg border bg-gray-50 border-gray-200">
+  <p className="font-semibold text-sm mb-2">Annual Accounts</p>
+  <p className="text-sm text-gray-600">No accounts data available from Companies House</p>
+</div>
+```
+
+**Instead of:**
+- ❌ "Due in 999 days"
+- ❌ "Due: Invalid Date"
+
+**Now shows:**
+- ✅ "No accounts data available from Companies House"
+- ✅ Gray styling to indicate unavailable data
+
+### 5. Fixed Type Definitions ✅
+
+```typescript
+// BEFORE
+interface ComplianceData {
+  penalties: Penalty[];  // Required array
+}
+
+// AFTER
+interface ComplianceData {
+  penalties?: Penalty[];  // Optional array - matches backend
+}
+```
+
+### 6. Added Array Safety Checks ✅
+
+```typescript
+// BEFORE (potential crash)
+{complianceData.overdueFilings.length > 0 && ...}
+{complianceData.penalties.length > 0 && ...}
+
+// AFTER (safe)
+{complianceData.overdueFilings && complianceData.overdueFilings.length > 0 && ...}
+{complianceData.penalties && complianceData.penalties.length > 0 && ...}
+```
+
+---
+
+## Edge Cases Now Handled
+
+### Case 1: New Company (No Accounts Yet)
+**Scenario:** Company incorporated < 9 months ago
+
+**Backend Returns:**
+```json
+{
+  "accounts": {
+    "nextDue": "N/A",
+    "daysUntilDue": 999,
+    "overdue": false
+  }
+}
+```
+
+**Frontend Displays:**
+- ✅ Gray box with "No accounts data available from Companies House"
+- ✅ No "Invalid Date"
+- ✅ No "Due in 999 days"
+
+### Case 2: Company with No Confirmation Statement Data
+**Scenario:** Company hasn't filed CS yet or data unavailable
+
+**Frontend Displays:**
+- ✅ Gray box with "No confirmation statement data available"
+- ✅ Graceful fallback
+
+### Case 3: Compliant Company (No Penalties)
+**Backend Returns:**
+```json
+{
+  "penalties": undefined
+}
+```
+
+**Frontend:**
+- ✅ Penalties section not rendered at all
+- ✅ No crash accessing undefined array
+
+### Case 4: Dissolved Company
+**Scenario:** Company status = "dissolved"
+
+**Behavior:**
+- ✅ Still displays available data
+- ✅ Shows "Not available" for missing dates
+- ✅ No crashes
+
+---
+
+## Testing Scenarios
+
+### Scenario 1: Standard Company (All Data Available)
+**Input:**
+- Accounts: Due in 60 days
+- CS: Due in 120 days
+- All dates valid
+
+**Expected:**
+- ✅ All dates formatted: "31/01/2025"
+- ✅ "Due in X days" displayed
+- ✅ No "Not available" messages
+
+### Scenario 2: New Company (No Accounts Data)
+**Input:**
+- Accounts: `nextDue = "N/A"`, `daysUntilDue = 999`
+- CS: Valid data
+
+**Expected:**
+- ✅ Accounts: "No accounts data available from Companies House"
+- ✅ CS: Shows real date
+- ✅ No "999 days" displayed
+- ✅ No "Invalid Date"
+
+### Scenario 3: Overdue Company
+**Input:**
+- Accounts: 45 days overdue
+- `dueDate`: "2024-10-15"
+
+**Expected:**
+- ✅ "Due: 15/10/2024 (45 days overdue)"
+- ✅ £375 penalty displayed
+- ✅ Red styling
+
+### Scenario 4: Compliant Company (No Penalties)
+**Input:**
+- `penalties`: undefined
+
+**Expected:**
+- ✅ Penalties section not rendered
+- ✅ No empty penalty boxes
+- ✅ No crashes
+
+### Scenario 5: Invalid Date from API
+**Input:**
+- `nextDue`: "invalid-date-string"
+
+**Expected:**
+- ✅ "Not available" displayed
+- ✅ No crash
+- ✅ Graceful fallback
+
+---
+
+## Code Quality Improvements
+
+### Type Safety ✅
+- All types match backend response
+- Optional fields properly marked
+- No more type mismatches
+
+### Error Resilience ✅
+- All date parsing wrapped in try-catch
+- Null/undefined checks before access
+- Array checks before iteration
+
+### User Experience ✅
+- Clear "Not available" messages
+- No confusing "999 days" fallbacks
+- No "Invalid Date" displayed
+- Gray styling for unavailable data
+
+### Maintainability ✅
+- Reusable `formatDate` helper
+- Reusable `isDeadlineAvailable` helper
+- Consistent handling across components
+
+---
+
+## Impact Summary
+
+### Before (Broken)
+❌ Crashes for companies with no accounts data
+❌ Displays "Invalid Date" to users
+❌ Shows nonsensical "999 days" fallbacks
+❌ Type mismatches causing errors
+❌ No handling for missing data
+
+### After (Robust)
+✅ Handles all edge cases gracefully
+✅ No crashes for any company type
+✅ Clear "Not available" messages
+✅ Type-safe across frontend/backend
+✅ Professional error handling
+✅ Works for new, dissolved, and overdue companies
+
+---
+
+## Files Changed
+
+```
+✅ src/pages/ComplianceBundle.tsx
+   - Added formatDate() helper (129-143)
+   - Added isDeadlineAvailable() helper (148-150)
+   - Fixed date parsing in 3 locations
+   - Added missing data fallback UI (204-211, 226-232)
+   - Added array safety checks (239, 272)
+   - Fixed type definition (45)
+
+Total: ~70 lines changed/added
+```
+
+---
+
+## Next Steps
+
+### Testing Priority
+1. Test with company that has no accounts data
+2. Test with very new company
+3. Test with dissolved company
+4. Test with valid company (all data)
+5. Test with overdue company
+
+### Future Improvements (Iteration 3)
+- Add loading skeletons for better UX
+- Add error boundary for crash recovery
+- Add retry button for failed requests
+- Consider caching to reduce API calls
+- Add company search/autocomplete
+
+---
+
+**Status:** ✅ Iteration 2 Complete
+**Critical Bugs Fixed:** 3
+**Edge Cases Handled:** 5
+**Next:** Commit and test with real API

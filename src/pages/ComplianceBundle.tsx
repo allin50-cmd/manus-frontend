@@ -42,7 +42,7 @@ interface ComplianceData {
   accounts: FilingDeadline;
   confirmationStatement?: FilingDeadline;
   overdueFilings: OverdueFiling[];
-  penalties: Penalty[];
+  penalties?: Penalty[]; // Optional - only present if there are overdue filings
 }
 
 export default function ComplianceBundle() {
@@ -123,6 +123,32 @@ export default function ComplianceBundle() {
     }
   };
 
+  /**
+   * Safely format date, handling 'N/A' and invalid dates
+   */
+  const formatDate = (dateString: string): string => {
+    if (!dateString || dateString === 'N/A') {
+      return 'Not available';
+    }
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Not available';
+      }
+      return date.toLocaleDateString('en-GB');
+    } catch {
+      return 'Not available';
+    }
+  };
+
+  /**
+   * Check if deadline data is available
+   */
+  const isDeadlineAvailable = (daysUntilDue: number, dueDate: string): boolean => {
+    return daysUntilDue !== 999 && dueDate !== 'N/A';
+  };
+
   if (success && companyData && complianceData) {
     return (
       <div className="min-h-screen bg-[#F8F8F8] py-8 px-4">
@@ -163,19 +189,29 @@ export default function ComplianceBundle() {
               {/* Filing Deadlines */}
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Accounts */}
-                <div className={`p-4 rounded-lg border ${complianceData.accounts.overdue ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
-                  <p className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Annual Accounts
-                  </p>
-                  <p className={`text-lg font-semibold ${complianceData.accounts.overdue ? 'text-red-700' : 'text-blue-700'}`}>
-                    {complianceData.accounts.overdue ? `${Math.abs(complianceData.accounts.daysUntilDue)} days overdue` : `Due in ${complianceData.accounts.daysUntilDue} days`}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">Due: {new Date(complianceData.accounts.nextDue).toLocaleDateString('en-GB')}</p>
-                </div>
+                {isDeadlineAvailable(complianceData.accounts.daysUntilDue, complianceData.accounts.nextDue) ? (
+                  <div className={`p-4 rounded-lg border ${complianceData.accounts.overdue ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                    <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Annual Accounts
+                    </p>
+                    <p className={`text-lg font-semibold ${complianceData.accounts.overdue ? 'text-red-700' : 'text-blue-700'}`}>
+                      {complianceData.accounts.overdue ? `${Math.abs(complianceData.accounts.daysUntilDue)} days overdue` : `Due in ${complianceData.accounts.daysUntilDue} days`}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">Due: {formatDate(complianceData.accounts.nextDue)}</p>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-lg border bg-gray-50 border-gray-200">
+                    <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Annual Accounts
+                    </p>
+                    <p className="text-sm text-gray-600">No accounts data available from Companies House</p>
+                  </div>
+                )}
 
                 {/* Confirmation Statement */}
-                {complianceData.confirmationStatement && (
+                {complianceData.confirmationStatement && isDeadlineAvailable(complianceData.confirmationStatement.daysUntilDue, complianceData.confirmationStatement.nextDue) ? (
                   <div className={`p-4 rounded-lg border ${complianceData.confirmationStatement.overdue ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
                     <p className="font-semibold text-sm mb-2 flex items-center gap-2">
                       <FileText className="w-4 h-4" />
@@ -184,15 +220,23 @@ export default function ComplianceBundle() {
                     <p className={`text-lg font-semibold ${complianceData.confirmationStatement.overdue ? 'text-red-700' : 'text-blue-700'}`}>
                       {complianceData.confirmationStatement.overdue ? `${Math.abs(complianceData.confirmationStatement.daysUntilDue)} days overdue` : `Due in ${complianceData.confirmationStatement.daysUntilDue} days`}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">Due: {new Date(complianceData.confirmationStatement.nextDue).toLocaleDateString('en-GB')}</p>
+                    <p className="text-sm text-gray-600 mt-1">Due: {formatDate(complianceData.confirmationStatement.nextDue)}</p>
                   </div>
-                )}
+                ) : complianceData.confirmationStatement ? (
+                  <div className="p-4 rounded-lg border bg-gray-50 border-gray-200">
+                    <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Confirmation Statement
+                    </p>
+                    <p className="text-sm text-gray-600">No confirmation statement data available</p>
+                  </div>
+                ) : null}
               </div>
             </CardContent>
           </Card>
 
           {/* Overdue Filings */}
-          {complianceData.overdueFilings.length > 0 && (
+          {complianceData.overdueFilings && complianceData.overdueFilings.length > 0 && (
             <Card className="bg-white border-red-300">
               <CardHeader>
                 <CardTitle className="text-xl text-red-800 flex items-center gap-2">
@@ -210,7 +254,7 @@ export default function ComplianceBundle() {
                       <div>
                         <p className="font-semibold text-red-900">{filing.description}</p>
                         <p className="text-sm text-red-700">
-                          Due: {new Date(filing.dueDate).toLocaleDateString('en-GB')} ({filing.daysOverdue} days overdue)
+                          Due: {formatDate(filing.dueDate)} ({filing.daysOverdue} days overdue)
                         </p>
                       </div>
                       <div className="text-right">
@@ -225,7 +269,7 @@ export default function ComplianceBundle() {
           )}
 
           {/* Penalties */}
-          {complianceData.penalties.length > 0 && (
+          {complianceData.penalties && complianceData.penalties.length > 0 && (
             <Card className="bg-white border-orange-300">
               <CardHeader>
                 <CardTitle className="text-xl text-orange-800">Estimated Penalties</CardTitle>
