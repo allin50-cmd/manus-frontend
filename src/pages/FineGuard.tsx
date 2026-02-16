@@ -1,31 +1,45 @@
+import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Shield, ArrowRight } from 'lucide-react';
+import LandingView from '../components/LandingView';
+import SignupView from '../components/SignupView';
+import { VIEWS, ViewType } from '../utils/constants';
 
 export default function FineGuard() {
   const [, setLocation] = useLocation();
+  const [currentView, setCurrentView] = useState<ViewType>(VIEWS.LANDING);
+  const [hologram] = useState<string | undefined>(undefined);
+
+  const handleBookDemo = () => {
+    // Opens Calendly link; falls back to the existing book-demo page
+    window.open('https://calendly.com/fineguard/demo', '_blank');
+  };
+
+  const handleStartMonitoring = () => {
+    setCurrentView(VIEWS.SIGNUP);
+  };
+
+  const handleSignupComplete = () => {
+    // Navigate to the compliance bundle (vault) after signup
+    setLocation('/compliance-bundle');
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8]">
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-6">
-            <Shield className="w-16 h-16 text-[#C9A64A]" />
-          </div>
-          <h1 className="text-5xl font-bold text-[#1A1A1A] mb-6">
-            FineGuard Compliance Cloud
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Automated Companies House compliance tracking and alerts
-          </p>
-          <Button
-            onClick={() => setLocation('/compliance-bundle')}
-            className="bg-[#C9A64A] hover:bg-[#B8954A] text-white px-8 py-6 text-lg"
-          >
-            Get Compliance Bundle
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#0A0B14] via-[#111327] to-[#0A0B14]">
+      <div className="max-w-7xl mx-auto px-4">
+        {currentView === VIEWS.LANDING && (
+          <LandingView
+            onEnterVault={() => setLocation('/compliance-bundle')}
+            onBookDemo={handleBookDemo}
+            onStartMonitoring={handleStartMonitoring}
+            hologram={hologram}
+          />
+        )}
+        {currentView === VIEWS.SIGNUP && (
+          <SignupView
+            onBack={() => setCurrentView(VIEWS.LANDING)}
+            onComplete={handleSignupComplete}
+          />
+        )}
       </div>
     </div>
   );
