@@ -4,9 +4,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions } from './db/schema';
+import { desc, eq, and, count } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
+import crypto from 'crypto';
 
 // Load environment variables
 dotenv.config();
@@ -575,6 +576,570 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating contact:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// FINEGUARD PRO - AUTH HELPERS
+// ============================================================================
+
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(':');
+  const verify = crypto.scryptSync(password, salt, 64).toString('hex');
+  return hash === verify;
+}
+
+function generateToken(): string {
+  return crypto.randomBytes(48).toString('hex');
+}
+
+async function authenticateRequest(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.token, token))
+    .limit(1);
+
+  if (!session || new Date(session.expiresAt) < new Date()) return null;
+  return { userId: session.userId };
+}
+
+// ============================================================================
+// FINEGUARD PRO - USER AUTH ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/auth/register
+ * Register a new FineGuard Pro user
+ */
+app.post('/api/auth/register', async (req: Request, res: Response) => {
+  try {
+    const { email, name, company, password } = req.body;
+
+    if (!email || !name || !password) {
+      return res.status(400).json({ ok: false, error: 'Email, name, and password are required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ ok: false, error: 'Password must be at least 6 characters' });
+    }
+
+    // Check if email already registered
+    const [existing] = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+    if (existing) {
+      return res.status(409).json({ ok: false, error: 'Email already registered' });
+    }
+
+    const passwordHash = hashPassword(password);
+
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: email.toLowerCase(),
+        name,
+        company: company || null,
+        passwordHash,
+      })
+      .returning();
+
+    // Create session
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+    await db.insert(sessions).values({
+      userId: user.id,
+      token,
+      expiresAt,
+    });
+
+    console.log(`🆕 New user registered: ${email}`);
+
+    res.status(201).json({
+      ok: true,
+      token,
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan },
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ ok: false, error: 'Registration failed. Please try again.' });
+  }
+});
+
+/**
+ * POST /api/auth/login
+ * Login an existing user
+ */
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, error: 'Email and password are required' });
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
+    if (!user || !verifyPassword(password, user.passwordHash)) {
+      return res.status(401).json({ ok: false, error: 'Invalid email or password' });
+    }
+
+    // Update last login
+    await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
+
+    // Create session
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    await db.insert(sessions).values({ userId: user.id, token, expiresAt });
+
+    console.log(`🔑 User logged in: ${email}`);
+
+    res.json({
+      ok: true,
+      token,
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan },
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ ok: false, error: 'Login failed. Please try again.' });
+  }
+});
+
+/**
+ * GET /api/auth/me
+ * Get current user profile
+ */
+app.get('/api/auth/me', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const [user] = await db.select().from(users).where(eq(users.id, auth.userId)).limit(1);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    res.json({
+      ok: true,
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, createdAt: user.createdAt },
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch user' });
+  }
+});
+
+/**
+ * POST /api/auth/logout
+ * Logout current session
+ */
+app.post('/api/auth/logout', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      await db.delete(sessions).where(eq(sessions.token, token));
+    }
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Logout failed' });
+  }
+});
+
+// ============================================================================
+// FINEGUARD PRO - COMPANY MONITORING ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/companies
+ * List user's monitored companies
+ */
+app.get('/api/companies', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const companies = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.userId, auth.userId))
+      .orderBy(desc(monitoredCompanies.createdAt));
+
+    res.json({ ok: true, companies });
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch companies' });
+  }
+});
+
+/**
+ * POST /api/companies
+ * Add a company to monitoring - performs live Companies House lookup
+ */
+app.post('/api/companies', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { companyNumber, notes } = req.body;
+
+    if (!companyNumber) {
+      return res.status(400).json({ ok: false, error: 'Company number is required' });
+    }
+
+    if (!companiesHouseService.validateCompanyNumber(companyNumber)) {
+      return res.status(400).json({ ok: false, error: 'Invalid company number format' });
+    }
+
+    const formattedNumber = companiesHouseService.formatCompanyNumber(companyNumber);
+
+    // Check if already monitoring
+    const [existing] = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(and(
+        eq(monitoredCompanies.userId, auth.userId),
+        eq(monitoredCompanies.companyNumber, formattedNumber),
+      ))
+      .limit(1);
+
+    if (existing) {
+      return res.status(409).json({ ok: false, error: 'Company is already in your portfolio' });
+    }
+
+    // Fetch live data from Companies House
+    const profile = await companiesHouseService.getCompanyProfile(formattedNumber);
+    if (!profile) {
+      return res.status(404).json({ ok: false, error: 'Company not found in Companies House register' });
+    }
+
+    const compliance = await companiesHouseService.getComplianceStatus(formattedNumber);
+
+    const [company] = await db
+      .insert(monitoredCompanies)
+      .values({
+        userId: auth.userId,
+        companyNumber: formattedNumber,
+        companyName: profile.companyName,
+        companyStatus: profile.companyStatus,
+        complianceStatus: compliance.status,
+        riskLevel: compliance.riskLevel,
+        lastCheckedAt: new Date(),
+        accountsNextDue: compliance.accountsStatus.nextDue,
+        confirmationNextDue: compliance.confirmationStatementStatus.nextDue,
+        notes: notes || null,
+      })
+      .returning();
+
+    // Create initial alerts for any issues found
+    if (compliance.overdueFilings.length > 0) {
+      for (const filing of compliance.overdueFilings) {
+        await db.insert(alerts).values({
+          userId: auth.userId,
+          companyId: company.id,
+          type: 'overdue',
+          severity: 'critical',
+          title: `${filing.description} overdue for ${profile.companyName}`,
+          message: `The ${filing.description} was due on ${filing.dueDate} and is now ${Math.abs(filing.daysUntilDue)} days overdue. Estimated penalty: £${filing.penaltyRisk || 0}.`,
+        });
+      }
+    }
+
+    if (compliance.upcomingDeadlines.length > 0) {
+      for (const deadline of compliance.upcomingDeadlines) {
+        await db.insert(alerts).values({
+          userId: auth.userId,
+          companyId: company.id,
+          type: 'deadline_warning',
+          severity: deadline.daysUntilDue <= 7 ? 'warning' : 'info',
+          title: `${deadline.description} due soon for ${profile.companyName}`,
+          message: `The ${deadline.description} is due on ${deadline.dueDate} (${deadline.daysUntilDue} days remaining).`,
+        });
+      }
+    }
+
+    console.log(`📌 Company added to monitoring: ${profile.companyName} (${formattedNumber})`);
+
+    res.status(201).json({
+      ok: true,
+      company,
+      compliance: {
+        status: compliance.status,
+        riskLevel: compliance.riskLevel,
+        accounts: compliance.accountsStatus,
+        confirmationStatement: compliance.confirmationStatementStatus,
+        overdueFilings: compliance.overdueFilings,
+        upcomingDeadlines: compliance.upcomingDeadlines,
+        penalties: compliance.penalties,
+      },
+    });
+  } catch (error) {
+    console.error('Error adding company:', error);
+
+    if (error instanceof Error && error.message.includes('COMPANIES_HOUSE_API_KEY')) {
+      return res.status(500).json({ ok: false, error: 'Companies House API not configured' });
+    }
+
+    res.status(500).json({ ok: false, error: 'Failed to add company. Please try again.' });
+  }
+});
+
+/**
+ * GET /api/companies/:id
+ * Get detailed compliance info for a monitored company
+ */
+app.get('/api/companies/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { id } = req.params;
+
+    const [company] = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(and(eq(monitoredCompanies.id, id), eq(monitoredCompanies.userId, auth.userId)))
+      .limit(1);
+
+    if (!company) {
+      return res.status(404).json({ ok: false, error: 'Company not found' });
+    }
+
+    // Fetch fresh compliance data
+    let compliance = null;
+    try {
+      compliance = await companiesHouseService.getComplianceStatus(company.companyNumber);
+
+      // Update stored status
+      await db
+        .update(monitoredCompanies)
+        .set({
+          complianceStatus: compliance.status,
+          riskLevel: compliance.riskLevel,
+          lastCheckedAt: new Date(),
+          accountsNextDue: compliance.accountsStatus.nextDue,
+          confirmationNextDue: compliance.confirmationStatementStatus.nextDue,
+        })
+        .where(eq(monitoredCompanies.id, id));
+    } catch (e) {
+      // If CH API fails, return cached data
+      console.warn('Companies House API unavailable, using cached data');
+    }
+
+    // Get alerts for this company
+    const companyAlerts = await db
+      .select()
+      .from(alerts)
+      .where(and(eq(alerts.companyId, id), eq(alerts.userId, auth.userId)))
+      .orderBy(desc(alerts.createdAt))
+      .limit(20);
+
+    res.json({
+      ok: true,
+      company,
+      compliance: compliance ? {
+        status: compliance.status,
+        riskLevel: compliance.riskLevel,
+        accounts: compliance.accountsStatus,
+        confirmationStatement: compliance.confirmationStatementStatus,
+        overdueFilings: compliance.overdueFilings,
+        upcomingDeadlines: compliance.upcomingDeadlines,
+        penalties: compliance.penalties,
+        lastFiling: compliance.lastFiling,
+      } : null,
+      alerts: companyAlerts,
+    });
+  } catch (error) {
+    console.error('Error fetching company detail:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch company details' });
+  }
+});
+
+/**
+ * DELETE /api/companies/:id
+ * Remove a company from monitoring
+ */
+app.delete('/api/companies/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { id } = req.params;
+
+    // Delete alerts first (FK constraint)
+    await db.delete(alerts).where(and(eq(alerts.companyId, id), eq(alerts.userId, auth.userId)));
+
+    const [deleted] = await db
+      .delete(monitoredCompanies)
+      .where(and(eq(monitoredCompanies.id, id), eq(monitoredCompanies.userId, auth.userId)))
+      .returning();
+
+    if (!deleted) {
+      return res.status(404).json({ ok: false, error: 'Company not found' });
+    }
+
+    console.log(`🗑️ Company removed from monitoring: ${deleted.companyName}`);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting company:', error);
+    res.status(500).json({ ok: false, error: 'Failed to remove company' });
+  }
+});
+
+/**
+ * POST /api/companies/:id/refresh
+ * Refresh compliance data from Companies House
+ */
+app.post('/api/companies/:id/refresh', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { id } = req.params;
+
+    const [company] = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(and(eq(monitoredCompanies.id, id), eq(monitoredCompanies.userId, auth.userId)))
+      .limit(1);
+
+    if (!company) {
+      return res.status(404).json({ ok: false, error: 'Company not found' });
+    }
+
+    const compliance = await companiesHouseService.getComplianceStatus(company.companyNumber);
+
+    await db
+      .update(monitoredCompanies)
+      .set({
+        complianceStatus: compliance.status,
+        riskLevel: compliance.riskLevel,
+        lastCheckedAt: new Date(),
+        accountsNextDue: compliance.accountsStatus.nextDue,
+        confirmationNextDue: compliance.confirmationStatementStatus.nextDue,
+      })
+      .where(eq(monitoredCompanies.id, id));
+
+    res.json({ ok: true, compliance });
+  } catch (error) {
+    console.error('Error refreshing company:', error);
+    res.status(500).json({ ok: false, error: 'Failed to refresh compliance data' });
+  }
+});
+
+// ============================================================================
+// FINEGUARD PRO - ALERTS ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/alerts
+ * List user's alerts
+ */
+app.get('/api/alerts', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const userAlerts = await db
+      .select()
+      .from(alerts)
+      .where(eq(alerts.userId, auth.userId))
+      .orderBy(desc(alerts.createdAt))
+      .limit(50);
+
+    res.json({ ok: true, alerts: userAlerts });
+  } catch (error) {
+    console.error('Error fetching alerts:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch alerts' });
+  }
+});
+
+/**
+ * PATCH /api/alerts/:id/read
+ * Mark an alert as read
+ */
+app.patch('/api/alerts/:id/read', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const [alert] = await db
+      .update(alerts)
+      .set({ read: true })
+      .where(and(eq(alerts.id, req.params.id), eq(alerts.userId, auth.userId)))
+      .returning();
+
+    if (!alert) return res.status(404).json({ ok: false, error: 'Alert not found' });
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Failed to update alert' });
+  }
+});
+
+/**
+ * POST /api/alerts/read-all
+ * Mark all alerts as read
+ */
+app.post('/api/alerts/read-all', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    await db.update(alerts).set({ read: true }).where(eq(alerts.userId, auth.userId));
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Failed to mark alerts as read' });
+  }
+});
+
+/**
+ * GET /api/dashboard
+ * Get dashboard stats for current user
+ */
+app.get('/api/dashboard', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const companies = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.userId, auth.userId));
+
+    const unreadAlerts = await db
+      .select()
+      .from(alerts)
+      .where(and(eq(alerts.userId, auth.userId), eq(alerts.read, false)));
+
+    const totalCompanies = companies.length;
+    const compliantCount = companies.filter(c => c.complianceStatus === 'compliant').length;
+    const warningCount = companies.filter(c => c.complianceStatus === 'warning').length;
+    const overdueCount = companies.filter(c => c.complianceStatus === 'overdue').length;
+    const highRiskCount = companies.filter(c => c.riskLevel === 'high').length;
+
+    res.json({
+      ok: true,
+      stats: {
+        totalCompanies,
+        compliantCount,
+        warningCount,
+        overdueCount,
+        highRiskCount,
+        unreadAlerts: unreadAlerts.length,
+      },
+      companies,
+      recentAlerts: unreadAlerts.slice(0, 5),
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch dashboard' });
   }
 });
 

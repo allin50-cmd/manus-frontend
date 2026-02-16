@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, integer } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -78,6 +78,74 @@ export const contacts = pgTable('contacts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// ============================================================================
+// FINEGUARD PRO - USER APP TABLES
+// ============================================================================
+
+/**
+ * Users Table
+ * FineGuard Pro registered users
+ */
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  name: varchar('name', { length: 255 }).notNull(),
+  company: varchar('company', { length: 255 }),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  plan: varchar('plan', { length: 20 }).default('free').notNull(), // free, pro, enterprise
+  role: varchar('role', { length: 20 }).default('user').notNull(), // user, admin, partner
+  verified: boolean('verified').default(false).notNull(),
+  lastLoginAt: timestamp('last_login_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
+ * Monitored Companies Table
+ * Companies a user has added to their monitoring portfolio
+ */
+export const monitoredCompanies = pgTable('monitored_companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  companyStatus: varchar('company_status', { length: 50 }),
+  complianceStatus: varchar('compliance_status', { length: 20 }).default('unknown'), // compliant, warning, overdue, unknown
+  riskLevel: varchar('risk_level', { length: 20 }).default('none'), // none, low, medium, high
+  lastCheckedAt: timestamp('last_checked_at'),
+  accountsNextDue: varchar('accounts_next_due', { length: 50 }),
+  confirmationNextDue: varchar('confirmation_next_due', { length: 50 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
+ * Alerts Table
+ * Compliance alerts generated for monitored companies
+ */
+export const alerts = pgTable('alerts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  companyId: uuid('company_id').notNull().references(() => monitoredCompanies.id),
+  type: varchar('type', { length: 50 }).notNull(), // deadline_warning, overdue, status_change, director_change, filing_update
+  severity: varchar('severity', { length: 20 }).notNull(), // info, warning, critical
+  title: varchar('title', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  read: boolean('read').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
+ * Sessions Table
+ * Simple token-based sessions for user auth
+ */
+export const sessions = pgTable('sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
@@ -93,3 +161,15 @@ export type NewComplianceBundle = typeof complianceBundles.$inferInsert;
 
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
+export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
+export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+export type Alert = typeof alerts.$inferSelect;
+export type NewAlert = typeof alerts.$inferInsert;
+
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;

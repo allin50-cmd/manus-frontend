@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Mail, Building, Lock, User, Eye, EyeOff } from 'lucide-react';
-import { register } from '../utils/api';
+import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { login } from '../utils/api';
 
-interface SignupViewProps {
+interface LoginViewProps {
   onBack: () => void;
   onComplete: () => void;
-  onSwitchToLogin: () => void;
+  onSwitchToSignup: () => void;
 }
 
-export default function SignupView({ onBack, onComplete, onSwitchToLogin }: SignupViewProps) {
-  const [name, setName] = useState('');
+export default function LoginView({ onBack, onComplete, onSwitchToSignup }: LoginViewProps) {
   const [email, setEmail] = useState('');
-  const [company, setCompany] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,10 +21,10 @@ export default function SignupView({ onBack, onComplete, onSwitchToLogin }: Sign
     setError('');
 
     try {
-      await register(email, name, password, company || undefined);
+      await login(email, password);
       onComplete();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -41,9 +39,9 @@ export default function SignupView({ onBack, onComplete, onSwitchToLogin }: Sign
         <ArrowLeft size={20} /> Back
       </button>
       <div className="bg-white/5 backdrop-blur-xl rounded-[3rem] p-12 border border-white/10 shadow-2xl">
-        <h1 className="text-4xl font-black text-white mb-4 text-center">Start Monitoring</h1>
+        <h1 className="text-4xl font-black text-white mb-4 text-center">Welcome Back</h1>
         <p className="text-slate-400 text-center mb-10">
-          Create your account to begin protecting your companies.
+          Log in to your FineGuard Pro dashboard.
         </p>
 
         {error && (
@@ -54,21 +52,10 @@ export default function SignupView({ onBack, onComplete, onSwitchToLogin }: Sign
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="relative">
-            <User className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500" size={24} />
-            <input
-              type="text"
-              placeholder="Full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full bg-white/5 border border-white/10 rounded-full py-5 pl-16 pr-6 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="relative">
             <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500" size={24} />
             <input
               type="email"
-              placeholder="Work email"
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -76,24 +63,13 @@ export default function SignupView({ onBack, onComplete, onSwitchToLogin }: Sign
             />
           </div>
           <div className="relative">
-            <Building className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500" size={24} />
-            <input
-              type="text"
-              placeholder="Company name (optional)"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-full py-5 pl-16 pr-6 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="relative">
             <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500" size={24} />
             <input
               type={showPassword ? 'text' : 'password'}
-              placeholder="Password (min 6 characters)"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
               className="w-full bg-white/5 border border-white/10 rounded-full py-5 pl-16 pr-14 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
             />
             <button
@@ -109,19 +85,15 @@ export default function SignupView({ onBack, onComplete, onSwitchToLogin }: Sign
             disabled={loading}
             className="w-full bg-blue-500 text-navy py-5 rounded-full font-black text-lg shadow-[0_0_30px_rgba(59,130,246,0.5)] hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
           >
-            {loading ? 'Creating account...' : 'Start Free Monitoring'}
-            {!loading && <Lock size={20} />}
+            {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
 
         <p className="text-slate-400 text-sm text-center mt-8">
-          Already have an account?{' '}
-          <button onClick={onSwitchToLogin} className="text-blue-400 hover:text-blue-300 font-semibold">
-            Log in
+          Don't have an account?{' '}
+          <button onClick={onSwitchToSignup} className="text-blue-400 hover:text-blue-300 font-semibold">
+            Sign up free
           </button>
-        </p>
-        <p className="text-xs text-slate-600 text-center mt-4">
-          By signing up, you agree to our Terms and Privacy Policy.
         </p>
       </div>
     </div>
