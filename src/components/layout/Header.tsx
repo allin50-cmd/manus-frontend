@@ -3,7 +3,7 @@ import { useLocation, Link } from 'wouter';
 import { useAuth } from '../../context/AuthContext';
 import {
   Shield, Menu, X, Bell, User, LogOut, ChevronDown,
-  Home, Building2, FileText, BarChart3, HelpCircle, Settings,
+  Home, Building2, FileText, BarChart3, HelpCircle, Settings, Terminal,
 } from 'lucide-react';
 
 export default function Header() {
@@ -19,6 +19,7 @@ export default function Header() {
     { href: '/vaultline', label: 'VaultLine' },
     { href: '/ultai', label: 'UltAi' },
     { href: '/contact', label: 'Contact' },
+    { href: '/devops', label: 'DevOps' },
   ];
 
   const authLinks = [

@@ -25,6 +25,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
+import DevOps from './pages/DevOps';
 
 export default function App() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/settings" component={Profile} />
             <Route path="/alerts" component={Reports} />
+            <Route path="/devops" component={DevOps} />
             <Route component={NotFound} />
           </Switch>
         </Layout>
