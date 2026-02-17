@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
+import { addCompany } from '../utils/api';
+import { toast } from 'sonner';
 import {
-  Shield, Building2, Bell, CheckCircle, ArrowRight,
-  ArrowLeft, Sparkles, Search,
+  Building2, Bell, CheckCircle, ArrowRight,
+  ArrowLeft, Sparkles, Search, Loader2, AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +23,15 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
   const [companyNumber, setCompanyNumber] = useState('');
+  const [addingCompany, setAddingCompany] = useState(false);
+  const [companyError, setCompanyError] = useState('');
+  const [companyAdded, setCompanyAdded] = useState(false);
+  const [alertPrefs, setAlertPrefs] = useState({
+    filingDeadlines: true,
+    overdueAlerts: true,
+    directorChanges: true,
+    weeklyDigest: false,
+  });
 
   if (!isAuthenticated) {
     setLocation('/signup');
@@ -29,6 +40,29 @@ export default function Onboarding() {
 
   const next = () => setStep((s) => Math.min(s + 1, 4));
   const prev = () => setStep((s) => Math.max(s - 1, 1));
+
+  const handleStep2Continue = async () => {
+    if (!companyNumber.trim()) {
+      next();
+      return;
+    }
+    if (companyAdded) {
+      next();
+      return;
+    }
+    setAddingCompany(true);
+    setCompanyError('');
+    try {
+      await addCompany(companyNumber.trim());
+      setCompanyAdded(true);
+      toast.success('Company added to monitoring!');
+      next();
+    } catch (err) {
+      setCompanyError(err instanceof Error ? err.message : 'Failed to add company');
+    } finally {
+      setAddingCompany(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
@@ -82,12 +116,29 @@ export default function Onboarding() {
               <h2 className="text-2xl font-black text-white mb-2 text-center">Add Your First Company</h2>
               <p className="text-slate-400 text-center mb-8">Enter a Companies House number to start monitoring.</p>
               <div className="max-w-sm mx-auto">
+                {companyError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <p className="text-red-400 text-sm">{companyError}</p>
+                  </div>
+                )}
+                {companyAdded && (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                    <p className="text-green-400 text-sm">Company added successfully!</p>
+                  </div>
+                )}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <Input
                     value={companyNumber}
-                    onChange={(e) => setCompanyNumber(e.target.value)}
+                    onChange={(e) => {
+                      setCompanyNumber(e.target.value);
+                      setCompanyError('');
+                      setCompanyAdded(false);
+                    }}
                     placeholder="e.g. 12345678"
+                    disabled={addingCompany}
                     className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 text-center"
                   />
                 </div>
@@ -102,19 +153,24 @@ export default function Onboarding() {
               <h2 className="text-2xl font-black text-white mb-2 text-center">Alert Preferences</h2>
               <p className="text-slate-400 text-center mb-8">Choose how you want to be notified.</p>
               <div className="space-y-3 max-w-sm mx-auto">
-                {[
-                  { label: 'Filing deadline reminders', desc: '7 days before due', default: true },
-                  { label: 'Overdue filing alerts', desc: 'Immediately when overdue', default: true },
-                  { label: 'Director changes', desc: 'When changes are detected', default: true },
-                  { label: 'Weekly digest email', desc: 'Summary every Monday', default: false },
-                ].map((pref) => (
-                  <div key={pref.label} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
+                {([
+                  { key: 'filingDeadlines' as const, label: 'Filing deadline reminders', desc: '7 days before due' },
+                  { key: 'overdueAlerts' as const, label: 'Overdue filing alerts', desc: 'Immediately when overdue' },
+                  { key: 'directorChanges' as const, label: 'Director changes', desc: 'When changes are detected' },
+                  { key: 'weeklyDigest' as const, label: 'Weekly digest email', desc: 'Summary every Monday' },
+                ]).map((pref) => (
+                  <div key={pref.key} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-4">
                     <div>
                       <p className="text-sm font-medium text-white">{pref.label}</p>
                       <p className="text-xs text-slate-500">{pref.desc}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" defaultChecked={pref.default} className="sr-only peer" />
+                      <input
+                        type="checkbox"
+                        checked={alertPrefs[pref.key]}
+                        onChange={() => setAlertPrefs((prev) => ({ ...prev, [pref.key]: !prev[pref.key] }))}
+                        className="sr-only peer"
+                      />
                       <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-[#5A4BFF] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                     </label>
                   </div>
@@ -151,8 +207,16 @@ export default function Onboarding() {
               ) : (
                 <div />
               )}
-              <Button onClick={next} className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-6 py-2.5 rounded-full font-bold">
-                {step === 1 ? "Let's Go" : 'Continue'} <ArrowRight className="w-4 h-4 ml-2" />
+              <Button
+                onClick={step === 2 ? handleStep2Continue : next}
+                disabled={addingCompany}
+                className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-6 py-2.5 rounded-full font-bold"
+              >
+                {addingCompany ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding...</>
+                ) : (
+                  <>{step === 1 ? "Let's Go" : 'Continue'} <ArrowRight className="w-4 h-4 ml-2" /></>
+                )}
               </Button>
             </div>
           )}
