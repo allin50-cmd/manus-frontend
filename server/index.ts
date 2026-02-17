@@ -790,6 +790,49 @@ app.post('/api/auth/logout', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// FINEGUARD PRO - COMPANY SEARCH (BULK DATA)
+// Must be registered BEFORE /api/companies/:id to avoid Express matching
+// "search" as an :id parameter.
+// ============================================================================
+
+/**
+ * GET /api/companies/search?q=<query>&limit=20
+ * Search companies from local bulk data (BasicCompanyDataAsOneFile)
+ */
+app.get('/api/companies/search', async (req: Request, res: Response) => {
+  try {
+    const { q, limit = '20', by = 'name' } = req.query;
+
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      return res.status(400).json({ ok: false, error: 'Search query must be at least 2 characters' });
+    }
+
+    const maxLimit = Math.min(parseInt(limit as string) || 20, 100);
+    let results;
+
+    switch (by) {
+      case 'number':
+        const single = await companiesHouseLocalService.getByNumber(q);
+        results = single ? [single] : [];
+        break;
+      case 'postcode':
+        results = await companiesHouseLocalService.searchByPostcode(q, maxLimit);
+        break;
+      case 'sic':
+        results = await companiesHouseLocalService.searchBySicCode(q, maxLimit);
+        break;
+      default:
+        results = await companiesHouseLocalService.searchByName(q, maxLimit);
+    }
+
+    res.json({ ok: true, count: results.length, results });
+  } catch (error) {
+    console.error('Error searching companies:', error);
+    res.status(500).json({ ok: false, error: 'Search failed' });
+  }
+});
+
+// ============================================================================
 // FINEGUARD PRO - COMPANY MONITORING ENDPOINTS
 // ============================================================================
 
@@ -1067,47 +1110,6 @@ app.post('/api/companies/:id/refresh', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error refreshing company:', error);
     res.status(500).json({ ok: false, error: 'Failed to refresh compliance data' });
-  }
-});
-
-// ============================================================================
-// FINEGUARD PRO - COMPANY SEARCH (BULK DATA)
-// ============================================================================
-
-/**
- * GET /api/companies/search?q=<query>&limit=20
- * Search companies from local bulk data (BasicCompanyDataAsOneFile)
- */
-app.get('/api/companies/search', async (req: Request, res: Response) => {
-  try {
-    const { q, limit = '20', by = 'name' } = req.query;
-
-    if (!q || typeof q !== 'string' || q.trim().length < 2) {
-      return res.status(400).json({ ok: false, error: 'Search query must be at least 2 characters' });
-    }
-
-    const maxLimit = Math.min(parseInt(limit as string) || 20, 100);
-    let results;
-
-    switch (by) {
-      case 'number':
-        const single = await companiesHouseLocalService.getByNumber(q);
-        results = single ? [single] : [];
-        break;
-      case 'postcode':
-        results = await companiesHouseLocalService.searchByPostcode(q, maxLimit);
-        break;
-      case 'sic':
-        results = await companiesHouseLocalService.searchBySicCode(q, maxLimit);
-        break;
-      default:
-        results = await companiesHouseLocalService.searchByName(q, maxLimit);
-    }
-
-    res.json({ ok: true, count: results.length, results });
-  } catch (error) {
-    console.error('Error searching companies:', error);
-    res.status(500).json({ ok: false, error: 'Search failed' });
   }
 });
 
