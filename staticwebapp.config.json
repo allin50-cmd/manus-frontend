@@ -2,26 +2,40 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
+      "/api/*",
       "/assets/*",
-      "/images/*",
-      "*.{css,scss,js,json,png,gif,ico,jpg,jpeg,svg,woff,woff2,ttf,eot,webp,avif}"
+      "*.{css,js,json,png,gif,ico,jpg,jpeg,svg,woff,woff2,ttf,eot,webp,avif}"
     ]
   },
   "routes": [
     {
-      "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "route": "/assets/*",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/*.js",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/*.css",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/index.html",
+      "headers": {
+        "cache-control": "no-cache, must-revalidate"
+      }
     },
     {
       "route": "/*",
       "headers": {
-        "cache-control": "must-revalidate, max-age=3600"
-      }
-    },
-    {
-      "route": "/assets/*",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
+        "cache-control": "public, max-age=3600"
       }
     }
   ],
@@ -32,12 +46,13 @@
     }
   },
   "globalHeaders": {
-    "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;",
+    "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
+    "X-XSS-Protection": "0",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    "Permissions-Policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
   },
   "mimeTypes": {
     ".json": "application/json",
@@ -50,12 +65,14 @@
     ".jpeg": "image/jpeg",
     ".gif": "image/gif",
     ".ico": "image/x-icon",
+    ".webp": "image/webp",
+    ".avif": "image/avif",
     ".woff": "font/woff",
     ".woff2": "font/woff2",
     ".ttf": "font/ttf",
     ".eot": "application/vnd.ms-fontobject"
   },
   "platform": {
-    "apiRuntime": "node:18"
+    "apiRuntime": "node:20"
   }
 }

@@ -9,11 +9,14 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-// Create postgres connection
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+// Create postgres connection – tuned for Azure App Service
 const client = postgres(databaseUrl, {
-  max: 10, // Maximum number of connections
-  idle_timeout: 20, // Close idle connections after 20 seconds
-  connect_timeout: 10, // Connection timeout in seconds
+  max: IS_PRODUCTION ? 20 : 10,        // Azure B1+ can handle 20 connections
+  idle_timeout: IS_PRODUCTION ? 30 : 20, // Keep connections warm longer in prod
+  connect_timeout: 15,                    // Azure PG can be slow on cold start
+  ssl: IS_PRODUCTION ? { rejectUnauthorized: false } : undefined, // Azure requires SSL
 });
 
 // Create drizzle instance

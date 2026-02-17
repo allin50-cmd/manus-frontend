@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,18 +17,52 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ============================================================================
+// PRODUCTION MIDDLEWARE
+// ============================================================================
 
-// Logging middleware
+// Trust Azure reverse proxy (App Service fronts via a load balancer)
+if (IS_PRODUCTION) {
+  app.set('trust proxy', 1);
+}
+
+// gzip / brotli compression – biggest single perf win for API + static assets
+app.use(compression());
+
+// CORS
+app.use(cors());
+
+// Body parsers with size limits
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Security headers (applied in production; SWA handles these for static-only deploys)
+if (IS_PRODUCTION) {
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()');
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    next();
+  });
+}
+
+// Request logging (concise in prod, verbose in dev)
 app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  if (IS_PRODUCTION) {
+    // Log only non-static requests in prod to reduce noise
+    if (req.path.startsWith('/api') || req.path === '/health') {
+      console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+    }
+  } else {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  }
   next();
 });
 
@@ -1266,12 +1301,18 @@ app.get('/health', async (req: Request, res: Response) => {
 // STATIC FILE SERVING & SPA FALLBACK
 // ============================================================================
 
-// Serve static files from dist folder
+// Serve static files from dist folder with aggressive caching for hashed assets
 const distPath = path.join(__dirname, '../dist');
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+  maxAge: IS_PRODUCTION ? '1y' : 0,       // Vite adds content hashes → safe to cache forever
+  immutable: IS_PRODUCTION,
+  etag: true,
+  index: false,                             // We handle SPA fallback ourselves
+}));
 
-// SPA fallback - serve index.html for all other routes
+// SPA fallback - serve index.html for all other routes (never cached)
 app.get('*', (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-cache, must-revalidate');
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
@@ -1285,32 +1326,31 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 // ============================================================================
-// START SERVER
+// START SERVER & GRACEFUL SHUTDOWN
 // ============================================================================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('');
-  console.log('🚀 VaultLine Brand Suite Server');
+  console.log(`VaultLine Brand Suite Server [${IS_PRODUCTION ? 'PRODUCTION' : 'DEV'}]`);
   console.log('================================');
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🌐 http://localhost:${PORT}`);
-  console.log('');
-  console.log('API Endpoints:');
-  console.log('  POST   /api/deployments/record');
-  console.log('  GET    /api/deployments/status');
-  console.log('  GET    /api/deployments/history');
-  console.log('  POST   /api/leads');
-  console.log('  GET    /api/leads');
-  console.log('  POST   /api/intake');
-  console.log('  GET    /api/intake');
-  console.log('  POST   /api/compliance-bundles');
-  console.log('  GET    /api/compliance-bundles');
-  console.log('  POST   /api/contacts');
-  console.log('  GET    /api/contacts');
-  console.log('  PATCH  /api/contacts/:id');
-  console.log('  GET    /api/companies/search    (bulk data search)');
-  console.log('  GET    /api/bulk-data/stats      (import statistics)');
-  console.log('  GET    /api/bulk-data/overdue    (overdue companies)');
-  console.log('  GET    /health');
+  console.log(`Server running on port ${PORT}`);
+  if (!IS_PRODUCTION) console.log(`http://localhost:${PORT}`);
   console.log('');
 });
+
+// Graceful shutdown for Azure App Service (SIGTERM) and Docker (SIGINT)
+function gracefulShutdown(signal: string) {
+  console.log(`\n${signal} received – shutting down gracefully...`);
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+  // Force exit after 10s if connections don't drain
+  setTimeout(() => {
+    console.warn('Forcing shutdown after timeout');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

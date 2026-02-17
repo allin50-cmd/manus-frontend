@@ -1,12 +1,20 @@
-name: Deploy VaultLine Brand Suite
+# ============================================================================
+# VaultLine Brand Suite – Unified CI/CD Pipeline
+# Builds Docker image → pushes to Azure Container Registry → deploys to
+# Azure App Service (Linux containers) across dev / staging / prod
+# ============================================================================
+
+name: CI/CD – Build, Test & Deploy
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Deployment environment'
+        description: 'Target environment'
         required: true
         default: 'dev'
         type: choice
@@ -15,67 +23,275 @@ on:
           - staging
           - prod
 
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+  REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
+  IMAGE_NAME: vaultline-brand-suite
+
+# ============================================================================
 jobs:
-  deploy:
+
+  # --------------------------------------------------------------------------
+  # 1. LINT & TYPE-CHECK
+  # --------------------------------------------------------------------------
+  quality:
+    name: Lint & Type-check
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'dev' }}
-
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: '22'
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v2
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm type-check
+
+  # --------------------------------------------------------------------------
+  # 2. BUILD & TEST
+  # --------------------------------------------------------------------------
+  build:
+    name: Build & Test
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: ${{ env.PNPM_VERSION }}
 
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: 🏗️ Build application
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
         run: pnpm build
         env:
           NODE_ENV: production
 
-      - name: 🚀 Deploy to Azure App Service
-        uses: azure/webapps-deploy@v2
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./dist
+          name: dist
+          path: dist/
+          retention-days: 7
 
-      - name: 📝 Record Deployment Status
+  # --------------------------------------------------------------------------
+  # 3. DOCKER BUILD & PUSH TO ACR
+  # --------------------------------------------------------------------------
+  docker:
+    name: Docker Build & Push
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  # --------------------------------------------------------------------------
+  # 4. DEPLOY TO DEV (auto on main push)
+  # --------------------------------------------------------------------------
+  deploy-dev:
+    name: Deploy to Dev
+    needs: docker
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy container to App Service (dev)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME_DEV }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Record deployment
         if: always()
         run: |
           STATUS="success"
-          if [ "${{ job.status }}" != "success" ]; then
-            STATUS="failed"
-          fi
-
-          curl -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
+          [ "${{ job.status }}" != "success" ] && STATUS="failed"
+          curl -sS -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
             -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"environment\": \"${{ github.event.inputs.environment || 'dev' }}\",
-              \"status\": \"$STATUS\",
-              \"commit\": \"${{ github.sha }}\",
-              \"workflowRun\": \"${{ github.run_id }}\"
-            }" || echo "⚠️  Deployment recording failed (non-critical)"
+            -d "{\"environment\":\"dev\",\"status\":\"$STATUS\",\"commit\":\"${{ github.sha }}\",\"workflowRun\":\"${{ github.run_id }}\"}" \
+            || true
 
-      - name: 📊 Deployment Summary
+      - name: Smoke test
+        run: |
+          sleep 10
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+              "https://${{ secrets.AZURE_WEBAPP_NAME_DEV }}.azurewebsites.net/api/health" || true)
+            [ "$CODE" = "200" ] && echo "Health check passed" && exit 0
+            echo "Attempt $i: HTTP $CODE – retrying in 10s..."
+            sleep 10
+          done
+          echo "::warning::Health check did not return 200 after 5 attempts"
+
+  # --------------------------------------------------------------------------
+  # 5. DEPLOY TO STAGING (manual dispatch only)
+  # --------------------------------------------------------------------------
+  deploy-staging:
+    name: Deploy to Staging
+    needs: docker
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy container to App Service (staging)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME_STAGING }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Record deployment
         if: always()
         run: |
-          echo "## Deployment Summary 🚀" >> $GITHUB_STEP_SUMMARY
+          STATUS="success"
+          [ "${{ job.status }}" != "success" ] && STATUS="failed"
+          curl -sS -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
+            -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"environment\":\"staging\",\"status\":\"$STATUS\",\"commit\":\"${{ github.sha }}\",\"workflowRun\":\"${{ github.run_id }}\"}" \
+            || true
+
+      - name: Smoke test
+        run: |
+          sleep 10
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+              "https://${{ secrets.AZURE_WEBAPP_NAME_STAGING }}.azurewebsites.net/api/health" || true)
+            [ "$CODE" = "200" ] && echo "Health check passed" && exit 0
+            echo "Attempt $i: HTTP $CODE – retrying in 10s..."
+            sleep 10
+          done
+          echo "::warning::Health check did not return 200 after 5 attempts"
+
+  # --------------------------------------------------------------------------
+  # 6. DEPLOY TO PRODUCTION (manual only, requires GitHub environment approval)
+  # --------------------------------------------------------------------------
+  deploy-prod:
+    name: Deploy to Production
+    needs: docker
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy container to App Service (prod)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME_PROD }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Record deployment
+        if: always()
+        run: |
+          STATUS="success"
+          [ "${{ job.status }}" != "success" ] && STATUS="failed"
+          curl -sS -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
+            -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"environment\":\"prod\",\"status\":\"$STATUS\",\"commit\":\"${{ github.sha }}\",\"workflowRun\":\"${{ github.run_id }}\"}" \
+            || true
+
+      - name: Smoke test
+        run: |
+          sleep 15
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+              "https://${{ secrets.AZURE_WEBAPP_NAME_PROD }}.azurewebsites.net/api/health" || true)
+            [ "$CODE" = "200" ] && echo "Health check passed" && exit 0
+            echo "Attempt $i: HTTP $CODE – retrying in 15s..."
+            sleep 15
+          done
+          echo "::error::Production health check failed after 5 attempts"
+          exit 1
+
+  # --------------------------------------------------------------------------
+  # 7. SUMMARY
+  # --------------------------------------------------------------------------
+  summary:
+    name: Summary
+    needs: [quality, build, docker, deploy-dev, deploy-staging, deploy-prod]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## VaultLine CI/CD Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment:** ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Workflow Run:** [\#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | ${{ needs.quality.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | ${{ needs.docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Dev | ${{ needs.deploy-dev.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Staging | ${{ needs.deploy-staging.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Prod | ${{ needs.deploy-prod.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View deployment status at: ${{ secrets.VAULTLINE_API_URL }}/admin" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
