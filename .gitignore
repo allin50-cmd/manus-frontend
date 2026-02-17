@@ -63,3 +63,4 @@ Thumbs.db
 *.cert
 credentials.json
 test-results/
+screenshots/
