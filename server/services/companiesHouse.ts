@@ -1,8 +1,14 @@
 import fetch from 'node-fetch';
+import { companiesHouseLocalService } from './companiesHouseLocal';
 
 /**
  * Companies House API Service
  * Real-time integration with Companies House API
+ * Now with local bulk data fallback from BasicCompanyDataAsOneFile CSV
+ *
+ * Lookup order:
+ *   1. Try local bulk data (instant, offline)
+ *   2. Fall back to live API (real-time, rate-limited)
  *
  * API Documentation: https://developer-specs.company-information.service.gov.uk/
  */
@@ -111,12 +117,122 @@ interface FilingDeadline {
 
 export class CompaniesHouseService {
   private apiKey: string;
+  private localAvailable: boolean | null = null;
 
   constructor() {
     if (!CH_API_KEY) {
-      throw new Error('COMPANIES_HOUSE_API_KEY environment variable is required');
+      console.warn('COMPANIES_HOUSE_API_KEY not set - will use local bulk data only');
     }
-    this.apiKey = CH_API_KEY;
+    this.apiKey = CH_API_KEY || '';
+  }
+
+  /**
+   * Check if local bulk data is available (cached after first check)
+   */
+  private async isLocalDataAvailable(): Promise<boolean> {
+    if (this.localAvailable !== null) return this.localAvailable;
+    try {
+      this.localAvailable = await companiesHouseLocalService.isDataLoaded();
+      if (this.localAvailable) {
+        const count = await companiesHouseLocalService.getTotalCount();
+        console.log(`Local bulk data available: ${count.toLocaleString()} companies`);
+      }
+    } catch {
+      this.localAvailable = false;
+    }
+    return this.localAvailable;
+  }
+
+  /**
+   * Search companies by name using local bulk data
+   * Returns results instantly from the database
+   */
+  async searchCompanies(query: string, limit: number = 20) {
+    const hasLocal = await this.isLocalDataAvailable();
+    if (hasLocal) {
+      return companiesHouseLocalService.searchByName(query, limit);
+    }
+    return [];
+  }
+
+  /**
+   * Get company profile - tries local data first, then live API
+   */
+  async getCompanyProfileWithFallback(companyNumber: string): Promise<CompanyProfile | null> {
+    const hasLocal = await this.isLocalDataAvailable();
+
+    // Try local data first
+    if (hasLocal) {
+      const local = await companiesHouseLocalService.getByNumber(companyNumber);
+      if (local) {
+        console.log(`Local data hit: ${local.companyName} (${local.companyNumber})`);
+        return this.localToProfile(local);
+      }
+    }
+
+    // Fall back to live API
+    if (this.apiKey) {
+      return this.getCompanyProfile(companyNumber);
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert local bulk data to CompanyProfile format
+   */
+  private localToProfile(local: Awaited<ReturnType<typeof companiesHouseLocalService.getByNumber>>): CompanyProfile | null {
+    if (!local) return null;
+
+    // Calculate accounts due date info
+    const accountsOverdue = local.accountsNextDueDate
+      ? new Date(local.accountsNextDueDate) < new Date()
+      : false;
+
+    const confStmtOverdue = local.confStmtNextDueDate
+      ? new Date(local.confStmtNextDueDate) < new Date()
+      : false;
+
+    return {
+      companyNumber: local.companyNumber,
+      companyName: local.companyName,
+      companyStatus: local.companyStatus?.toLowerCase() || 'unknown',
+      dateOfCreation: local.incorporationDate || '',
+      jurisdiction: 'england-wales',
+      sicCodes: [local.sicCode1, local.sicCode2, local.sicCode3, local.sicCode4].filter(Boolean) as string[],
+      hasBeenLiquidated: local.companyStatus?.toLowerCase().includes('liquidat') || false,
+      type: local.companyCategory?.toLowerCase() || 'ltd',
+      hasInsolvencyHistory: false,
+      registeredOfficeAddress: {
+        addressLine1: local.addressLine1 || undefined,
+        addressLine2: local.addressLine2 || undefined,
+        locality: local.postTown || undefined,
+        region: local.county || undefined,
+        postalCode: local.postCode || undefined,
+        country: local.country || undefined,
+      },
+      accounts: {
+        nextAccounts: local.accountsNextDueDate ? {
+          periodEndOn: local.accountsLastMadeUpDate || '',
+          periodStartOn: '',
+          dueOn: local.accountsNextDueDate,
+          overdue: accountsOverdue,
+        } : undefined,
+        lastAccounts: local.accountsLastMadeUpDate ? {
+          madeUpTo: local.accountsLastMadeUpDate,
+          type: local.accountsCategory || 'unknown',
+        } : undefined,
+      },
+      confirmationStatement: local.confStmtNextDueDate ? {
+        nextDue: local.confStmtNextDueDate,
+        nextMadeUpTo: local.confStmtNextDueDate,
+        overdue: confStmtOverdue,
+        lastMadeUpTo: local.confStmtLastMadeUpDate || undefined,
+      } : undefined,
+      links: {
+        self: `/company/${local.companyNumber}`,
+      },
+    };
   }
 
   /**
@@ -134,6 +250,17 @@ export class CompaniesHouseService {
    */
   async getCompanyProfile(companyNumber: string): Promise<CompanyProfile | null> {
     const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
+
+    // If no API key, try local data only
+    if (!this.apiKey) {
+      const hasLocal = await this.isLocalDataAvailable();
+      if (hasLocal) {
+        const local = await companiesHouseLocalService.getByNumber(cleanNumber);
+        if (local) return this.localToProfile(local);
+      }
+      throw new Error('No Companies House API key and no local data available');
+    }
+
     const maxRetries = 3;
     let lastError: Error | null = null;
 
@@ -440,5 +567,5 @@ export class CompaniesHouseService {
   }
 }
 
-// Export singleton instance
+// Export singleton instance (no longer throws without API key - uses local data fallback)
 export const companiesHouseService = new CompaniesHouseService();

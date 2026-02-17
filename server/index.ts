@@ -4,9 +4,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions } from './db/schema';
-import { desc, eq, and, count } from 'drizzle-orm';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions, chCompanies } from './db/schema';
+import { desc, eq, and, count, sql } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
+import { companiesHouseLocalService } from './services/companiesHouseLocal';
 import crypto from 'crypto';
 
 // Load environment variables
@@ -1035,6 +1036,97 @@ app.post('/api/companies/:id/refresh', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// FINEGUARD PRO - COMPANY SEARCH (BULK DATA)
+// ============================================================================
+
+/**
+ * GET /api/companies/search?q=<query>&limit=20
+ * Search companies from local bulk data (BasicCompanyDataAsOneFile)
+ */
+app.get('/api/companies/search', async (req: Request, res: Response) => {
+  try {
+    const { q, limit = '20', by = 'name' } = req.query;
+
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      return res.status(400).json({ ok: false, error: 'Search query must be at least 2 characters' });
+    }
+
+    const maxLimit = Math.min(parseInt(limit as string) || 20, 100);
+    let results;
+
+    switch (by) {
+      case 'number':
+        const single = await companiesHouseLocalService.getByNumber(q);
+        results = single ? [single] : [];
+        break;
+      case 'postcode':
+        results = await companiesHouseLocalService.searchByPostcode(q, maxLimit);
+        break;
+      case 'sic':
+        results = await companiesHouseLocalService.searchBySicCode(q, maxLimit);
+        break;
+      default:
+        results = await companiesHouseLocalService.searchByName(q, maxLimit);
+    }
+
+    res.json({ ok: true, count: results.length, results });
+  } catch (error) {
+    console.error('Error searching companies:', error);
+    res.status(500).json({ ok: false, error: 'Search failed' });
+  }
+});
+
+/**
+ * GET /api/bulk-data/stats
+ * Get statistics about the imported bulk data
+ */
+app.get('/api/bulk-data/stats', async (req: Request, res: Response) => {
+  try {
+    const isLoaded = await companiesHouseLocalService.isDataLoaded();
+
+    if (!isLoaded) {
+      return res.json({
+        ok: true,
+        loaded: false,
+        totalCompanies: 0,
+        message: 'No bulk data imported yet. Run: pnpm db:import <path-to-csv>',
+      });
+    }
+
+    const totalCount = await companiesHouseLocalService.getTotalCount();
+    const statusCounts = await companiesHouseLocalService.getStatusCounts();
+
+    res.json({
+      ok: true,
+      loaded: true,
+      totalCompanies: totalCount,
+      statusBreakdown: statusCounts,
+    });
+  } catch (error) {
+    console.error('Error fetching bulk data stats:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch stats' });
+  }
+});
+
+/**
+ * GET /api/bulk-data/overdue?limit=50
+ * Get companies with overdue accounts from bulk data
+ */
+app.get('/api/bulk-data/overdue', async (req: Request, res: Response) => {
+  try {
+    const { limit = '50' } = req.query;
+    const maxLimit = Math.min(parseInt(limit as string) || 50, 200);
+
+    const results = await companiesHouseLocalService.getOverdueCompanies(maxLimit);
+
+    res.json({ ok: true, count: results.length, results });
+  } catch (error) {
+    console.error('Error fetching overdue companies:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch overdue companies' });
+  }
+});
+
+// ============================================================================
 // FINEGUARD PRO - ALERTS ENDPOINTS
 // ============================================================================
 
@@ -1216,6 +1308,9 @@ app.listen(PORT, () => {
   console.log('  POST   /api/contacts');
   console.log('  GET    /api/contacts');
   console.log('  PATCH  /api/contacts/:id');
+  console.log('  GET    /api/companies/search    (bulk data search)');
+  console.log('  GET    /api/bulk-data/stats      (import statistics)');
+  console.log('  GET    /api/bulk-data/overdue    (overdue companies)');
   console.log('  GET    /health');
   console.log('');
 });

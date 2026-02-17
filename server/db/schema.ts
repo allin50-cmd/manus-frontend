@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, integer, index, date } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -146,6 +146,61 @@ export const sessions = pgTable('sessions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// ============================================================================
+// COMPANIES HOUSE BULK DATA TABLE
+// Source: BasicCompanyDataAsOneFile CSV from Companies House
+// ============================================================================
+
+/**
+ * Companies House Bulk Data Table
+ * Stores the full Companies House register (~5.5M companies)
+ * Downloaded from: http://download.companieshouse.gov.uk/en_output.html
+ */
+export const chCompanies = pgTable('ch_companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyName: varchar('company_name', { length: 500 }).notNull(),
+  companyNumber: varchar('company_number', { length: 20 }).notNull().unique(),
+  careOf: varchar('care_of', { length: 255 }),
+  poBox: varchar('po_box', { length: 100 }),
+  addressLine1: varchar('address_line_1', { length: 255 }),
+  addressLine2: varchar('address_line_2', { length: 255 }),
+  postTown: varchar('post_town', { length: 100 }),
+  county: varchar('county', { length: 100 }),
+  country: varchar('country', { length: 100 }),
+  postCode: varchar('post_code', { length: 20 }),
+  companyCategory: varchar('company_category', { length: 100 }),
+  companyStatus: varchar('company_status', { length: 100 }),
+  countryOfOrigin: varchar('country_of_origin', { length: 100 }),
+  dissolutionDate: varchar('dissolution_date', { length: 20 }),
+  incorporationDate: varchar('incorporation_date', { length: 20 }),
+  accountsRefDay: varchar('accounts_ref_day', { length: 5 }),
+  accountsRefMonth: varchar('accounts_ref_month', { length: 5 }),
+  accountsNextDueDate: varchar('accounts_next_due_date', { length: 20 }),
+  accountsLastMadeUpDate: varchar('accounts_last_made_up_date', { length: 20 }),
+  accountsCategory: varchar('accounts_category', { length: 100 }),
+  returnsNextDueDate: varchar('returns_next_due_date', { length: 20 }),
+  returnsLastMadeUpDate: varchar('returns_last_made_up_date', { length: 20 }),
+  numMortCharges: integer('num_mort_charges'),
+  numMortOutstanding: integer('num_mort_outstanding'),
+  numMortPartSatisfied: integer('num_mort_part_satisfied'),
+  numMortSatisfied: integer('num_mort_satisfied'),
+  sicCode1: varchar('sic_code_1', { length: 200 }),
+  sicCode2: varchar('sic_code_2', { length: 200 }),
+  sicCode3: varchar('sic_code_3', { length: 200 }),
+  sicCode4: varchar('sic_code_4', { length: 200 }),
+  numGenPartners: integer('num_gen_partners'),
+  numLimPartners: integer('num_lim_partners'),
+  uri: varchar('uri', { length: 500 }),
+  confStmtNextDueDate: varchar('conf_stmt_next_due_date', { length: 20 }),
+  confStmtLastMadeUpDate: varchar('conf_stmt_last_made_up_date', { length: 20 }),
+  importedAt: timestamp('imported_at').defaultNow().notNull(),
+}, (table) => [
+  index('ch_company_number_idx').on(table.companyNumber),
+  index('ch_company_name_idx').on(table.companyName),
+  index('ch_company_status_idx').on(table.companyStatus),
+  index('ch_post_code_idx').on(table.postCode),
+]);
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
@@ -173,3 +228,6 @@ export type NewAlert = typeof alerts.$inferInsert;
 
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+
+export type ChCompany = typeof chCompanies.$inferSelect;
+export type NewChCompany = typeof chCompanies.$inferInsert;
