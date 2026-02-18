@@ -64,10 +64,22 @@ export class CompaniesHouseLocalService {
   async searchByName(query: string, limit: number = 20): Promise<LocalCompanyResult[]> {
     if (!query || query.trim().length < 2) return [];
 
+    const trimmed = query.trim();
+
     const results = await db
       .select()
       .from(chCompanies)
-      .where(ilike(chCompanies.companyName, `%${query.trim()}%`))
+      .where(ilike(chCompanies.companyName, `%${trimmed}%`))
+      .orderBy(
+        // Prioritize: exact match > starts with > contains
+        sql`CASE
+          WHEN UPPER(${chCompanies.companyName}) = UPPER(${trimmed}) THEN 0
+          WHEN UPPER(${chCompanies.companyName}) LIKE UPPER(${trimmed}) || '%' THEN 1
+          WHEN UPPER(${chCompanies.companyName}) LIKE UPPER(${trimmed}) || ' %' THEN 2
+          ELSE 3
+        END`,
+        chCompanies.companyName
+      )
       .limit(limit);
 
     return results.map(r => this.mapToResult(r));
@@ -83,7 +95,7 @@ export class CompaniesHouseLocalService {
       .select()
       .from(chCompanies)
       .where(
-        sql`REPLACE(UPPER(${chCompanies.postCode}), ' ', '') = ${cleaned}`
+        sql`REPLACE(UPPER(${chCompanies.postCode}), ' ', '') LIKE ${cleaned + '%'}`
       )
       .limit(limit);
 
