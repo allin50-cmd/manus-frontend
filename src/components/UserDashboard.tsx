@@ -123,6 +123,35 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
         </div>
       )}
 
+      {/* Quick Access */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <a href="/acsp" className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 text-center hover:bg-emerald-500/20 transition group">
+          <Shield size={24} className="text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+          <div className="text-sm font-bold text-white">ACSP</div>
+          <div className="text-xs text-slate-500">Service Provider</div>
+        </a>
+        <a href="/workflows" className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center hover:bg-blue-500/20 transition group">
+          <Clock size={24} className="text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+          <div className="text-sm font-bold text-white">Workflows</div>
+          <div className="text-xs text-slate-500">Team & Tasks</div>
+        </a>
+        <button onClick={onAddCompany} className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4 text-center hover:bg-purple-500/20 transition group">
+          <Plus size={24} className="text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+          <div className="text-sm font-bold text-white">Add Company</div>
+          <div className="text-xs text-slate-500">Monitor new</div>
+        </button>
+        <button onClick={onViewAlerts} className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 text-center hover:bg-orange-500/20 transition group relative">
+          <Bell size={24} className="text-orange-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+          <div className="text-sm font-bold text-white">Alerts</div>
+          <div className="text-xs text-slate-500">View all</div>
+          {stats && stats.unreadAlerts > 0 && (
+            <span className="absolute top-2 right-2 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+              {stats.unreadAlerts > 9 ? '9+' : stats.unreadAlerts}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Companies + Alerts grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Companies list */}

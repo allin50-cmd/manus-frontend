@@ -222,3 +222,293 @@ export async function markAllAlertsRead(): Promise<void> {
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update alerts');
 }
+
+// ============================================================================
+// ACSP API
+// ============================================================================
+
+export interface AcspClient {
+  id: string;
+  userId: string;
+  companyNumber: string;
+  companyName: string;
+  clientRef: string | null;
+  serviceType: string;
+  status: string;
+  acspRegNumber: string | null;
+  identityVerified: boolean;
+  amlChecked: boolean;
+  lastFilingDate: string | null;
+  nextFilingDue: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface AcspFiling {
+  id: string;
+  acspClientId: string;
+  userId: string;
+  filingType: string;
+  status: string;
+  dueDate: string | null;
+  submittedAt: string | null;
+  referenceNumber: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface AcspDashboardStats {
+  totalClients: number;
+  activeClients: number;
+  verifiedClients: number;
+  amlCheckedClients: number;
+  pendingFilings: number;
+  submittedFilings: number;
+  totalFilings: number;
+  serviceBreakdown: Record<string, number>;
+}
+
+export async function fetchAcspClients(): Promise<AcspClient[]> {
+  const res = await apiFetch('/acsp/clients');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load ACSP clients');
+  return data.clients;
+}
+
+export async function addAcspClient(client: {
+  companyNumber: string;
+  companyName: string;
+  clientRef?: string;
+  serviceType: string;
+  acspRegNumber?: string;
+  notes?: string;
+}): Promise<AcspClient> {
+  const res = await apiFetch('/acsp/clients', {
+    method: 'POST',
+    body: JSON.stringify(client),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to add client');
+  return data.client;
+}
+
+export async function updateAcspClient(id: string, updates: Partial<AcspClient>): Promise<AcspClient> {
+  const res = await apiFetch(`/acsp/clients/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update client');
+  return data.client;
+}
+
+export async function deleteAcspClient(id: string): Promise<void> {
+  const res = await apiFetch(`/acsp/clients/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to delete client');
+}
+
+export async function fetchAcspFilings(clientId?: string): Promise<AcspFiling[]> {
+  const path = clientId ? `/acsp/filings?clientId=${clientId}` : '/acsp/filings';
+  const res = await apiFetch(path);
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load filings');
+  return data.filings;
+}
+
+export async function addAcspFiling(filing: {
+  acspClientId: string;
+  filingType: string;
+  dueDate?: string;
+  notes?: string;
+}): Promise<AcspFiling> {
+  const res = await apiFetch('/acsp/filings', {
+    method: 'POST',
+    body: JSON.stringify(filing),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to create filing');
+  return data.filing;
+}
+
+export async function updateAcspFiling(id: string, updates: Partial<AcspFiling>): Promise<AcspFiling> {
+  const res = await apiFetch(`/acsp/filings/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update filing');
+  return data.filing;
+}
+
+export async function fetchAcspDashboard(): Promise<AcspDashboardStats> {
+  const res = await apiFetch('/acsp/dashboard');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load ACSP dashboard');
+  return data.stats;
+}
+
+// ============================================================================
+// WORKFLOW & TEAM API
+// ============================================================================
+
+export interface TeamMember {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  department: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface Workflow {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  workflowType: string;
+  status: string;
+  priority: string;
+  assignedTo: string | null;
+  dueDate: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface WorkflowTask {
+  id: string;
+  workflowId: string;
+  title: string;
+  description: string | null;
+  status: string;
+  assignedTo: string | null;
+  companyNumber: string | null;
+  companyName: string | null;
+  priority: string;
+  dueDate: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface WorkflowStats {
+  totalWorkflows: number;
+  activeWorkflows: number;
+  completedWorkflows: number;
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  blockedTasks: number;
+  teamSize: number;
+}
+
+export async function fetchTeamMembers(): Promise<TeamMember[]> {
+  const res = await apiFetch('/team');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load team');
+  return data.members;
+}
+
+export async function addTeamMember(member: {
+  name: string;
+  email: string;
+  role?: string;
+  department?: string;
+}): Promise<TeamMember> {
+  const res = await apiFetch('/team', {
+    method: 'POST',
+    body: JSON.stringify(member),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to add team member');
+  return data.member;
+}
+
+export async function deleteTeamMember(id: string): Promise<void> {
+  const res = await apiFetch(`/team/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to delete team member');
+}
+
+export async function fetchWorkflows(): Promise<Workflow[]> {
+  const res = await apiFetch('/workflows');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load workflows');
+  return data.workflows;
+}
+
+export async function createWorkflow(wf: {
+  title: string;
+  description?: string;
+  workflowType: string;
+  priority?: string;
+  assignedTo?: string;
+  dueDate?: string;
+}): Promise<Workflow> {
+  const res = await apiFetch('/workflows', {
+    method: 'POST',
+    body: JSON.stringify(wf),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to create workflow');
+  return data.workflow;
+}
+
+export async function updateWorkflow(id: string, updates: Partial<Workflow>): Promise<Workflow> {
+  const res = await apiFetch(`/workflows/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update workflow');
+  return data.workflow;
+}
+
+export async function deleteWorkflow(id: string): Promise<void> {
+  const res = await apiFetch(`/workflows/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to delete workflow');
+}
+
+export async function fetchWorkflowTasks(workflowId: string): Promise<WorkflowTask[]> {
+  const res = await apiFetch(`/workflows/${workflowId}/tasks`);
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load tasks');
+  return data.tasks;
+}
+
+export async function addWorkflowTask(workflowId: string, task: {
+  title: string;
+  description?: string;
+  assignedTo?: string;
+  companyNumber?: string;
+  companyName?: string;
+  priority?: string;
+  dueDate?: string;
+}): Promise<WorkflowTask> {
+  const res = await apiFetch(`/workflows/${workflowId}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify(task),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to create task');
+  return data.task;
+}
+
+export async function updateWorkflowTask(taskId: string, updates: Partial<WorkflowTask>): Promise<WorkflowTask> {
+  const res = await apiFetch(`/workflows/tasks/${taskId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update task');
+  return data.task;
+}
+
+export async function fetchWorkflowStats(): Promise<WorkflowStats> {
+  const res = await apiFetch('/workflows/stats');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load workflow stats');
+  return data.stats;
+}

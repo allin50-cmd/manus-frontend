@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions, chCompanies } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions, chCompanies, acspClients, acspFilings, teamMembers, workflows, workflowTasks } from './db/schema';
 import { desc, eq, and, count, sql } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 import { companiesHouseLocalService } from './services/companiesHouseLocal';
@@ -1270,6 +1270,607 @@ app.get('/api/dashboard', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching dashboard:', error);
     res.status(500).json({ ok: false, error: 'Failed to fetch dashboard' });
+  }
+});
+
+// ============================================================================
+// ACSP (Authorised Corporate Service Provider) ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/acsp/clients
+ * List ACSP clients for the current user
+ */
+app.get('/api/acsp/clients', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const clients = await db
+      .select()
+      .from(acspClients)
+      .where(eq(acspClients.userId, auth.userId))
+      .orderBy(desc(acspClients.createdAt));
+
+    res.json({ ok: true, clients });
+  } catch (error) {
+    console.error('Error fetching ACSP clients:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch ACSP clients' });
+  }
+});
+
+/**
+ * POST /api/acsp/clients
+ * Add a new ACSP client
+ */
+app.post('/api/acsp/clients', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { companyNumber, companyName, clientRef, serviceType, acspRegNumber, notes } = req.body;
+
+    if (!companyNumber || !companyName || !serviceType) {
+      return res.status(400).json({ ok: false, error: 'companyNumber, companyName, and serviceType are required' });
+    }
+
+    const [client] = await db
+      .insert(acspClients)
+      .values({
+        userId: auth.userId,
+        companyNumber: companyNumber.toUpperCase().replace(/\s/g, ''),
+        companyName,
+        clientRef: clientRef || null,
+        serviceType,
+        acspRegNumber: acspRegNumber || null,
+        notes: notes || null,
+      })
+      .returning();
+
+    res.status(201).json({ ok: true, client });
+  } catch (error) {
+    console.error('Error adding ACSP client:', error);
+    res.status(500).json({ ok: false, error: 'Failed to add ACSP client' });
+  }
+});
+
+/**
+ * PATCH /api/acsp/clients/:id
+ * Update an ACSP client
+ */
+app.patch('/api/acsp/clients/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { id } = req.params;
+    const updates = req.body;
+
+    const [client] = await db
+      .update(acspClients)
+      .set(updates)
+      .where(and(eq(acspClients.id, id), eq(acspClients.userId, auth.userId)))
+      .returning();
+
+    if (!client) return res.status(404).json({ ok: false, error: 'Client not found' });
+
+    res.json({ ok: true, client });
+  } catch (error) {
+    console.error('Error updating ACSP client:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update ACSP client' });
+  }
+});
+
+/**
+ * DELETE /api/acsp/clients/:id
+ * Remove an ACSP client
+ */
+app.delete('/api/acsp/clients/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    // Delete associated filings first
+    const clientFilings = await db
+      .select()
+      .from(acspFilings)
+      .where(eq(acspFilings.acspClientId, req.params.id));
+
+    if (clientFilings.length > 0) {
+      await db.delete(acspFilings).where(eq(acspFilings.acspClientId, req.params.id));
+    }
+
+    const [deleted] = await db
+      .delete(acspClients)
+      .where(and(eq(acspClients.id, req.params.id), eq(acspClients.userId, auth.userId)))
+      .returning();
+
+    if (!deleted) return res.status(404).json({ ok: false, error: 'Client not found' });
+
+    res.json({ ok: true, deleted: true });
+  } catch (error) {
+    console.error('Error deleting ACSP client:', error);
+    res.status(500).json({ ok: false, error: 'Failed to delete ACSP client' });
+  }
+});
+
+/**
+ * GET /api/acsp/filings
+ * List filings for a client (or all filings)
+ */
+app.get('/api/acsp/filings', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { clientId } = req.query;
+
+    let filings;
+    if (clientId && typeof clientId === 'string') {
+      filings = await db
+        .select()
+        .from(acspFilings)
+        .where(and(eq(acspFilings.userId, auth.userId), eq(acspFilings.acspClientId, clientId)))
+        .orderBy(desc(acspFilings.createdAt));
+    } else {
+      filings = await db
+        .select()
+        .from(acspFilings)
+        .where(eq(acspFilings.userId, auth.userId))
+        .orderBy(desc(acspFilings.createdAt));
+    }
+
+    res.json({ ok: true, filings });
+  } catch (error) {
+    console.error('Error fetching ACSP filings:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch filings' });
+  }
+});
+
+/**
+ * POST /api/acsp/filings
+ * Create a new filing for an ACSP client
+ */
+app.post('/api/acsp/filings', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { acspClientId, filingType, dueDate, notes } = req.body;
+
+    if (!acspClientId || !filingType) {
+      return res.status(400).json({ ok: false, error: 'acspClientId and filingType are required' });
+    }
+
+    const [filing] = await db
+      .insert(acspFilings)
+      .values({
+        acspClientId,
+        userId: auth.userId,
+        filingType,
+        dueDate: dueDate || null,
+        notes: notes || null,
+      })
+      .returning();
+
+    res.status(201).json({ ok: true, filing });
+  } catch (error) {
+    console.error('Error creating filing:', error);
+    res.status(500).json({ ok: false, error: 'Failed to create filing' });
+  }
+});
+
+/**
+ * PATCH /api/acsp/filings/:id
+ * Update a filing status
+ */
+app.patch('/api/acsp/filings/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { status, referenceNumber, submittedAt, notes } = req.body;
+    const updateData: Record<string, unknown> = {};
+    if (status) updateData.status = status;
+    if (referenceNumber) updateData.referenceNumber = referenceNumber;
+    if (submittedAt) updateData.submittedAt = new Date(submittedAt);
+    if (notes !== undefined) updateData.notes = notes;
+
+    const [filing] = await db
+      .update(acspFilings)
+      .set(updateData)
+      .where(and(eq(acspFilings.id, req.params.id), eq(acspFilings.userId, auth.userId)))
+      .returning();
+
+    if (!filing) return res.status(404).json({ ok: false, error: 'Filing not found' });
+
+    res.json({ ok: true, filing });
+  } catch (error) {
+    console.error('Error updating filing:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update filing' });
+  }
+});
+
+/**
+ * GET /api/acsp/dashboard
+ * ACSP overview dashboard stats
+ */
+app.get('/api/acsp/dashboard', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const clients = await db
+      .select()
+      .from(acspClients)
+      .where(eq(acspClients.userId, auth.userId));
+
+    const filings = await db
+      .select()
+      .from(acspFilings)
+      .where(eq(acspFilings.userId, auth.userId));
+
+    const totalClients = clients.length;
+    const activeClients = clients.filter(c => c.status === 'active').length;
+    const verifiedClients = clients.filter(c => c.identityVerified).length;
+    const amlCheckedClients = clients.filter(c => c.amlChecked).length;
+    const pendingFilings = filings.filter(f => f.status === 'pending').length;
+    const submittedFilings = filings.filter(f => f.status === 'submitted').length;
+
+    const serviceBreakdown: Record<string, number> = {};
+    for (const c of clients) {
+      serviceBreakdown[c.serviceType] = (serviceBreakdown[c.serviceType] || 0) + 1;
+    }
+
+    res.json({
+      ok: true,
+      stats: {
+        totalClients,
+        activeClients,
+        verifiedClients,
+        amlCheckedClients,
+        pendingFilings,
+        submittedFilings,
+        totalFilings: filings.length,
+        serviceBreakdown,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching ACSP dashboard:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch ACSP dashboard' });
+  }
+});
+
+// ============================================================================
+// BUSINESS WORKFLOW & TEAM MANAGEMENT ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/team
+ * List team members
+ */
+app.get('/api/team', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const members = await db
+      .select()
+      .from(teamMembers)
+      .where(eq(teamMembers.userId, auth.userId))
+      .orderBy(teamMembers.name);
+
+    res.json({ ok: true, members });
+  } catch (error) {
+    console.error('Error fetching team:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch team' });
+  }
+});
+
+/**
+ * POST /api/team
+ * Add a team member
+ */
+app.post('/api/team', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { name, email, role, department } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ ok: false, error: 'name and email are required' });
+    }
+
+    const [member] = await db
+      .insert(teamMembers)
+      .values({
+        userId: auth.userId,
+        name,
+        email,
+        role: role || 'analyst',
+        department: department || null,
+      })
+      .returning();
+
+    res.status(201).json({ ok: true, member });
+  } catch (error) {
+    console.error('Error adding team member:', error);
+    res.status(500).json({ ok: false, error: 'Failed to add team member' });
+  }
+});
+
+/**
+ * DELETE /api/team/:id
+ * Remove a team member
+ */
+app.delete('/api/team/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const [deleted] = await db
+      .delete(teamMembers)
+      .where(and(eq(teamMembers.id, req.params.id), eq(teamMembers.userId, auth.userId)))
+      .returning();
+
+    if (!deleted) return res.status(404).json({ ok: false, error: 'Team member not found' });
+
+    res.json({ ok: true, deleted: true });
+  } catch (error) {
+    console.error('Error deleting team member:', error);
+    res.status(500).json({ ok: false, error: 'Failed to delete team member' });
+  }
+});
+
+/**
+ * GET /api/workflows
+ * List workflows
+ */
+app.get('/api/workflows', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const wfs = await db
+      .select()
+      .from(workflows)
+      .where(eq(workflows.userId, auth.userId))
+      .orderBy(desc(workflows.createdAt));
+
+    res.json({ ok: true, workflows: wfs });
+  } catch (error) {
+    console.error('Error fetching workflows:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch workflows' });
+  }
+});
+
+/**
+ * POST /api/workflows
+ * Create a new workflow
+ */
+app.post('/api/workflows', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { title, description, workflowType, priority, assignedTo, dueDate } = req.body;
+
+    if (!title || !workflowType) {
+      return res.status(400).json({ ok: false, error: 'title and workflowType are required' });
+    }
+
+    const [wf] = await db
+      .insert(workflows)
+      .values({
+        userId: auth.userId,
+        title,
+        description: description || null,
+        workflowType,
+        priority: priority || 'medium',
+        assignedTo: assignedTo || null,
+        dueDate: dueDate || null,
+      })
+      .returning();
+
+    res.status(201).json({ ok: true, workflow: wf });
+  } catch (error) {
+    console.error('Error creating workflow:', error);
+    res.status(500).json({ ok: false, error: 'Failed to create workflow' });
+  }
+});
+
+/**
+ * PATCH /api/workflows/:id
+ * Update workflow status or details
+ */
+app.patch('/api/workflows/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const updates = req.body;
+    if (updates.status === 'completed') {
+      updates.completedAt = new Date();
+    }
+
+    const [wf] = await db
+      .update(workflows)
+      .set(updates)
+      .where(and(eq(workflows.id, req.params.id), eq(workflows.userId, auth.userId)))
+      .returning();
+
+    if (!wf) return res.status(404).json({ ok: false, error: 'Workflow not found' });
+
+    res.json({ ok: true, workflow: wf });
+  } catch (error) {
+    console.error('Error updating workflow:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update workflow' });
+  }
+});
+
+/**
+ * DELETE /api/workflows/:id
+ * Delete a workflow and its tasks
+ */
+app.delete('/api/workflows/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    // Delete tasks first
+    await db.delete(workflowTasks).where(eq(workflowTasks.workflowId, req.params.id));
+
+    const [deleted] = await db
+      .delete(workflows)
+      .where(and(eq(workflows.id, req.params.id), eq(workflows.userId, auth.userId)))
+      .returning();
+
+    if (!deleted) return res.status(404).json({ ok: false, error: 'Workflow not found' });
+
+    res.json({ ok: true, deleted: true });
+  } catch (error) {
+    console.error('Error deleting workflow:', error);
+    res.status(500).json({ ok: false, error: 'Failed to delete workflow' });
+  }
+});
+
+/**
+ * GET /api/workflows/:id/tasks
+ * List tasks for a workflow
+ */
+app.get('/api/workflows/:id/tasks', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const tasks = await db
+      .select()
+      .from(workflowTasks)
+      .where(eq(workflowTasks.workflowId, req.params.id))
+      .orderBy(workflowTasks.createdAt);
+
+    res.json({ ok: true, tasks });
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch tasks' });
+  }
+});
+
+/**
+ * POST /api/workflows/:id/tasks
+ * Add a task to a workflow
+ */
+app.post('/api/workflows/:id/tasks', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { title, description, assignedTo, companyNumber, companyName, priority, dueDate } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ ok: false, error: 'title is required' });
+    }
+
+    const [task] = await db
+      .insert(workflowTasks)
+      .values({
+        workflowId: req.params.id,
+        title,
+        description: description || null,
+        assignedTo: assignedTo || null,
+        companyNumber: companyNumber || null,
+        companyName: companyName || null,
+        priority: priority || 'medium',
+        dueDate: dueDate || null,
+      })
+      .returning();
+
+    res.status(201).json({ ok: true, task });
+  } catch (error) {
+    console.error('Error creating task:', error);
+    res.status(500).json({ ok: false, error: 'Failed to create task' });
+  }
+});
+
+/**
+ * PATCH /api/workflows/tasks/:taskId
+ * Update a task
+ */
+app.patch('/api/workflows/tasks/:taskId', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const updates = req.body;
+    if (updates.status === 'completed') {
+      updates.completedAt = new Date();
+    }
+
+    const [task] = await db
+      .update(workflowTasks)
+      .set(updates)
+      .where(eq(workflowTasks.id, req.params.taskId))
+      .returning();
+
+    if (!task) return res.status(404).json({ ok: false, error: 'Task not found' });
+
+    res.json({ ok: true, task });
+  } catch (error) {
+    console.error('Error updating task:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update task' });
+  }
+});
+
+/**
+ * GET /api/workflows/stats
+ * Workflow overview stats
+ */
+app.get('/api/workflows/stats', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const wfs = await db
+      .select()
+      .from(workflows)
+      .where(eq(workflows.userId, auth.userId));
+
+    const allTasks = await db
+      .select()
+      .from(workflowTasks)
+      .innerJoin(workflows, eq(workflowTasks.workflowId, workflows.id))
+      .where(eq(workflows.userId, auth.userId));
+
+    const members = await db
+      .select()
+      .from(teamMembers)
+      .where(eq(teamMembers.userId, auth.userId));
+
+    const totalWorkflows = wfs.length;
+    const activeWorkflows = wfs.filter(w => w.status === 'active').length;
+    const completedWorkflows = wfs.filter(w => w.status === 'completed').length;
+    const totalTasks = allTasks.length;
+    const completedTasks = allTasks.filter(t => t.workflow_tasks.status === 'completed').length;
+    const inProgressTasks = allTasks.filter(t => t.workflow_tasks.status === 'in_progress').length;
+    const blockedTasks = allTasks.filter(t => t.workflow_tasks.status === 'blocked').length;
+
+    res.json({
+      ok: true,
+      stats: {
+        totalWorkflows,
+        activeWorkflows,
+        completedWorkflows,
+        totalTasks,
+        completedTasks,
+        inProgressTasks,
+        blockedTasks,
+        teamSize: members.length,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching workflow stats:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch workflow stats' });
   }
 });
 

@@ -26,6 +26,8 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
 import DevOps from './pages/DevOps';
+import Acsp from './pages/Acsp';
+import Workflows from './pages/Workflows';
 
 export default function App() {
   return (
@@ -58,6 +60,8 @@ export default function App() {
             <Route path="/settings" component={Profile} />
             <Route path="/alerts" component={Reports} />
             <Route path="/devops" component={DevOps} />
+            <Route path="/acsp" component={Acsp} />
+            <Route path="/workflows" component={Workflows} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

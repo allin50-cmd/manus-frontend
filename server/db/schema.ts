@@ -229,5 +229,116 @@ export type NewAlert = typeof alerts.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 
-export type ChCompany = typeof chCompanies.$inferSelect;
-export type NewChCompany = typeof chCompanies.$inferInsert;
+// ============================================================================
+// ACSP (Authorised Corporate Service Provider) TABLES
+// ============================================================================
+
+/**
+ * ACSP Clients Table
+ * Companies managed by the user's ACSP practice
+ */
+export const acspClients = pgTable('acsp_clients', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  clientRef: varchar('client_ref', { length: 100 }), // internal reference
+  serviceType: varchar('service_type', { length: 50 }).notNull(), // formation, filing, registered_office, verification
+  status: varchar('status', { length: 20 }).default('active').notNull(), // active, suspended, terminated
+  acspRegNumber: varchar('acsp_reg_number', { length: 50 }), // ACSP registration number
+  identityVerified: boolean('identity_verified').default(false).notNull(),
+  amlChecked: boolean('aml_checked').default(false).notNull(),
+  lastFilingDate: varchar('last_filing_date', { length: 20 }),
+  nextFilingDue: varchar('next_filing_due', { length: 20 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
+ * ACSP Filings Table
+ * Tracks filings made on behalf of ACSP clients
+ */
+export const acspFilings = pgTable('acsp_filings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  acspClientId: uuid('acsp_client_id').notNull().references(() => acspClients.id),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  filingType: varchar('filing_type', { length: 100 }).notNull(), // annual_accounts, confirmation_statement, change_of_director, change_of_address, incorporation, dissolution
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, submitted, accepted, rejected
+  dueDate: varchar('due_date', { length: 20 }),
+  submittedAt: timestamp('submitted_at'),
+  referenceNumber: varchar('reference_number', { length: 100 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ============================================================================
+// BUSINESS WORKFLOW & TEAM MANAGEMENT TABLES
+// ============================================================================
+
+/**
+ * Team Members Table
+ * Team members within the user's organisation
+ */
+export const teamMembers = pgTable('team_members', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id), // owner/admin
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  role: varchar('role', { length: 50 }).default('analyst').notNull(), // admin, manager, analyst, reviewer
+  department: varchar('department', { length: 100 }),
+  status: varchar('status', { length: 20 }).default('active').notNull(), // active, inactive
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
+ * Workflows Table
+ * Business workflows for compliance processing
+ */
+export const workflows = pgTable('workflows', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  workflowType: varchar('workflow_type', { length: 50 }).notNull(), // compliance_review, company_enrichment, filing_batch, risk_assessment, onboarding
+  status: varchar('status', { length: 20 }).default('draft').notNull(), // draft, active, paused, completed, cancelled
+  priority: varchar('priority', { length: 20 }).default('medium').notNull(), // low, medium, high, critical
+  assignedTo: uuid('assigned_to').references(() => teamMembers.id),
+  dueDate: varchar('due_date', { length: 20 }),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
+ * Workflow Tasks Table
+ * Individual tasks within a workflow
+ */
+export const workflowTasks = pgTable('workflow_tasks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // pending, in_progress, review, completed, blocked
+  assignedTo: uuid('assigned_to').references(() => teamMembers.id),
+  companyNumber: varchar('company_number', { length: 50 }), // if task relates to a company
+  companyName: varchar('company_name', { length: 255 }),
+  priority: varchar('priority', { length: 20 }).default('medium').notNull(),
+  dueDate: varchar('due_date', { length: 20 }),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Export types
+export type AcspClient = typeof acspClients.$inferSelect;
+export type NewAcspClient = typeof acspClients.$inferInsert;
+
+export type AcspFiling = typeof acspFilings.$inferSelect;
+export type NewAcspFiling = typeof acspFilings.$inferInsert;
+
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type NewTeamMember = typeof teamMembers.$inferInsert;
+
+export type Workflow = typeof workflows.$inferSelect;
+export type NewWorkflow = typeof workflows.$inferInsert;
+
+export type WorkflowTask = typeof workflowTasks.$inferSelect;
+export type NewWorkflowTask = typeof workflowTasks.$inferInsert;
