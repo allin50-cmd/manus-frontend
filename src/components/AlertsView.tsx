@@ -29,14 +29,18 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
     try {
       await markAlertRead(id);
       setAlertsList(prev => prev.map(a => a.id === id ? { ...a, read: true } : a));
-    } catch {}
+    } catch (err) {
+      console.error('Failed to mark alert as read:', err);
+    }
   };
 
   const handleMarkAll = async () => {
     try {
       await markAllAlertsRead();
       setAlertsList(prev => prev.map(a => ({ ...a, read: true })));
-    } catch {}
+    } catch (err) {
+      console.error('Failed to mark all alerts as read:', err);
+    }
   };
 
   const getSeverityIcon = (severity: string) => {

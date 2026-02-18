@@ -10,16 +10,16 @@ import UserSettings from '../components/UserSettings';
 type DashView = 'dashboard' | 'add_company' | 'company_detail' | 'alerts' | 'settings';
 
 export default function Dashboard() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [view, setView] = useState<DashView>('dashboard');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) setLocation('/login');
-  }, [isAuthenticated, setLocation]);
+    if (!loading && !isAuthenticated) setLocation('/login');
+  }, [loading, isAuthenticated, setLocation]);
 
-  if (!isAuthenticated || !user) return null;
+  if (loading || !isAuthenticated || !user) return null;
 
   const handleLogout = async () => {
     await logout();

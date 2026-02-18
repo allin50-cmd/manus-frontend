@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { Shield, User, Mail, Lock, Building2, ArrowRight, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Shield, User, Mail, Lock, Building2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

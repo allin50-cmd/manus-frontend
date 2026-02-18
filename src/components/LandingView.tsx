@@ -184,7 +184,7 @@ export default function LandingView({ onEnterVault, onBookDemo, onStartMonitorin
           FineGuard partners can offer compliance monitoring to clients, reduce risk, and create new monthly revenue streams.
         </p>
         <button
-          onClick={() => {}} // TODO: handle partner signup
+          onClick={() => window.location.href = '/signup'}
           className="bg-blue-500 text-navy px-12 py-6 rounded-[3rem] font-black text-lg shadow-[0_0_40px_rgba(59,130,246,0.5)] hover:scale-105 transition-all inline-flex items-center gap-4"
         >
           Become a Partner
