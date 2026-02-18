@@ -24,9 +24,9 @@ test.describe('Onboarding Page Structure', () => {
 });
 
 test.describe('Landing Page - Onboarding Entry Points', () => {
-  test('landing page has Start Monitoring CTA', async ({ page }) => {
+  test('landing page has Start Free CTA', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/Start Monitoring/i).first()).toBeVisible();
+    await expect(page.getByText(/Start Free/i).first()).toBeVisible();
   });
 
   test('landing page has Book Demo CTA', async ({ page }) => {

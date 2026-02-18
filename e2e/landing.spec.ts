@@ -16,7 +16,7 @@ test.describe('Landing Page (FineGuard)', () => {
 
   test('renders hero CTAs', async ({ page }) => {
     await expect(page.getByText(/Book.*Demo/i).first()).toBeVisible();
-    await expect(page.getByText(/Start Monitoring/i).first()).toBeVisible();
+    await expect(page.getByText(/Start Free/i).first()).toBeVisible();
   });
 
   test('renders compliance problems section', async ({ page }) => {
@@ -31,8 +31,7 @@ test.describe('Landing Page (FineGuard)', () => {
   });
 
   test('renders automated compliance section', async ({ page }) => {
-    await expect(page.getByText('Compliance protection,')).toBeVisible();
-    await expect(page.getByText('automated')).toBeVisible();
+    await expect(page.getByText(/Compliance protection.*automated/i).first()).toBeVisible();
   });
 
   test('renders feature cards', async ({ page }) => {
@@ -52,14 +51,17 @@ test.describe('Landing Page (FineGuard)', () => {
     await expect(page.getByText('SMEs & Directors')).toBeVisible();
   });
 
-  test('renders partner CTA section', async ({ page }) => {
-    await expect(page.getByText('Turn compliance protection into')).toBeVisible();
-    await expect(page.getByText('recurring revenue')).toBeVisible();
-    await expect(page.getByText('Become a Partner')).toBeVisible();
+  test('renders testimonials section', async ({ page }) => {
+    await expect(page.getByText(/Trusted by/i).first()).toBeVisible();
+    await expect(page.getByText('Sarah M.')).toBeVisible();
+    await expect(page.getByText('James P.')).toBeVisible();
+    await expect(page.getByText('Rachel K.')).toBeVisible();
   });
 
-  test('renders UK companies section', async ({ page }) => {
-    await expect(page.getByText('UK companies').first()).toBeVisible();
+  test('renders pricing teaser section', async ({ page }) => {
+    await expect(page.getByText(/Simple.*transparent.*pricing/i).first()).toBeVisible();
+    await expect(page.getByText('$0').first()).toBeVisible();
+    await expect(page.getByText('$49').first()).toBeVisible();
   });
 
   test('renders bottom CTA', async ({ page }) => {
