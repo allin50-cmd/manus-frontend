@@ -10,8 +10,9 @@ import {
   Shield, Plus, FileText, CheckCircle, AlertTriangle, Users, X, Search,
   Trash2, Edit3, Clock, Building2, ArrowLeft, RefreshCw, ChevronRight,
 } from 'lucide-react';
+import XlsxImport from '../components/XlsxImport';
 
-type AcspView = 'dashboard' | 'clients' | 'add_client' | 'client_detail' | 'filings';
+type AcspView = 'dashboard' | 'clients' | 'add_client' | 'client_detail' | 'filings' | 'import';
 
 export default function Acsp() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -212,12 +213,12 @@ export default function Acsp() {
 
       {/* Navigation Tabs */}
       <div className="flex gap-1 mb-6 bg-slate-800/50 rounded-lg p-1">
-        {(['dashboard', 'clients', 'add_client'] as AcspView[]).map(v => (
+        {(['dashboard', 'clients', 'add_client', 'import'] as AcspView[]).map(v => (
           <button key={v} onClick={() => setView(v)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               view === v ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700'
             }`}>
-            {v === 'dashboard' ? 'Overview' : v === 'clients' ? 'Clients' : v === 'add_client' ? 'Add Client' : v}
+            {v === 'dashboard' ? 'Overview' : v === 'clients' ? 'Clients' : v === 'add_client' ? 'Add Client' : v === 'import' ? 'Import XLSX' : v}
           </button>
         ))}
       </div>
@@ -488,6 +489,13 @@ export default function Acsp() {
             )}
           </div>
         </div>
+      )}
+      {/* Import XLSX View */}
+      {view === 'import' && (
+        <XlsxImport
+          onComplete={() => { loadData(); setView('clients'); }}
+          onViewWorkflow={() => setLocation('/workflows')}
+        />
       )}
     </div>
   );

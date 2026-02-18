@@ -10,6 +10,8 @@ export interface UserProfile {
   company: string | null;
   plan: string;
   role?: string;
+  userIntent?: string;
+  onboardingComplete?: boolean;
   createdAt?: string;
 }
 
@@ -109,10 +111,10 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<Respon
 }
 
 // Auth API
-export async function register(email: string, name: string, password: string, company?: string) {
+export async function register(email: string, name: string, password: string, company?: string, intent?: string) {
   const res = await apiFetch('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, name, password, company }),
+    body: JSON.stringify({ email, name, password, company, intent }),
   });
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || 'Registration failed');
@@ -142,6 +144,20 @@ export async function fetchMe(): Promise<UserProfile> {
   const res = await apiFetch('/auth/me');
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || 'Not authenticated');
+  saveUser(data.user);
+  return data.user;
+}
+
+// Profile update
+export async function updateProfile(
+  updates: Partial<Pick<UserProfile, 'name' | 'company' | 'userIntent' | 'onboardingComplete'>>
+): Promise<UserProfile> {
+  const res = await apiFetch('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update profile');
   saveUser(data.user);
   return data.user;
 }
@@ -511,4 +527,76 @@ export async function fetchWorkflowStats(): Promise<WorkflowStats> {
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load workflow stats');
   return data.stats;
+}
+
+// ============================================================================
+// XLSX IMPORT API
+// ============================================================================
+
+export interface BulkImportResult {
+  summary: {
+    total: number;
+    imported: number;
+    skipped: number;
+    errors: number;
+  };
+  results: Array<{
+    row: number;
+    status: 'imported' | 'skipped' | 'error';
+    error?: string;
+    client?: AcspClient;
+  }>;
+}
+
+export interface ImportHistoryItem {
+  id: string;
+  userId: string;
+  fileName: string;
+  totalRows: number;
+  importedRows: number;
+  skippedRows: number;
+  errorRows: number;
+  importType: string;
+  columnMapping: string | null;
+  workflowId: string | null;
+  createdAt: string;
+}
+
+export async function bulkImportAcspClients(
+  clients: Array<Partial<AcspClient>>,
+  fileName?: string,
+  columnMapping?: Record<string, string>
+): Promise<BulkImportResult> {
+  const res = await apiFetch('/acsp/clients/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ clients, fileName, columnMapping }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Bulk import failed');
+  return { summary: data.summary, results: data.results };
+}
+
+export async function importWithWorkflow(params: {
+  clients: Array<Partial<AcspClient>>;
+  workflowTitle?: string;
+  workflowType?: string;
+  assignedTo?: string;
+  taskTemplate?: { title: string; description?: string };
+  fileName?: string;
+  columnMapping?: Record<string, string>;
+}): Promise<BulkImportResult & { workflow: Workflow }> {
+  const res = await apiFetch('/acsp/import-with-workflow', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Import with workflow failed');
+  return { summary: data.summary, results: data.results, workflow: data.workflow };
+}
+
+export async function fetchImportHistory(): Promise<ImportHistoryItem[]> {
+  const res = await apiFetch('/acsp/imports');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to fetch import history');
+  return data.imports;
 }

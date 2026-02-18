@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
-import { addCompany } from '../utils/api';
+import { addCompany, updateProfile } from '../utils/api';
 import { toast } from 'sonner';
 import {
   Building2, Bell, CheckCircle, ArrowRight,
-  ArrowLeft, Sparkles, Search, Loader2, AlertCircle,
+  ArrowLeft, Sparkles, Search, Loader2, AlertCircle, Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ const steps = [
 ];
 
 export default function Onboarding() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
   const [companyNumber, setCompanyNumber] = useState('');
@@ -37,6 +37,9 @@ export default function Onboarding() {
     setLocation('/signup');
     return null;
   }
+
+  const intent = user?.userIntent;
+  const isAdvisor = intent === 'accountant' || intent === 'acsp_provider';
 
   const next = () => setStep((s) => Math.min(s + 1, 4));
   const prev = () => setStep((s) => Math.max(s - 1, 1));
@@ -62,6 +65,30 @@ export default function Onboarding() {
     } finally {
       setAddingCompany(false);
     }
+  };
+
+  const handleComplete = async () => {
+    try {
+      await updateProfile({ onboardingComplete: true });
+      await refreshUser();
+    } catch {
+      // Non-critical — continue anyway
+    }
+    // Route based on intent
+    if (isAdvisor) {
+      setLocation('/acsp');
+    } else {
+      setLocation('/dashboard');
+    }
+  };
+
+  const handleSkip = async () => {
+    try {
+      await updateProfile({ onboardingComplete: true });
+    } catch {
+      // Non-critical
+    }
+    setLocation('/dashboard');
   };
 
   return (
@@ -93,14 +120,21 @@ export default function Onboarding() {
                 Welcome, {user?.name?.split(' ')[0]}!
               </h2>
               <p className="text-lg text-slate-400 mb-8 leading-relaxed">
-                Let's set up your FineGuard account in under 2 minutes. You'll be monitoring your first company before you know it.
+                {isAdvisor
+                  ? "Let's set up your FineGuard account. You'll be managing client compliance in no time."
+                  : "Let's set up your FineGuard account in under 2 minutes. You'll be monitoring your first company before you know it."
+                }
               </p>
               <div className="space-y-3 text-left max-w-sm mx-auto mb-8">
-                {[
+                {(isAdvisor ? [
+                  'Add your first client company',
+                  'Configure alert preferences',
+                  'Access ACSP management tools',
+                ] : [
                   'Add your first company to monitor',
                   'Configure alert preferences',
                   'Start receiving compliance updates',
-                ].map((item, i) => (
+                ]).map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
                     <span className="text-slate-300 text-sm">{item}</span>
@@ -143,6 +177,17 @@ export default function Onboarding() {
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-2 text-center">You can always add more companies later from your dashboard.</p>
+                {isAdvisor && (
+                  <div className="mt-4 p-3 bg-[#5A4BFF]/10 border border-[#5A4BFF]/20 rounded-xl">
+                    <div className="flex items-center gap-2 text-sm text-[#5A4BFF]">
+                      <Upload className="w-4 h-4" />
+                      <span className="font-medium">Managing many clients?</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      After setup, use the ACSP Import tool to bulk-import clients from a spreadsheet.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -186,13 +231,16 @@ export default function Onboarding() {
               </div>
               <h2 className="text-3xl font-black text-white mb-4">You're All Set!</h2>
               <p className="text-lg text-slate-400 mb-8">
-                Your FineGuard account is ready. Head to your dashboard to start monitoring companies.
+                {isAdvisor
+                  ? 'Your account is ready. Head to the ACSP management panel to start managing clients.'
+                  : 'Your FineGuard account is ready. Head to your dashboard to start monitoring companies.'
+                }
               </p>
               <Button
-                onClick={() => setLocation('/dashboard')}
+                onClick={handleComplete}
                 className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-8 py-3 rounded-full font-bold text-lg"
               >
-                Go to Dashboard <ArrowRight className="w-5 h-5 ml-2" />
+                {isAdvisor ? 'Go to ACSP Panel' : 'Go to Dashboard'} <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
           )}
@@ -225,7 +273,7 @@ export default function Onboarding() {
         {/* Skip */}
         {step < 4 && (
           <p className="text-center mt-6">
-            <button onClick={() => setLocation('/dashboard')} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
+            <button onClick={handleSkip} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
               Skip setup and go to dashboard
             </button>
           </p>

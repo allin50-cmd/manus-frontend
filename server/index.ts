@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions, chCompanies, acspClients, acspFilings, teamMembers, workflows, workflowTasks } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions, chCompanies, acspClients, acspFilings, teamMembers, workflows, workflowTasks, importHistory } from './db/schema';
 import { desc, eq, and, count, sql } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 import { companiesHouseLocalService } from './services/companiesHouseLocal';
@@ -661,7 +661,7 @@ async function authenticateRequest(req: Request): Promise<{ userId: string } | n
  */
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {
-    const { email, name, company, password } = req.body;
+    const { email, name, company, password, intent } = req.body;
 
     if (!email || !name || !password) {
       return res.status(400).json({ ok: false, error: 'Email, name, and password are required' });
@@ -686,6 +686,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
         name,
         company: company || null,
         passwordHash,
+        userIntent: intent || null,
       })
       .returning();
 
@@ -704,7 +705,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     res.status(201).json({
       ok: true,
       token,
-      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan },
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, userIntent: user.userIntent, onboardingComplete: user.onboardingComplete },
     });
   } catch (error) {
     console.error('Error registering user:', error);
@@ -765,11 +766,47 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
 
     res.json({
       ok: true,
-      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, createdAt: user.createdAt },
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, userIntent: user.userIntent, onboardingComplete: user.onboardingComplete, createdAt: user.createdAt },
     });
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ ok: false, error: 'Failed to fetch user' });
+  }
+});
+
+/**
+ * PATCH /api/auth/me
+ * Update current user profile
+ */
+app.patch('/api/auth/me', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const allowedFields = ['name', 'company', 'userIntent', 'onboardingComplete'] as const;
+    const updates: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) {
+        if (key === 'userIntent') updates['userIntent'] = req.body[key];
+        else if (key === 'onboardingComplete') updates['onboardingComplete'] = req.body[key];
+        else updates[key] = req.body[key];
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ ok: false, error: 'No valid fields to update' });
+    }
+
+    const [user] = await db.update(users).set(updates).where(eq(users.id, auth.userId)).returning();
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    res.json({
+      ok: true,
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, userIntent: user.userIntent, onboardingComplete: user.onboardingComplete, createdAt: user.createdAt },
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update profile' });
   }
 });
 
@@ -1538,6 +1575,245 @@ app.get('/api/acsp/dashboard', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching ACSP dashboard:', error);
     res.status(500).json({ ok: false, error: 'Failed to fetch ACSP dashboard' });
+  }
+});
+
+// ============================================================================
+// ACSP BULK IMPORT ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/acsp/clients/bulk
+ * Bulk-create ACSP clients from spreadsheet import
+ */
+app.post('/api/acsp/clients/bulk', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { clients, fileName, columnMapping } = req.body;
+
+    if (!Array.isArray(clients) || clients.length === 0) {
+      return res.status(400).json({ ok: false, error: 'clients array is required' });
+    }
+    if (clients.length > 500) {
+      return res.status(400).json({ ok: false, error: 'Maximum 500 clients per import' });
+    }
+
+    let imported = 0;
+    let skipped = 0;
+    let errors = 0;
+    const results: Array<{ row: number; status: string; error?: string; client?: any }> = [];
+
+    for (let i = 0; i < clients.length; i++) {
+      const c = clients[i];
+      try {
+        if (!c.companyNumber || !c.companyName || !c.serviceType) {
+          results.push({ row: i + 1, status: 'skipped', error: 'Missing required fields (companyNumber, companyName, serviceType)' });
+          skipped++;
+          continue;
+        }
+
+        const normalizedNumber = c.companyNumber.toString().toUpperCase().replace(/\s/g, '');
+
+        // Check for duplicate
+        const [existing] = await db.select().from(acspClients)
+          .where(and(
+            eq(acspClients.userId, auth.userId),
+            eq(acspClients.companyNumber, normalizedNumber)
+          )).limit(1);
+
+        if (existing) {
+          results.push({ row: i + 1, status: 'skipped', error: 'Duplicate company number' });
+          skipped++;
+          continue;
+        }
+
+        const [client] = await db.insert(acspClients).values({
+          userId: auth.userId,
+          companyNumber: normalizedNumber,
+          companyName: c.companyName,
+          clientRef: c.clientRef || null,
+          serviceType: c.serviceType,
+          acspRegNumber: c.acspRegNumber || null,
+          identityVerified: c.identityVerified || false,
+          amlChecked: c.amlChecked || false,
+          lastFilingDate: c.lastFilingDate || null,
+          nextFilingDue: c.nextFilingDue || null,
+          notes: c.notes || null,
+        }).returning();
+
+        results.push({ row: i + 1, status: 'imported', client });
+        imported++;
+      } catch (err) {
+        results.push({ row: i + 1, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' });
+        errors++;
+      }
+    }
+
+    // Record import history
+    await db.insert(importHistory).values({
+      userId: auth.userId,
+      fileName: fileName || 'Unknown',
+      totalRows: clients.length,
+      importedRows: imported,
+      skippedRows: skipped,
+      errorRows: errors,
+      importType: 'acsp_clients',
+      columnMapping: columnMapping ? JSON.stringify(columnMapping) : null,
+    });
+
+    res.status(201).json({
+      ok: true,
+      summary: { total: clients.length, imported, skipped, errors },
+      results,
+    });
+  } catch (error) {
+    console.error('Error bulk importing clients:', error);
+    res.status(500).json({ ok: false, error: 'Bulk import failed' });
+  }
+});
+
+/**
+ * POST /api/acsp/import-with-workflow
+ * Bulk-create ACSP clients and create a workflow with tasks
+ */
+app.post('/api/acsp/import-with-workflow', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { clients, workflowTitle, workflowType, assignedTo, taskTemplate, fileName, columnMapping } = req.body;
+
+    if (!Array.isArray(clients) || clients.length === 0) {
+      return res.status(400).json({ ok: false, error: 'clients array is required' });
+    }
+    if (clients.length > 500) {
+      return res.status(400).json({ ok: false, error: 'Maximum 500 clients per import' });
+    }
+
+    // Bulk-create clients
+    let imported = 0;
+    let skipped = 0;
+    let errors = 0;
+    const importedClients: any[] = [];
+    const results: Array<{ row: number; status: string; error?: string; client?: any }> = [];
+
+    for (let i = 0; i < clients.length; i++) {
+      const c = clients[i];
+      try {
+        if (!c.companyNumber || !c.companyName || !c.serviceType) {
+          results.push({ row: i + 1, status: 'skipped', error: 'Missing required fields' });
+          skipped++;
+          continue;
+        }
+
+        const normalizedNumber = c.companyNumber.toString().toUpperCase().replace(/\s/g, '');
+
+        const [existing] = await db.select().from(acspClients)
+          .where(and(
+            eq(acspClients.userId, auth.userId),
+            eq(acspClients.companyNumber, normalizedNumber)
+          )).limit(1);
+
+        if (existing) {
+          results.push({ row: i + 1, status: 'skipped', error: 'Duplicate company number' });
+          skipped++;
+          continue;
+        }
+
+        const [client] = await db.insert(acspClients).values({
+          userId: auth.userId,
+          companyNumber: normalizedNumber,
+          companyName: c.companyName,
+          clientRef: c.clientRef || null,
+          serviceType: c.serviceType,
+          acspRegNumber: c.acspRegNumber || null,
+          identityVerified: c.identityVerified || false,
+          amlChecked: c.amlChecked || false,
+          lastFilingDate: c.lastFilingDate || null,
+          nextFilingDue: c.nextFilingDue || null,
+          notes: c.notes || null,
+        }).returning();
+
+        results.push({ row: i + 1, status: 'imported', client });
+        importedClients.push(client);
+        imported++;
+      } catch (err) {
+        results.push({ row: i + 1, status: 'error', error: err instanceof Error ? err.message : 'Unknown error' });
+        errors++;
+      }
+    }
+
+    // Create workflow
+    const [wf] = await db.insert(workflows).values({
+      userId: auth.userId,
+      title: workflowTitle || `Import: ${fileName || 'XLSX Import'}`,
+      description: `Bulk import of ${clients.length} clients from ${fileName || 'spreadsheet'}`,
+      workflowType: workflowType || 'onboarding',
+      status: 'active',
+      priority: 'medium',
+      assignedTo: assignedTo || null,
+    }).returning();
+
+    // Create tasks for each imported client
+    for (const client of importedClients) {
+      await db.insert(workflowTasks).values({
+        workflowId: wf.id,
+        title: taskTemplate?.title
+          ? taskTemplate.title.replace('{companyName}', client.companyName)
+          : `Review: ${client.companyName}`,
+        description: taskTemplate?.description || null,
+        companyNumber: client.companyNumber,
+        companyName: client.companyName,
+        assignedTo: assignedTo || null,
+        priority: 'medium',
+      });
+    }
+
+    // Record import history
+    await db.insert(importHistory).values({
+      userId: auth.userId,
+      fileName: fileName || 'Unknown',
+      totalRows: clients.length,
+      importedRows: imported,
+      skippedRows: skipped,
+      errorRows: errors,
+      importType: 'acsp_clients',
+      columnMapping: columnMapping ? JSON.stringify(columnMapping) : null,
+      workflowId: wf.id,
+    });
+
+    res.status(201).json({
+      ok: true,
+      summary: { total: clients.length, imported, skipped, errors },
+      results,
+      workflow: wf,
+    });
+  } catch (error) {
+    console.error('Error in import-with-workflow:', error);
+    res.status(500).json({ ok: false, error: 'Import with workflow failed' });
+  }
+});
+
+/**
+ * GET /api/acsp/imports
+ * Fetch import history for current user
+ */
+app.get('/api/acsp/imports', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const history = await db.select().from(importHistory)
+      .where(eq(importHistory.userId, auth.userId))
+      .orderBy(desc(importHistory.createdAt))
+      .limit(20);
+
+    res.json({ ok: true, imports: history });
+  } catch (error) {
+    console.error('Error fetching import history:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch import history' });
   }
 });
 

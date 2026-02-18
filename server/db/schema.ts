@@ -95,6 +95,8 @@ export const users = pgTable('users', {
   plan: varchar('plan', { length: 20 }).default('free').notNull(), // free, pro, enterprise
   role: varchar('role', { length: 20 }).default('user').notNull(), // user, admin, partner
   verified: boolean('verified').default(false).notNull(),
+  userIntent: varchar('user_intent', { length: 50 }), // accountant, business_owner, acsp_provider, company_secretary
+  onboardingComplete: boolean('onboarding_complete').default(false).notNull(),
   lastLoginAt: timestamp('last_login_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
@@ -327,7 +329,32 @@ export const workflowTasks = pgTable('workflow_tasks', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// ============================================================================
+// IMPORT HISTORY TABLE
+// ============================================================================
+
+/**
+ * Import History Table
+ * Tracks bulk data imports (XLSX/CSV) into the ACSP system
+ */
+export const importHistory = pgTable('import_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  totalRows: integer('total_rows').notNull(),
+  importedRows: integer('imported_rows').notNull(),
+  skippedRows: integer('skipped_rows').default(0).notNull(),
+  errorRows: integer('error_rows').default(0).notNull(),
+  importType: varchar('import_type', { length: 50 }).default('acsp_clients').notNull(),
+  columnMapping: text('column_mapping'), // JSON string of the mapping used
+  workflowId: uuid('workflow_id').references(() => workflows.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Export types
+export type ImportHistory = typeof importHistory.$inferSelect;
+export type NewImportHistory = typeof importHistory.$inferInsert;
+
 export type AcspClient = typeof acspClients.$inferSelect;
 export type NewAcspClient = typeof acspClients.$inferInsert;
 

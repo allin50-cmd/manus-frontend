@@ -3,7 +3,7 @@ import { useLocation, Link } from 'wouter';
 import { useAuth } from '../../context/AuthContext';
 import {
   Shield, Menu, X, Bell, User, LogOut, ChevronDown,
-  Home, Building2, FileText, BarChart3, HelpCircle, Settings, Terminal,
+  Home, Building2, FileText, BarChart3, HelpCircle, Settings, Terminal, GitBranch,
 } from 'lucide-react';
 
 export default function Header() {
@@ -24,6 +24,8 @@ export default function Header() {
 
   const authLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { href: '/acsp', label: 'ACSP', icon: Shield },
+    { href: '/workflows', label: 'Workflows', icon: GitBranch },
     { href: '/reports', label: 'Reports', icon: FileText },
     { href: '/help', label: 'Help', icon: HelpCircle },
   ];

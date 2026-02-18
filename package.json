@@ -36,7 +36,8 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.1",
     "uuid": "^9.0.1",
-    "wouter": "^3.9.0"
+    "wouter": "^3.9.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
