@@ -7,6 +7,7 @@ import {
   fetchCompanyDetail, refreshCompany, removeCompany,
   type MonitoredCompany, type ComplianceDetail, type AlertItem
 } from '../utils/api';
+import { formatDateShort } from '../utils/formatting';
 
 interface CompanyDetailViewProps {
   companyId: string;
@@ -64,14 +65,7 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
     }
   };
 
-  const formatDate = (d: string | null) => {
-    if (!d || d === 'N/A') return 'Not available';
-    try {
-      const date = new Date(d);
-      if (isNaN(date.getTime())) return 'Not available';
-      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    } catch { return 'Not available'; }
-  };
+  const formatDate = (d: string | null) => formatDateShort(d);
 
   if (loading) {
     return (

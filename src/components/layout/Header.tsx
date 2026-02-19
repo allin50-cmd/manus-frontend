@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import {
   Shield, Menu, X, Bell, User, LogOut, ChevronDown,
-  Home, Building2, FileText, BarChart3, HelpCircle, Settings, Terminal, GitBranch,
+  Building2, FileText, BarChart3, HelpCircle, Settings, GitBranch,
   Moon, Sun,
 } from 'lucide-react';
 
@@ -27,6 +27,7 @@ export default function Header() {
 
   const authLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { href: '/crm', label: 'CRM', icon: Building2 },
     { href: '/acsp', label: 'ACSP', icon: Shield },
     { href: '/workflows', label: 'Workflows', icon: GitBranch },
     { href: '/reports', label: 'Reports', icon: FileText },
@@ -84,6 +85,7 @@ export default function Header() {
                 <button
                   onClick={() => setLocation('/dashboard')}
                   className="relative p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                  aria-label="View alerts"
                 >
                   <Bell className="w-5 h-5" />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
@@ -138,7 +140,7 @@ export default function Header() {
             )}
 
             {/* Mobile Menu Button */}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>

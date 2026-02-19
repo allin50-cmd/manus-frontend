@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatDate, formatRelativeTime } from '@/utils/formatting';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -266,15 +267,7 @@ export default function DevOps() {
   // HELPERS
   // ============================================================================
 
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
 
-  const formatRelativeTime = (dateString: string) => {
-    const diff = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
-    if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  };
 
   const getEnvColor = (env: string) => {
     switch (env.toLowerCase()) {

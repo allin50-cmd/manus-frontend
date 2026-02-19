@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, User, Mail, Building, Shield, Calendar, LogOut } from 'lucide-react';
 import { type UserProfile } from '../utils/api';
+import { formatDateLong } from '../utils/formatting';
 
 interface UserSettingsProps {
   user: UserProfile;
@@ -9,11 +10,7 @@ interface UserSettingsProps {
 }
 
 export default function UserSettings({ user, onBack, onLogout }: UserSettingsProps) {
-  const formatDate = (d?: string) => {
-    if (!d) return 'N/A';
-    try { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); }
-    catch { return 'N/A'; }
-  };
+  const formatDate = (d?: string) => formatDateLong(d);
 
   return (
     <div className="max-w-2xl mx-auto py-8 animate-in fade-in duration-500">

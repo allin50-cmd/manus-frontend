@@ -276,3 +276,354 @@
 <div class="modal-overlay" id="firm-modal" onclick="closeModal(event)"><div class="modal"><div class="modal-header"><div><div class="modal-title" id="modal-firm-name"></div><div class="modal-sub" id="modal-firm-type"></div></div><button class="modal-close" onclick="document.getElementById('firm-modal').classList.remove('open')">x</button></div><div class="modal-body"><div class="modal-grid" id="modal-firm-body"></div></div></div></div>
 <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawerOverlay(event)"><div class="drawer" id="drawer-panel"><div class="drawer-header"><div><div class="drawer-title" id="drawer-title">Add Firm</div><div class="drawer-sub" id="drawer-sub">Fill in all required fields</div></div><button class="drawer-close" onclick="closeDrawer()">x</button></div><div class="drawer-body" id="drawer-body"></div><div class="drawer-footer"><button class="btn btn-ghost" onclick="closeDrawer()">Cancel</button><button class="btn btn-primary" id="drawer-save-btn" onclick="saveDrawer()">Save</button></div></div></div>
 <div class="toast" id="toast"></div>
+<script>
+/* ── Data ─────────────────────────────────────────────── */
+const firms=[
+  {id:1,rank:1,name:"Deloitte UK",type:"Accountancy",tier:1,score:92,need:"High",module:"AML Suite",priority:"P1",contact:"Sarah Chen",city:"London",employees:2200,website:"deloitte.co.uk",stage:"Negotiation",deal:85000},
+  {id:2,rank:2,name:"KPMG UK",type:"Accountancy",tier:1,score:89,need:"High",module:"Compliance Core",priority:"P1",contact:"James Ward",city:"London",employees:1800,website:"kpmg.co.uk",stage:"Proposal",deal:72000},
+  {id:3,rank:3,name:"PwC",type:"Accountancy",tier:1,score:87,need:"Medium",module:"AML Suite",priority:"P1",contact:"Emily Zhao",city:"London",employees:3000,website:"pwc.co.uk",stage:"Demo",deal:95000},
+  {id:4,rank:4,name:"EY UK",type:"Accountancy",tier:1,score:85,need:"Medium",module:"Risk Monitor",priority:"P2",contact:"",city:"London",employees:2500,website:"ey.com",stage:"Prospect",deal:60000},
+  {id:5,rank:5,name:"Clifford Chance",type:"Law",tier:1,score:88,need:"High",module:"AML Suite",priority:"P1",contact:"Michael Ross",city:"London",employees:1200,website:"cliffordchance.com",stage:"Won",deal:110000},
+  {id:6,rank:6,name:"Linklaters",type:"Law",tier:1,score:86,need:"Medium",module:"Compliance Core",priority:"P2",contact:"Rachel Tan",city:"London",employees:900,website:"linklaters.com",stage:"Negotiation",deal:78000},
+  {id:7,rank:7,name:"Allen & Overy",type:"Law",tier:1,score:84,need:"Low",module:"Training Hub",priority:"P2",contact:"",city:"London",employees:800,website:"allenovery.com",stage:"Proposal",deal:54000},
+  {id:8,rank:8,name:"Freshfields",type:"Law",tier:1,score:83,need:"Medium",module:"AML Suite",priority:"P2",contact:"",city:"London",employees:700,website:"freshfields.com",stage:"Demo",deal:66000},
+  {id:9,rank:9,name:"St James's Place",type:"Wealth",tier:1,score:90,need:"High",module:"Risk Monitor",priority:"P1",contact:"Oliver Grant",city:"Cirencester",employees:1400,website:"sjp.co.uk",stage:"Won",deal:130000},
+  {id:10,rank:10,name:"Brewin Dolphin",type:"Wealth",tier:1,score:82,need:"Medium",module:"AML Suite",priority:"P2",contact:"",city:"London",employees:500,website:"brewin.co.uk",stage:"Prospect",deal:42000},
+  {id:11,rank:11,name:"Grant Thornton",type:"Accountancy",tier:2,score:78,need:"Medium",module:"AML Suite",priority:"P2",contact:"",city:"London",employees:600,website:"grantthornton.co.uk",stage:"Demo",deal:38000},
+  {id:12,rank:12,name:"BDO",type:"Accountancy",tier:2,score:76,need:"Low",module:"Compliance Core",priority:"P3",contact:"",city:"London",employees:500,website:"bdo.co.uk",stage:"Prospect",deal:32000},
+  {id:13,rank:13,name:"RSM UK",type:"Accountancy",tier:2,score:74,need:"Low",module:"Training Hub",priority:"P3",contact:"",city:"London",employees:400,website:"rsm.global",stage:"Lost",deal:28000},
+  {id:14,rank:14,name:"Herbert Smith",type:"Law",tier:2,score:75,need:"Medium",module:"Risk Monitor",priority:"P2",contact:"",city:"London",employees:650,website:"herbertsmith.com",stage:"Proposal",deal:45000},
+  {id:15,rank:15,name:"Ashurst",type:"Law",tier:2,score:72,need:"Low",module:"AML Suite",priority:"P3",contact:"",city:"London",employees:420,website:"ashurst.com",stage:"Prospect",deal:30000},
+  {id:16,rank:16,name:"Rathbones",type:"Wealth",tier:2,score:73,need:"Medium",module:"AML Suite",priority:"P2",contact:"Lucy Palmer",city:"London",employees:350,website:"rathbones.com",stage:"Negotiation",deal:48000},
+  {id:17,rank:17,name:"Quilter",type:"Wealth",tier:2,score:70,need:"Low",module:"Compliance Core",priority:"P3",contact:"",city:"London",employees:280,website:"quilter.com",stage:"Demo",deal:25000},
+  {id:18,rank:18,name:"Mazars UK",type:"Accountancy",tier:3,score:66,need:"Low",module:"Training Hub",priority:"P3",contact:"",city:"London",employees:300,website:"mazars.co.uk",stage:"Prospect",deal:18000},
+  {id:19,rank:19,name:"Hays Macintyre",type:"Accountancy",tier:3,score:62,need:"Low",module:"AML Suite",priority:"P3",contact:"",city:"London",employees:180,website:"haysmacintyre.com",stage:"Prospect",deal:15000},
+  {id:20,rank:20,name:"Moore Kingston",type:"Accountancy",tier:3,score:60,need:"Low",module:"Compliance Core",priority:"P3",contact:"",city:"London",employees:150,website:"moorekingston.co.uk",stage:"Prospect",deal:12000},
+  {id:21,rank:21,name:"Withers",type:"Law",tier:3,score:64,need:"Low",module:"Training Hub",priority:"P3",contact:"",city:"London",employees:320,website:"withersworldwide.com",stage:"Prospect",deal:20000},
+  {id:22,rank:22,name:"Mishcon de Reya",type:"Law",tier:3,score:63,need:"Low",module:"AML Suite",priority:"P3",contact:"",city:"London",employees:290,website:"mishcon.com",stage:"Prospect",deal:22000},
+  {id:23,rank:23,name:"Charles Russell",type:"Law",tier:3,score:61,need:"Low",module:"Compliance Core",priority:"P3",contact:"",city:"London",employees:250,website:"crsblaw.com",stage:"Prospect",deal:16000},
+  {id:24,rank:24,name:"Investec W&I",type:"Wealth",tier:3,score:65,need:"Low",module:"Risk Monitor",priority:"P3",contact:"",city:"London",employees:200,website:"investec.com",stage:"Prospect",deal:22000},
+  {id:25,rank:25,name:"Brooks Macdonald",type:"Wealth",tier:3,score:58,need:"Low",module:"AML Suite",priority:"P3",contact:"",city:"London",employees:160,website:"brooksmacdonald.com",stage:"Lost",deal:14000},
+  {id:26,rank:26,name:"Crowe UK",type:"Accountancy",tier:3,score:57,need:"Low",module:"AML Suite",priority:"P3",contact:"",city:"London",employees:200,website:"crowe.co.uk",stage:"Prospect",deal:10000},
+  {id:27,rank:27,name:"Evelyn Partners",type:"Wealth",tier:2,score:71,need:"Medium",module:"Risk Monitor",priority:"P2",contact:"",city:"London",employees:400,website:"evelynpartners.com",stage:"Proposal",deal:40000},
+  {id:28,rank:28,name:"Saffery Champness",type:"Accountancy",tier:3,score:55,need:"Low",module:"Training Hub",priority:"P3",contact:"",city:"London",employees:130,website:"saffery.com",stage:"Prospect",deal:8000},
+  {id:29,rank:29,name:"Slaughter & May",type:"Law",tier:1,score:91,need:"High",module:"AML Suite",priority:"P1",contact:"",city:"London",employees:500,website:"slaughterandmay.com",stage:"Demo",deal:88000},
+  {id:30,rank:30,name:"Canaccord Genuity",type:"Wealth",tier:3,score:56,need:"Low",module:"Compliance Core",priority:"P3",contact:"",city:"London",employees:180,website:"canaccordgenuity.com",stage:"Prospect",deal:11000},
+  {id:31,rank:31,name:"PKF Littlejohn",type:"Accountancy",tier:3,score:52,need:"Low",module:"AML Suite",priority:"P3",contact:"",city:"London",employees:120,website:"pkf-littlejohn.com",stage:"Prospect",deal:7000}
+];
+const contacts=[
+  {id:1,name:"Sarah Chen",role:"Head of Compliance",firm:"Deloitte UK",email:"s.chen@deloitte.co.uk",phone:"+44 20 7936 1122",linkedin:"linkedin.com/in/sarahchen"},
+  {id:2,name:"James Ward",role:"MLRO",firm:"KPMG UK",email:"j.ward@kpmg.co.uk",phone:"+44 20 7311 3300",linkedin:"linkedin.com/in/jamesward"},
+  {id:3,name:"Emily Zhao",role:"Compliance Partner",firm:"PwC",email:"e.zhao@pwc.co.uk",phone:"+44 20 7583 5000",linkedin:"linkedin.com/in/emilyzhao"},
+  {id:4,name:"Michael Ross",role:"Senior Compliance Counsel",firm:"Clifford Chance",email:"m.ross@cliffordchance.com",phone:"+44 20 7006 1000",linkedin:"linkedin.com/in/michaelross"},
+  {id:5,name:"Rachel Tan",role:"Risk & Compliance Director",firm:"Linklaters",email:"r.tan@linklaters.com",phone:"+44 20 7456 2000",linkedin:"linkedin.com/in/racheltan"},
+  {id:6,name:"Oliver Grant",role:"Head of AML",firm:"St James's Place",email:"o.grant@sjp.co.uk",phone:"+44 1285 640302",linkedin:"linkedin.com/in/olivergrant"},
+  {id:7,name:"Lucy Palmer",role:"Compliance Manager",firm:"Rathbones",email:"l.palmer@rathbones.com",phone:"+44 20 7399 0000",linkedin:"linkedin.com/in/lucypalmer"}
+];
+const modules=[
+  {id:1,name:"AML Suite",desc:"End-to-end anti-money laundering workflows",bestFit:"All",count:14},
+  {id:2,name:"Compliance Core",desc:"Regulatory reporting & obligations tracker",bestFit:"Accountancy",count:7},
+  {id:3,name:"Risk Monitor",desc:"Real-time risk scoring & alerts",bestFit:"Wealth",count:5},
+  {id:4,name:"Training Hub",desc:"CPD-compliant staff training modules",bestFit:"Law",count:4},
+  {id:5,name:"Client Onboarding",desc:"KYC & CDD digital onboarding",bestFit:"All",count:0},
+  {id:6,name:"Sanctions Screening",desc:"PEP & sanctions automated checks",bestFit:"All",count:0},
+  {id:7,name:"SAR Filing",desc:"Suspicious activity report automation",bestFit:"All",count:0},
+  {id:8,name:"Policy Manager",desc:"Policy lifecycle & version control",bestFit:"Accountancy",count:0},
+  {id:9,name:"Audit Trail",desc:"Immutable compliance audit logging",bestFit:"Law",count:0},
+  {id:10,name:"RegTech Dashboard",desc:"Executive regulatory insights",bestFit:"Wealth",count:0}
+];
+const stages=["Prospect","Demo","Proposal","Negotiation","Won","Lost","Churned"];
+let activities=[
+  {id:1,type:"call",firm:"Deloitte UK",note:"Discovery call with Sarah Chen — very interested in AML Suite",date:"2026-02-18"},
+  {id:2,type:"email",firm:"KPMG UK",note:"Sent pricing proposal for Compliance Core + Training Hub",date:"2026-02-17"},
+  {id:3,type:"meeting",firm:"Clifford Chance",note:"On-site demo of AML Suite — positive feedback from compliance team",date:"2026-02-15"},
+  {id:4,type:"note",firm:"St James's Place",note:"Contract signed — onboarding starts March 1",date:"2026-02-14"},
+  {id:5,type:"email",firm:"Linklaters",note:"Follow-up after proposal — awaiting internal review",date:"2026-02-13"},
+  {id:6,type:"call",firm:"PwC",note:"Intro call with Emily Zhao — scheduling on-site demo",date:"2026-02-12"},
+  {id:7,type:"meeting",firm:"Rathbones",note:"Quarterly review with Lucy Palmer — exploring Risk Monitor add-on",date:"2026-02-10"},
+  {id:8,type:"note",firm:"Grant Thornton",note:"Moved to Demo stage after webinar attendance",date:"2026-02-08"}
+];
+let tasks=[
+  {id:1,text:"Follow up on Deloitte proposal",firm:"Deloitte UK",due:"2026-02-19",done:false},
+  {id:2,text:"Schedule PwC on-site demo",firm:"PwC",due:"2026-02-20",done:false},
+  {id:3,text:"Send Linklaters pricing deck",firm:"Linklaters",due:"2026-02-18",done:false},
+  {id:4,text:"Prepare Rathbones risk monitor demo",firm:"Rathbones",due:"2026-02-24",done:false},
+  {id:5,text:"Review KPMG compliance requirements",firm:"KPMG UK",due:"2026-02-16",done:true},
+  {id:6,text:"Onboard St James's Place",firm:"St James's Place",due:"2026-03-01",done:false}
+];
+let currentPage="dashboard",firmFilter="all",firmSort={col:"rank",asc:true},pipeView="kanban",taskFilter="all",drawerType=null,editingId=null,nextId=100;
+
+/* ── Navigation ───────────────────────────────────────── */
+function showPage(page){
+  currentPage=page;
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById("page-"+page).classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n=>{if(n.textContent.trim().toLowerCase().startsWith(page))n.classList.add("active");});
+  render();
+}
+
+/* ── Toast ─────────────────────────────────────────────── */
+function showToast(msg,err){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast"+(err?" error":"");
+  requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>t.classList.remove("show"),2400);
+}
+
+/* ── Firms ─────────────────────────────────────────────── */
+function filterFirms(){renderFirms();}
+function setFirmFilter(f,el){
+  firmFilter=f;
+  document.querySelectorAll(".filter-bar .filter-btn").forEach(b=>b.classList.remove("active"));
+  if(el)el.classList.add("active");
+  renderFirms();
+}
+function sortFirms(col){
+  if(firmSort.col===col)firmSort.asc=!firmSort.asc;else{firmSort.col=col;firmSort.asc=true;}
+  renderFirms();
+}
+function getFilteredFirms(){
+  let list=[...firms];
+  const q=(document.getElementById("firm-search")||{}).value||"";
+  if(q)list=list.filter(f=>f.name.toLowerCase().includes(q.toLowerCase()));
+  if(firmFilter==="all");
+  else if(["1","2","3"].includes(firmFilter))list=list.filter(f=>f.tier===+firmFilter);
+  else list=list.filter(f=>f.type===firmFilter);
+  const c=firmSort.col;
+  list.sort((a,b)=>{let v=0;if(c==="name")v=a.name.localeCompare(b.name);else if(c==="score")v=a.score-b.score;else if(c==="tier")v=a.tier-b.tier;else v=a.rank-b.rank;return firmSort.asc?v:-v;});
+  return list;
+}
+function renderFirms(){
+  const list=getFilteredFirms();
+  const el=document.getElementById("firm-count");if(el)el.textContent=list.length+" firms";
+  const tb=document.getElementById("firms-tbody");if(!tb)return;
+  tb.innerHTML=list.map(f=>{
+    const tc=f.tier===1?"badge-tier1":f.tier===2?"badge-tier2":"badge-tier3";
+    const nc=f.need==="High"?"badge-high":f.need==="Medium"?"badge-medium":"badge-low";
+    const pc=f.priority==="P1"?"badge-p1":f.priority==="P2"?"badge-p2":"badge-p3";
+    const sc=f.type==="Law"?"badge-law":f.type==="Wealth"?"badge-wealth":"badge-accountancy";
+    return `<tr onclick="openFirmModal(${f.id})"><td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${f.rank}</td><td style="font-weight:700">${f.name}</td><td><span class="badge ${sc}">${f.type}</span></td><td><span class="badge ${tc}">T${f.tier}</span></td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:${f.score}%;background:${f.score>=80?"var(--accent)":f.score>=65?"var(--accent2)":"var(--p2)"}"></div></div><span class="score-val">${f.score}</span></div></td><td><span class="badge ${nc}">${f.need}</span></td><td style="font-size:11px;color:var(--text2)">${f.module}</td><td><span class="badge ${pc}">${f.priority}</span></td><td style="font-size:11px;color:var(--text2)">${f.contact||"—"}</td><td><button class="btn-edit" onclick="event.stopPropagation();editFirm(${f.id})">&#x270E;</button><button class="btn-del" onclick="event.stopPropagation();deleteFirm(${f.id})">&#x2715;</button></td></tr>`;
+  }).join("");
+}
+
+/* ── Firm Modal ────────────────────────────────────────── */
+function openFirmModal(id){
+  const f=firms.find(x=>x.id===id);if(!f)return;
+  document.getElementById("modal-firm-name").textContent=f.name;
+  document.getElementById("modal-firm-type").textContent=f.type+" · Tier "+f.tier+" · "+f.city;
+  document.getElementById("modal-firm-body").innerHTML=`
+    <div class="field"><div class="field-label">Score</div><div class="field-val">${f.score}/100</div></div>
+    <div class="field"><div class="field-label">Need Level</div><div class="field-val">${f.need}</div></div>
+    <div class="field"><div class="field-label">Module</div><div class="field-val">${f.module}</div></div>
+    <div class="field"><div class="field-label">Priority</div><div class="field-val">${f.priority}</div></div>
+    <div class="field"><div class="field-label">Employees</div><div class="field-val mono">${f.employees.toLocaleString()}</div></div>
+    <div class="field"><div class="field-label">Pipeline Stage</div><div class="field-val">${f.stage}</div></div>
+    <div class="field"><div class="field-label">Deal Value</div><div class="field-val mono">£${f.deal.toLocaleString()}</div></div>
+    <div class="field"><div class="field-label">Website</div><div class="field-val"><a href="https://${f.website}" target="_blank">${f.website}</a></div></div>
+    <div class="field full"><div class="field-label">Primary Contact</div><div class="field-val">${f.contact||"Not assigned"}</div></div>`;
+  document.getElementById("firm-modal").classList.add("open");
+}
+function closeModal(e){if(e.target===e.currentTarget)e.target.classList.remove("open");}
+
+/* ── Contacts ──────────────────────────────────────────── */
+function renderContacts(){
+  const el=document.getElementById("contacts-list");if(!el)return;
+  el.innerHTML=contacts.map(c=>{
+    const initials=c.name.split(" ").map(w=>w[0]).join("");
+    return `<div class="contact-card"><div class="contact-avatar">${initials}</div><div style="flex:1"><div class="contact-name">${c.name}</div><div class="contact-org">${c.role} — ${c.firm}</div><div class="contact-meta"><span class="contact-tag">&#x2709; ${c.email}</span><span class="contact-tag">&#x260E; ${c.phone}</span></div></div><button class="btn-edit" onclick="editContact(${c.id})">&#x270E;</button><button class="btn-del" onclick="deleteContact(${c.id})">&#x2715;</button></div>`;
+  }).join("");
+}
+
+/* ── Pipeline ──────────────────────────────────────────── */
+function setPipelineView(v,el){
+  pipeView=v;
+  if(el){el.parentElement.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");}
+  renderPipeline();
+}
+function renderPipeline(){
+  const el=document.getElementById("pipeline-content");if(!el)return;
+  if(pipeView==="kanban"){
+    el.innerHTML='<div class="kanban">'+stages.map(s=>{
+      const sf=firms.filter(f=>f.stage===s);
+      return `<div class="kanban-col"><div class="kanban-col-title">${s}<span class="kanban-count">${sf.length}</span></div>${sf.map(f=>`<div class="kanban-card" onclick="openFirmModal(${f.id})"><div class="kanban-card-name">${f.name}</div><div class="kanban-card-meta">£${(f.deal/1000).toFixed(0)}k · ${f.type}</div></div>`).join("")}</div>`;
+    }).join("")+'</div>';
+  }else{
+    el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Firm</th><th>Stage</th><th>Deal Value</th><th>Type</th><th>Tier</th><th>Score</th></tr></thead><tbody>'+
+      firms.filter(f=>f.stage!=="Churned").sort((a,b)=>stages.indexOf(a.stage)-stages.indexOf(b.stage)).map(f=>{
+        const sc=f.stage==="Won"?"badge-won":f.stage==="Lost"?"badge-lost":"badge-active";
+        return `<tr onclick="openFirmModal(${f.id})"><td style="font-weight:700">${f.name}</td><td><span class="badge ${sc}">${f.stage}</span></td><td style="font-family:'DM Mono',monospace">£${f.deal.toLocaleString()}</td><td>${f.type}</td><td>T${f.tier}</td><td>${f.score}</td></tr>`;
+      }).join("")+'</tbody></table></div>';
+  }
+}
+
+/* ── Activities ────────────────────────────────────────── */
+function renderActivities(){
+  const el=document.getElementById("activities-list");if(!el)return;
+  const icons={call:"&#x260E;",email:"&#x2709;",meeting:"&#x25CE;",note:"&#x270E;"};
+  el.innerHTML=activities.map(a=>`<div class="activity-row"><div class="activity-icon">${icons[a.type]||"&#x25CB;"}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${a.firm}</div><div style="font-size:12px;color:var(--text2);margin-top:3px">${a.note}</div><div class="activity-date">${a.date} · ${a.type}</div></div><button class="btn-del" onclick="deleteActivity(${a.id})">&#x2715;</button></div>`).join("");
+}
+
+/* ── Modules ───────────────────────────────────────────── */
+function renderModules(){
+  const tb=document.getElementById("modules-tbody");if(!tb)return;
+  tb.innerHTML=modules.map(m=>`<tr><td style="font-weight:700">${m.name}</td><td style="color:var(--text2);font-size:12px">${m.desc}</td><td><span class="badge badge-${m.bestFit==='All'?'tier1':m.bestFit.toLowerCase()}">${m.bestFit}</span></td><td style="font-family:'DM Mono',monospace">${m.count}</td><td><button class="btn-edit" onclick="editModule(${m.id})">&#x270E;</button></td></tr>`).join("");
+}
+
+/* ── Tasks ──────────────────────────────────────────────── */
+function setTaskFilter(f,el){
+  taskFilter=f;
+  if(el){document.getElementById("task-tabs").querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));el.classList.add("active");}
+  renderTasks();
+}
+function renderTasks(){
+  const today=new Date().toISOString().slice(0,10);
+  let list=[...tasks];
+  if(taskFilter==="overdue")list=list.filter(t=>!t.done&&t.due<today);
+  else if(taskFilter==="today")list=list.filter(t=>!t.done&&t.due===today);
+  else if(taskFilter==="upcoming")list=list.filter(t=>!t.done&&t.due>today);
+  else if(taskFilter==="done")list=list.filter(t=>t.done);
+  const overdue=tasks.filter(t=>!t.done&&t.due<today).length;
+  document.getElementById("tasks-badge").textContent=overdue;
+  const el=document.getElementById("tasks-list");if(!el)return;
+  if(!list.length){el.innerHTML='<div class="empty-state">No tasks matching filter</div>';return;}
+  el.innerHTML=list.map(t=>{
+    const isOverdue=!t.done&&t.due<today;
+    return `<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);margin-bottom:1px;border-radius:6px"><input type="checkbox" ${t.done?"checked":""} onchange="toggleTask(${t.id})" style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer"><div style="flex:1"><div style="font-size:13px;font-weight:700;${t.done?"text-decoration:line-through;color:var(--text3)":""}">${t.text}</div><div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:3px">${t.firm} · due ${t.due}${isOverdue?' <span style="color:var(--p1)">OVERDUE</span>':""}</div></div><button class="btn-del" onclick="deleteTask(${t.id})">&#x2715;</button></div>`;
+  }).join("");
+}
+function toggleTask(id){const t=tasks.find(x=>x.id===id);if(t){t.done=!t.done;renderTasks();showToast(t.done?"Task completed":"Task reopened");}}
+
+/* ── Dashboard ─────────────────────────────────────────── */
+function renderDashboard(){
+  const t1=firms.filter(f=>f.tier===1).length,t2=firms.filter(f=>f.tier===2).length;
+  const hi=firms.filter(f=>f.need==="High").length;
+  document.getElementById("m-total").textContent=firms.length;
+  document.getElementById("m-t1").textContent=t1;
+  document.getElementById("m-t2").textContent=t2;
+  document.getElementById("m-high").textContent=hi;
+  // Sector bar
+  const acc=firms.filter(f=>f.type==="Accountancy").length,law=firms.filter(f=>f.type==="Law").length,wea=firms.filter(f=>f.type==="Wealth").length;
+  const tot=firms.length||1;
+  document.getElementById("sector-bar").innerHTML=`<div class="tier-seg" style="flex:${acc};background:var(--accountancy);color:#000">${acc}</div><div class="tier-seg" style="flex:${law};background:var(--law);color:#fff">${law}</div><div class="tier-seg" style="flex:${wea};background:var(--wealth);color:#000">${wea}</div>`;
+  document.getElementById("sector-legend").innerHTML=`<span style="color:var(--accountancy)">&#x25CF; Accountancy ${acc}</span><span style="color:var(--law)">&#x25CF; Law ${law}</span><span style="color:var(--wealth)">&#x25CF; Wealth ${wea}</span>`;
+  // Tier chart
+  document.getElementById("tier-chart").innerHTML=`<div class="tier-bar"><div class="tier-seg" style="flex:${t1};background:var(--accent);color:#000">T1: ${t1}</div><div class="tier-seg" style="flex:${t2};background:var(--accent2);color:#fff">T2: ${t2}</div><div class="tier-seg" style="flex:${firms.length-t1-t2};background:var(--law);color:#fff">T3: ${firms.length-t1-t2}</div></div>`;
+  // Pipeline preview
+  const wonFirms=firms.filter(f=>f.stage==="Won"||f.stage==="Negotiation").sort((a,b)=>b.deal-a.deal).slice(0,5);
+  document.getElementById("pipeline-preview").innerHTML=wonFirms.map(f=>{
+    const sc=f.stage==="Won"?"badge-won":"badge-active";
+    return `<div class="pipeline-row"><div class="pipeline-firm">${f.name}</div><span class="badge ${sc}">${f.stage}</span><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)">£${(f.deal/1000).toFixed(0)}k</span></div>`;
+  }).join("");
+  // Module preview
+  document.getElementById("module-preview").innerHTML=modules.filter(m=>m.count>0).sort((a,b)=>b.count-a.count).slice(0,5).map(m=>`<div class="module-row"><div class="module-dot"></div><div class="module-name">${m.name}</div><div class="module-count">${m.count} firms</div></div>`).join("");
+}
+
+/* ── Drawer ─────────────────────────────────────────────── */
+function openDrawer(type,id){
+  drawerType=type;editingId=id||null;
+  const title=document.getElementById("drawer-title"),sub=document.getElementById("drawer-sub"),body=document.getElementById("drawer-body");
+  const isEdit=!!id;
+  if(type==="firm"){
+    const f=isEdit?firms.find(x=>x.id===id):null;
+    title.textContent=isEdit?"Edit Firm":"Add Firm";sub.textContent="Fill in firm details";
+    body.innerHTML=`<div class="form-row"><div class="form-group"><label class="form-label">Firm Name <span>*</span></label><input class="form-input" id="d-name" value="${f?f.name:""}" placeholder="e.g. Deloitte UK"></div><div class="form-group"><label class="form-label">Type <span>*</span></label><select class="form-select" id="d-type"><option ${f&&f.type==="Accountancy"?"selected":""}>Accountancy</option><option ${f&&f.type==="Law"?"selected":""}>Law</option><option ${f&&f.type==="Wealth"?"selected":""}>Wealth</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Tier <span>*</span></label><select class="form-select" id="d-tier"><option value="1" ${f&&f.tier===1?"selected":""}>Tier 1</option><option value="2" ${f&&f.tier===2?"selected":""}>Tier 2</option><option value="3" ${f&&f.tier===3?"selected":""}>Tier 3</option></select></div><div class="form-group"><label class="form-label">Score (0-100)</label><input class="form-input" id="d-score" type="number" min="0" max="100" value="${f?f.score:50}"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Need Level</label><select class="form-select" id="d-need"><option ${f&&f.need==="Low"?"selected":""}>Low</option><option ${f&&f.need==="Medium"?"selected":""}>Medium</option><option ${f&&f.need==="High"?"selected":""}>High</option></select></div><div class="form-group"><label class="form-label">Module</label><select class="form-select" id="d-module">${modules.map(m=>`<option ${f&&f.module===m.name?"selected":""}>${m.name}</option>`).join("")}</select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="d-priority"><option ${f&&f.priority==="P1"?"selected":""}>P1</option><option ${f&&f.priority==="P2"?"selected":""}>P2</option><option ${f&&f.priority==="P3"?"selected":""}>P3</option></select></div><div class="form-group"><label class="form-label">City</label><input class="form-input" id="d-city" value="${f?f.city:""}" placeholder="London"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Employees</label><input class="form-input" id="d-emp" type="number" value="${f?f.employees:0}"></div><div class="form-group"><label class="form-label">Website</label><input class="form-input" id="d-web" value="${f?f.website:""}" placeholder="example.co.uk"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Pipeline Stage</label><select class="form-select" id="d-stage">${stages.map(s=>`<option ${f&&f.stage===s?"selected":""}>${s}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">Deal Value (£)</label><input class="form-input" id="d-deal" type="number" value="${f?f.deal:0}"></div></div>`;
+  }else if(type==="contact"){
+    const c=isEdit?contacts.find(x=>x.id===id):null;
+    title.textContent=isEdit?"Edit Contact":"Add Contact";sub.textContent="Contact details";
+    body.innerHTML=`<div class="form-row"><div class="form-group"><label class="form-label">Full Name <span>*</span></label><input class="form-input" id="d-cname" value="${c?c.name:""}" placeholder="Jane Smith"></div><div class="form-group"><label class="form-label">Role</label><input class="form-input" id="d-crole" value="${c?c.role:""}" placeholder="Head of Compliance"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Firm</label><select class="form-select" id="d-cfirm">${firms.map(f=>`<option ${c&&c.firm===f.name?"selected":""}>${f.name}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="d-cemail" value="${c?c.email:""}" placeholder="j.smith@firm.com"></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="d-cphone" value="${c?c.phone:""}" placeholder="+44 20 ..."></div><div class="form-group"><label class="form-label">LinkedIn</label><input class="form-input" id="d-clinkedin" value="${c?c.linkedin:""}" placeholder="linkedin.com/in/..."></div></div>`;
+  }else if(type==="activity"){
+    title.textContent="Log Activity";sub.textContent="Record an interaction";
+    body.innerHTML=`<div class="form-row"><div class="form-group"><label class="form-label">Type <span>*</span></label><select class="form-select" id="d-atype"><option>call</option><option>email</option><option>meeting</option><option>note</option></select></div><div class="form-group"><label class="form-label">Firm <span>*</span></label><select class="form-select" id="d-afirm">${firms.map(f=>`<option>${f.name}</option>`).join("")}</select></div></div>
+    <div class="form-group full"><label class="form-label">Note <span>*</span></label><textarea class="form-textarea" id="d-anote" placeholder="Describe the interaction..."></textarea></div>
+    <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="d-adate" type="date" value="${new Date().toISOString().slice(0,10)}"></div>`;
+  }else if(type==="pipeline"){
+    title.textContent="Add Pipeline Entry";sub.textContent="Move a firm through stages";
+    body.innerHTML=`<div class="form-row"><div class="form-group"><label class="form-label">Firm <span>*</span></label><select class="form-select" id="d-pfirm">${firms.map(f=>`<option>${f.name}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">Stage <span>*</span></label><select class="form-select" id="d-pstage">${stages.map(s=>`<option>${s}</option>`).join("")}</select></div></div>
+    <div class="form-group"><label class="form-label">Deal Value (£)</label><input class="form-input" id="d-pdeal" type="number" value="0"></div>`;
+  }else if(type==="module"){
+    const m=isEdit?modules.find(x=>x.id===id):null;
+    title.textContent=isEdit?"Edit Module":"Add Module";sub.textContent="Module details";
+    body.innerHTML=`<div class="form-group"><label class="form-label">Name <span>*</span></label><input class="form-input" id="d-mname" value="${m?m.name:""}" placeholder="Module Name"></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="d-mdesc" placeholder="What does this module do?">${m?m.desc:""}</textarea></div>
+    <div class="form-group"><label class="form-label">Best Fit</label><select class="form-select" id="d-mfit"><option ${m&&m.bestFit==="All"?"selected":""}>All</option><option ${m&&m.bestFit==="Accountancy"?"selected":""}>Accountancy</option><option ${m&&m.bestFit==="Law"?"selected":""}>Law</option><option ${m&&m.bestFit==="Wealth"?"selected":""}>Wealth</option></select></div>`;
+  }else if(type==="task"){
+    title.textContent="Add Task";sub.textContent="Create a follow-up task";
+    body.innerHTML=`<div class="form-group full"><label class="form-label">Task <span>*</span></label><input class="form-input" id="d-ttext" placeholder="e.g. Follow up on proposal"></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Firm</label><select class="form-select" id="d-tfirm">${firms.map(f=>`<option>${f.name}</option>`).join("")}</select></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="d-tdue" type="date" value="${new Date().toISOString().slice(0,10)}"></div></div>`;
+  }
+  document.getElementById("drawer-overlay").classList.add("open");
+}
+function closeDrawer(){document.getElementById("drawer-overlay").classList.remove("open");drawerType=null;editingId=null;}
+function closeDrawerOverlay(e){if(e.target===e.currentTarget)closeDrawer();}
+function saveDrawer(){
+  if(drawerType==="firm"){
+    const name=document.getElementById("d-name").value.trim();
+    if(!name){showToast("Firm name is required",true);return;}
+    const obj={name,type:document.getElementById("d-type").value,tier:+document.getElementById("d-tier").value,score:+document.getElementById("d-score").value,need:document.getElementById("d-need").value,module:document.getElementById("d-module").value,priority:document.getElementById("d-priority").value,city:document.getElementById("d-city").value||"London",employees:+document.getElementById("d-emp").value||0,website:document.getElementById("d-web").value,stage:document.getElementById("d-stage").value,deal:+document.getElementById("d-deal").value||0,contact:""};
+    if(editingId){const f=firms.find(x=>x.id===editingId);if(f)Object.assign(f,obj);showToast("Firm updated");}
+    else{obj.id=nextId++;obj.rank=firms.length+1;firms.push(obj);showToast("Firm added");}
+  }else if(drawerType==="contact"){
+    const name=document.getElementById("d-cname").value.trim();
+    if(!name){showToast("Name is required",true);return;}
+    const obj={name,role:document.getElementById("d-crole").value,firm:document.getElementById("d-cfirm").value,email:document.getElementById("d-cemail").value,phone:document.getElementById("d-cphone").value,linkedin:document.getElementById("d-clinkedin").value};
+    if(editingId){const c=contacts.find(x=>x.id===editingId);if(c)Object.assign(c,obj);showToast("Contact updated");}
+    else{obj.id=nextId++;contacts.push(obj);showToast("Contact added");}
+  }else if(drawerType==="activity"){
+    const note=document.getElementById("d-anote").value.trim();
+    if(!note){showToast("Note is required",true);return;}
+    activities.unshift({id:nextId++,type:document.getElementById("d-atype").value,firm:document.getElementById("d-afirm").value,note,date:document.getElementById("d-adate").value});
+    showToast("Activity logged");
+  }else if(drawerType==="pipeline"){
+    const fname=document.getElementById("d-pfirm").value;
+    const f=firms.find(x=>x.name===fname);
+    if(f){f.stage=document.getElementById("d-pstage").value;f.deal=+document.getElementById("d-pdeal").value||f.deal;showToast("Pipeline updated");}
+  }else if(drawerType==="module"){
+    const name=document.getElementById("d-mname").value.trim();
+    if(!name){showToast("Module name is required",true);return;}
+    const obj={name,desc:document.getElementById("d-mdesc").value,bestFit:document.getElementById("d-mfit").value};
+    if(editingId){const m=modules.find(x=>x.id===editingId);if(m)Object.assign(m,obj);showToast("Module updated");}
+    else{obj.id=nextId++;obj.count=0;modules.push(obj);showToast("Module added");}
+  }else if(drawerType==="task"){
+    const text=document.getElementById("d-ttext").value.trim();
+    if(!text){showToast("Task description is required",true);return;}
+    tasks.push({id:nextId++,text,firm:document.getElementById("d-tfirm").value,due:document.getElementById("d-tdue").value,done:false});
+    showToast("Task added");
+  }
+  closeDrawer();render();
+}
+
+/* ── Edit/Delete helpers ──────────────────────────────── */
+function editFirm(id){openDrawer("firm",id);}
+function deleteFirm(id){if(confirm("Delete this firm?")){const i=firms.findIndex(f=>f.id===id);if(i>-1){firms.splice(i,1);showToast("Firm deleted");render();}}}
+function editContact(id){openDrawer("contact",id);}
+function deleteContact(id){if(confirm("Delete this contact?")){const i=contacts.findIndex(c=>c.id===id);if(i>-1){contacts.splice(i,1);showToast("Contact deleted");renderContacts();}}}
+function editModule(id){openDrawer("module",id);}
+function deleteActivity(id){const i=activities.findIndex(a=>a.id===id);if(i>-1){activities.splice(i,1);showToast("Activity removed");renderActivities();}}
+function deleteTask(id){const i=tasks.findIndex(t=>t.id===id);if(i>-1){tasks.splice(i,1);showToast("Task removed");renderTasks();}}
+
+/* ── Export CSV ────────────────────────────────────────── */
+function exportCSV(){
+  const rows=[["Rank","Name","Type","Tier","Score","Need","Module","Priority","Contact","City","Employees","Stage","Deal"]];
+  firms.forEach(f=>rows.push([f.rank,f.name,f.type,f.tier,f.score,f.need,f.module,f.priority,f.contact,f.city,f.employees,f.stage,f.deal]));
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="fineguard-firms.csv";a.click();
+  showToast("CSV exported");
+}
+
+/* ── Render all ────────────────────────────────────────── */
+function render(){
+  renderDashboard();renderFirms();renderContacts();renderPipeline();renderActivities();renderModules();renderTasks();
+}
+render();
+</script>
+</body>
+</html>
