@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   Shield, Menu, X, Bell, User, LogOut, ChevronDown,
   Home, Building2, FileText, BarChart3, HelpCircle, Settings, Terminal, GitBranch,
+  Moon, Sun,
 } from 'lucide-react';
 
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -37,13 +40,13 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0A0B14]/80 backdrop-blur-xl border-b border-white/10">
+    <header className="theme-header sticky top-0 z-50 bg-[#0A0B14]/80 backdrop-blur-xl border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Shield className="w-8 h-8 text-[#5A4BFF]" />
-            <span className="text-xl font-black text-white tracking-tight hidden sm:block">FineGuard</span>
+            <span className="logo-text text-xl font-black text-white tracking-tight hidden sm:block">FineGuard</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -63,6 +66,18 @@ export default function Header() {
 
           {/* Right Side */}
           <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              <div className="theme-toggle-knob">
+                {theme === 'dark' ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
+              </div>
+            </button>
+
             {isAuthenticated ? (
               <>
                 {/* Alerts Bell */}
@@ -90,7 +105,7 @@ export default function Header() {
                   {profileOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
-                      <div className="absolute right-0 mt-2 w-56 bg-[#1A1D28] border border-white/10 rounded-xl shadow-2xl z-50 py-2 animate-in">
+                      <div className="theme-dropdown absolute right-0 mt-2 w-56 bg-[#1A1D28] border border-white/10 rounded-xl shadow-2xl z-50 py-2 animate-in">
                         <div className="px-4 py-3 border-b border-white/10">
                           <p className="text-sm font-medium text-white truncate">{user?.name}</p>
                           <p className="text-xs text-slate-400 truncate">{user?.email}</p>

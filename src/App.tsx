@@ -1,6 +1,7 @@
 import { Router, Route, Switch } from 'wouter';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/layout/Layout';
 
 // Pages
@@ -31,6 +32,7 @@ import Workflows from './pages/Workflows';
 
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <Toaster position="top-right" richColors />
       <Router>
@@ -67,5 +69,6 @@ export default function App() {
         </Layout>
       </Router>
     </AuthProvider>
+    </ThemeProvider>
   );
 }

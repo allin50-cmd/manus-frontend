@@ -13,7 +13,7 @@ export default function Layout({ children, hideFooter }: LayoutProps) {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A0B14] via-[#111327] to-[#0A0B14] flex flex-col">
+    <div className="theme-gradient min-h-screen bg-gradient-to-br from-[#0A0B14] via-[#111327] to-[#0A0B14] flex flex-col">
       <Header />
       <main className={`flex-1 ${isAuthenticated ? 'pb-20 lg:pb-0' : ''}`}>
         {children}

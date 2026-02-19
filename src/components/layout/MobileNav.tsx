@@ -18,7 +18,7 @@ export default function MobileNav() {
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0A0B14]/95 backdrop-blur-xl border-t border-white/10 safe-area-bottom">
+    <nav className="theme-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0A0B14]/95 backdrop-blur-xl border-t border-white/10 safe-area-bottom">
       <div className="grid grid-cols-5 h-16">
         {links.map((l) => {
           const active = location === l.href || (l.href === '/dashboard' && location.startsWith('/dashboard'));
