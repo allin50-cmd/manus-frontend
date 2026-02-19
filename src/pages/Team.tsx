@@ -35,8 +35,8 @@ function MemberCard({ member, large }: { member: TeamMember; large?: boolean }) 
       <p className={`${large ? 'text-sm' : 'text-xs'} text-[#5A4BFF] font-medium mb-3`}>{member.role}</p>
       <p className={`${large ? 'text-sm' : 'text-xs'} text-slate-400 leading-relaxed mb-4`}>{member.bio}</p>
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <span className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"><Linkedin className="w-4 h-4" /></span>
-        <span className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"><Mail className="w-4 h-4" /></span>
+        <a href={`https://linkedin.com/in/${member.name.toLowerCase().replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-white/10 transition-colors" aria-label={`${member.name} on LinkedIn`}><Linkedin className="w-4 h-4" /></a>
+        <a href={`mailto:${member.name.split(' ')[0].toLowerCase()}.${member.name.split(' ')[1]?.toLowerCase() || ''}@fineguard.co.uk`} className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-white/10 transition-colors" aria-label={`Email ${member.name}`}><Mail className="w-4 h-4" /></a>
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
+import { updateProfile } from '../utils/api';
 import { toast } from 'sonner';
 import {
   User, Mail, Building2, Calendar, Shield, CreditCard,
-  Key, Bell, LogOut, ChevronRight, ArrowLeft,
+  Key, Bell, LogOut, ChevronRight, ArrowLeft, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,9 +13,12 @@ import { Label } from '@/components/ui/label';
 import { clsx } from 'clsx';
 
 export default function Profile() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<'profile' | 'security' | 'notifications' | 'billing'>('profile');
+  const [profileName, setProfileName] = useState(user?.name || '');
+  const [profileCompany, setProfileCompany] = useState(user?.company || '');
+  const [saving, setSaving] = useState(false);
 
   if (!isAuthenticated || !user) {
     setLocation('/login');
@@ -90,16 +94,16 @@ export default function Profile() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
                         <Label className="text-slate-300 mb-1.5 block">Full Name</Label>
-                        <Input defaultValue={user.name} className="bg-white/5 border-white/10 text-white" />
+                        <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} className="bg-white/5 border-white/10 text-white" />
                       </div>
                       <div>
                         <Label className="text-slate-300 mb-1.5 block">Email</Label>
-                        <Input defaultValue={user.email} type="email" className="bg-white/5 border-white/10 text-white" />
+                        <Input defaultValue={user.email} type="email" disabled className="bg-white/5 border-white/10 text-slate-500" />
                       </div>
                     </div>
                     <div>
                       <Label className="text-slate-300 mb-1.5 block">Company</Label>
-                      <Input defaultValue={user.company || ''} placeholder="Your company name" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                      <Input value={profileCompany} onChange={(e) => setProfileCompany(e.target.value)} placeholder="Your company name" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
@@ -112,7 +116,23 @@ export default function Profile() {
                       </div>
                     </div>
                     <div className="pt-4">
-                      <Button onClick={() => toast.success('Profile updated!')} className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-6 rounded-full font-bold">
+                      <Button
+                        disabled={saving}
+                        onClick={async () => {
+                          setSaving(true);
+                          try {
+                            await updateProfile({ name: profileName, company: profileCompany });
+                            await refreshUser();
+                            toast.success('Profile updated!');
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : 'Failed to update profile');
+                          } finally {
+                            setSaving(false);
+                          }
+                        }}
+                        className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-6 rounded-full font-bold"
+                      >
+                        {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Save Changes
                       </Button>
                     </div>

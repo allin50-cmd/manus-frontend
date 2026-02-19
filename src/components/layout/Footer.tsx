@@ -40,10 +40,10 @@ export default function Footer() {
               Enterprise compliance monitoring and protection for UK businesses. Never miss a filing deadline again.
             </p>
             <div className="flex items-center gap-3">
-              <a href="#" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors"><Twitter className="w-4 h-4" /></a>
-              <a href="#" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors"><Linkedin className="w-4 h-4" /></a>
-              <a href="#" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors"><Github className="w-4 h-4" /></a>
-              <a href="mailto:hello@fineguard.co.uk" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors"><Mail className="w-4 h-4" /></a>
+              <a href="https://twitter.com/finaboratory" target="_blank" rel="noopener noreferrer" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors" aria-label="Twitter"><Twitter className="w-4 h-4" /></a>
+              <a href="https://linkedin.com/company/finaboratory" target="_blank" rel="noopener noreferrer" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors" aria-label="LinkedIn"><Linkedin className="w-4 h-4" /></a>
+              <a href="https://github.com/finaboratory" target="_blank" rel="noopener noreferrer" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors" aria-label="GitHub"><Github className="w-4 h-4" /></a>
+              <a href="mailto:hello@fineguard.co.uk" className="p-2 text-slate-500 hover:text-white rounded-lg hover:bg-white/5 transition-colors" aria-label="Email"><Mail className="w-4 h-4" /></a>
             </div>
           </div>
 

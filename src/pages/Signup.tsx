@@ -123,7 +123,7 @@ export default function Signup() {
             </Button>
             <button
               type="button"
-              onClick={() => { setSelectedIntent(''); setStep(2); }}
+              onClick={() => { setSelectedIntent('individual'); setStep(2); }}
               className="w-full text-center text-sm text-slate-500 hover:text-slate-300 transition-colors"
             >
               Skip this step
