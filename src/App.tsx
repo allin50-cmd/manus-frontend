@@ -29,6 +29,7 @@ import NotFound from './pages/NotFound';
 import DevOps from './pages/DevOps';
 import Acsp from './pages/Acsp';
 import Workflows from './pages/Workflows';
+import CrmAdmin from './pages/CrmAdmin';
 
 export default function App() {
   return (
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/devops" component={DevOps} />
             <Route path="/acsp" component={Acsp} />
             <Route path="/workflows" component={Workflows} />
+            <Route path="/crm" component={CrmAdmin} />
             <Route component={NotFound} />
           </Switch>
         </Layout>
