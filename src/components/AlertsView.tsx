@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Bell, CheckCheck, RefreshCw, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { fetchAlerts, markAlertRead, markAllAlertsRead, type AlertItem } from '../utils/api';
 

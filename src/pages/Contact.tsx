@@ -80,27 +80,27 @@ export default function Contact() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                      <Label className="text-slate-300 mb-1.5 block">Full Name</Label>
-                      <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                      <Label htmlFor="contact-name" className="text-slate-300 mb-1.5 block">Full Name</Label>
+                      <Input id="contact-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                     </div>
                     <div>
-                      <Label className="text-slate-300 mb-1.5 block">Email</Label>
-                      <Input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@company.co.uk" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                      <Label htmlFor="contact-email" className="text-slate-300 mb-1.5 block">Email</Label>
+                      <Input id="contact-email" required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@company.co.uk" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                      <Label className="text-slate-300 mb-1.5 block">Company</Label>
-                      <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Acme Ltd" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                      <Label htmlFor="contact-company" className="text-slate-300 mb-1.5 block">Company</Label>
+                      <Input id="contact-company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Acme Ltd" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                     </div>
                     <div>
-                      <Label className="text-slate-300 mb-1.5 block">Subject</Label>
-                      <Input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Compliance enquiry" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                      <Label htmlFor="contact-subject" className="text-slate-300 mb-1.5 block">Subject</Label>
+                      <Input id="contact-subject" required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Compliance enquiry" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-slate-300 mb-1.5 block">Message</Label>
-                    <Textarea required rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Tell us how we can help..." className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 resize-none" />
+                    <Label htmlFor="contact-message" className="text-slate-300 mb-1.5 block">Message</Label>
+                    <Textarea id="contact-message" required rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Tell us how we can help..." className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 resize-none" />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full sm:w-auto bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-8 py-3 rounded-full font-bold">
                     {loading ? 'Sending...' : 'Send Message'}

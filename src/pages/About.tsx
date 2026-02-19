@@ -1,6 +1,6 @@
 import { Link } from 'wouter';
 import {
-  Shield, Target, Eye, Heart, CheckCircle, ArrowRight,
+  Target, Eye, Heart, ArrowRight,
   Building2, Scale, Award,
 } from 'lucide-react';
 

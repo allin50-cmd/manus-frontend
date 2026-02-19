@@ -9,8 +9,21 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    target: 'es2020',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          icons: ['lucide-react'],
+          ui: ['clsx', 'sonner', 'wouter'],
+        },
+      },
+    },
+  },
   server: {
-    host: '0.0.0.0',
+    host: 'localhost',
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { Shield, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,10 +46,11 @@ export default function Login() {
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <Label className="text-slate-300 mb-1.5 block">Email</Label>
+              <Label htmlFor="login-email" className="text-slate-300 mb-1.5 block">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <Input
+                  id="login-email"
                   type="email"
                   required
                   value={email}
@@ -60,10 +61,11 @@ export default function Login() {
               </div>
             </div>
             <div>
-              <Label className="text-slate-300 mb-1.5 block">Password</Label>
+              <Label htmlFor="login-password" className="text-slate-300 mb-1.5 block">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <Input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -71,7 +73,7 @@ export default function Login() {
                   placeholder="Enter your password"
                   className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors" aria-label={showPassword ? 'Hide password' : 'Show password'}>
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>

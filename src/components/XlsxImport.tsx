@@ -1,9 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
-import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import {
   Upload, FileSpreadsheet, ArrowRight, ArrowLeft, CheckCircle, AlertCircle,
-  Loader2, X, ChevronDown, Users, GitBranch,
+  Loader2, X, GitBranch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +25,6 @@ type ImportStep = 'upload' | 'map' | 'preview' | 'results';
 const STEP_ORDER: ImportStep[] = ['upload', 'map', 'preview', 'results'];
 
 export default function XlsxImport({ onComplete, onViewWorkflow }: XlsxImportProps) {
-  const [, setLocation] = useLocation();
   const [step, setStep] = useState<ImportStep>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
 

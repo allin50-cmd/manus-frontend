@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { updateProfile } from '../utils/api';
 import { toast } from 'sonner';
 import {
-  User, Mail, Building2, Calendar, Shield, CreditCard,
-  Key, Bell, LogOut, ChevronRight, ArrowLeft, Loader2,
+  User, Shield, CreditCard,
+  Key, Bell, LogOut, ChevronRight, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -65,7 +65,7 @@ export function SelectValue({ placeholder }: { placeholder?: string }) {
 interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, ...props }, _ref) => {
     const { open, setOpen } = useContext(SelectContext);
     const contentRef = useRef<HTMLDivElement>(null);
 

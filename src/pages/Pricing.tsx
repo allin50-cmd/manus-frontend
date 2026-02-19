@@ -195,8 +195,8 @@ export default function Pricing() {
                   ['CSV/PDF Export', false, true, true],
                   ['Custom Branding', false, false, true],
                   ['Dedicated Support', false, false, true],
-                ] as Array<[string, string | boolean, string | boolean, string | boolean]>).map((row, i) => (
-                  <tr key={i} className="border-b border-white/5">
+                ] as Array<[string, string | boolean, string | boolean, string | boolean]>).map((row) => (
+                  <tr key={row[0]} className="border-b border-white/5">
                     <td className="py-3 text-slate-300">{row[0]}</td>
                     {[1, 2, 3].map((col) => (
                       <td key={col} className="py-3 text-center">

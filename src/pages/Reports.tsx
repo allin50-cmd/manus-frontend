@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import {
-  FileText, Download, Calendar, Building2, TrendingUp,
-  AlertTriangle, CheckCircle, Clock, Filter, BarChart3,
-  PieChart, ArrowUpRight, ArrowDownRight,
+  Download, Building2,
+  AlertTriangle, CheckCircle, Clock, BarChart3,
+  PieChart,
 } from 'lucide-react';
-import { fetchDashboard, fetchCompanies, fetchAlerts, type MonitoredCompany, type AlertItem, type DashboardStats } from '../utils/api';
+import { fetchDashboard, fetchAlerts, type MonitoredCompany, type AlertItem, type DashboardStats } from '../utils/api';
 import { clsx } from 'clsx';
 
 export default function Reports() {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import UserDashboard from '../components/UserDashboard';
@@ -19,45 +19,52 @@ export default function Dashboard() {
     if (!loading && !isAuthenticated) setLocation('/login');
   }, [loading, isAuthenticated, setLocation]);
 
-  if (loading || !isAuthenticated || !user) return null;
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout();
     setLocation('/');
-  };
+  }, [logout, setLocation]);
+
+  const handleAddCompany = useCallback(() => setView('add_company'), []);
+  const handleViewCompany = useCallback((id: string) => { setSelectedCompanyId(id); setView('company_detail'); }, []);
+  const handleViewAlerts = useCallback(() => setView('alerts'), []);
+  const handleSettings = useCallback(() => setView('settings'), []);
+  const handleBackToDashboard = useCallback(() => setView('dashboard'), []);
+  const handleCompanyAdded = useCallback((id: string) => { setSelectedCompanyId(id); setView('company_detail'); }, []);
+
+  if (loading || !isAuthenticated || !user) return null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {view === 'dashboard' && (
         <UserDashboard
           user={user}
-          onAddCompany={() => setView('add_company')}
-          onViewCompany={(id) => { setSelectedCompanyId(id); setView('company_detail'); }}
-          onViewAlerts={() => setView('alerts')}
-          onSettings={() => setView('settings')}
+          onAddCompany={handleAddCompany}
+          onViewCompany={handleViewCompany}
+          onViewAlerts={handleViewAlerts}
+          onSettings={handleSettings}
           onLogout={handleLogout}
         />
       )}
       {view === 'add_company' && (
         <AddCompanyView
-          onBack={() => setView('dashboard')}
-          onAdded={(id) => { setSelectedCompanyId(id); setView('company_detail'); }}
+          onBack={handleBackToDashboard}
+          onAdded={handleCompanyAdded}
         />
       )}
       {view === 'company_detail' && selectedCompanyId && (
         <CompanyDetailView
           companyId={selectedCompanyId}
-          onBack={() => setView('dashboard')}
-          onDeleted={() => setView('dashboard')}
+          onBack={handleBackToDashboard}
+          onDeleted={handleBackToDashboard}
         />
       )}
       {view === 'alerts' && (
-        <AlertsView onBack={() => setView('dashboard')} />
+        <AlertsView onBack={handleBackToDashboard} />
       )}
       {view === 'settings' && (
         <UserSettings
           user={user}
-          onBack={() => setView('dashboard')}
+          onBack={handleBackToDashboard}
           onLogout={handleLogout}
         />
       )}

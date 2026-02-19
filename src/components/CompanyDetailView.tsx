@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ArrowLeft, RefreshCw, Trash2, AlertCircle, CheckCircle, AlertTriangle,
+  ArrowLeft, RefreshCw, Trash2, AlertCircle,
   FileText, Clock, Shield, Building, Bell
 } from 'lucide-react';
 import {

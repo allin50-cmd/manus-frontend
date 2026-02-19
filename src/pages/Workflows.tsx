@@ -10,7 +10,7 @@ import {
 } from '../utils/api';
 import {
   GitBranch, Plus, Users, CheckSquare, Clock, AlertTriangle, X,
-  Trash2, ArrowLeft, ChevronRight, BarChart3, UserPlus, Play, Pause,
+  Trash2, ArrowLeft, ChevronRight, UserPlus, Play,
 } from 'lucide-react';
 
 type WfView = 'overview' | 'workflows' | 'create_workflow' | 'workflow_detail' | 'team';

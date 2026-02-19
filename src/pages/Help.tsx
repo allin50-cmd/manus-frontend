@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'wouter';
 import {
   HelpCircle, Search, Book, Shield, Bell, Building2, CreditCard,
-  Users, Settings, ChevronRight, ArrowRight, MessageSquare, Mail,
-  FileText, Lock,
+  ChevronRight, ArrowRight, MessageSquare, Mail,
+  Lock,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 

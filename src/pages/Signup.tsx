@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { Shield, User, Mail, Lock, Building2, ArrowRight, ArrowLeft, Eye, EyeOff, Calculator, Briefcase, FileText } from 'lucide-react';
+import { Shield, User, Mail, Lock, Building2, ArrowRight, ArrowLeft, Eye, EyeOff, Calculator, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -135,26 +135,27 @@ export default function Signup() {
           <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <Label className="text-slate-300 mb-1.5 block">Full Name</Label>
+                <Label htmlFor="signup-name" className="text-slate-300 mb-1.5 block">Full Name</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="John Smith" className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                  <Input id="signup-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="John Smith" className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                 </div>
               </div>
               <div>
-                <Label className="text-slate-300 mb-1.5 block">Email</Label>
+                <Label htmlFor="signup-email" className="text-slate-300 mb-1.5 block">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@company.co.uk" className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                  <Input id="signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@company.co.uk" className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                 </div>
               </div>
               <div>
-                <Label className="text-slate-300 mb-1.5 block">
+                <Label htmlFor="signup-company" className="text-slate-300 mb-1.5 block">
                   Company {companyRequired ? <span className="text-red-400">*</span> : <span className="text-slate-500 font-normal">(optional)</span>}
                 </Label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input
+                    id="signup-company"
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     placeholder="Acme Ltd"
@@ -164,10 +165,11 @@ export default function Signup() {
                 </div>
               </div>
               <div>
-                <Label className="text-slate-300 mb-1.5 block">Password</Label>
+                <Label htmlFor="signup-password" className="text-slate-300 mb-1.5 block">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input
+                    id="signup-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}

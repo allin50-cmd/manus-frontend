@@ -36,7 +36,6 @@ import {
   Terminal,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
   BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';

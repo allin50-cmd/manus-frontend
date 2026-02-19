@@ -1,14 +1,13 @@
-import React from 'react';
-import { CheckCircle, AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap } from 'lucide-react';
+import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap } from 'lucide-react';
 
 interface LandingViewProps {
-  onEnterVault: () => void;
+  onEnterVault?: () => void;
   onBookDemo: () => void;
   onStartMonitoring: () => void;
   hologram?: string;
 }
 
-export default function LandingView({ onEnterVault, onBookDemo, onStartMonitoring, hologram }: LandingViewProps) {
+export default function LandingView({ onBookDemo, onStartMonitoring }: LandingViewProps) {
   return (
     <div className="space-y-32 py-12">
       {/* Hero Section */}
@@ -54,8 +53,8 @@ export default function LandingView({ onEnterVault, onBookDemo, onStartMonitorin
             { value: '99.7%', label: 'Uptime' },
             { value: '250+', label: 'Accountancy Firms' },
             { value: '< 1min', label: 'Alert Response' },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <div className="text-3xl font-black text-[#5A4BFF]">{stat.value}</div>
               <div className="text-sm text-slate-400 mt-1 uppercase tracking-wider">{stat.label}</div>
             </div>
@@ -119,8 +118,8 @@ export default function LandingView({ onEnterVault, onBookDemo, onStartMonitorin
             { icon: FileText, text: 'Portfolio monitoring for accountants' },
             { icon: Zap, text: 'Real-time compliance warnings' },
             { icon: Shield, text: 'Runs quietly in the background' },
-          ].map(({ icon: Icon, text }, i) => (
-            <div key={i} className="bg-white/5 p-8 rounded-3xl border border-white/10 flex items-center gap-4 text-left hover:border-[#5A4BFF]/30 transition-colors">
+          ].map(({ icon: Icon, text }) => (
+            <div key={text} className="bg-white/5 p-8 rounded-3xl border border-white/10 flex items-center gap-4 text-left hover:border-[#5A4BFF]/30 transition-colors">
               <Icon className="text-[#5A4BFF] flex-shrink-0" size={32} />
               <span className="text-xl font-medium text-slate-200">{text}</span>
             </div>
@@ -176,8 +175,8 @@ export default function LandingView({ onEnterVault, onBookDemo, onStartMonitorin
               name: 'Rachel K.',
               role: 'Company Director, SME',
             },
-          ].map((t, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-3xl p-8">
+          ].map((t) => (
+            <div key={t.name} className="bg-white/5 border border-white/10 rounded-3xl p-8">
               <div className="flex gap-1 mb-4">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <Star key={s} size={16} className="text-yellow-400 fill-yellow-400" />

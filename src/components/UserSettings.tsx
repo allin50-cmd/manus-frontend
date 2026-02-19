@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowLeft, User, Mail, Building, Shield, Calendar, LogOut } from 'lucide-react';
 import { type UserProfile } from '../utils/api';
 import { formatDateLong } from '../utils/formatting';
