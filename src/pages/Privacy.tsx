@@ -1,5 +1,6 @@
 import { Shield, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const sections = [
   {
@@ -73,6 +74,7 @@ To exercise any of these rights, contact our Data Protection Officer at dpo@fine
 ];
 
 export default function Privacy() {
+  usePageTitle('Privacy Policy');
   return (
     <div className="min-h-screen">
       <section className="py-16 sm:py-24">

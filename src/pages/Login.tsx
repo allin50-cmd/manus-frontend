@@ -6,8 +6,10 @@ import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function Login() {
+  usePageTitle('Sign In');
   const { login, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState('');

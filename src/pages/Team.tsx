@@ -1,5 +1,6 @@
 import { Link } from 'wouter';
 import { Users, Linkedin, Mail, ArrowRight, Globe, Award, Building2 } from 'lucide-react';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface TeamMember {
   name: string;
@@ -43,6 +44,7 @@ function MemberCard({ member, large }: { member: TeamMember; large?: boolean }) 
 }
 
 export default function Team() {
+  usePageTitle('Team');
   return (
     <div className="min-h-screen">
       {/* Hero */}

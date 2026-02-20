@@ -1,3 +1,4 @@
+import { useLocation } from 'wouter';
 import { ArrowLeft, User, Mail, Building, Shield, Calendar, LogOut } from 'lucide-react';
 import { type UserProfile } from '../utils/api';
 import { formatDateLong } from '../utils/formatting';
@@ -9,6 +10,7 @@ interface UserSettingsProps {
 }
 
 export default function UserSettings({ user, onBack, onLogout }: UserSettingsProps) {
+  const [, setLocation] = useLocation();
   const formatDate = (d?: string) => formatDateLong(d);
 
   return (
@@ -82,7 +84,7 @@ export default function UserSettings({ user, onBack, onLogout }: UserSettingsPro
             </div>
           </div>
           {user.plan === 'free' && (
-            <button className="bg-blue-500 text-navy px-6 py-3 rounded-full font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+            <button onClick={() => setLocation('/pricing')} className="bg-blue-500 text-navy px-6 py-3 rounded-full font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]">
               Upgrade
             </button>
           )}

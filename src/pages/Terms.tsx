@@ -1,5 +1,6 @@
 import { FileText, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const sections = [
   {
@@ -67,6 +68,7 @@ const sections = [
 ];
 
 export default function Terms() {
+  usePageTitle('Terms of Service');
   return (
     <div className="min-h-screen">
       <section className="py-16 sm:py-24">

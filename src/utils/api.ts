@@ -600,3 +600,12 @@ export async function fetchImportHistory(): Promise<ImportHistoryItem[]> {
   if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to fetch import history');
   return data.imports;
 }
+
+export async function updateAlertPreferences(prefs: Record<string, boolean>): Promise<void> {
+  const res = await apiFetch('/alerts/preferences', {
+    method: 'PUT',
+    body: JSON.stringify(prefs),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update alert preferences');
+}

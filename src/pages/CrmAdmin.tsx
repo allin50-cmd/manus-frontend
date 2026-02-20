@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function CrmAdmin() {
+  usePageTitle('CRM');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 

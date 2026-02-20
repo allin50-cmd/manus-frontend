@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { API_BASE } from '../utils/constants';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function Contact() {
+  usePageTitle('Contact');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', company: '', subject: '', message: '' });

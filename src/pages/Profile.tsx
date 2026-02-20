@@ -11,8 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { clsx } from 'clsx';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function Profile() {
+  usePageTitle('Profile');
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<'profile' | 'security' | 'notifications' | 'billing'>('profile');
@@ -217,7 +219,7 @@ export default function Profile() {
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8">
                     <h2 className="text-xl font-bold text-white mb-4">Payment Method</h2>
                     <p className="text-sm text-slate-400 mb-4">No payment method on file.</p>
-                    <Button className="bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-full font-bold">
+                    <Button onClick={() => toast.info('Payment integration coming soon!')} className="bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-full font-bold">
                       <CreditCard className="w-4 h-4 mr-2" /> Add Payment Method
                     </Button>
                   </div>

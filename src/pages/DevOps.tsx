@@ -39,6 +39,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // ============================================================================
 // TYPES
@@ -95,6 +96,7 @@ interface ApiTestResult {
 // ============================================================================
 
 export default function DevOps() {
+  usePageTitle('DevOps');
   // Health
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);

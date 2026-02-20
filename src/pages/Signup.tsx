@@ -6,6 +6,7 @@ import { Shield, User, Mail, Lock, Building2, ArrowRight, ArrowLeft, Eye, EyeOff
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const intents = [
   {
@@ -35,6 +36,7 @@ const intents = [
 ] as const;
 
 export default function Signup() {
+  usePageTitle('Create Account');
   const { register, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<1 | 2>(1);

@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function BookDemo() {
+  usePageTitle('Book a Demo');
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -61,7 +63,6 @@ export default function BookDemo() {
         toast.error(data.error || 'Submission failed');
       }
     } catch (err) {
-      console.error('Error submitting form:', err);
       setError('Network error. Please check your connection and try again.');
       toast.error('Network error occurred');
     } finally {

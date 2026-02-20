@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
-import { addCompany, updateProfile } from '../utils/api';
+import { addCompany, updateProfile, updateAlertPreferences } from '../utils/api';
 import { toast } from 'sonner';
 import {
   Building2, Bell, CheckCircle, ArrowRight,
@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { clsx } from 'clsx';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const steps = [
   { id: 1, title: 'Welcome', icon: Sparkles },
@@ -19,6 +20,7 @@ const steps = [
 ];
 
 export default function Onboarding() {
+  usePageTitle('Get Started');
   const { user, isAuthenticated, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
@@ -74,6 +76,7 @@ export default function Onboarding() {
     } catch {
       // Non-critical — continue anyway
     }
+    try { await updateAlertPreferences(alertPrefs); } catch { /* non-critical */ }
     // Route based on intent
     if (isAdvisor) {
       setLocation('/acsp');

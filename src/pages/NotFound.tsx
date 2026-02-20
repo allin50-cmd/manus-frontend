@@ -1,8 +1,10 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Home, SearchX } from 'lucide-react';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function NotFound() {
+  usePageTitle('Page Not Found');
   const [, setLocation] = useLocation();
 
   return (

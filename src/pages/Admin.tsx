@@ -25,6 +25,7 @@ import {
   GitCommit,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface Lead {
   id: string;
@@ -84,6 +85,7 @@ interface Deployment {
 }
 
 export default function Admin() {
+  usePageTitle('Admin');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
   const [complianceBundles, setComplianceBundles] = useState<ComplianceBundle[]>([]);
@@ -115,7 +117,6 @@ export default function Admin() {
         setDeployments(data.deployments || []);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);

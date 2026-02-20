@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { ArrowLeft, Bell, CheckCheck, RefreshCw, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { fetchAlerts, markAlertRead, markAllAlertsRead, type AlertItem } from '../utils/api';
 
@@ -30,7 +31,7 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
       await markAlertRead(id);
       setAlertsList(prev => prev.map(a => a.id === id ? { ...a, read: true } : a));
     } catch (err) {
-      console.error('Failed to mark alert as read:', err);
+      toast.error('Failed to mark alert as read');
     }
   };
 
@@ -39,7 +40,7 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
       await markAllAlertsRead();
       setAlertsList(prev => prev.map(a => ({ ...a, read: true })));
     } catch (err) {
-      console.error('Failed to mark all alerts as read:', err);
+      toast.error('Failed to mark all alerts as read');
     }
   };
 

@@ -35,10 +35,9 @@ export function DeploymentStatusPanel() {
         setDeployments(data.deployments || []);
         setLastRefresh(new Date());
       } else {
-        console.error('Failed to fetch deployment status');
+        toast.error('Failed to fetch deployment status');
       }
     } catch (error) {
-      console.error('Error fetching deployment status:', error);
       toast.error('Failed to load deployment status');
     } finally {
       setLoading(false);

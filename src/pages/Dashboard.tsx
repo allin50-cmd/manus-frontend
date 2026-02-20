@@ -6,10 +6,12 @@ import AddCompanyView from '../components/AddCompanyView';
 import CompanyDetailView from '../components/CompanyDetailView';
 import AlertsView from '../components/AlertsView';
 import UserSettings from '../components/UserSettings';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 type DashView = 'dashboard' | 'add_company' | 'company_detail' | 'alerts' | 'settings';
 
 export default function Dashboard() {
+  usePageTitle('Dashboard');
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [view, setView] = useState<DashView>('dashboard');

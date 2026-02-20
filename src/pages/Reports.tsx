@@ -8,8 +8,10 @@ import {
 } from 'lucide-react';
 import { fetchDashboard, fetchAlerts, type MonitoredCompany, type AlertItem, type DashboardStats } from '../utils/api';
 import { clsx } from 'clsx';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function Reports() {
+  usePageTitle('Reports');
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [stats, setStats] = useState<DashboardStats | null>(null);

@@ -3,6 +3,7 @@ import {
   Target, Eye, Heart, ArrowRight,
   Building2, Scale, Award,
 } from 'lucide-react';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const stats = [
   { value: '10,000+', label: 'Companies Monitored' },
@@ -26,6 +27,7 @@ const timeline = [
 ];
 
 export default function About() {
+  usePageTitle('About');
   return (
     <div className="min-h-screen">
       {/* Hero */}

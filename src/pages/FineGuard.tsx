@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import LandingView from '../components/LandingView';
 import { useAuth } from '../context/AuthContext';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function FineGuard() {
+  usePageTitle('Home');
   const { isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
 

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, ArrowLeft, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface CompanyData {
   number: string;
@@ -46,6 +47,7 @@ interface ComplianceData {
 }
 
 export default function ComplianceBundle() {
+  usePageTitle('Compliance Bundle');
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -98,7 +100,6 @@ export default function ComplianceBundle() {
         toast.error(data.error || 'Submission failed');
       }
     } catch (err) {
-      console.error('Error submitting form:', err);
       setError('Network error. Please check your connection and try again.');
       toast.error('Network error occurred');
     } finally {

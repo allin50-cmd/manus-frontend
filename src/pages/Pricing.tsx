@@ -5,6 +5,7 @@ import {
   Zap, HelpCircle, Star, Crown,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 type BillingPeriod = 'monthly' | 'annual';
 
@@ -86,6 +87,7 @@ const faqs = [
 ];
 
 export default function Pricing() {
+  usePageTitle('Pricing');
   const [billing, setBilling] = useState<BillingPeriod>('annual');
 
   return (

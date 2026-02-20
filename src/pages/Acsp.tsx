@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import {
   fetchAcspClients, addAcspClient, updateAcspClient, deleteAcspClient,
@@ -11,10 +12,12 @@ import {
   Trash2, Edit3, Clock, Building2, ArrowLeft, ChevronRight,
 } from 'lucide-react';
 import XlsxImport from '../components/XlsxImport';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 type AcspView = 'dashboard' | 'clients' | 'add_client' | 'client_detail' | 'filings' | 'import';
 
 export default function Acsp() {
+  usePageTitle('ACSP Management');
   const { user, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [view, setView] = useState<AcspView>('dashboard');
@@ -90,7 +93,7 @@ export default function Acsp() {
       await updateAcspClient(client.id, { identityVerified: !client.identityVerified } as Partial<AcspClient>);
       await loadData();
     } catch (err) {
-      console.error('Failed to update verification:', err);
+      toast.error('Failed to update verification status');
     }
   };
 
@@ -99,7 +102,7 @@ export default function Acsp() {
       await updateAcspClient(client.id, { amlChecked: !client.amlChecked } as Partial<AcspClient>);
       await loadData();
     } catch (err) {
-      console.error('Failed to update AML status:', err);
+      toast.error('Failed to update AML status');
     }
   };
 
@@ -112,7 +115,7 @@ export default function Acsp() {
         setView('clients');
       }
     } catch (err) {
-      console.error('Failed to delete client:', err);
+      toast.error('Failed to delete client');
     }
   };
 
@@ -148,7 +151,7 @@ export default function Acsp() {
       }
       await loadData();
     } catch (err) {
-      console.error('Failed to update filing:', err);
+      toast.error('Failed to update filing status');
     }
   };
 
@@ -159,7 +162,7 @@ export default function Acsp() {
       const f = await fetchAcspFilings(client.id);
       setFilings(f);
     } catch (err) {
-      console.error('Failed to load filings:', err);
+      toast.error('Failed to load filings');
     }
   };
 

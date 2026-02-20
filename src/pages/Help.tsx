@@ -6,6 +6,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 interface Article {
   title: string;
@@ -44,6 +45,7 @@ const articles: Article[] = [
 ];
 
 export default function Help() {
+  usePageTitle('Help Centre');
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 

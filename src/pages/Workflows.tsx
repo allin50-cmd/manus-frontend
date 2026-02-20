@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import {
   fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow,
@@ -12,10 +13,12 @@ import {
   GitBranch, Plus, Users, CheckSquare, Clock, AlertTriangle, X,
   Trash2, ArrowLeft, ChevronRight, UserPlus, Play,
 } from 'lucide-react';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 type WfView = 'overview' | 'workflows' | 'create_workflow' | 'workflow_detail' | 'team';
 
 export default function Workflows() {
+  usePageTitle('Workflows');
   const { user, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [view, setView] = useState<WfView>('overview');
@@ -137,7 +140,7 @@ export default function Workflows() {
       }
       await loadData();
     } catch (err) {
-      console.error('Failed to update task:', err);
+      toast.error('Failed to update task status');
     }
   };
 
@@ -146,7 +149,7 @@ export default function Workflows() {
       await updateWorkflow(wfId, { status: newStatus } as Partial<Workflow>);
       await loadData();
     } catch (err) {
-      console.error('Failed to update workflow:', err);
+      toast.error('Failed to update workflow status');
     }
   };
 
@@ -159,7 +162,7 @@ export default function Workflows() {
         setView('workflows');
       }
     } catch (err) {
-      console.error('Failed to delete workflow:', err);
+      toast.error('Failed to delete workflow');
     }
   };
 
@@ -183,7 +186,7 @@ export default function Workflows() {
       await deleteTeamMember(id);
       await loadData();
     } catch (err) {
-      console.error('Failed to delete team member:', err);
+      toast.error('Failed to delete team member');
     }
   };
 
@@ -194,7 +197,7 @@ export default function Workflows() {
       const t = await fetchWorkflowTasks(wf.id);
       setTasks(t);
     } catch (err) {
-      console.error('Failed to load tasks:', err);
+      toast.error('Failed to load tasks');
     }
   };
 
