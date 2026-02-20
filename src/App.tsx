@@ -1,7 +1,9 @@
-import { Router, Route, Switch } from 'wouter';
+import { useEffect } from 'react';
+import { Router, Route, Switch, useLocation } from 'wouter';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
 
 // Pages
@@ -31,12 +33,20 @@ import Acsp from './pages/Acsp';
 import Workflows from './pages/Workflows';
 import CrmAdmin from './pages/CrmAdmin';
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 export default function App() {
   return (
+    <ErrorBoundary>
     <ThemeProvider>
     <AuthProvider>
       <Toaster position="top-right" richColors />
       <Router>
+        <ScrollToTop />
         <Layout>
           <Switch>
             <Route path="/" component={FineGuard} />
@@ -72,5 +82,6 @@ export default function App() {
       </Router>
     </AuthProvider>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
