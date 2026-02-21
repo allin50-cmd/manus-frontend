@@ -4,6 +4,7 @@ import {
   AlertTriangle, CheckCircle, Clock, Building, ChevronRight, AlertCircle
 } from 'lucide-react';
 import { fetchDashboard, type DashboardStats, type MonitoredCompany, type AlertItem, type UserProfile } from '../utils/api';
+import M365IntegrationPanel from './M365IntegrationPanel';
 
 interface UserDashboardProps {
   user: UserProfile;
@@ -204,32 +205,37 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
           )}
         </div>
 
-        {/* Recent alerts sidebar */}
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-black text-white">Recent Alerts</h2>
-            {recentAlerts.length > 0 && (
-              <button onClick={onViewAlerts} className="text-blue-400 text-sm font-semibold hover:text-blue-300">
-                View all
-              </button>
+        {/* Sidebar: Recent alerts + M365 */}
+        <div className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black text-white">Recent Alerts</h2>
+              {recentAlerts.length > 0 && (
+                <button onClick={onViewAlerts} className="text-blue-400 text-sm font-semibold hover:text-blue-300">
+                  View all
+                </button>
+              )}
+            </div>
+
+            {recentAlerts.length === 0 ? (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
+                <Bell size={32} className="text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-500 text-sm">No new alerts</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentAlerts.map((alert) => (
+                  <div key={alert.id} className={`border rounded-2xl p-4 ${getSeverityColor(alert.severity)}`}>
+                    <p className="text-white text-sm font-semibold mb-1">{alert.title}</p>
+                    <p className="text-slate-400 text-xs line-clamp-2">{alert.message}</p>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          {recentAlerts.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
-              <Bell size={32} className="text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-500 text-sm">No new alerts</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {recentAlerts.map((alert) => (
-                <div key={alert.id} className={`border rounded-2xl p-4 ${getSeverityColor(alert.severity)}`}>
-                  <p className="text-white text-sm font-semibold mb-1">{alert.title}</p>
-                  <p className="text-slate-400 text-xs line-clamp-2">{alert.message}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* M365 Integration Panel */}
+          <M365IntegrationPanel />
         </div>
       </div>
     </div>

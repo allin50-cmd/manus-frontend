@@ -190,6 +190,44 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
         </div>
       </section>
 
+      {/* Microsoft 365 Integration Section */}
+      <section className="text-center py-20 bg-white/5 rounded-[4rem] border border-white/10 backdrop-blur-sm px-6">
+        <h2 className="text-5xl md:text-6xl font-black text-white mb-8 leading-tight">
+          Integrated into <span className="text-[#5A4BFF]">Microsoft 365.</span>
+        </h2>
+        <p className="text-2xl text-slate-300 max-w-3xl mx-auto mb-16">
+          FineGuard connects directly with Teams, Outlook, and Power Automate — no context switching needed.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-12">
+          {[
+            {
+              icon: Users,
+              title: 'Teams Chat & Notifications',
+              desc: 'Get compliance alerts and risk summaries directly in Teams without leaving your workspace.',
+            },
+            {
+              icon: Mail,
+              title: 'Outlook Reminders',
+              desc: 'Deadline reminders and alerts delivered straight to your inbox with calendar integration.',
+            },
+            {
+              icon: Zap,
+              title: 'Power Automate Flows',
+              desc: 'Trigger custom workflows and integrations with your existing Microsoft cloud services.',
+            },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
+              <Icon className="w-12 h-12 text-[#5A4BFF] mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
+              <p className="text-slate-400 text-sm">{desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-slate-500 text-sm">
+          M365 integration is optional. FineGuard works perfectly as a standalone app.
+        </p>
+      </section>
+
       {/* Dashboard Preview */}
       <section className="max-w-5xl mx-auto py-20">
         <h2 className="text-5xl md:text-6xl font-black text-white text-center mb-8 leading-tight">

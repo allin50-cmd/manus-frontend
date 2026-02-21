@@ -12,11 +12,14 @@ import { Input } from '@/components/ui/input';
 import { clsx } from 'clsx';
 import { usePageTitle } from '../hooks/usePageTitle';
 
+import { Cloud } from 'lucide-react';
+
 const steps = [
   { id: 1, title: 'Welcome', icon: Sparkles },
   { id: 2, title: 'Add Company', icon: Building2 },
   { id: 3, title: 'Alerts', icon: Bell },
-  { id: 4, title: 'Ready', icon: CheckCircle },
+  { id: 4, title: 'Microsoft 365', icon: Cloud },
+  { id: 5, title: 'Ready', icon: CheckCircle },
 ];
 
 export default function Onboarding() {
@@ -43,7 +46,7 @@ export default function Onboarding() {
   const intent = user?.userIntent;
   const isAdvisor = intent === 'accountant' || intent === 'acsp_provider';
 
-  const next = () => setStep((s) => Math.min(s + 1, 4));
+  const next = () => setStep((s) => Math.min(s + 1, 5));
   const prev = () => setStep((s) => Math.max(s - 1, 1));
 
   const handleStep2Continue = async () => {
@@ -228,6 +231,40 @@ export default function Onboarding() {
           )}
 
           {step === 4 && (
+            <div>
+              <Cloud className="w-12 h-12 text-[#5A4BFF] mx-auto mb-6" />
+              <h2 className="text-2xl font-black text-white mb-2 text-center">Microsoft 365 Integration</h2>
+              <p className="text-slate-400 text-center mb-8">Connect FineGuard with Teams, Outlook, and Power Automate (optional).</p>
+              <div className="max-w-sm mx-auto space-y-4">
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <div className="flex items-start gap-3 mb-3">
+                    <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-white">Get alerts in Teams chat</p>
+                  </div>
+                  <p className="text-xs text-slate-400">Compliance alerts delivered to your team directly in Microsoft Teams.</p>
+                </div>
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <div className="flex items-start gap-3 mb-3">
+                    <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-white">Email reminders in Outlook</p>
+                  </div>
+                  <p className="text-xs text-slate-400">Filing deadline reminders sent to your inbox with calendar integration.</p>
+                </div>
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <div className="flex items-start gap-3 mb-3">
+                    <CheckCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-white">Power Automate flows</p>
+                  </div>
+                  <p className="text-xs text-slate-400">Trigger custom workflows and integrations with your cloud services.</p>
+                </div>
+              </div>
+              <p className="text-center text-xs text-slate-500 mt-6">
+                You can skip this step and set up M365 later from your dashboard.
+              </p>
+            </div>
+          )}
+
+          {step === 5 && (
             <div className="text-center">
               <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-green-400" />
@@ -249,7 +286,7 @@ export default function Onboarding() {
           )}
 
           {/* Navigation */}
-          {step < 4 && (
+          {step < 5 && (
             <div className="flex items-center justify-between mt-10">
               {step > 1 ? (
                 <button onClick={prev} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
@@ -274,7 +311,7 @@ export default function Onboarding() {
         </div>
 
         {/* Skip */}
-        {step < 4 && (
+        {step < 5 && (
           <p className="text-center mt-6">
             <button onClick={handleSkip} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
               Skip setup and go to dashboard
