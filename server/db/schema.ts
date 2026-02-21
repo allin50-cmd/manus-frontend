@@ -352,6 +352,30 @@ export const importHistory = pgTable('import_history', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// ============================================================================
+// STRIPE BILLING / SUBSCRIPTIONS TABLE
+// ============================================================================
+
+/**
+ * Subscriptions Table
+ * Tracks per-service billing (£1/mo per company per service)
+ */
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).notNull(),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+  services: varchar('services', { length: 500 }).default('').notNull(), // comma-separated: companies_house,corporate_tax,self_assessment,vat_returns
+  status: varchar('status', { length: 30 }).default('active').notNull(), // active, past_due, canceled, inactive
+  currentPeriodEnd: timestamp('current_period_end'),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+
 // Export types
 export type ImportHistory = typeof importHistory.$inferSelect;
 export type NewImportHistory = typeof importHistory.$inferInsert;

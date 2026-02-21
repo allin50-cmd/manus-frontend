@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions, chCompanies, acspClients, acspFilings, teamMembers, workflows, workflowTasks, importHistory } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, users, monitoredCompanies, alerts, sessions, chCompanies, acspClients, acspFilings, teamMembers, workflows, workflowTasks, importHistory, subscriptions } from './db/schema';
 import { desc, eq, and, count, sql } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 import { companiesHouseLocalService } from './services/companiesHouseLocal';
@@ -2460,6 +2460,236 @@ app.post('/api/webhooks/fineguard/send', async (req: Request, res: Response) => 
   } catch (error) {
     console.error('Error forwarding webhook to Azure Function:', error);
     res.status(502).json({ ok: false, error: 'Failed to forward webhook event' });
+  }
+});
+
+// ============================================================================
+// BILLING / STRIPE API ROUTES — Per-Service Model (£1/mo per company per service)
+// ============================================================================
+
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const STRIPE_API = 'https://api.stripe.com/v1';
+
+// Available services — each £1/month per company (100 pence)
+const AVAILABLE_SERVICES: Record<string, { name: string; pricePerCompany: number }> = {
+  companies_house: { name: 'Companies House', pricePerCompany: 100 },
+  corporate_tax: { name: 'Corporate Tax', pricePerCompany: 100 },
+  self_assessment: { name: 'Self Assessment', pricePerCompany: 100 },
+  vat_returns: { name: 'VAT Returns', pricePerCompany: 100 },
+};
+
+// Helper: call Stripe API
+async function stripeRequest(endpoint: string, method: string, body?: Record<string, string>) {
+  if (!STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY not configured');
+  const res = await fetch(`${STRIPE_API}${endpoint}`, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: body ? new URLSearchParams(body).toString() : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'Stripe API error');
+  return data;
+}
+
+/**
+ * GET /api/billing/subscription
+ * Return the current user's subscription info and active services
+ */
+app.get('/api/billing/subscription', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, auth.userId)).limit(1);
+    const companyCount = await db.select({ count: count() }).from(monitoredCompanies).where(eq(monitoredCompanies.userId, auth.userId));
+    const activeServices = sub?.services ? sub.services.split(',').filter(Boolean) : [];
+
+    res.json({
+      ok: true,
+      subscription: sub || null,
+      services: activeServices,
+      companyCount: companyCount[0]?.count || 0,
+      status: sub?.status || 'active',
+    });
+  } catch (error) {
+    console.error('Error fetching subscription:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch subscription' });
+  }
+});
+
+/**
+ * POST /api/billing/toggle-service
+ * Add or remove an individual service
+ */
+app.post('/api/billing/toggle-service', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { service, action } = req.body;
+    if (!service || !AVAILABLE_SERVICES[service]) {
+      return res.status(400).json({ ok: false, error: 'Invalid service' });
+    }
+    if (action !== 'add' && action !== 'remove') {
+      return res.status(400).json({ ok: false, error: 'Action must be "add" or "remove"' });
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, auth.userId)).limit(1);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    let [existingSub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, auth.userId)).limit(1);
+    const currentServices = existingSub?.services ? existingSub.services.split(',').filter(Boolean) : [];
+
+    let newServices: string[];
+    if (action === 'add') {
+      newServices = currentServices.includes(service) ? currentServices : [...currentServices, service];
+    } else {
+      newServices = currentServices.filter((s: string) => s !== service);
+    }
+    const servicesStr = newServices.join(',');
+
+    if (!STRIPE_SECRET_KEY) {
+      // Demo mode: update DB directly
+      if (!existingSub) {
+        await db.insert(subscriptions).values({
+          userId: auth.userId,
+          stripeCustomerId: `cus_demo_${auth.userId.slice(0, 8)}`,
+          services: servicesStr,
+          status: newServices.length > 0 ? 'active' : 'inactive',
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        });
+      } else {
+        await db.update(subscriptions).set({
+          services: servicesStr,
+          status: newServices.length > 0 ? 'active' : 'inactive',
+          updatedAt: new Date(),
+        }).where(eq(subscriptions.userId, auth.userId));
+      }
+      return res.json({
+        ok: true,
+        demo: true,
+        services: newServices,
+        message: `${action === 'add' ? 'Added' : 'Removed'} ${AVAILABLE_SERVICES[service].name}. Stripe not configured — demo mode.`,
+      });
+    }
+
+    // With Stripe: update subscription items
+    let customerId = existingSub?.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripeRequest('/customers', 'POST', {
+        email: user.email,
+        name: user.name,
+        'metadata[userId]': auth.userId,
+      });
+      customerId = customer.id;
+    }
+
+    // Update DB
+    if (!existingSub) {
+      await db.insert(subscriptions).values({
+        userId: auth.userId,
+        stripeCustomerId: customerId,
+        services: servicesStr,
+        status: 'active',
+      });
+    } else {
+      await db.update(subscriptions).set({
+        services: servicesStr,
+        stripeCustomerId: customerId,
+        updatedAt: new Date(),
+      }).where(eq(subscriptions.userId, auth.userId));
+    }
+
+    res.json({ ok: true, services: newServices });
+  } catch (error) {
+    console.error('Error toggling service:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update service' });
+  }
+});
+
+/**
+ * POST /api/billing/portal
+ * Redirect authenticated user to Stripe Customer Portal
+ */
+app.post('/api/billing/portal', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, auth.userId)).limit(1);
+    if (!sub?.stripeCustomerId) {
+      return res.status(400).json({ ok: false, error: 'No billing account found' });
+    }
+
+    if (!STRIPE_SECRET_KEY) {
+      return res.json({ ok: true, demo: true, message: 'Stripe not configured — demo mode.' });
+    }
+
+    const portal = await stripeRequest('/billing_portal/sessions', 'POST', {
+      customer: sub.stripeCustomerId,
+      return_url: `${req.headers.origin || 'http://localhost:5173'}/billing`,
+    });
+
+    res.json({ ok: true, url: portal.url });
+  } catch (error) {
+    console.error('Error creating portal session:', error);
+    res.status(500).json({ ok: false, error: 'Failed to create portal session' });
+  }
+});
+
+/**
+ * POST /api/billing/webhook
+ * Handle Stripe webhook events
+ */
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+  try {
+    const event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { type, data } = event;
+
+    switch (type) {
+      case 'invoice.paid': {
+        const invoice = data.object;
+        const subId = invoice.subscription;
+        if (subId) {
+          await db.update(subscriptions).set({ status: 'active', updatedAt: new Date() }).where(eq(subscriptions.stripeSubscriptionId, subId));
+        }
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const invoice = data.object;
+        const subId = invoice.subscription;
+        if (subId) {
+          await db.update(subscriptions).set({ status: 'past_due', updatedAt: new Date() }).where(eq(subscriptions.stripeSubscriptionId, subId));
+        }
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const sub = data.object;
+        const subId = sub.id;
+        await db.update(subscriptions).set({
+          status: sub.status,
+          cancelAtPeriodEnd: sub.cancel_at_period_end || false,
+          currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
+          updatedAt: new Date(),
+        }).where(eq(subscriptions.stripeSubscriptionId, subId));
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const sub = data.object;
+        const subId = sub.id;
+        await db.update(subscriptions).set({ status: 'canceled', services: '', updatedAt: new Date() }).where(eq(subscriptions.stripeSubscriptionId, subId));
+        break;
+      }
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    res.status(400).json({ error: 'Webhook processing failed' });
   }
 });
 

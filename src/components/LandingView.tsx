@@ -300,57 +300,38 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       {/* Pricing Teaser */}
       <section id="pricing" className="py-20 max-w-5xl mx-auto px-6">
         <h2 className="text-5xl font-black text-white text-center mb-4">
-          Simple, transparent <span className="text-[#5A4BFF]">pricing.</span>
+          Pay only for <span className="text-[#5A4BFF]">what you monitor.</span>
         </h2>
-        <p className="text-xl text-slate-400 text-center mb-16">Start free, upgrade as you grow.</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
-            <h3 className="text-lg font-bold text-slate-300 uppercase tracking-wider mb-2">Free</h3>
-            <div className="text-4xl font-black text-white mb-4">$0<span className="text-lg text-slate-500">/mo</span></div>
-            <ul className="text-slate-400 space-y-2 text-sm mb-8">
-              <li>Up to 5 companies</li>
-              <li>Email alerts</li>
-              <li>Basic dashboard</li>
-            </ul>
-            <button
-              onClick={() => onStartWithIntent ? onStartWithIntent('', 'Free') : onStartMonitoring()}
-              className="w-full py-3 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-colors"
-            >
-              Get Started
-            </button>
-          </div>
-          <div className="bg-[#5A4BFF]/10 border-2 border-[#5A4BFF]/40 rounded-3xl p-8 text-center relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#5A4BFF] text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider">
-              Most Popular
+        <p className="text-xl text-slate-400 text-center mb-16">
+          Each service is <span className="text-white font-semibold">£1 per month per company</span>. Pick what you need.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { name: 'Companies House', features: ['Annual return deadlines', 'Accounts filing dates', 'Director changes'] },
+            { name: 'Corporate Tax', features: ['Corporation tax returns', 'Payment deadlines', 'HMRC compliance'] },
+            { name: 'Self Assessment', features: ['Tax return deadlines', 'Payment due dates', 'Quarterly reminders'] },
+            { name: 'VAT Returns', features: ['VAT return deadlines', 'Payment schedules', 'MTD compliance'] },
+          ].map((service) => (
+            <div key={service.name} className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center hover:border-[#5A4BFF]/30 transition-colors">
+              <h3 className="text-lg font-bold text-white mb-2">{service.name}</h3>
+              <div className="text-3xl font-black text-white mb-1">£1</div>
+              <p className="text-xs text-slate-500 mb-4">/month per company</p>
+              <ul className="text-slate-400 space-y-1.5 text-sm mb-6 text-left">
+                {service.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <span className="text-[#5A4BFF] mt-0.5">•</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => onStartWithIntent ? onStartWithIntent('', service.name) : onStartMonitoring()}
+                className="w-full py-2.5 rounded-full bg-[#5A4BFF] text-white font-bold text-sm hover:bg-[#6B5BFF] transition-colors"
+              >
+                Add Service
+              </button>
             </div>
-            <h3 className="text-lg font-bold text-slate-300 uppercase tracking-wider mb-2">Professional</h3>
-            <div className="text-4xl font-black text-white mb-4">$49<span className="text-lg text-slate-500">/mo</span></div>
-            <ul className="text-slate-400 space-y-2 text-sm mb-8">
-              <li>Unlimited companies</li>
-              <li>ACSP client management</li>
-              <li>Workflow & team tools</li>
-              <li>XLSX bulk import</li>
-            </ul>
-            <button
-              onClick={() => onStartWithIntent ? onStartWithIntent('', 'Professional') : onStartMonitoring()}
-              className="w-full py-3 rounded-full bg-[#5A4BFF] text-white font-bold hover:bg-[#6B5BFF] transition-colors"
-            >
-              Start Free Trial
-            </button>
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
-            <h3 className="text-lg font-bold text-slate-300 uppercase tracking-wider mb-2">Enterprise</h3>
-            <div className="text-4xl font-black text-white mb-4">Custom</div>
-            <ul className="text-slate-400 space-y-2 text-sm mb-8">
-              <li>White-label options</li>
-              <li>API access</li>
-              <li>Dedicated support</li>
-              <li>Custom integrations</li>
-            </ul>
-            <button onClick={() => onBookDemo()} className="w-full py-3 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-colors">
-              Contact Sales
-            </button>
-          </div>
+          ))}
         </div>
         <p className="text-center mt-8">
           <a href="/pricing" className="text-[#5A4BFF] font-medium hover:underline">
