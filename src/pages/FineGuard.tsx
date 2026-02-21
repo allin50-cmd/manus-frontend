@@ -12,6 +12,8 @@ export default function FineGuard() {
   const search = useSearch();
   const [signupOpen, setSignupOpen] = useState(false);
   const [signupEmail, setSignupEmail] = useState('');
+  const [signupIntent, setSignupIntent] = useState('');
+  const [signupPlan, setSignupPlan] = useState('');
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -25,7 +27,6 @@ export default function FineGuard() {
       const params = new URLSearchParams(search);
       if (params.get('signup') === 'true') {
         setSignupOpen(true);
-        // Clean up the URL
         window.history.replaceState({}, '', '/');
       }
     }
@@ -34,6 +35,8 @@ export default function FineGuard() {
   // Listen for custom event from Header "Get Started" button
   const handleOpenSignup = useCallback(() => {
     setSignupEmail('');
+    setSignupIntent('');
+    setSignupPlan('');
     setSignupOpen(true);
   }, []);
 
@@ -55,13 +58,21 @@ export default function FineGuard() {
 
   if (isAuthenticated) return null;
 
+  const openModal = (opts: { email?: string; intent?: string; plan?: string } = {}) => {
+    setSignupEmail(opts.email || '');
+    setSignupIntent(opts.intent || '');
+    setSignupPlan(opts.plan || '');
+    setSignupOpen(true);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4">
       <LandingView
         onEnterVault={() => setLocation('/login')}
         onBookDemo={() => setLocation('/book-demo')}
-        onStartMonitoring={() => { setSignupEmail(''); setSignupOpen(true); }}
-        onStartWithEmail={(email) => { setSignupEmail(email); setSignupOpen(true); }}
+        onStartMonitoring={() => openModal()}
+        onStartWithEmail={(email) => openModal({ email })}
+        onStartWithIntent={(intent, plan) => openModal({ intent, plan })}
       />
       <LandingSignupModal
         open={signupOpen}
@@ -71,6 +82,8 @@ export default function FineGuard() {
           setLocation('/onboarding');
         }}
         initialEmail={signupEmail}
+        initialIntent={signupIntent as any}
+        selectedPlan={signupPlan}
       />
     </div>
   );

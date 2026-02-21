@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import {
   Shield, User, Mail, Lock, Building2, ArrowRight, ArrowLeft,
-  Eye, EyeOff, Calculator, FileText, X, CheckCircle, Sparkles, Users,
+  Eye, EyeOff, Calculator, FileText, X, CheckCircle, Sparkles,
+  Users, Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,56 +38,82 @@ const intents = [
   },
 ] as const;
 
+type IntentKey = (typeof intents)[number]['key'] | 'individual' | '';
+
 interface LandingSignupModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   /** Pre-fill email and skip to step 2 */
   initialEmail?: string;
+  /** Pre-select intent and skip to step 2 */
+  initialIntent?: IntentKey;
+  /** Show a plan badge on the form (e.g. "Professional") */
+  selectedPlan?: string;
 }
 
-export default function LandingSignupModal({ open, onClose, onSuccess, initialEmail }: LandingSignupModalProps) {
+export default function LandingSignupModal({
+  open,
+  onClose,
+  onSuccess,
+  initialEmail,
+  initialIntent,
+  selectedPlan,
+}: LandingSignupModalProps) {
   const { register } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [selectedIntent, setSelectedIntent] = useState('');
+  const [selectedIntent, setSelectedIntent] = useState<IntentKey>('');
+  const [advancingFrom, setAdvancingFrom] = useState<IntentKey>(''); // card being auto-advanced
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset state when modal opens; skip to step 2 if email provided
+  // Reset and configure when modal opens
   useEffect(() => {
     if (open) {
-      setSelectedIntent('');
       setName('');
       setEmail(initialEmail || '');
       setCompany('');
       setPassword('');
       setShowPassword(false);
       setLoading(false);
-      if (initialEmail) {
-        setSelectedIntent('individual');
+      setAdvancingFrom('');
+
+      if (autoAdvanceTimer.current) {
+        clearTimeout(autoAdvanceTimer.current);
+      }
+
+      const hasSkipToStep2 = initialEmail || initialIntent;
+      if (hasSkipToStep2) {
+        setSelectedIntent(initialIntent || 'individual');
         setStep(2);
       } else {
+        setSelectedIntent('');
         setStep(1);
       }
+    } else {
+      // Clear any pending timer on close
+      if (autoAdvanceTimer.current) {
+        clearTimeout(autoAdvanceTimer.current);
+        setAdvancingFrom('');
+      }
     }
-  }, [open, initialEmail]);
+  }, [open, initialEmail, initialIntent]);
 
-  // Focus first interactive element when step changes
+  // Auto-focus name input when step 2 appears
   useEffect(() => {
     if (open && step === 2) {
-      // Small delay to let the DOM render
       const t = setTimeout(() => nameInputRef.current?.focus(), 80);
       return () => clearTimeout(t);
     }
   }, [open, step]);
 
-  // Lock body scroll when open
+  // Lock body scroll
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -96,7 +123,7 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  // Close on Escape key
+  // Escape key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && step !== 3) {
       onClose();
@@ -114,6 +141,17 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
 
   const companyRequired = selectedIntent === 'accountant' || selectedIntent === 'acsp_provider';
   const pwStrength = password.length === 0 ? 0 : password.length < 8 ? 1 : password.length < 12 ? 2 : 3;
+
+  // Click a card: highlight it and auto-advance after a short delay
+  const handleCardClick = (key: IntentKey) => {
+    if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+    setSelectedIntent(key);
+    setAdvancingFrom(key);
+    autoAdvanceTimer.current = setTimeout(() => {
+      setAdvancingFrom('');
+      setStep(2);
+    }, 380);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,19 +174,23 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
     }
   };
 
+  const intentLabel = intents.find((i) => i.key === selectedIntent)?.title;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Create account">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Create account">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={step === 3 ? undefined : onClose}
       />
 
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        className="relative w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto bg-[#0F1019] border border-white/10 rounded-3xl shadow-2xl shadow-[#5A4BFF]/10 animate-in slide-in-from-bottom-4 fade-in duration-300"
-      >
+      {/* Modal — full-screen on mobile, card on sm+ */}
+      <div className="relative w-full sm:max-w-lg sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto bg-[#0F1019] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl shadow-[#5A4BFF]/10 animate-in slide-in-from-bottom-4 fade-in duration-300">
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
+
         {/* Close button */}
         {step !== 3 && (
           <button
@@ -160,14 +202,20 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
           </button>
         )}
 
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           {/* Header */}
           {step !== 3 && (
             <div className="text-center mb-6">
               <Shield className="w-10 h-10 text-[#5A4BFF] mx-auto mb-3" />
               <h2 className="text-2xl font-black text-white mb-1">Get Started Free</h2>
-              <p className="text-slate-400 text-sm">
-                {step === 1 ? 'What best describes you?' : 'Create your account'}
+              {/* Plan badge */}
+              {selectedPlan && step === 2 && (
+                <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-[#5A4BFF]/15 border border-[#5A4BFF]/30 text-xs font-bold text-[#5A4BFF] uppercase tracking-wide">
+                  <Star className="w-3 h-3" /> {selectedPlan} plan selected
+                </div>
+              )}
+              <p className="text-slate-400 text-sm mt-1">
+                {step === 1 ? 'What best describes you?' : intentLabel ? `Signing up as: ${intentLabel}` : 'Create your account'}
               </p>
             </div>
           )}
@@ -184,34 +232,56 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
           {step === 1 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {intents.map(({ key, icon: Icon, title, description }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSelectedIntent(key)}
-                    className={`text-left p-4 rounded-2xl border transition-all ${
-                      selectedIntent === key
-                        ? 'border-[#5A4BFF] bg-[#5A4BFF]/10'
-                        : 'border-white/10 bg-white/5 hover:border-[#5A4BFF]/40'
-                    }`}
-                  >
-                    <Icon className={`w-7 h-7 mb-2 ${selectedIntent === key ? 'text-[#5A4BFF]' : 'text-slate-400'}`} />
-                    <div className="text-white font-bold text-sm">{title}</div>
-                    <div className="text-slate-500 text-xs mt-0.5">{description}</div>
-                  </button>
-                ))}
+                {intents.map(({ key, icon: Icon, title, description }) => {
+                  const isSelected = selectedIntent === key;
+                  const isAdvancing = advancingFrom === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleCardClick(key)}
+                      disabled={!!advancingFrom}
+                      className={`text-left p-4 rounded-2xl border transition-all relative overflow-hidden ${
+                        isSelected
+                          ? 'border-[#5A4BFF] bg-[#5A4BFF]/10'
+                          : 'border-white/10 bg-white/5 hover:border-[#5A4BFF]/40'
+                      }`}
+                    >
+                      {/* Advancing overlay */}
+                      {isAdvancing && (
+                        <div className="absolute inset-0 bg-[#5A4BFF]/10 flex items-center justify-center rounded-2xl animate-in fade-in duration-150">
+                          <CheckCircle className="w-8 h-8 text-[#5A4BFF] animate-in zoom-in duration-200" />
+                        </div>
+                      )}
+                      <Icon className={`w-7 h-7 mb-2 transition-colors ${isSelected ? 'text-[#5A4BFF]' : 'text-slate-400'}`} />
+                      <div className="text-white font-bold text-sm">{title}</div>
+                      <div className="text-slate-500 text-xs mt-0.5">{description}</div>
+                    </button>
+                  );
+                })}
               </div>
-              <Button
-                onClick={() => setStep(2)}
-                disabled={!selectedIntent}
-                className="w-full bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white py-3 rounded-full font-bold text-base mt-2"
-              >
-                Continue <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+
+              {/* Manual continue (fallback if no card selected yet) */}
+              {!advancingFrom && (
+                <Button
+                  onClick={() => setStep(2)}
+                  disabled={!selectedIntent}
+                  className="w-full bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white py-3 rounded-full font-bold text-base mt-2"
+                >
+                  Continue <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+              {advancingFrom && (
+                <div className="w-full py-3 rounded-full bg-[#5A4BFF]/20 text-center text-sm text-[#5A4BFF] font-bold animate-pulse">
+                  Setting up your account…
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => { setSelectedIntent('individual'); setStep(2); }}
-                className="w-full text-center text-sm text-slate-500 hover:text-slate-300 transition-colors"
+                disabled={!!advancingFrom}
+                className="w-full text-center text-sm text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
               >
                 Skip this step
               </button>
@@ -299,7 +369,7 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
                     {[1, 2, 3].map((level) => (
                       <div
                         key={level}
-                        className={`h-1 flex-1 rounded-full ${
+                        className={`h-1 flex-1 rounded-full transition-colors ${
                           pwStrength >= level
                             ? level === 1 ? 'bg-red-500' : level === 2 ? 'bg-amber-500' : 'bg-green-500'
                             : 'bg-white/10'
@@ -316,7 +386,7 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
               <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => { setAdvancingFrom(''); setStep(1); }}
                   variant="outline"
                   className="border-white/10 text-slate-300 hover:bg-white/5 rounded-full"
                 >
@@ -336,7 +406,6 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
                 <Link href="/terms" className="text-[#5A4BFF] hover:underline">Terms</Link> and{' '}
                 <Link href="/privacy" className="text-[#5A4BFF] hover:underline">Privacy Policy</Link>.
               </p>
-              {/* Trust signal */}
               <div className="flex items-center justify-center gap-4 pt-1 text-xs text-slate-500">
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 256-bit SSL</span>
                 <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> No credit card</span>
@@ -347,7 +416,7 @@ export default function LandingSignupModal({ open, onClose, onSuccess, initialEm
           {/* Step 3: Success */}
           {step === 3 && (
             <div className="text-center py-4">
-              <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
+              <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-300">
                 <CheckCircle className="w-10 h-10 text-green-400" />
               </div>
               <h2 className="text-3xl font-black text-white mb-3">Welcome to FineGuard!</h2>

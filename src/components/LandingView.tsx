@@ -7,10 +7,12 @@ interface LandingViewProps {
   onStartMonitoring: () => void;
   /** Open signup modal with email pre-filled */
   onStartWithEmail?: (email: string) => void;
+  /** Open signup modal with intent + optional plan pre-selected */
+  onStartWithIntent?: (intent: string, plan?: string) => void;
   hologram?: string;
 }
 
-export default function LandingView({ onBookDemo, onStartMonitoring, onStartWithEmail }: LandingViewProps) {
+export default function LandingView({ onBookDemo, onStartMonitoring, onStartWithEmail, onStartWithIntent }: LandingViewProps) {
   const [heroEmail, setHeroEmail] = useState('');
 
   const handleHeroEmailSubmit = (e: React.FormEvent) => {
@@ -227,20 +229,38 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
           Built for <span className="text-[#5A4BFF]">businesses and advisors.</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center">
+          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center flex flex-col">
             <Users size={64} className="mx-auto mb-6 text-[#5A4BFF]" />
             <h3 className="text-2xl font-black mb-4">Accountants & Advisors</h3>
-            <p className="text-slate-400">Protect your entire client base while reducing admin workload.</p>
+            <p className="text-slate-400 flex-1">Protect your entire client base while reducing admin workload.</p>
+            <button
+              onClick={() => onStartWithIntent ? onStartWithIntent('accountant') : onStartMonitoring()}
+              className="mt-6 w-full py-3 rounded-full bg-[#5A4BFF]/15 border border-[#5A4BFF]/30 text-[#5A4BFF] font-bold text-sm hover:bg-[#5A4BFF]/25 transition-colors flex items-center justify-center gap-2"
+            >
+              Get Started <ArrowRight size={16} />
+            </button>
           </div>
-          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center">
+          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center flex flex-col">
             <Briefcase size={64} className="mx-auto mb-6 text-[#5A4BFF]" />
             <h3 className="text-2xl font-black mb-4">Company Formation Agents</h3>
-            <p className="text-slate-400">Add compliance protection as a new client service.</p>
+            <p className="text-slate-400 flex-1">Add compliance protection as a new client service.</p>
+            <button
+              onClick={() => onStartWithIntent ? onStartWithIntent('acsp_provider') : onStartMonitoring()}
+              className="mt-6 w-full py-3 rounded-full bg-[#5A4BFF]/15 border border-[#5A4BFF]/30 text-[#5A4BFF] font-bold text-sm hover:bg-[#5A4BFF]/25 transition-colors flex items-center justify-center gap-2"
+            >
+              Get Started <ArrowRight size={16} />
+            </button>
           </div>
-          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center">
+          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center flex flex-col">
             <Shield size={64} className="mx-auto mb-6 text-[#5A4BFF]" />
             <h3 className="text-2xl font-black mb-4">SMEs & Directors</h3>
-            <p className="text-slate-400">Stay compliant without chasing paperwork.</p>
+            <p className="text-slate-400 flex-1">Stay compliant without chasing paperwork.</p>
+            <button
+              onClick={() => onStartWithIntent ? onStartWithIntent('business_owner') : onStartMonitoring()}
+              className="mt-6 w-full py-3 rounded-full bg-[#5A4BFF]/15 border border-[#5A4BFF]/30 text-[#5A4BFF] font-bold text-sm hover:bg-[#5A4BFF]/25 transition-colors flex items-center justify-center gap-2"
+            >
+              Get Started <ArrowRight size={16} />
+            </button>
           </div>
         </div>
       </section>
@@ -260,7 +280,10 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
               <li>Email alerts</li>
               <li>Basic dashboard</li>
             </ul>
-            <button onClick={onStartMonitoring} className="w-full py-3 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-colors">
+            <button
+              onClick={() => onStartWithIntent ? onStartWithIntent('', 'Free') : onStartMonitoring()}
+              className="w-full py-3 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-colors"
+            >
               Get Started
             </button>
           </div>
@@ -276,7 +299,10 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
               <li>Workflow & team tools</li>
               <li>XLSX bulk import</li>
             </ul>
-            <button onClick={onStartMonitoring} className="w-full py-3 rounded-full bg-[#5A4BFF] text-white font-bold hover:bg-[#6B5BFF] transition-colors">
+            <button
+              onClick={() => onStartWithIntent ? onStartWithIntent('', 'Professional') : onStartMonitoring()}
+              className="w-full py-3 rounded-full bg-[#5A4BFF] text-white font-bold hover:bg-[#6B5BFF] transition-colors"
+            >
               Start Free Trial
             </button>
           </div>
