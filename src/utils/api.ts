@@ -619,3 +619,55 @@ export async function changePassword(currentPassword: string, newPassword: strin
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to change password');
 }
+
+// ============================================================================
+// M365 INTEGRATION API
+// ============================================================================
+
+export interface M365Status {
+  configured: boolean;
+  tenantId: string | null;
+  clientId: string | null;
+  services: {
+    graphApi: boolean;
+    teamsBot: boolean;
+    outlookNotifications: boolean;
+    webhookForwarding: boolean;
+  };
+}
+
+export interface M365ConfigStep {
+  step: number;
+  title: string;
+  description: string;
+  completed: boolean;
+}
+
+export async function fetchM365Status(): Promise<M365Status> {
+  const res = await apiFetch('/m365/status');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to fetch M365 status');
+  return {
+    configured: data.configured,
+    tenantId: data.tenantId,
+    clientId: data.clientId,
+    services: data.services,
+  };
+}
+
+export async function fetchM365ConfigGuide(): Promise<{ configured: boolean; steps: M365ConfigStep[] }> {
+  const res = await apiFetch('/m365/config-guide');
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to fetch M365 config guide');
+  return { configured: data.configured, steps: data.steps };
+}
+
+export async function sendM365TestNotification(channel: 'outlook' | 'teams', target: string): Promise<{ message: string }> {
+  const res = await apiFetch('/m365/test-notification', {
+    method: 'POST',
+    body: JSON.stringify({ channel, target }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Failed to send test notification');
+  return { message: data.message };
+}

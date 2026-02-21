@@ -9,6 +9,7 @@ import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, user
 import { desc, eq, and, count, sql } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 import { companiesHouseLocalService } from './services/companiesHouseLocal';
+import { getM365Status, sendTestNotification, loadM365Config } from './services/m365';
 import crypto from 'crypto';
 
 // Load environment variables
@@ -2460,6 +2461,104 @@ app.post('/api/webhooks/fineguard/send', async (req: Request, res: Response) => 
   } catch (error) {
     console.error('Error forwarding webhook to Azure Function:', error);
     res.status(502).json({ ok: false, error: 'Failed to forward webhook event' });
+  }
+});
+
+// ============================================================================
+// M365 INTEGRATION API ROUTES
+// ============================================================================
+
+/**
+ * GET /api/m365/status
+ * Returns the current M365 integration configuration status.
+ * Shows which services are available without exposing secrets.
+ */
+app.get('/api/m365/status', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const status = getM365Status();
+    res.json({ ok: true, ...status });
+  } catch (error) {
+    console.error('Error fetching M365 status:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch M365 status' });
+  }
+});
+
+/**
+ * POST /api/m365/test-notification
+ * Send a test notification via the configured M365 channel (outlook or teams).
+ * Body: { channel: 'outlook' | 'teams', target: 'email@example.com' }
+ */
+app.post('/api/m365/test-notification', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { channel, target } = req.body;
+    if (!channel || !target) {
+      return res.status(400).json({ ok: false, error: 'channel and target are required' });
+    }
+
+    const result = await sendTestNotification(channel, target);
+    res.json({ ok: result.success, message: result.message });
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    res.status(500).json({ ok: false, error: 'Failed to send test notification' });
+  }
+});
+
+/**
+ * GET /api/m365/config-guide
+ * Returns setup instructions for the M365 integration.
+ */
+app.get('/api/m365/config-guide', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const config = loadM365Config();
+
+    res.json({
+      ok: true,
+      configured: config !== null,
+      steps: [
+        {
+          step: 1,
+          title: 'Register Azure AD App',
+          description: 'Go to Azure Portal → Azure Active Directory → App registrations → New registration',
+          completed: config !== null,
+        },
+        {
+          step: 2,
+          title: 'Configure API Permissions',
+          description: 'Add Microsoft Graph permissions: Mail.Send, Calendars.ReadWrite, ChannelMessage.Send, User.Read.All',
+          completed: config !== null,
+        },
+        {
+          step: 3,
+          title: 'Set Environment Variables',
+          description: 'Set AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET in your environment',
+          completed: config !== null,
+        },
+        {
+          step: 4,
+          title: 'Install Teams App',
+          description: 'Package the Teams manifest and install via Teams Admin Center or AppSource',
+          completed: false,
+        },
+        {
+          step: 5,
+          title: 'Configure Webhooks',
+          description: 'Set AZURE_FUNCTION_URL and FINEGUARD_WEBHOOK_SECRET for Power Automate integration',
+          completed: !!(process.env['AZURE_FUNCTION_URL'] && process.env['FINEGUARD_WEBHOOK_SECRET']),
+        },
+      ],
+    });
+  } catch (error) {
+    console.error('Error fetching M365 config guide:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch config guide' });
   }
 });
 
