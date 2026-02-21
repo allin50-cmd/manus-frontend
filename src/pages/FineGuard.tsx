@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import LandingView from '../components/LandingView';
+import LandingSignupModal from '../components/LandingSignupModal';
 import { useAuth } from '../context/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -8,6 +9,7 @@ export default function FineGuard() {
   usePageTitle('Home');
   const { isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
+  const [signupOpen, setSignupOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -33,7 +35,15 @@ export default function FineGuard() {
       <LandingView
         onEnterVault={() => setLocation('/login')}
         onBookDemo={() => setLocation('/book-demo')}
-        onStartMonitoring={() => setLocation('/signup')}
+        onStartMonitoring={() => setSignupOpen(true)}
+      />
+      <LandingSignupModal
+        open={signupOpen}
+        onClose={() => setSignupOpen(false)}
+        onSuccess={() => {
+          setSignupOpen(false);
+          setLocation('/onboarding');
+        }}
       />
     </div>
   );
