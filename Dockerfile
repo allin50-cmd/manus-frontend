@@ -8,32 +8,27 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@8 --activate
-
 # Copy dependency manifests first (Docker layer caching)
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
 # Install all dependencies (dev + prod) for the build step
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Build the Vite frontend → /app/dist
-RUN pnpm build
+RUN npm run build
 
 # ---------- Stage 2: Production-only dependencies ----------
 FROM node:20-alpine AS deps
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@8 --activate
-
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
 # Install production dependencies only (no devDependencies)
-RUN pnpm install --frozen-lockfile --prod
+RUN npm ci --production
 
 # ---------- Stage 3: Final slim runtime image ----------
 FROM node:20-alpine AS runtime
