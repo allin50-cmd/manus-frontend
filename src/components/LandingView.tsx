@@ -14,11 +14,21 @@ interface LandingViewProps {
 
 export default function LandingView({ onBookDemo, onStartMonitoring, onStartWithEmail, onStartWithIntent }: LandingViewProps) {
   const [heroEmail, setHeroEmail] = useState('');
+  const [ctaEmail, setCtaEmail] = useState('');
 
   const handleHeroEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (heroEmail.trim() && onStartWithEmail) {
       onStartWithEmail(heroEmail.trim());
+    } else {
+      onStartMonitoring();
+    }
+  };
+
+  const handleCtaEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (ctaEmail.trim() && onStartWithEmail) {
+      onStartWithEmail(ctaEmail.trim());
     } else {
       onStartMonitoring();
     }
@@ -328,28 +338,41 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       </section>
 
       {/* Final CTA */}
-      <section className="text-center py-20 bg-white/5 rounded-[4rem] border border-white/10">
+      <section className="text-center py-20 px-6 bg-white/5 rounded-[4rem] border border-white/10">
         <h2 className="text-6xl font-black text-white mb-6">
           Protect companies before <span className="text-[#5A4BFF]">problems start.</span>
         </h2>
-        <p className="text-2xl text-slate-300 mb-12">
+        <p className="text-2xl text-slate-300 mb-10">
           Start monitoring today and eliminate compliance surprises.
         </p>
-        <div className="flex flex-wrap justify-center gap-6">
+
+        {/* Inline email capture — mirrors hero */}
+        <form onSubmit={handleCtaEmailSubmit} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto mb-6">
+          <div className="relative flex-1 w-full">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <input
+              type="email"
+              value={ctaEmail}
+              onChange={(e) => setCtaEmail(e.target.value)}
+              placeholder="Enter your work email"
+              className="w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 border-white/10 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:border-[#5A4BFF]/60 focus:ring-2 focus:ring-[#5A4BFF]/20 transition-all"
+            />
+          </div>
           <button
-            onClick={onStartMonitoring}
-            className="bg-[#5A4BFF] text-white px-12 py-6 rounded-[3rem] font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-4"
+            type="submit"
+            className="bg-[#5A4BFF] text-white px-10 py-5 rounded-full font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-wide whitespace-nowrap"
           >
-            Get Started Free <ArrowRight size={24} />
+            Get Started Free <ArrowRight size={22} />
           </button>
-          <button
-            onClick={onBookDemo}
-            className="bg-white/10 border-2 border-white/20 text-white px-12 py-6 rounded-[3rem] font-black text-lg hover:bg-white/20 transition-all"
-          >
-            Talk to Sales
-          </button>
-        </div>
-        <p className="text-slate-500 text-sm mt-6">No credit card required. Set up in under 2 minutes.</p>
+        </form>
+
+        <button
+          onClick={onBookDemo}
+          className="text-slate-400 hover:text-white text-sm font-medium underline underline-offset-4 transition-colors"
+        >
+          Or talk to sales instead
+        </button>
+        <p className="text-slate-500 text-sm mt-4">No credit card required. Set up in under 2 minutes.</p>
       </section>
     </div>
   );

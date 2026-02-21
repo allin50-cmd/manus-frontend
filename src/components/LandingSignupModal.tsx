@@ -72,6 +72,7 @@ export default function LandingSignupModal({
   const [loading, setLoading] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const directionRef = useRef<'forward' | 'back'>('forward');
 
   // Reset and configure when modal opens
   useEffect(() => {
@@ -148,6 +149,7 @@ export default function LandingSignupModal({
     setSelectedIntent(key);
     setAdvancingFrom(key);
     autoAdvanceTimer.current = setTimeout(() => {
+      directionRef.current = 'forward';
       setAdvancingFrom('');
       setStep(2);
     }, 380);
@@ -175,6 +177,7 @@ export default function LandingSignupModal({
   };
 
   const intentLabel = intents.find((i) => i.key === selectedIntent)?.title;
+  const slideClass = directionRef.current === 'forward' ? 'slide-in-from-right-4' : 'slide-in-from-left-4';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Create account">
@@ -228,6 +231,9 @@ export default function LandingSignupModal({
             </div>
           )}
 
+          {/* Step content — keyed so every step change triggers a directional slide */}
+          <div key={step} className={`animate-in fade-in ${slideClass} duration-200`}>
+
           {/* Step 1: Intent Selection */}
           {step === 1 && (
             <div className="space-y-4">
@@ -264,7 +270,7 @@ export default function LandingSignupModal({
               {/* Manual continue (fallback if no card selected yet) */}
               {!advancingFrom && (
                 <Button
-                  onClick={() => setStep(2)}
+                  onClick={() => { directionRef.current = 'forward'; setStep(2); }}
                   disabled={!selectedIntent}
                   className="w-full bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white py-3 rounded-full font-bold text-base mt-2"
                 >
@@ -279,7 +285,7 @@ export default function LandingSignupModal({
 
               <button
                 type="button"
-                onClick={() => { setSelectedIntent('individual'); setStep(2); }}
+                onClick={() => { directionRef.current = 'forward'; setSelectedIntent('individual'); setStep(2); }}
                 disabled={!!advancingFrom}
                 className="w-full text-center text-sm text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
               >
@@ -386,7 +392,7 @@ export default function LandingSignupModal({
               <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
-                  onClick={() => { setAdvancingFrom(''); setStep(1); }}
+                  onClick={() => { directionRef.current = 'back'; setAdvancingFrom(''); setStep(1); }}
                   variant="outline"
                   className="border-white/10 text-slate-300 hover:bg-white/5 rounded-full"
                 >
@@ -431,6 +437,8 @@ export default function LandingSignupModal({
               </Button>
             </div>
           )}
+
+          </div>{/* end keyed step container */}
 
           {/* Sign in link */}
           {step !== 3 && (
