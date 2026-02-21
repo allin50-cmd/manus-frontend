@@ -57,14 +57,15 @@ function setCachedToken(key: string, token: string, expiresOn: Date): void {
 
 export async function getAppToken(config: AzureADConfig): Promise<TokenResponse> {
   const cacheKey = `app:${config.clientId}:${config.tenantId}`;
-  const cached = getCachedToken(cacheKey);
-  if (cached) {
+  const cachedEntry = tokenCache.get(cacheKey);
+  if (cachedEntry && Date.now() <= cachedEntry.expiresOn - 5 * 60 * 1000) {
     return {
-      accessToken: cached,
-      expiresOn: new Date(tokenCache.get(cacheKey)!.expiresOn),
+      accessToken: cachedEntry.token,
+      expiresOn: new Date(cachedEntry.expiresOn),
       tokenType: "Bearer",
     };
   }
+  tokenCache.delete(cacheKey);
 
   const msalApp = new ConfidentialClientApplication(buildMsalConfig(config));
 

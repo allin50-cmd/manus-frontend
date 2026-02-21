@@ -8,9 +8,6 @@
 //
 // Deployment:
 //   Azure Functions Node.js v4 runtime (TypeScript)
-//
-// Dependencies:
-//   npm install @azure/functions
 // ============================================================
 
 import {
@@ -19,31 +16,43 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from "@azure/functions";
+import type { WebhookPayload } from "../types/index.js";
 
 // ── Configuration ───────────────────────────────────────────
 
 const WEBHOOK_SECRET = process.env["FINEGUARD_WEBHOOK_SECRET"] ?? "";
 const POWER_AUTOMATE_URL = process.env["POWER_AUTOMATE_TRIGGER_URL"] ?? "";
-const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 1000; // 1s, 2s, 4s
+const MAX_RETRIES = 3;         // total attempts (0, 1, 2)
+const BASE_DELAY_MS = 1_000;   // 1 s, 2 s, 4 s (capped at 16 s)
+const MAX_DELAY_MS = 16_000;
+const FETCH_TIMEOUT_MS = 10_000;
 
 // ── Payload Validation ──────────────────────────────────────
-
-interface WebhookPayload {
-  eventType: string;
-  firmId: string;
-  [key: string]: unknown;
-}
 
 function validatePayload(body: unknown): body is WebhookPayload {
   if (typeof body !== "object" || body === null) return false;
   const obj = body as Record<string, unknown>;
   return (
-    typeof obj.eventType === "string" &&
-    obj.eventType.length > 0 &&
-    typeof obj.firmId === "string" &&
-    obj.firmId.length > 0
+    typeof obj["eventType"] === "string" &&
+    obj["eventType"].length > 0 &&
+    typeof obj["firmId"] === "string" &&
+    obj["firmId"].length > 0
   );
+}
+
+// ── Fetch with manual timeout (Node.js < 17 safe) ──────────
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(tid);
+  }
 }
 
 // ── Retry Helper ────────────────────────────────────────────
@@ -52,15 +61,14 @@ async function forwardWithRetry(
   payload: WebhookPayload,
   context: InvocationContext
 ): Promise<{ ok: boolean; status: number; retryCount: number }> {
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      context.log(`Forward attempt ${attempt + 1}/${MAX_RETRIES + 1} to Power Automate`);
+      context.log(`Forward attempt ${attempt + 1}/${MAX_RETRIES} to Power Automate`);
 
-      const res = await fetch(POWER_AUTOMATE_URL, {
+      const res = await fetchWithTimeout(POWER_AUTOMATE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(10_000), // 10 s timeout
       });
 
       if (res.ok) {
@@ -68,32 +76,26 @@ async function forwardWithRetry(
         return { ok: true, status: res.status, retryCount: attempt };
       }
 
-      // Non-retryable client errors (4xx except 429)
+      // Non-retryable client errors (4xx except 429 Too Many Requests)
       if (res.status >= 400 && res.status < 500 && res.status !== 429) {
-        context.warn(
-          `Non-retryable error from Power Automate: HTTP ${res.status}`
-        );
+        context.log(`[WARN] Non-retryable error from Power Automate: HTTP ${res.status}`);
         return { ok: false, status: res.status, retryCount: attempt };
       }
 
-      context.warn(
-        `Retryable error from Power Automate: HTTP ${res.status}, attempt ${attempt + 1}`
-      );
+      context.log(`[WARN] Retryable error from Power Automate: HTTP ${res.status}, attempt ${attempt + 1}`);
     } catch (err) {
-      context.warn(
-        `Network error on attempt ${attempt + 1}: ${err instanceof Error ? err.message : String(err)}`
-      );
+      context.log(`[WARN] Network error on attempt ${attempt + 1}: ${err instanceof Error ? err.message : String(err)}`);
     }
 
-    // Exponential backoff before next attempt
-    if (attempt < MAX_RETRIES) {
-      const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+    // Exponential backoff before next attempt (skip after last)
+    if (attempt < MAX_RETRIES - 1) {
+      const delay = Math.min(MAX_DELAY_MS, BASE_DELAY_MS * Math.pow(2, attempt));
       context.log(`Waiting ${delay}ms before retry…`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      await new Promise<void>((resolve) => setTimeout(resolve, delay));
     }
   }
 
-  context.error("All retry attempts exhausted — forwarding failed");
+  context.log("[ERROR] All retry attempts exhausted — forwarding failed");
   return { ok: false, status: 502, retryCount: MAX_RETRIES };
 }
 
@@ -108,7 +110,7 @@ async function fineGuardWebhook(
 
   // ── 1. Method check ─────────────────────────────────────
   if (request.method !== "POST") {
-    context.warn(`[${requestId}] Rejected: Method ${request.method} not allowed`);
+    context.log(`[WARN][${requestId}] Rejected: Method ${request.method} not allowed`);
     return {
       status: 405,
       jsonBody: { success: false, message: "Method not allowed" },
@@ -116,18 +118,17 @@ async function fineGuardWebhook(
   }
 
   // ── 2. Secret token validation ──────────────────────────
-  const providedSecret = request.headers.get("x-fineguard-secret");
-
   if (!WEBHOOK_SECRET) {
-    context.error(`[${requestId}] FINEGUARD_WEBHOOK_SECRET is not configured`);
+    context.log(`[ERROR][${requestId}] FINEGUARD_WEBHOOK_SECRET is not configured`);
     return {
       status: 500,
       jsonBody: { success: false, message: "Server misconfigured" },
     };
   }
 
+  const providedSecret = request.headers.get("x-fineguard-secret");
   if (!providedSecret || providedSecret !== WEBHOOK_SECRET) {
-    context.warn(`[${requestId}] Rejected: Invalid or missing secret token`);
+    context.log(`[WARN][${requestId}] Rejected: Invalid or missing secret token`);
     return {
       status: 401,
       jsonBody: { success: false, message: "Unauthorized — invalid secret" },
@@ -139,7 +140,7 @@ async function fineGuardWebhook(
   try {
     body = await request.json();
   } catch {
-    context.warn(`[${requestId}] Rejected: Malformed JSON body`);
+    context.log(`[WARN][${requestId}] Rejected: Malformed JSON body`);
     return {
       status: 400,
       jsonBody: { success: false, message: "Invalid JSON body" },
@@ -147,9 +148,7 @@ async function fineGuardWebhook(
   }
 
   if (!validatePayload(body)) {
-    context.warn(
-      `[${requestId}] Rejected: Payload missing required fields (eventType, firmId)`
-    );
+    context.log(`[WARN][${requestId}] Rejected: Payload missing required fields (eventType, firmId)`);
     return {
       status: 422,
       jsonBody: {
@@ -159,13 +158,11 @@ async function fineGuardWebhook(
     };
   }
 
-  context.log(
-    `[${requestId}] Valid payload — eventType=${body.eventType}, firmId=${body.firmId}`
-  );
+  context.log(`[${requestId}] Valid payload — eventType=${body.eventType}, firmId=${body.firmId}`);
 
   // ── 4. Forward to Power Automate with retry ─────────────
   if (!POWER_AUTOMATE_URL) {
-    context.error(`[${requestId}] POWER_AUTOMATE_TRIGGER_URL is not configured`);
+    context.log(`[ERROR][${requestId}] POWER_AUTOMATE_TRIGGER_URL is not configured`);
     return {
       status: 500,
       jsonBody: { success: false, message: "Power Automate URL not configured" },
@@ -175,9 +172,7 @@ async function fineGuardWebhook(
   const result = await forwardWithRetry(body, context);
 
   if (result.ok) {
-    context.log(
-      `[${requestId}] Successfully forwarded to Power Automate (retries: ${result.retryCount})`
-    );
+    context.log(`[${requestId}] Successfully forwarded to Power Automate (retries: ${result.retryCount})`);
     return {
       status: 200,
       jsonBody: {
@@ -189,14 +184,12 @@ async function fineGuardWebhook(
     };
   }
 
-  context.error(
-    `[${requestId}] Failed to forward after ${result.retryCount + 1} attempts (HTTP ${result.status})`
-  );
+  context.log(`[ERROR][${requestId}] Failed to forward after ${result.retryCount} attempts (HTTP ${result.status})`);
   return {
     status: 502,
     jsonBody: {
       success: false,
-      message: `Failed to forward to Power Automate after ${result.retryCount + 1} attempts`,
+      message: `Failed to forward to Power Automate after ${result.retryCount} attempts`,
       eventId: requestId,
       retryCount: result.retryCount,
     },

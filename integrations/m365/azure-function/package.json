@@ -1,0 +1,23 @@
+{
+  "name": "fineguard-webhook-function",
+  "version": "1.0.0",
+  "description": "FineGuard webhook receiver — Azure Functions v4 Node.js runtime",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "start": "func start",
+    "deploy": "npm run build && func azure functionapp publish func-fineguard-webhook"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.5.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "@types/node": "^20.11.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

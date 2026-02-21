@@ -145,7 +145,7 @@
 
         "Create_Planner_Task": {
           "type": "ApiConnection",
-          "runAfter": {},
+          "runAfter": { "Parse_Webhook_Payload": ["Succeeded"] },
           "inputs": {
             "host": {
               "connection": { "name": "@parameters('$connections')['planner']['connectionId']" }
@@ -163,7 +163,7 @@
 
         "Send_Outlook_Email": {
           "type": "ApiConnection",
-          "runAfter": {},
+          "runAfter": { "Parse_Webhook_Payload": ["Succeeded"] },
           "inputs": {
             "host": {
               "connection": { "name": "@parameters('$connections')['office365']['connectionId']" }

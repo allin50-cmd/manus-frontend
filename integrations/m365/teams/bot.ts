@@ -17,9 +17,10 @@ import {
   CardFactory,
   MessageFactory,
   ConversationReference,
-  TeamsInfo,
 } from "botbuilder";
 import type { ComplianceEvent, RiskLevel } from "../types/index.js";
+
+const APP_BASE = process.env["FINEGUARD_APP_URL"] ?? "https://app.fineguard.io";
 
 // ── Proactive notification store ────────────────────────────
 // In production, persist to Redis / Cosmos DB.
@@ -113,7 +114,7 @@ export class FineGuardBot extends ActivityHandler {
         {
           type: "Action.OpenUrl",
           title: "View Full Dashboard",
-          url: "https://app.fineguard.io/dashboard",
+          url: `${APP_BASE}/dashboard`,
         },
         {
           type: "Action.Submit",
@@ -156,7 +157,7 @@ export class FineGuardBot extends ActivityHandler {
         {
           type: "Action.OpenUrl",
           title: "View All Filings",
-          url: "https://app.fineguard.io/filings",
+          url: `${APP_BASE}/filings`,
         },
       ],
     });
@@ -213,7 +214,7 @@ export class FineGuardBot extends ActivityHandler {
         {
           type: "Action.OpenUrl",
           title: "View All Alerts",
-          url: "https://app.fineguard.io/alerts",
+          url: `${APP_BASE}/alerts`,
         },
       ],
     });
@@ -273,7 +274,7 @@ export class FineGuardBot extends ActivityHandler {
         {
           type: "Action.OpenUrl",
           title: "View in FineGuard",
-          url: `https://app.fineguard.io/events/${event.eventId}`,
+          url: `${APP_BASE}/events/${event.eventId}`,
         },
         {
           type: "Action.Submit",
@@ -288,7 +289,9 @@ export class FineGuardBot extends ActivityHandler {
 
   private addConversationReference(ctx: TurnContext) {
     const ref = TurnContext.getConversationReference(ctx.activity);
-    conversationReferences.set(ref.conversation!.id, ref);
+    if (ref?.conversation?.id) {
+      conversationReferences.set(ref.conversation.id, ref);
+    }
   }
 
   private buildStatColumn(label: string, value: string, color: string) {

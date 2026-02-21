@@ -135,7 +135,7 @@ export interface OutlookEmail {
   cc?: EmailRecipient[];
   subject: string;
   body: string;
-  bodyType: "HTML" | "Text";
+  bodyType: "html" | "text";
   importance?: "low" | "normal" | "high";
   attachments?: EmailAttachment[];
 }
@@ -152,7 +152,7 @@ export interface EmailAttachment {
 
 export interface CalendarEvent {
   subject: string;
-  body: { contentType: "HTML" | "Text"; content: string };
+  body: { contentType: "html" | "text"; content: string };
   start: { dateTime: string; timeZone: string };
   end: { dateTime: string; timeZone: string };
   location?: { displayName: string };
@@ -171,7 +171,7 @@ export interface CalendarRecurrence {
   pattern: {
     type: "daily" | "weekly" | "absoluteMonthly" | "relativeMonthly" | "absoluteYearly";
     interval: number;
-    daysOfWeek?: string[];
+    daysOfWeek?: ("monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday")[];
     dayOfMonth?: number;
     month?: number;
   };

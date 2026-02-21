@@ -87,7 +87,7 @@ export function FineGuardTeamsTab() {
 
         if (page === "dashboard" || page === "risk-alerts") {
           const res = await fetch(`${baseUrl}/compliance/risk-summary`, {
-            headers: { "X-Firm-Id": "current" },
+            headers: { "X-Firm-Id": context?.teamId ?? "current" },
           });
           if (!res.ok) throw new Error("Failed to load risk summary");
           setRiskSummary(await res.json());
@@ -95,7 +95,7 @@ export function FineGuardTeamsTab() {
 
         if (page === "filings" || page === "dashboard") {
           const res = await fetch(`${baseUrl}/compliance/filings?status=upcoming`, {
-            headers: { "X-Firm-Id": "current" },
+            headers: { "X-Firm-Id": context?.teamId ?? "current" },
           });
           if (!res.ok) throw new Error("Failed to load filings");
           const data = await res.json();

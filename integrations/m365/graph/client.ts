@@ -12,6 +12,7 @@
 import type {
   AzureADConfig,
   TeamsMessage,
+  TeamsAdaptiveCard,
   OutlookEmail,
   CalendarEvent,
   SharePointListItem,
@@ -123,7 +124,7 @@ export class FineGuardGraphClient {
   async sendTeamsAdaptiveCard(
     teamId: string,
     channelId: string,
-    card: Record<string, unknown>
+    card: TeamsAdaptiveCard
   ) {
     const token = await this.getToken();
     return graphRequest(
