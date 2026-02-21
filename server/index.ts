@@ -2276,7 +2276,7 @@ app.get('/api/compliance/filings', async (req: Request, res: Response) => {
     for (const f of acspRows) {
       const days = daysUntil(f.dueDate);
       if (days === null) continue;
-      if (statusFilter === 'upcoming' && (days < 0 || new Date(f.dueDate!) > cutoff)) continue;
+      if (statusFilter === 'upcoming' && new Date(f.dueDate!) > cutoff) continue;
 
       const filingStatus: FilingEntry['status'] =
         f.status === 'submitted' || f.status === 'accepted' ? 'filed'
@@ -2313,7 +2313,7 @@ app.get('/api/compliance/filings', async (req: Request, res: Response) => {
       for (const entry of dueDates) {
         const days = daysUntil(entry.due);
         if (days === null) continue;
-        if (statusFilter === 'upcoming' && (days < 0 || new Date(entry.due!) > cutoff)) continue;
+        if (statusFilter === 'upcoming' && new Date(entry.due!) > cutoff) continue;
 
         const filingStatus: FilingEntry['status'] =
           co.complianceStatus === 'overdue' ? 'overdue'
