@@ -73,6 +73,7 @@ export default function LandingSignupModal({
   const nameInputRef = useRef<HTMLInputElement>(null);
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionRef = useRef<'forward' | 'back'>('forward');
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Reset and configure when modal opens
   useEffect(() => {
@@ -124,10 +125,32 @@ export default function LandingSignupModal({
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  // Escape key
+  // Escape key + Tab focus trap
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && step !== 3) {
       onClose();
+      return;
+    }
+    if (e.key === 'Tab' && modalRef.current) {
+      const focusable = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute('disabled'));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
   }, [onClose, step]);
 
@@ -188,7 +211,7 @@ export default function LandingSignupModal({
       />
 
       {/* Modal — full-screen on mobile, card on sm+ */}
-      <div className="relative w-full sm:max-w-lg sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto bg-[#0F1019] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl shadow-[#5A4BFF]/10 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div ref={modalRef} className="relative w-full sm:max-w-lg sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto bg-[#0F1019] border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl shadow-[#5A4BFF]/10 animate-in slide-in-from-bottom-4 fade-in duration-300">
         {/* Mobile drag handle */}
         <div className="sm:hidden flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-white/20" />

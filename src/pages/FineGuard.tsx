@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import LandingView from '../components/LandingView';
 import LandingSignupModal from '../components/LandingSignupModal';
+import BookDemoModal from '../components/BookDemoModal';
 import { useAuth } from '../context/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -14,6 +15,7 @@ export default function FineGuard() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupIntent, setSignupIntent] = useState('');
   const [signupPlan, setSignupPlan] = useState('');
+  const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -69,7 +71,7 @@ export default function FineGuard() {
     <div className="max-w-7xl mx-auto px-4">
       <LandingView
         onEnterVault={() => setLocation('/login')}
-        onBookDemo={() => setLocation('/book-demo')}
+        onBookDemo={() => setDemoOpen(true)}
         onStartMonitoring={() => openModal()}
         onStartWithEmail={(email) => openModal({ email })}
         onStartWithIntent={(intent, plan) => openModal({ intent, plan })}
@@ -84,6 +86,10 @@ export default function FineGuard() {
         initialEmail={signupEmail}
         initialIntent={signupIntent as any}
         selectedPlan={signupPlan}
+      />
+      <BookDemoModal
+        open={demoOpen}
+        onClose={() => setDemoOpen(false)}
       />
     </div>
   );

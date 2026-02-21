@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap, Mail } from 'lucide-react';
+import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap, Mail, CheckCircle } from 'lucide-react';
+
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 interface LandingViewProps {
   onEnterVault?: () => void;
@@ -56,18 +58,29 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
         {/* Inline email capture */}
         <form onSubmit={handleHeroEmailSubmit} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto mb-6">
           <div className="relative flex-1 w-full">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            {isValidEmail(heroEmail) ? (
+              <CheckCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-400 transition-colors" />
+            ) : (
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 transition-colors" />
+            )}
             <input
               type="email"
               value={heroEmail}
               onChange={(e) => setHeroEmail(e.target.value)}
               placeholder="Enter your work email"
-              className="w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 border-white/10 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:border-[#5A4BFF]/60 focus:ring-2 focus:ring-[#5A4BFF]/20 transition-all"
+              className={`w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:ring-2 transition-all ${
+                isValidEmail(heroEmail)
+                  ? 'border-green-500/50 focus:border-green-500/70 focus:ring-green-500/20'
+                  : heroEmail.length > 3
+                  ? 'border-red-500/50 focus:border-red-500/70 focus:ring-red-500/20'
+                  : 'border-white/10 focus:border-[#5A4BFF]/60 focus:ring-[#5A4BFF]/20'
+              }`}
             />
           </div>
           <button
             type="submit"
-            className="bg-[#5A4BFF] text-white px-10 py-5 rounded-full font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-wide whitespace-nowrap"
+            disabled={heroEmail.length > 0 && !isValidEmail(heroEmail)}
+            className="bg-[#5A4BFF] text-white px-10 py-5 rounded-full font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-wide whitespace-nowrap disabled:opacity-50 disabled:pointer-events-none"
           >
             Start Free <ArrowRight size={22} />
           </button>
@@ -349,18 +362,29 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
         {/* Inline email capture — mirrors hero */}
         <form onSubmit={handleCtaEmailSubmit} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto mb-6">
           <div className="relative flex-1 w-full">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            {isValidEmail(ctaEmail) ? (
+              <CheckCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-400 transition-colors" />
+            ) : (
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 transition-colors" />
+            )}
             <input
               type="email"
               value={ctaEmail}
               onChange={(e) => setCtaEmail(e.target.value)}
               placeholder="Enter your work email"
-              className="w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 border-white/10 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:border-[#5A4BFF]/60 focus:ring-2 focus:ring-[#5A4BFF]/20 transition-all"
+              className={`w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:ring-2 transition-all ${
+                isValidEmail(ctaEmail)
+                  ? 'border-green-500/50 focus:border-green-500/70 focus:ring-green-500/20'
+                  : ctaEmail.length > 3
+                  ? 'border-red-500/50 focus:border-red-500/70 focus:ring-red-500/20'
+                  : 'border-white/10 focus:border-[#5A4BFF]/60 focus:ring-[#5A4BFF]/20'
+              }`}
             />
           </div>
           <button
             type="submit"
-            className="bg-[#5A4BFF] text-white px-10 py-5 rounded-full font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-wide whitespace-nowrap"
+            disabled={ctaEmail.length > 0 && !isValidEmail(ctaEmail)}
+            className="bg-[#5A4BFF] text-white px-10 py-5 rounded-full font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-wide whitespace-nowrap disabled:opacity-50 disabled:pointer-events-none"
           >
             Get Started Free <ArrowRight size={22} />
           </button>
