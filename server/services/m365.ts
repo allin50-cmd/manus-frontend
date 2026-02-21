@@ -158,3 +158,57 @@ export async function sendTestNotification(channel: 'teams' | 'outlook', target:
     return { success: false, message: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
+
+// ── Compliance Alert Delivery Methods ───────────────────────
+
+export async function sendComplianceAlertViaOutlook(
+  recipients: string[],
+  subject: string,
+  htmlBody: string
+): Promise<{ success: boolean; message: string }> {
+  const config = loadM365Config();
+  if (!config) {
+    return { success: false, message: 'M365 not configured' };
+  }
+
+  try {
+    const graph = await getGraphClient();
+
+    // Send via Outlook sendMail
+    for (const recipient of recipients) {
+      await graph.sendEmail(process.env['OUTLOOK_SENDER_USER_ID'] || '', {
+        to: [{ emailAddress: { address: recipient } }],
+        subject,
+        body: htmlBody,
+        bodyType: 'html',
+        importance: 'high',
+      });
+    }
+
+    return { success: true, message: `Alert sent to ${recipients.length} recipient(s)` };
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : 'Failed to send via Outlook' };
+  }
+}
+
+export async function sendComplianceAlertViaTeams(
+  teamId: string,
+  channelId: string,
+  adaptiveCard: unknown
+): Promise<{ success: boolean; message: string }> {
+  const config = loadM365Config();
+  if (!config) {
+    return { success: false, message: 'M365 not configured' };
+  }
+
+  try {
+    const graph = await getGraphClient();
+
+    // Send via Teams
+    await graph.sendTeamsAdaptiveCard(teamId, channelId, adaptiveCard as any);
+
+    return { success: true, message: 'Alert sent to Teams channel' };
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : 'Failed to send via Teams' };
+  }
+}

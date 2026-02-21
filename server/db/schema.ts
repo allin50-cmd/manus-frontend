@@ -376,6 +376,66 @@ export const subscriptions = pgTable('subscriptions', {
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
 
+// ============================================================================
+// ALERT TRACKING & PREFERENCES TABLES
+// ============================================================================
+
+/**
+ * Alert Logs Table
+ * Tracks all compliance alerts sent to clients and advisors
+ */
+export const alertLogs = pgTable('alert_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  clientId: uuid('client_id').references(() => users.id).notNull(),
+  advisorId: uuid('advisor_id').references(() => users.id),
+  companyId: varchar('company_id', { length: 50 }).notNull(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  alertType: varchar('alert_type', { length: 50 }).notNull(), // filing_due, director_change, overdue, etc.
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  riskLevel: varchar('risk_level', { length: 20 }).notNull(), // Low, Medium, High, Critical
+  channels: varchar('channels', { length: 100 }).notNull(), // outlook, teams, both
+  triggerType: varchar('trigger_type', { length: 20 }).notNull(), // automatic, digest, manual, threshold
+  recipientCount: integer('recipient_count').default(0).notNull(),
+  status: varchar('status', { length: 20 }).default('sent').notNull(), // sent, pending, failed, bounced
+  metadata: jsonb('metadata'), // Additional alert data (deadline, penalty, etc.)
+  sentAt: timestamp('sent_at').defaultNow().notNull(),
+  deliveredAt: timestamp('delivered_at'),
+  failureReason: text('failure_reason'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index('alert_logs_client_id_idx').on(table.clientId),
+  companyIdIdx: index('alert_logs_company_id_idx').on(table.companyId),
+  sentAtIdx: index('alert_logs_sent_at_idx').on(table.sentAt),
+}));
+
+/**
+ * Alert Preferences Table
+ * Stores user preferences for alert delivery (frequency, channels, thresholds)
+ */
+export const alertPreferences = pgTable('alert_preferences', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  digestFrequency: varchar('digest_frequency', { length: 20 }).default('daily').notNull(), // daily, weekly, never
+  minRiskThreshold: varchar('min_risk_threshold', { length: 20 }).default('Medium').notNull(), // Low, Medium, High, Critical
+  enabledChannels: varchar('enabled_channels', { length: 100 }).default('outlook,teams').notNull(), // comma-separated: outlook, teams
+  includeAttachments: boolean('include_attachments').default(true).notNull(),
+  includeRecommendations: boolean('include_recommendations').default(true).notNull(),
+  enableAutomatic: boolean('enable_automatic').default(true).notNull(), // Real-time automatic alerts
+  enableThresholdAlerts: boolean('enable_threshold_alerts').default(true).notNull(), // Only alert on threshold breaches
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('alert_preferences_user_id_idx').on(table.userId),
+}));
+
+export type AlertLog = typeof alertLogs.$inferSelect;
+export type NewAlertLog = typeof alertLogs.$inferInsert;
+
+export type AlertPreference = typeof alertPreferences.$inferSelect;
+export type NewAlertPreference = typeof alertPreferences.$inferInsert;
+
 // Export types
 export type ImportHistory = typeof importHistory.$inferSelect;
 export type NewImportHistory = typeof importHistory.$inferInsert;
