@@ -36,12 +36,12 @@ const articles: Article[] = [
   { title: 'Looking up a company on Companies House', snippet: 'Use our built-in search to find any UK registered company.', category: 'companies' },
   { title: 'Removing a monitored company', snippet: 'How to stop monitoring a company and what happens to historical data.', category: 'companies' },
   { title: 'Understanding compliance status colours', snippet: 'Green means compliant, amber means warning, red means overdue or at risk.', category: 'companies' },
-  { title: 'Upgrading your plan', snippet: 'How to switch from Starter to Professional or Enterprise.', category: 'billing' },
-  { title: 'Payment methods accepted', snippet: 'We accept all major credit/debit cards and bank transfer for Enterprise plans.', category: 'billing' },
-  { title: 'Cancelling your subscription', snippet: 'Cancel any time from Settings. Your account reverts to the free Starter plan.', category: 'billing' },
+  { title: 'Adding or removing services', snippet: 'How to toggle individual alert services from the Billing page. Each service is £1/mo per company.', category: 'billing' },
+  { title: 'Payment methods accepted', snippet: 'We accept all major credit/debit cards. Billing is managed through Stripe.', category: 'billing' },
+  { title: 'Cancelling services', snippet: 'Remove any service at any time from the Billing page. Changes take effect immediately.', category: 'billing' },
   { title: 'Changing your password', snippet: 'Update your password from the Account Settings page.', category: 'account' },
   { title: 'Two-factor authentication', snippet: 'Enable 2FA for an additional layer of security on your account.', category: 'account' },
-  { title: 'Managing team members', snippet: 'How to invite colleagues and assign roles on Professional and Enterprise plans.', category: 'account' },
+  { title: 'Managing team members', snippet: 'How to invite colleagues and assign roles within your account.', category: 'account' },
 ];
 
 export default function Help() {
