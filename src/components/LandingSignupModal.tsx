@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import {
   Shield, User, Mail, Lock, Building2, ArrowRight, ArrowLeft,
-  Eye, EyeOff, Calculator, FileText, X, CheckCircle, Sparkles,
+  Eye, EyeOff, Calculator, FileText, X, CheckCircle, Sparkles, Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,9 +41,11 @@ interface LandingSignupModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** Pre-fill email and skip to step 2 */
+  initialEmail?: string;
 }
 
-export default function LandingSignupModal({ open, onClose, onSuccess }: LandingSignupModalProps) {
+export default function LandingSignupModal({ open, onClose, onSuccess, initialEmail }: LandingSignupModalProps) {
   const { register } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedIntent, setSelectedIntent] = useState('');
@@ -53,20 +55,36 @@ export default function LandingSignupModal({ open, onClose, onSuccess }: Landing
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when modal opens
+  // Reset state when modal opens; skip to step 2 if email provided
   useEffect(() => {
     if (open) {
-      setStep(1);
       setSelectedIntent('');
       setName('');
-      setEmail('');
+      setEmail(initialEmail || '');
       setCompany('');
       setPassword('');
       setShowPassword(false);
       setLoading(false);
+      if (initialEmail) {
+        setSelectedIntent('individual');
+        setStep(2);
+      } else {
+        setStep(1);
+      }
     }
-  }, [open]);
+  }, [open, initialEmail]);
+
+  // Focus first interactive element when step changes
+  useEffect(() => {
+    if (open && step === 2) {
+      // Small delay to let the DOM render
+      const t = setTimeout(() => nameInputRef.current?.focus(), 80);
+      return () => clearTimeout(t);
+    }
+  }, [open, step]);
 
   // Lock body scroll when open
   useEffect(() => {
@@ -77,6 +95,20 @@ export default function LandingSignupModal({ open, onClose, onSuccess }: Landing
     }
     return () => { document.body.style.overflow = ''; };
   }, [open]);
+
+  // Close on Escape key
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && step !== 3) {
+      onClose();
+    }
+  }, [onClose, step]);
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [open, handleKeyDown]);
 
   if (!open) return null;
 
@@ -105,7 +137,7 @@ export default function LandingSignupModal({ open, onClose, onSuccess }: Landing
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Create account">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -113,7 +145,10 @@ export default function LandingSignupModal({ open, onClose, onSuccess }: Landing
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto bg-[#0F1019] border border-white/10 rounded-3xl shadow-2xl shadow-[#5A4BFF]/10 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div
+        ref={modalRef}
+        className="relative w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto bg-[#0F1019] border border-white/10 rounded-3xl shadow-2xl shadow-[#5A4BFF]/10 animate-in slide-in-from-bottom-4 fade-in duration-300"
+      >
         {/* Close button */}
         {step !== 3 && (
           <button
@@ -180,6 +215,11 @@ export default function LandingSignupModal({ open, onClose, onSuccess }: Landing
               >
                 Skip this step
               </button>
+              {/* Trust signal */}
+              <div className="flex items-center justify-center gap-2 pt-2 text-xs text-slate-500">
+                <Users className="w-3.5 h-3.5" />
+                <span>Join 5,000+ companies already using FineGuard</span>
+              </div>
             </div>
           )}
 
@@ -191,6 +231,7 @@ export default function LandingSignupModal({ open, onClose, onSuccess }: Landing
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input
+                    ref={nameInputRef}
                     id="modal-name"
                     required
                     value={name}
@@ -295,6 +336,11 @@ export default function LandingSignupModal({ open, onClose, onSuccess }: Landing
                 <Link href="/terms" className="text-[#5A4BFF] hover:underline">Terms</Link> and{' '}
                 <Link href="/privacy" className="text-[#5A4BFF] hover:underline">Privacy Policy</Link>.
               </p>
+              {/* Trust signal */}
+              <div className="flex items-center justify-center gap-4 pt-1 text-xs text-slate-500">
+                <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 256-bit SSL</span>
+                <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> No credit card</span>
+              </div>
             </form>
           )}
 

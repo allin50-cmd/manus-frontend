@@ -1,13 +1,27 @@
-import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap } from 'lucide-react';
+import { useState } from 'react';
+import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap, Mail } from 'lucide-react';
 
 interface LandingViewProps {
   onEnterVault?: () => void;
   onBookDemo: () => void;
   onStartMonitoring: () => void;
+  /** Open signup modal with email pre-filled */
+  onStartWithEmail?: (email: string) => void;
   hologram?: string;
 }
 
-export default function LandingView({ onBookDemo, onStartMonitoring }: LandingViewProps) {
+export default function LandingView({ onBookDemo, onStartMonitoring, onStartWithEmail }: LandingViewProps) {
+  const [heroEmail, setHeroEmail] = useState('');
+
+  const handleHeroEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (heroEmail.trim() && onStartWithEmail) {
+      onStartWithEmail(heroEmail.trim());
+    } else {
+      onStartMonitoring();
+    }
+  };
+
   return (
     <div className="space-y-32 py-12">
       {/* Hero Section */}
@@ -26,16 +40,31 @@ export default function LandingView({ onBookDemo, onStartMonitoring }: LandingVi
         <p className="text-2xl text-slate-400 max-w-3xl mx-auto mb-10 font-medium leading-relaxed opacity-90">
           FineGuard automatically monitors Companies House records and alerts you before compliance problems damage your business or your clients.
         </p>
+
+        {/* Inline email capture */}
+        <form onSubmit={handleHeroEmailSubmit} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto mb-6">
+          <div className="relative flex-1 w-full">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <input
+              type="email"
+              value={heroEmail}
+              onChange={(e) => setHeroEmail(e.target.value)}
+              placeholder="Enter your work email"
+              className="w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 border-white/10 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:border-[#5A4BFF]/60 focus:ring-2 focus:ring-[#5A4BFF]/20 transition-all"
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-[#5A4BFF] text-white px-10 py-5 rounded-full font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-wide whitespace-nowrap"
+          >
+            Start Free <ArrowRight size={22} />
+          </button>
+        </form>
+
         <div className="flex flex-wrap justify-center gap-6 mb-6">
           <button
-            onClick={onStartMonitoring}
-            className="bg-[#5A4BFF] text-white px-12 py-6 rounded-[3rem] font-black text-lg shadow-[0_0_40px_rgba(90,75,255,0.5)] hover:scale-105 transition-all flex items-center gap-4 uppercase tracking-wide"
-          >
-            Start Free <ArrowRight size={24} />
-          </button>
-          <button
             onClick={onBookDemo}
-            className="bg-white/10 border-2 border-white/20 text-white px-12 py-6 rounded-[3rem] font-black text-lg hover:bg-white/20 transition-all flex items-center gap-4 uppercase tracking-wide"
+            className="bg-white/10 border-2 border-white/20 text-white px-12 py-5 rounded-[3rem] font-black text-lg hover:bg-white/20 transition-all flex items-center gap-4 uppercase tracking-wide"
           >
             Book a Demo
           </button>

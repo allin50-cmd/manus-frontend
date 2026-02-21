@@ -11,9 +11,20 @@ import {
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const isLandingPage = location === '/' || location === '/fineguard';
+
+  const handleGetStarted = () => {
+    if (isLandingPage) {
+      // Dispatch custom event so the landing page opens the signup modal
+      window.dispatchEvent(new Event('open-landing-signup'));
+    } else {
+      setLocation('/?signup=true');
+    }
+  };
 
   const publicLinks = [
     { href: '/', label: 'Home' },
@@ -133,9 +144,9 @@ export default function Header() {
                 <Link href="/login" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
                   Sign In
                 </Link>
-                <Link href="/signup" className="px-4 py-2 text-sm font-bold bg-[#5A4BFF] text-white rounded-full hover:bg-[#6B5BFF] transition-colors">
+                <button onClick={handleGetStarted} className="px-4 py-2 text-sm font-bold bg-[#5A4BFF] text-white rounded-full hover:bg-[#6B5BFF] transition-colors">
                   Get Started
-                </Link>
+                </button>
               </div>
             )}
 
@@ -179,9 +190,9 @@ export default function Header() {
                 <Link href="/login" className="block px-4 py-3 text-base font-medium text-slate-300 hover:text-white rounded-xl hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                   Sign In
                 </Link>
-                <Link href="/signup" className="block px-4 py-3 text-base font-bold text-white bg-[#5A4BFF] rounded-xl text-center" onClick={() => setMobileOpen(false)}>
+                <button onClick={() => { handleGetStarted(); setMobileOpen(false); }} className="block w-full px-4 py-3 text-base font-bold text-white bg-[#5A4BFF] rounded-xl text-center">
                   Get Started
-                </Link>
+                </button>
               </>
             )}
           </div>
