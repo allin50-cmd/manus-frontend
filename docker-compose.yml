@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PostgreSQL Database
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: vaultline-postgres
+    environment:
+      POSTGRES_USER: vaultline
+      POSTGRES_PASSWORD: vaultline_dev
+      POSTGRES_DB: vaultline_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vaultline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vaultline-network
+
+  # ============================================================================
+  # VaultLine Application (React + Express)
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaultline-app
+    environment:
+      # Database
+      DATABASE_URL: "postgresql://vaultline:vaultline_dev@postgres:5432/vaultline_db"
+
+      # Server
+      PORT: 8080
+      NODE_ENV: production
+
+      # Deployment token
+      DEPLOY_RECORD_TOKEN: "local-dev-token-12345"
+
+      # Companies House API (optional)
+      COMPANIES_HOUSE_API_KEY: ""
+
+      # Stripe (optional - demo mode without this)
+      STRIPE_SECRET_KEY: ""
+      STRIPE_WEBHOOK_SECRET: ""
+
+      # M365 Integration (optional - will gracefully degrade)
+      AZURE_TENANT_ID: ""
+      AZURE_CLIENT_ID: ""
+      AZURE_CLIENT_SECRET: ""
+
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vaultline-network
+    restart: unless-stopped
+
+networks:
+  vaultline-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

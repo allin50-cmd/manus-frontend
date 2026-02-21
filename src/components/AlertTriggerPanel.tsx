@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Bell, CheckCircle, AlertTriangle, Loader2, Mail, Users } from 'lucide-react';
+import { Send, Bell, CheckCircle, Loader2, Mail, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AlertTriggerPanelProps {

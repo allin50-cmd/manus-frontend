@@ -8,6 +8,7 @@ import {
   type MonitoredCompany, type ComplianceDetail, type AlertItem
 } from '../utils/api';
 import { formatDateShort } from '../utils/formatting';
+import AlertTriggerPanel from './AlertTriggerPanel';
 
 interface CompanyDetailViewProps {
   companyId: string;
@@ -148,6 +149,22 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
           <p className="text-slate-600 text-xs mt-3 pl-[4.5rem]">Last checked: {formatDate(company.lastCheckedAt)}</p>
         )}
       </div>
+
+      {/* Alert Trigger Panel */}
+      {compliance && (
+        <div className="mb-6">
+          <AlertTriggerPanel
+            companyId={companyId}
+            companyName={company.companyName}
+            riskLevel={
+              compliance.overdueFilings.length > 0 ? 'critical' :
+              compliance.status === 'compliant' ? 'low' :
+              compliance.status === 'warning' ? 'medium' :
+              'high'
+            }
+          />
+        </div>
+      )}
 
       {/* Compliance details */}
       {compliance && (

@@ -10,6 +10,7 @@ import { desc, eq, and, count, sql } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 import { companiesHouseLocalService } from './services/companiesHouseLocal';
 import { getM365Status, sendTestNotification, loadM365Config } from './services/m365';
+import { startDigestScheduler } from './services/digestScheduler';
 import crypto from 'crypto';
 
 // Load environment variables
@@ -2831,6 +2832,9 @@ const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   if (!IS_PRODUCTION) console.log(`http://localhost:${PORT}`);
   console.log('');
+
+  // Start digest alert scheduler
+  startDigestScheduler();
 });
 
 // Graceful shutdown for Azure App Service (SIGTERM) and Docker (SIGINT)
