@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
-import { updateProfile } from '../utils/api';
+import { updateProfile, changePassword, updateAlertPreferences } from '../utils/api';
 import { toast } from 'sonner';
 import {
   User, Shield, CreditCard,
@@ -21,6 +21,25 @@ export default function Profile() {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [profileCompany, setProfileCompany] = useState(user?.company || '');
   const [saving, setSaving] = useState(false);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Notification prefs state
+  const defaultPrefs: Record<string, boolean> = {
+    filing_deadlines: true,
+    overdue_warnings: true,
+    director_changes: true,
+    weekly_digest: false,
+    product_updates: false,
+  };
+  const [notifPrefs, setNotifPrefs] = useState<Record<string, boolean>>(
+    user?.notificationPrefs ?? defaultPrefs,
+  );
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   if (!isAuthenticated || !user) {
     setLocation('/login');
@@ -149,17 +168,36 @@ export default function Profile() {
                     <div className="space-y-5 max-w-md">
                       <div>
                         <Label className="text-slate-300 mb-1.5 block">Current Password</Label>
-                        <Input type="password" placeholder="Enter current password" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                        <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                       </div>
                       <div>
                         <Label className="text-slate-300 mb-1.5 block">New Password</Label>
-                        <Input type="password" placeholder="Enter new password" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password (min 8 characters)" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                       </div>
                       <div>
                         <Label className="text-slate-300 mb-1.5 block">Confirm New Password</Label>
-                        <Input type="password" placeholder="Confirm new password" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
+                        <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="bg-white/5 border-white/10 text-white placeholder:text-slate-500" />
                       </div>
-                      <Button onClick={() => toast.success('Password updated!')} className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-6 rounded-full font-bold">
+                      <Button
+                        disabled={changingPassword}
+                        onClick={async () => {
+                          if (!currentPassword || !newPassword) return toast.error('Please fill in all password fields');
+                          if (newPassword.length < 8) return toast.error('New password must be at least 8 characters');
+                          if (newPassword !== confirmPassword) return toast.error('Passwords do not match');
+                          setChangingPassword(true);
+                          try {
+                            await changePassword(currentPassword, newPassword);
+                            toast.success('Password updated!');
+                            setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : 'Failed to change password');
+                          } finally {
+                            setChangingPassword(false);
+                          }
+                        }}
+                        className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-6 rounded-full font-bold"
+                      >
+                        {changingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Update Password
                       </Button>
                     </div>
@@ -179,23 +217,49 @@ export default function Profile() {
                   <h2 className="text-xl font-bold text-white mb-6">Notification Preferences</h2>
                   <div className="space-y-4">
                     {[
-                      { label: 'Filing deadline alerts', desc: 'Get notified when filing deadlines are approaching', default: true },
-                      { label: 'Overdue filing warnings', desc: 'Immediate alert when a filing becomes overdue', default: true },
-                      { label: 'Director/PSC changes', desc: 'Notifications when director or PSC changes are detected', default: true },
-                      { label: 'Weekly compliance digest', desc: 'Summary email of your portfolio compliance status', default: false },
-                      { label: 'Product updates', desc: 'New features and platform announcements', default: false },
+                      { key: 'filing_deadlines', label: 'Filing deadline alerts', desc: 'Get notified when filing deadlines are approaching' },
+                      { key: 'overdue_warnings', label: 'Overdue filing warnings', desc: 'Immediate alert when a filing becomes overdue' },
+                      { key: 'director_changes', label: 'Director/PSC changes', desc: 'Notifications when director or PSC changes are detected' },
+                      { key: 'weekly_digest', label: 'Weekly compliance digest', desc: 'Summary email of your portfolio compliance status' },
+                      { key: 'product_updates', label: 'Product updates', desc: 'New features and platform announcements' },
                     ].map((pref) => (
-                      <div key={pref.label} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                      <div key={pref.key} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
                         <div>
                           <p className="text-sm font-medium text-white">{pref.label}</p>
                           <p className="text-xs text-slate-400">{pref.desc}</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" defaultChecked={pref.default} className="sr-only peer" />
+                          <input
+                            type="checkbox"
+                            checked={notifPrefs[pref.key] ?? false}
+                            onChange={(e) => setNotifPrefs((prev) => ({ ...prev, [pref.key]: e.target.checked }))}
+                            className="sr-only peer"
+                          />
                           <div className="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:bg-[#5A4BFF] after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                         </label>
                       </div>
                     ))}
+                    <div className="pt-4">
+                      <Button
+                        disabled={savingPrefs}
+                        onClick={async () => {
+                          setSavingPrefs(true);
+                          try {
+                            await updateAlertPreferences(notifPrefs);
+                            await refreshUser();
+                            toast.success('Notification preferences saved!');
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : 'Failed to save preferences');
+                          } finally {
+                            setSavingPrefs(false);
+                          }
+                        }}
+                        className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-6 rounded-full font-bold"
+                      >
+                        {savingPrefs && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Save Preferences
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}

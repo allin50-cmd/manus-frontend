@@ -766,7 +766,7 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
 
     res.json({
       ok: true,
-      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, userIntent: user.userIntent, onboardingComplete: user.onboardingComplete, createdAt: user.createdAt },
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, userIntent: user.userIntent, onboardingComplete: user.onboardingComplete, notificationPrefs: user.notificationPrefs, createdAt: user.createdAt },
     });
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -802,7 +802,7 @@ app.patch('/api/auth/me', async (req: Request, res: Response) => {
 
     res.json({
       ok: true,
-      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, userIntent: user.userIntent, onboardingComplete: user.onboardingComplete, createdAt: user.createdAt },
+      user: { id: user.id, email: user.email, name: user.name, company: user.company, plan: user.plan, role: user.role, userIntent: user.userIntent, onboardingComplete: user.onboardingComplete, notificationPrefs: user.notificationPrefs, createdAt: user.createdAt },
     });
   } catch (error) {
     console.error('Error updating user:', error);
@@ -824,6 +824,35 @@ app.post('/api/auth/logout', async (req: Request, res: Response) => {
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ ok: false, error: 'Logout failed' });
+  }
+});
+
+/**
+ * PATCH /api/auth/password
+ * Change password for authenticated user
+ */
+app.patch('/api/auth/password', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ ok: false, error: 'currentPassword and newPassword are required' });
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({ ok: false, error: 'New password must be at least 8 characters' });
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, auth.userId)).limit(1);
+    if (!user || !verifyPassword(currentPassword, user.passwordHash)) {
+      return res.status(400).json({ ok: false, error: 'Current password is incorrect' });
+    }
+
+    await db.update(users).set({ passwordHash: hashPassword(newPassword) }).where(eq(users.id, auth.userId));
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Failed to update password' });
   }
 });
 
@@ -1263,6 +1292,27 @@ app.post('/api/alerts/read-all', async (req: Request, res: Response) => {
     res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ ok: false, error: 'Failed to mark alerts as read' });
+  }
+});
+
+/**
+ * PATCH /api/alerts/preferences
+ * Save notification preference toggles for authenticated user
+ */
+app.patch('/api/alerts/preferences', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { prefs } = req.body;
+    if (!prefs || typeof prefs !== 'object' || Array.isArray(prefs)) {
+      return res.status(400).json({ ok: false, error: 'prefs must be an object' });
+    }
+
+    await db.update(users).set({ notificationPrefs: prefs }).where(eq(users.id, auth.userId));
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Failed to save preferences' });
   }
 });
 

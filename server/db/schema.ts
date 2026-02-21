@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean, integer, index, date } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, integer, index, date, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -97,6 +97,7 @@ export const users = pgTable('users', {
   verified: boolean('verified').default(false).notNull(),
   userIntent: varchar('user_intent', { length: 50 }), // accountant, business_owner, acsp_provider, company_secretary
   onboardingComplete: boolean('onboarding_complete').default(false).notNull(),
+  notificationPrefs: jsonb('notification_prefs'), // { filing_deadlines, overdue_warnings, director_changes, weekly_digest, product_updates }
   lastLoginAt: timestamp('last_login_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

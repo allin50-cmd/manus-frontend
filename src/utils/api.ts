@@ -12,6 +12,7 @@ export interface UserProfile {
   role?: string;
   userIntent?: string;
   onboardingComplete?: boolean;
+  notificationPrefs?: Record<string, boolean>;
   createdAt?: string;
 }
 
@@ -603,9 +604,18 @@ export async function fetchImportHistory(): Promise<ImportHistoryItem[]> {
 
 export async function updateAlertPreferences(prefs: Record<string, boolean>): Promise<void> {
   const res = await apiFetch('/alerts/preferences', {
-    method: 'PUT',
-    body: JSON.stringify(prefs),
+    method: 'PATCH',
+    body: JSON.stringify({ prefs }),
   });
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update alert preferences');
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await apiFetch('/auth/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to change password');
 }
