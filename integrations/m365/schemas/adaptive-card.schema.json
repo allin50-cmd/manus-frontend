@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fineguard.io/schemas/adaptive-card.json",
+  "title": "FineGuard Adaptive Card",
+  "description": "Schema for Teams Adaptive Card payloads used in compliance alerts",
+  "type": "object",
+  "required": ["type", "version", "body"],
+  "properties": {
+    "type": { "const": "AdaptiveCard" },
+    "version": { "const": "1.4" },
+    "$schema": { "type": "string" },
+    "body": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/element" }
+    },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action" }
+    }
+  },
+  "$defs": {
+    "element": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "text": { "type": "string" },
+        "size": { "type": "string" },
+        "weight": { "type": "string" },
+        "color": { "type": "string" },
+        "wrap": { "type": "boolean" },
+        "style": { "type": "string" },
+        "separator": { "type": "boolean" },
+        "spacing": { "type": "string" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["type", "title"],
+      "properties": {
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "data": { "type": "object" }
+      }
+    }
+  }
+}
