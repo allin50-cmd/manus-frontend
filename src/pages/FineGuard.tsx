@@ -11,11 +11,16 @@ export default function FineGuard() {
   const { isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const search = useSearch();
+
+  // Signup modal state
   const [signupOpen, setSignupOpen] = useState(false);
   const [signupEmail, setSignupEmail] = useState('');
   const [signupIntent, setSignupIntent] = useState('');
   const [signupPlan, setSignupPlan] = useState('');
+
+  // Demo modal state
   const [demoOpen, setDemoOpen] = useState(false);
+  const [demoEmail, setDemoEmail] = useState('');
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -23,12 +28,16 @@ export default function FineGuard() {
     }
   }, [isAuthenticated, loading, setLocation]);
 
-  // Auto-open signup modal from ?signup=true query param
+  // Auto-open modals from URL params (?signup=true / ?demo=true)
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       const params = new URLSearchParams(search);
       if (params.get('signup') === 'true') {
         setSignupOpen(true);
+        window.history.replaceState({}, '', '/');
+      } else if (params.get('demo') === 'true') {
+        setDemoEmail(params.get('email') || '');
+        setDemoOpen(true);
         window.history.replaceState({}, '', '/');
       }
     }
@@ -60,21 +69,26 @@ export default function FineGuard() {
 
   if (isAuthenticated) return null;
 
-  const openModal = (opts: { email?: string; intent?: string; plan?: string } = {}) => {
+  const openSignupModal = (opts: { email?: string; intent?: string; plan?: string } = {}) => {
     setSignupEmail(opts.email || '');
     setSignupIntent(opts.intent || '');
     setSignupPlan(opts.plan || '');
     setSignupOpen(true);
   };
 
+  const openDemoModal = (email?: string) => {
+    setDemoEmail(email || '');
+    setDemoOpen(true);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4">
       <LandingView
         onEnterVault={() => setLocation('/login')}
-        onBookDemo={() => setDemoOpen(true)}
-        onStartMonitoring={() => openModal()}
-        onStartWithEmail={(email) => openModal({ email })}
-        onStartWithIntent={(intent, plan) => openModal({ intent, plan })}
+        onBookDemo={openDemoModal}
+        onStartMonitoring={() => openSignupModal()}
+        onStartWithEmail={(email) => openSignupModal({ email })}
+        onStartWithIntent={(intent, plan) => openSignupModal({ intent, plan })}
       />
       <LandingSignupModal
         open={signupOpen}
@@ -90,6 +104,7 @@ export default function FineGuard() {
       <BookDemoModal
         open={demoOpen}
         onClose={() => setDemoOpen(false)}
+        initialEmail={demoEmail}
       />
     </div>
   );

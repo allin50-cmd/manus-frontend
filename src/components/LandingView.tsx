@@ -5,7 +5,7 @@ const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 interface LandingViewProps {
   onEnterVault?: () => void;
-  onBookDemo: () => void;
+  onBookDemo: (email?: string) => void;
   onStartMonitoring: () => void;
   /** Open signup modal with email pre-filled */
   onStartWithEmail?: (email: string) => void;
@@ -88,15 +88,24 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
 
         <div className="flex flex-wrap justify-center gap-6 mb-6">
           <button
-            onClick={onBookDemo}
+            onClick={() => onBookDemo(isValidEmail(heroEmail) ? heroEmail : undefined)}
             className="bg-white/10 border-2 border-white/20 text-white px-12 py-5 rounded-[3rem] font-black text-lg hover:bg-white/20 transition-all flex items-center gap-4 uppercase tracking-wide"
           >
             Book a Demo
           </button>
         </div>
-        <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">
-          No credit card required. Free plan available.
-        </p>
+        <div className="flex flex-wrap items-center justify-center gap-6">
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">
+            No credit card required. Free plan available.
+          </p>
+          <a
+            href="#pricing"
+            onClick={(e) => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }}
+            className="text-slate-500 text-sm font-bold uppercase tracking-widest hover:text-[#5A4BFF] transition-colors flex items-center gap-1"
+          >
+            See pricing ↓
+          </a>
+        </div>
       </section>
 
       {/* Social Proof / Stats */}
@@ -157,7 +166,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       </section>
 
       {/* Solution Section */}
-      <section className="text-center py-20">
+      <section id="features" className="text-center py-20">
         <h2 className="text-5xl md:text-6xl font-black text-white mb-8 leading-tight">
           Compliance protection, <span className="text-[#5A4BFF]">automated.</span>
         </h2>
@@ -208,7 +217,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 max-w-6xl mx-auto px-6">
+      <section id="testimonials" className="py-20 max-w-6xl mx-auto px-6">
         <h2 className="text-5xl font-black text-white text-center mb-16">
           Trusted by <span className="text-[#5A4BFF]">professionals.</span>
         </h2>
@@ -289,7 +298,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       </section>
 
       {/* Pricing Teaser */}
-      <section className="py-20 max-w-5xl mx-auto px-6">
+      <section id="pricing" className="py-20 max-w-5xl mx-auto px-6">
         <h2 className="text-5xl font-black text-white text-center mb-4">
           Simple, transparent <span className="text-[#5A4BFF]">pricing.</span>
         </h2>
@@ -338,7 +347,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
               <li>Dedicated support</li>
               <li>Custom integrations</li>
             </ul>
-            <button onClick={onBookDemo} className="w-full py-3 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-colors">
+            <button onClick={() => onBookDemo()} className="w-full py-3 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-colors">
               Contact Sales
             </button>
           </div>
@@ -391,7 +400,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
         </form>
 
         <button
-          onClick={onBookDemo}
+          onClick={() => onBookDemo(isValidEmail(ctaEmail) ? ctaEmail : undefined)}
           className="text-slate-400 hover:text-white text-sm font-medium underline underline-offset-4 transition-colors"
         >
           Or talk to sales instead

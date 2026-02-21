@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label';
 interface BookDemoModalProps {
   open: boolean;
   onClose: () => void;
+  /** Pre-fill the email field (e.g. from the hero capture form) */
+  initialEmail?: string;
 }
 
-export default function BookDemoModal({ open, onClose }: BookDemoModalProps) {
+export default function BookDemoModal({ open, onClose, initialEmail }: BookDemoModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -22,13 +24,13 @@ export default function BookDemoModal({ open, onClose }: BookDemoModalProps) {
   useEffect(() => {
     if (open) {
       setName('');
-      setEmail('');
+      setEmail(initialEmail || '');
       setMessage('');
       setLoading(false);
       setSubmitted(false);
       setTimeout(() => nameInputRef.current?.focus(), 80);
     }
-  }, [open]);
+  }, [open, initialEmail]);
 
   // Body scroll lock
   useEffect(() => {
