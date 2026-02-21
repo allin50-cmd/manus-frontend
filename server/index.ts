@@ -2178,6 +2178,242 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// M365 COMPLIANCE API — Teams Tab & Webhook Integration
+// ============================================================================
+
+/**
+ * GET /api/compliance/risk-summary
+ * Returns risk counts for the FineGuard Teams tab.
+ * Maps DB complianceStatus + riskLevel → Critical / High / Medium / Low buckets.
+ */
+app.get('/api/compliance/risk-summary', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const companies = await db
+      .select({
+        complianceStatus: monitoredCompanies.complianceStatus,
+        riskLevel: monitoredCompanies.riskLevel,
+      })
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.userId, auth.userId));
+
+    let critical = 0, high = 0, medium = 0, low = 0;
+
+    for (const c of companies) {
+      if (c.complianceStatus === 'overdue') {
+        critical++;
+      } else if (c.riskLevel === 'high') {
+        high++;
+      } else if (c.riskLevel === 'medium') {
+        medium++;
+      } else {
+        low++;
+      }
+    }
+
+    res.json({
+      ok: true,
+      critical,
+      high,
+      medium,
+      low,
+      lastUpdated: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error fetching compliance risk summary:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch risk summary' });
+  }
+});
+
+/**
+ * GET /api/compliance/filings?status=upcoming|all
+ * Returns filing deadlines for the FineGuard Teams tab.
+ * Combines acspFilings + monitoredCompanies due-date fields.
+ */
+app.get('/api/compliance/filings', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const statusFilter = (req.query['status'] as string) ?? 'upcoming';
+    const now = new Date();
+    const cutoffDays = 90;
+    const cutoff = new Date(now.getTime() + cutoffDays * 24 * 60 * 60 * 1000);
+
+    // Helper: days until a date string (YYYY-MM-DD or ISO)
+    function daysUntil(dateStr: string | null | undefined): number | null {
+      if (!dateStr) return null;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return null;
+      return Math.ceil((d.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+    }
+
+    function dueDateRiskLevel(days: number): 'Critical' | 'High' | 'Medium' | 'Low' {
+      if (days <= 7) return 'Critical';
+      if (days <= 30) return 'High';
+      if (days <= 60) return 'Medium';
+      return 'Low';
+    }
+
+    type FilingEntry = {
+      id: string;
+      name: string;
+      dueDate: string;
+      riskLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+      status: 'pending' | 'overdue' | 'filed';
+    };
+
+    const filings: FilingEntry[] = [];
+
+    // Source 1: ACSP filings with a dueDate
+    const acspRows = await db
+      .select()
+      .from(acspFilings)
+      .where(eq(acspFilings.userId, auth.userId));
+
+    for (const f of acspRows) {
+      const days = daysUntil(f.dueDate);
+      if (days === null) continue;
+      if (statusFilter === 'upcoming' && (days < 0 || new Date(f.dueDate!) > cutoff)) continue;
+
+      const filingStatus: FilingEntry['status'] =
+        f.status === 'submitted' || f.status === 'accepted' ? 'filed'
+        : days < 0 ? 'overdue'
+        : 'pending';
+
+      filings.push({
+        id: f.id,
+        name: f.filingType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        dueDate: f.dueDate!,
+        riskLevel: days < 0 ? 'Critical' : dueDateRiskLevel(days),
+        status: filingStatus,
+      });
+    }
+
+    // Source 2: monitoredCompanies accounts + confirmation due dates
+    const monitored = await db
+      .select({
+        id: monitoredCompanies.id,
+        companyName: monitoredCompanies.companyName,
+        accountsNextDue: monitoredCompanies.accountsNextDue,
+        confirmationNextDue: monitoredCompanies.confirmationNextDue,
+        complianceStatus: monitoredCompanies.complianceStatus,
+      })
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.userId, auth.userId));
+
+    for (const co of monitored) {
+      const dueDates: { name: string; due: string | null | undefined }[] = [
+        { name: `Annual Accounts — ${co.companyName}`, due: co.accountsNextDue },
+        { name: `Confirmation Statement — ${co.companyName}`, due: co.confirmationNextDue },
+      ];
+
+      for (const entry of dueDates) {
+        const days = daysUntil(entry.due);
+        if (days === null) continue;
+        if (statusFilter === 'upcoming' && (days < 0 || new Date(entry.due!) > cutoff)) continue;
+
+        const filingStatus: FilingEntry['status'] =
+          co.complianceStatus === 'overdue' ? 'overdue'
+          : days < 0 ? 'overdue'
+          : 'pending';
+
+        filings.push({
+          id: `${co.id}-${entry.name}`,
+          name: entry.name,
+          dueDate: entry.due!,
+          riskLevel: days < 0 ? 'Critical' : dueDateRiskLevel(days),
+          status: filingStatus,
+        });
+      }
+    }
+
+    // Sort ascending by dueDate
+    filings.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+    res.json({ ok: true, filings });
+  } catch (error) {
+    console.error('Error fetching compliance filings:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch filings' });
+  }
+});
+
+/**
+ * POST /api/webhooks/fineguard/send
+ * Server-side trigger: forwards a compliance event to the Azure Function
+ * (which retries up to 3 times before calling Power Automate).
+ *
+ * Requires: authenticated session + valid payload (eventType + firmId).
+ * Env vars: AZURE_FUNCTION_URL, FINEGUARD_WEBHOOK_SECRET
+ */
+app.post('/api/webhooks/fineguard/send', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const body = req.body as Record<string, unknown>;
+
+    if (typeof body['eventType'] !== 'string' || !body['eventType'] ||
+        typeof body['firmId'] !== 'string' || !body['firmId']) {
+      return res.status(422).json({
+        ok: false,
+        error: 'Payload must include eventType (string) and firmId (string)',
+      });
+    }
+
+    const azureFunctionUrl = process.env['AZURE_FUNCTION_URL'] ??
+                             process.env['POWER_AUTOMATE_TRIGGER_URL'];
+
+    if (!azureFunctionUrl) {
+      return res.status(503).json({
+        ok: false,
+        error: 'Webhook forwarding not configured (missing AZURE_FUNCTION_URL)',
+      });
+    }
+
+    const webhookSecret = process.env['FINEGUARD_WEBHOOK_SECRET'] ?? '';
+
+    const payload = {
+      ...body,
+      timestamp: body['timestamp'] ?? new Date().toISOString(),
+    };
+
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 15_000);
+
+    let forwardRes: Response;
+    try {
+      forwardRes = await fetch(azureFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-fineguard-secret': webhookSecret,
+          'x-fineguard-event': String(body['eventType']),
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(tid);
+    }
+
+    const forwardBody = await forwardRes.json().catch(() => ({}));
+
+    res.status(forwardRes.ok ? 200 : forwardRes.status).json({
+      ok: forwardRes.ok,
+      forwarded: true,
+      upstreamStatus: forwardRes.status,
+      upstreamResponse: forwardBody,
+    });
+  } catch (error) {
+    console.error('Error forwarding webhook to Azure Function:', error);
+    res.status(502).json({ ok: false, error: 'Failed to forward webhook event' });
+  }
+});
+
+// ============================================================================
 // STATIC FILE SERVING & SPA FALLBACK
 // ============================================================================
 
