@@ -7,6 +7,9 @@ import { db } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
+// FineGuard MTD routes
+import importRouter from './routes/import';
+import mcpRouter from './routes/mcp';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +31,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
+
+// ─── FineGuard MTD Routes ─────────────────────────────────────────────────────
+app.use('/api/import', importRouter);
+app.use('/api/imports', importRouter);
+app.use('/api/mcp', mcpRouter);
 
 // ============================================================================
 // HEALTH CHECK ENDPOINT

@@ -1,0 +1,608 @@
+openapi: 3.0.3
+info:
+  title: FineGuard MTD API
+  description: |
+    Production-ready API for FineGuard Making Tax Digital submission system.
+    Handles CSV/PDF import, connector management, and HMRC MTD VAT submissions.
+
+    ## Authentication
+    All endpoints require the `x-tenant-id` header for tenant scoping.
+    Production deployments should use Azure AD JWT tokens.
+
+    ## Data Residency
+    All data is stored in UK South Azure region. Audit blobs are WORM-protected
+    with 7-year retention per HMRC record-keeping requirements.
+  version: 1.0.0
+  contact:
+    name: FineGuard Support
+    url: https://fineguard.io/support
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://{appName}.azurewebsites.net
+    description: Azure App Service
+    variables:
+      appName:
+        default: fineguard-dev
+
+security:
+  - TenantHeader: []
+
+tags:
+  - name: imports
+    description: CSV and PDF invoice import management
+  - name: connectors
+    description: Accounting system connector management (Xero, QB, Sage)
+  - name: mtd
+    description: HMRC Making Tax Digital submission
+  - name: audit
+    description: Immutable audit trail (VaultLine)
+
+paths:
+  /api/import/csv:
+    post:
+      tags: [imports]
+      summary: Upload CSV file for import
+      description: |
+        Streams a CSV file through the parser, applies a mapping template,
+        validates records, and persists canonical invoice records.
+      operationId: uploadCsv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file (max 50MB)
+                templateId:
+                  type: string
+                  format: uuid
+                  description: Mapping template ID (uses generic template if omitted)
+      responses:
+        '201':
+          description: Import created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/import/pdf:
+    post:
+      tags: [imports]
+      summary: Upload PDF for Form Recognizer extraction
+      description: |
+        Runs Azure Form Recognizer on the uploaded PDF, maps extracted fields
+        to the canonical invoice model with confidence scoring.
+      operationId: uploadPdf
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF file (max 50MB)
+      responses:
+        '201':
+          description: Import created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  importId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  recordCount:
+                    type: integer
+                  confidenceAvg:
+                    type: number
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/imports:
+    get:
+      tags: [imports]
+      summary: List imports for tenant
+      operationId: listImports
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Import list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imports:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Import'
+
+  /api/imports/{id}/records:
+    get:
+      tags: [imports]
+      summary: List mapped records for an import
+      operationId: getImportRecords
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Record list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceRecord'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/imports/{id}/approve:
+    post:
+      tags: [imports]
+      summary: Approve an import for MTD submission
+      operationId: approveImport
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approvedBy:
+                  type: string
+                  description: Identifier of the approving user
+      responses:
+        '200':
+          description: Import approved
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/mcp/accounts:
+    post:
+      tags: [connectors]
+      summary: Create connector and return OAuth URL
+      operationId: createConnector
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider]
+              properties:
+                provider:
+                  type: string
+                  enum: [xero, quickbooks, sage, dynamics365]
+      responses:
+        '201':
+          description: Connector created with OAuth URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connectorId:
+                    type: string
+                    format: uuid
+                  authUrl:
+                    type: string
+                    format: uri
+                  state:
+                    type: string
+
+    get:
+      tags: [connectors]
+      summary: List connectors for tenant
+      operationId: listConnectors
+      responses:
+        '200':
+          description: Connector list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connectors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Connector'
+
+  /api/mcp/accounts/{id}/refresh:
+    post:
+      tags: [connectors]
+      summary: Force refresh a connector's access token
+      operationId: refreshConnector
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Token refreshed
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/mcp/submit-mtd:
+    post:
+      tags: [mtd]
+      summary: Orchestrate MTD VAT return submission to HMRC
+      description: |
+        Validates, submits, and records a VAT return to HMRC MTD API.
+        Requires an `idempotencyKey` — re-submitting with the same key
+        returns the existing receipt without a duplicate submission.
+      operationId: submitMtd
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MtdSubmissionRequest'
+      responses:
+        '201':
+          description: Submission accepted by HMRC
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MtdSubmissionResult'
+        '422':
+          description: Validation failed or HMRC rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /api/mcp/status/{tenantId}:
+    get:
+      tags: [connectors]
+      summary: Get connector and submission status overview
+      operationId: getStatus
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status overview
+
+  /api/mcp/audit:
+    get:
+      tags: [audit]
+      summary: List audit events for tenant
+      operationId: listAuditEvents
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+      responses:
+        '200':
+          description: Audit event list
+
+# ─── Components ───────────────────────────────────────────────────────────────
+
+components:
+  securitySchemes:
+    TenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant-id
+
+  schemas:
+    Import:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+        source:
+          type: string
+          enum: [csv, pdf, xero, quickbooks, sage]
+        filename:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, processing, validated, approved, submitted, failed]
+        recordCount:
+          type: integer
+          nullable: true
+        errorCount:
+          type: integer
+          nullable: true
+        confidenceAvg:
+          type: string
+          nullable: true
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        approvedBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ImportResult:
+      type: object
+      properties:
+        importId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        totalRows:
+          type: integer
+        validRows:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+        confidenceAvg:
+          type: number
+
+    InvoiceRecord:
+      type: object
+      description: Canonical invoice record (source-agnostic)
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+        clientId:
+          type: string
+        date:
+          type: string
+          format: date
+        netAmount:
+          type: string
+          description: Decimal string to preserve precision
+        vatAmount:
+          type: string
+        vatCode:
+          type: string
+        currency:
+          type: string
+          default: GBP
+        source:
+          type: string
+          enum: [xero, quickbooks, sage, pdf, csv]
+        confidence:
+          type: string
+          description: 0.0–1.0 confidence score
+        isValid:
+          type: boolean
+        validationErrors:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    Connector:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        displayName:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, active, error, revoked]
+        tokenExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSyncAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    MtdSubmissionRequest:
+      type: object
+      required: [idempotencyKey, vatNumber, periodKey, periodStart, periodEnd]
+      properties:
+        idempotencyKey:
+          type: string
+          description: Unique key; re-submitting with same key returns existing receipt
+        vatNumber:
+          type: string
+          description: UK VAT registration number (9 digits)
+        periodKey:
+          type: string
+          description: HMRC period key (e.g. 24A1)
+        periodStart:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        importId:
+          type: string
+          format: uuid
+          description: Approved import to aggregate VAT from (mutually exclusive with payload)
+        payload:
+          $ref: '#/components/schemas/VatReturnPayload'
+
+    VatReturnPayload:
+      type: object
+      required: [vatDueSales, totalVatDue, netVatDue, totalValueSalesExVAT, finalised]
+      properties:
+        vatDueSales:
+          type: number
+          description: Box 1 — VAT due on sales and other outputs
+        vatDueAcquisitions:
+          type: number
+          description: Box 2 — VAT due on acquisitions from EU
+          default: 0
+        totalVatDue:
+          type: number
+          description: Box 3 — Total VAT due (Box 1 + Box 2)
+        vatReclaimedCurrPeriod:
+          type: number
+          description: Box 4 — VAT reclaimed on purchases
+          default: 0
+        netVatDue:
+          type: number
+          description: Box 5 — Net VAT to pay or reclaim
+        totalValueSalesExVAT:
+          type: number
+          description: Box 6 — Total value of sales, excluding VAT (whole pounds)
+        totalValuePurchasesExVAT:
+          type: number
+          description: Box 7 — Total value of purchases (whole pounds)
+          default: 0
+        totalValueGoodsSuppliedExVAT:
+          type: number
+          description: Box 8 — Total value of goods supplied (whole pounds)
+          default: 0
+        totalAcquisitionsExVAT:
+          type: number
+          description: Box 9 — Total acquisitions from EU (whole pounds)
+          default: 0
+        finalised:
+          type: boolean
+          description: Must be true for submission
+
+    MtdSubmissionResult:
+      type: object
+      properties:
+        submissionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [accepted, rejected, error]
+        receipt:
+          type: object
+          properties:
+            formBundleNumber:
+              type: string
+            processingDate:
+              type: string
+            correlationId:
+              type: string
+
+    ValidationError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: MTD-001
+        field:
+          type: string
+        message:
+          type: string
+        kbArticle:
+          type: string
+          format: uri
+        severity:
+          type: string
+          enum: [error, warning]
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
