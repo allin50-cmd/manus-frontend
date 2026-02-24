@@ -23,6 +23,15 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Detect docker compose command (v2 vs v1)
+if docker compose version > /dev/null 2>&1; then
+    COMPOSE_CMD="docker compose"
+elif docker-compose --version > /dev/null 2>&1; then
+    COMPOSE_CMD="docker-compose"
+else
+    COMPOSE_CMD="docker-compose"
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -53,16 +62,15 @@ print_error() {
 cmd_start() {
     print_header "Starting Local Azure Deployment"
 
-    if docker-compose --version > /dev/null 2>&1; then
-        print_success "Docker Compose is available"
-    else
+    if [ -z "$COMPOSE_CMD" ] || ! $COMPOSE_CMD version > /dev/null 2>&1; then
         print_error "Docker Compose not found. Install from: https://docs.docker.com/compose/install/"
         exit 1
     fi
+    print_success "Docker Compose is available ($COMPOSE_CMD)"
 
     echo ""
     echo "Building and starting services..."
-    docker-compose up --build -d
+    $COMPOSE_CMD up --build -d
 
     print_success "Services started"
     echo ""
@@ -70,7 +78,7 @@ cmd_start() {
     # Wait for services to be ready
     echo "Waiting for PostgreSQL to be healthy..."
     for i in {1..30}; do
-        if docker-compose exec -T postgres pg_isready -U vaultline > /dev/null 2>&1; then
+        if $COMPOSE_CMD exec -T postgres pg_isready -U vaultline > /dev/null 2>&1; then
             print_success "PostgreSQL is ready"
             break
         fi
@@ -83,7 +91,7 @@ cmd_start() {
 
     echo ""
     echo "Initializing database..."
-    docker-compose exec -T app npm run db:push
+    $COMPOSE_CMD exec -T app npm run db:push
 
     echo ""
     echo "Waiting for app to be ready..."
@@ -114,7 +122,7 @@ cmd_start() {
 
 cmd_stop() {
     print_header "Stopping Services"
-    docker-compose down
+    $COMPOSE_CMD down
     print_success "Services stopped"
 }
 
@@ -127,7 +135,7 @@ cmd_restart() {
 
 cmd_logs() {
     print_header "Application Logs"
-    docker-compose logs -f app
+    $COMPOSE_CMD logs -f app
 }
 
 cmd_health() {
@@ -140,7 +148,7 @@ cmd_health() {
         print_error "Application health check failed"
         echo ""
         echo "Checking service status..."
-        docker-compose ps
+        $COMPOSE_CMD ps
         exit 1
     fi
 }
@@ -151,7 +159,7 @@ cmd_db_reset() {
     read -p "Continue? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        docker-compose down -v
+        $COMPOSE_CMD down -v
         print_success "Database reset complete"
         echo ""
         echo "Start services again with: $0 start"
@@ -166,7 +174,7 @@ cmd_clean() {
     read -p "Continue? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        docker-compose down -v --rmi all
+        $COMPOSE_CMD down -v --rmi all
         print_success "Cleanup complete"
     else
         echo "Cancelled"
