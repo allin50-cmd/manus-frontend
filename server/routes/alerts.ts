@@ -90,11 +90,17 @@ router.post('/alerts/trigger', async (req: Request, res: Response) => {
       alert.recipients.advisor = [advisorEmail];
     }
 
+    // Use channels from request body if provided, otherwise fall back to preferences
+    const requestedChannels = req.body.channels as string[] | undefined;
+    const enabledChannels = requestedChannels
+      ? requestedChannels.join(',')
+      : userPrefs?.enabledChannels || 'outlook';
+
     // Format and send alerts
     let sentCount = 0;
     const errors: string[] = [];
 
-    if (userPrefs?.enabledChannels.includes('outlook')) {
+    if (enabledChannels.includes('outlook')) {
       const { subject, htmlBody } = formatAlertForEmail(alert);
       const allRecipients = [...(alert.recipients.client || []), ...(alert.recipients.advisor || [])];
 
@@ -103,6 +109,23 @@ router.post('/alerts/trigger', async (req: Request, res: Response) => {
         sentCount += allRecipients.length;
       } else {
         errors.push(`Outlook: ${result.message}`);
+      }
+    }
+
+    if (enabledChannels.includes('teams')) {
+      const teamsTeamId = process.env['TEAMS_TEAM_ID'];
+      const teamsChannelId = process.env['TEAMS_CHANNEL_ID'];
+
+      if (teamsTeamId && teamsChannelId) {
+        const adaptiveCard = formatAlertForTeams(alert);
+        const teamsResult = await sendComplianceAlertViaTeams(teamsTeamId, teamsChannelId, adaptiveCard);
+        if (teamsResult.success) {
+          sentCount += 1;
+        } else {
+          errors.push(`Teams: ${teamsResult.message}`);
+        }
+      } else {
+        errors.push('Teams: TEAMS_TEAM_ID or TEAMS_CHANNEL_ID not configured');
       }
     }
 
@@ -118,7 +141,7 @@ router.post('/alerts/trigger', async (req: Request, res: Response) => {
         title,
         description,
         riskLevel: riskLevel as any,
-        channels: userPrefs?.enabledChannels || 'outlook',
+        channels: enabledChannels,
         triggerType: (triggerType || 'manual') as AlertTriggerType,
         recipientCount: sentCount,
         status: errors.length === 0 ? 'sent' : 'failed',

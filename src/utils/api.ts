@@ -671,3 +671,20 @@ export async function sendM365TestNotification(channel: 'outlook' | 'teams', tar
   if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Failed to send test notification');
   return { message: data.message };
 }
+
+export async function forwardComplianceEvent(event: {
+  eventType: string;
+  firmId: string;
+  firmName?: string;
+  riskLevel?: string;
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  assignedTo?: string;
+}): Promise<{ ok: boolean; statusCode?: number; retryCount: number; error?: string }> {
+  const res = await apiFetch('/m365/forward-event', {
+    method: 'POST',
+    body: JSON.stringify(event),
+  });
+  return res.json();
+}

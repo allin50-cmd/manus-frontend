@@ -88,12 +88,15 @@ export default function M365IntegrationPanel() {
                 { name: 'Microsoft Graph API', key: 'graphApi', icon: Zap },
                 { name: 'Teams Bot & Notifications', key: 'teamsBot', icon: Users },
                 { name: 'Outlook Email & Calendar', key: 'outlookNotifications', icon: Mail },
+                { name: 'Webhook Forwarding', key: 'webhookForwarding', icon: ExternalLink },
               ].map(({ name, key, icon: Icon }) => (
                 <div key={key} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
                   <Icon size={18} className="text-blue-400 flex-shrink-0" />
                   <span className="text-sm text-slate-300">{name}</span>
-                  {status?.services[key as keyof typeof status.services] && (
+                  {status?.services[key as keyof typeof status.services] ? (
                     <CheckCircle size={16} className="text-green-400 ml-auto flex-shrink-0" />
+                  ) : (
+                    <AlertCircle size={16} className="text-slate-600 ml-auto flex-shrink-0" />
                   )}
                 </div>
               ))}

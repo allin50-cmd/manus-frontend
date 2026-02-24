@@ -11,6 +11,7 @@ import { companiesHouseService } from './services/companiesHouse';
 import { companiesHouseLocalService } from './services/companiesHouseLocal';
 import { getM365Status, sendTestNotification, loadM365Config } from './services/m365';
 import { startDigestScheduler } from './services/digestScheduler';
+import { forwardComplianceEvent, isWebhookConfigured } from './services/webhookForwarder';
 import crypto from 'crypto';
 
 // Load environment variables
@@ -2560,6 +2561,70 @@ app.get('/api/m365/config-guide', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching M365 config guide:', error);
     res.status(500).json({ ok: false, error: 'Failed to fetch config guide' });
+  }
+});
+
+/**
+ * POST /api/m365/forward-event
+ * Forward a compliance event to the Azure Function / Power Automate webhook.
+ * Body: { eventType, firmId, firmName?, riskLevel?, title?, description?, dueDate?, assignedTo? }
+ */
+app.post('/api/m365/forward-event', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    if (!isWebhookConfigured()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'Webhook forwarding not configured. Set AZURE_FUNCTION_URL and FINEGUARD_WEBHOOK_SECRET.',
+      });
+    }
+
+    const { eventType, firmId } = req.body;
+    if (!eventType || !firmId) {
+      return res.status(400).json({ ok: false, error: 'eventType and firmId are required' });
+    }
+
+    const result = await forwardComplianceEvent(req.body);
+    res.json({
+      ok: result.success,
+      statusCode: result.statusCode,
+      retryCount: result.retryCount,
+      error: result.error,
+    });
+  } catch (error) {
+    console.error('Error forwarding event:', error);
+    res.status(500).json({ ok: false, error: 'Failed to forward event' });
+  }
+});
+
+/**
+ * POST /api/messages
+ * Bot Framework messaging endpoint — receives activities from Teams.
+ * The BotFrameworkAdapter forwards incoming messages to the FineGuard bot.
+ */
+app.post('/api/messages', async (req: Request, res: Response) => {
+  try {
+    const { BotFrameworkAdapter } = await import('botbuilder');
+    const bot = await (await import('./services/m365')).getTeamsBot();
+
+    const config = loadM365Config();
+    const adapter = new BotFrameworkAdapter({
+      appId: config?.clientId || process.env['MICROSOFT_APP_ID'] || '',
+      appPassword: config?.clientSecret || process.env['MICROSOFT_APP_PASSWORD'] || '',
+    });
+
+    adapter.onTurnError = async (_context, error) => {
+      console.error('[Teams Bot] Unhandled error:', error);
+    };
+
+    await adapter.process(req, res, (ctx) => bot.run(ctx));
+  } catch (error) {
+    console.error('Error in bot messaging endpoint:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Bot messaging endpoint error' });
+    }
   }
 });
 

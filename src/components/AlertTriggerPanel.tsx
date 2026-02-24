@@ -48,6 +48,7 @@ export default function AlertTriggerPanel({ companyId, companyName, riskLevel }:
           riskLevel: riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1),
           deadline: formData.deadline || undefined,
           triggerType: 'manual',
+          channels: formData.channels,
         }),
       });
 
