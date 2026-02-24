@@ -36,19 +36,37 @@ const DIGEST_INTERVALS: Record<string, number> = {
 
 /**
  * Initialize the digest scheduler. Call this once at app startup.
+ * Degrades gracefully if the alert_preferences table doesn't exist yet.
  */
 export function startDigestScheduler() {
   console.log('[DigestScheduler] Starting digest alert scheduler...');
+
+  // Run an initial check to verify the table exists before scheduling
+  processDigestAlerts()
+    .then(() => {
+      console.log('[DigestScheduler] Initial check passed — scheduling every 5 minutes');
+    })
+    .catch((error) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes('does not exist') || msg.includes('relation')) {
+        console.warn('[DigestScheduler] Alert tables not yet created — scheduler will retry on next interval');
+      } else {
+        console.error('[DigestScheduler] Initial check failed:', msg);
+      }
+    });
 
   setInterval(async () => {
     try {
       await processDigestAlerts();
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes('does not exist') || msg.includes('relation')) {
+        // Silently skip — tables haven't been migrated yet
+        return;
+      }
       console.error('[DigestScheduler] Error processing digests:', error);
     }
   }, CHECK_INTERVAL_MS);
-
-  console.log('[DigestScheduler] Digest scheduler running (checks every 5 minutes)');
 }
 
 /**
