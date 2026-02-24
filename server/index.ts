@@ -1234,6 +1234,136 @@ app.get('/api/bulk-data/overdue', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// COMPLIANCE API ENDPOINTS (used by Teams Tab + Teams Bot)
+// ============================================================================
+
+/**
+ * GET /api/compliance/risk-summary
+ * Aggregate risk counts from the user's monitored companies and unread alerts.
+ * Supports auth via Bearer token OR X-Firm-Id header (for Teams tab).
+ */
+app.get('/api/compliance/risk-summary', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const companies = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.userId, auth.userId));
+
+    const userAlerts = await db
+      .select()
+      .from(alerts)
+      .where(and(eq(alerts.userId, auth.userId), eq(alerts.read, false)));
+
+    // Count by severity from alerts table
+    const criticalAlerts = userAlerts.filter(a => a.severity === 'critical').length;
+    const warningAlerts = userAlerts.filter(a => a.severity === 'warning').length;
+    const infoAlerts = userAlerts.filter(a => a.severity === 'info').length;
+
+    // Count by risk level from monitored companies
+    const highRisk = companies.filter(c => c.riskLevel === 'high').length;
+    const mediumRisk = companies.filter(c => c.riskLevel === 'medium').length;
+    const lowRisk = companies.filter(c => c.riskLevel === 'low').length;
+
+    res.json({
+      critical: criticalAlerts + companies.filter(c => c.complianceStatus === 'overdue').length,
+      high: highRisk + warningAlerts,
+      medium: mediumRisk + infoAlerts,
+      low: lowRisk + companies.filter(c => c.complianceStatus === 'compliant').length,
+      lastUpdated: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error fetching risk summary:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch risk summary' });
+  }
+});
+
+/**
+ * GET /api/compliance/filings?status=upcoming
+ * Return upcoming filing deadlines from the user's monitored companies.
+ * Fetches real data from Companies House for each company with a known deadline.
+ */
+app.get('/api/compliance/filings', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const companies = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.userId, auth.userId));
+
+    const filings: Array<{
+      id: string;
+      companyNumber: string;
+      companyName: string;
+      name: string;
+      dueDate: string;
+      riskLevel: string;
+      status: string;
+    }> = [];
+
+    for (const company of companies) {
+      // Accounts next due
+      if (company.accountsNextDue) {
+        const daysUntil = Math.ceil(
+          (new Date(company.accountsNextDue).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
+        const isOverdue = daysUntil < 0;
+        const riskLevel = isOverdue ? 'Critical' : daysUntil <= 14 ? 'High' : daysUntil <= 30 ? 'Medium' : 'Low';
+
+        filings.push({
+          id: `${company.id}-accounts`,
+          companyNumber: company.companyNumber,
+          companyName: company.companyName,
+          name: `Annual Accounts — ${company.companyName}`,
+          dueDate: company.accountsNextDue,
+          riskLevel,
+          status: isOverdue ? 'overdue' : 'pending',
+        });
+      }
+
+      // Confirmation statement next due
+      if (company.confirmationNextDue) {
+        const daysUntil = Math.ceil(
+          (new Date(company.confirmationNextDue).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
+        const isOverdue = daysUntil < 0;
+        const riskLevel = isOverdue ? 'Critical' : daysUntil <= 14 ? 'High' : daysUntil <= 30 ? 'Medium' : 'Low';
+
+        filings.push({
+          id: `${company.id}-confirmation`,
+          companyNumber: company.companyNumber,
+          companyName: company.companyName,
+          name: `Confirmation Statement — ${company.companyName}`,
+          dueDate: company.confirmationNextDue,
+          riskLevel,
+          status: isOverdue ? 'overdue' : 'pending',
+        });
+      }
+    }
+
+    // Sort by due date ascending (most urgent first)
+    filings.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+    // Filter by status if requested
+    const statusFilter = req.query.status as string | undefined;
+    const filteredFilings = statusFilter === 'upcoming'
+      ? filings.filter(f => f.status === 'pending')
+      : statusFilter === 'overdue'
+        ? filings.filter(f => f.status === 'overdue')
+        : filings;
+
+    res.json({ ok: true, filings: filteredFilings, total: filteredFilings.length });
+  } catch (error) {
+    console.error('Error fetching filings:', error);
+    res.status(500).json({ ok: false, error: 'Failed to fetch filings' });
+  }
+});
+
+// ============================================================================
 // FINEGUARD PRO - ALERTS ENDPOINTS
 // ============================================================================
 
