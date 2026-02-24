@@ -212,7 +212,7 @@ export const MCP_TOOLS: MCPTool[] = [
     name: 'generate_report',
     description: 'Generate a compliance or analytics report in PDF, CSV, or JSON format.',
     category: 'document',
-    icon: 'file-chart',
+    icon: 'file-bar-chart',
     requiresNetwork: false,
     isMutating: false,
     avgDurationMs: 3000,

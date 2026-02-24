@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DeploymentStatusPanel } from '@/components/admin/DeploymentStatusPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -344,6 +345,10 @@ export default function Admin() {
               <MessageSquare className="w-4 h-4 mr-2" />
               Contacts
             </TabsTrigger>
+            <TabsTrigger value="deployments" className="data-[state=active]:bg-[#5A4BFF]">
+              <Rocket className="w-4 h-4 mr-2" />
+              Deployments
+            </TabsTrigger>
           </TabsList>
 
           {/* Leads Tab */}
@@ -530,6 +535,11 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Deployments Tab */}
+          <TabsContent value="deployments">
+            <DeploymentStatusPanel />
           </TabsContent>
         </Tabs>
       </div>

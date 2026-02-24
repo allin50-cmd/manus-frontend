@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { cn, timeAgo, formatDate } from '@/lib/utils';
 import { executeTool } from '@/services/mcpTools';
 import { cacheArticle, getCachedArticle, getCacheStats, clearCache } from '@/services/kbCache';
-import { useToast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/toast';
 
 interface Article {
   id: string;
@@ -39,7 +39,6 @@ const FEATURED_ARTICLES: Article[] = [
 ];
 
 export default function KnowledgeBase() {
-  const toast = useToast();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [searching, setSearching] = useState(false);

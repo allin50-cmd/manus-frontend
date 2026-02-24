@@ -7,7 +7,7 @@ import {
   ScrollText, Filter, Download, RefreshCw, Shield,
   AlertTriangle, AlertCircle, Info, CheckCircle2, XCircle,
   Lock, Database, Clock, User, Search, ChevronDown, Upload,
-  FileText,
+  FileText, Plus,
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -313,11 +313,3 @@ export default function AuditLog() {
   );
 }
 
-// ─── Missing import fix ──────────────────────────────────────────────────────
-function Plus({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-    </svg>
-  );
-}
