@@ -169,13 +169,23 @@ fi
 print_header "6. Webhook Forwarding"
 
 if [ -n "$AUTH_TOKEN" ]; then
-  test_endpoint "POST /api/m365/forward-event (missing fields)" POST \
-    "$BASE_URL/api/m365/forward-event" "400" \
-    '{"wrong": "data"}'
+  # Webhook forwarding returns 503 if AZURE_FUNCTION_URL is not configured (expected in local dev)
+  # Returns 400 if configured but payload is invalid
+  # Returns 200 if configured and payload is valid
+  if [ -n "${AZURE_FUNCTION_URL+x}" ] && [ "${AZURE_FUNCTION_URL}" != "" ]; then
+    test_endpoint "POST /api/m365/forward-event (missing fields)" POST \
+      "$BASE_URL/api/m365/forward-event" "400" \
+      '{"wrong": "data"}'
 
-  test_endpoint "POST /api/m365/forward-event (valid payload)" POST \
-    "$BASE_URL/api/m365/forward-event" "200" \
-    '{"eventType":"risk_alert","firmId":"firm-001","firmName":"Test Ltd","riskLevel":"High","title":"Test Alert","description":"Integration test","timestamp":"2026-02-24T12:00:00Z"}'
+    test_endpoint "POST /api/m365/forward-event (valid payload)" POST \
+      "$BASE_URL/api/m365/forward-event" "200" \
+      '{"eventType":"risk_alert","firmId":"firm-001","firmName":"Test Ltd","riskLevel":"High","title":"Test Alert","description":"Integration test","timestamp":"2026-02-24T12:00:00Z"}'
+  else
+    # Not configured — expect 503
+    test_endpoint "POST /api/m365/forward-event (not configured → 503)" POST \
+      "$BASE_URL/api/m365/forward-event" "503" \
+      '{"eventType":"risk_alert","firmId":"firm-001"}'
+  fi
 else
   test_skip "POST /api/m365/forward-event" "no AUTH_TOKEN provided"
 fi
@@ -216,10 +226,11 @@ fi
 
 print_header "8. Bot Messaging Endpoint"
 
-# The bot endpoint expects Bot Framework activity format
-# A basic health check — invalid activity should return 400/500 (not 404)
+# The bot endpoint expects Bot Framework activity format.
+# With a minimal activity payload, the adapter processes it and returns 200.
+# This verifies the endpoint is mounted and reachable (not 404).
 test_endpoint "POST /api/messages (endpoint exists)" POST \
-  "$BASE_URL/api/messages" "500" \
+  "$BASE_URL/api/messages" "200" \
   '{"type":"message","text":"test"}'
 
 # ── Summary ──────────────────────────────────────────────────
