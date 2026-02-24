@@ -18,7 +18,7 @@ test.describe('Header Navigation', () => {
     await page.goto('/');
     const header = page.locator('header');
     await expect(header.getByRole('link', { name: 'Sign In' }).first()).toBeVisible();
-    await expect(header.getByRole('link', { name: 'Get Started' }).first()).toBeVisible();
+    await expect(header.getByRole('button', { name: 'Get Started' }).first()).toBeVisible();
   });
 
   test('navigates to About page', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('Header Navigation', () => {
     await page.goto('/');
     await page.locator('header').getByRole('link', { name: 'Pricing' }).first().click();
     await expect(page).toHaveURL('/pricing');
-    await expect(page.getByText('Protect your companies')).toBeVisible();
+    await expect(page.getByText('Pay Only for')).toBeVisible();
   });
 
   test('navigates to Contact page', async ({ page }) => {
@@ -48,10 +48,13 @@ test.describe('Header Navigation', () => {
     await expect(page).toHaveURL('/login');
   });
 
-  test('Get Started link goes to /signup', async ({ page }) => {
+  test('Get Started button triggers signup flow', async ({ page }) => {
     await page.goto('/');
-    await page.locator('header').getByRole('link', { name: 'Get Started' }).first().click();
-    await expect(page).toHaveURL('/signup');
+    const btn = page.locator('header').getByRole('button', { name: 'Get Started' }).first();
+    await expect(btn).toBeVisible();
+    await btn.click();
+    // On the landing page, clicking Get Started opens the signup modal (step 1)
+    await expect(page.getByText('What best describes you?')).toBeVisible();
   });
 });
 

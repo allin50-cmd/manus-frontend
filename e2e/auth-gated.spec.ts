@@ -107,7 +107,8 @@ test.describe('Help Center (public)', () => {
     await page.getByText('Billing & Plans').first().click();
     await page.waitForTimeout(300);
     // Should show billing-related articles
-    await expect(page.getByText(/Upgrading your plan/i).first()).toBeVisible();
+    await expect(page.getByText('Adding or removing services')).toBeVisible();
+    await expect(page.getByText('Payment methods accepted')).toBeVisible();
   });
 
   test('Help page shows Contact Support CTA', async ({ page }) => {

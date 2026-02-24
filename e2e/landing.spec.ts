@@ -59,9 +59,9 @@ test.describe('Landing Page (FineGuard)', () => {
   });
 
   test('renders pricing teaser section', async ({ page }) => {
-    await expect(page.getByText(/Simple.*transparent.*pricing/i).first()).toBeVisible();
-    await expect(page.getByText('$0').first()).toBeVisible();
-    await expect(page.getByText('$49').first()).toBeVisible();
+    await expect(page.getByText('Pay only for')).toBeVisible();
+    await expect(page.getByText('what you monitor.')).toBeVisible();
+    await expect(page.getByText('£1 per month per company')).toBeVisible();
   });
 
   test('renders bottom CTA', async ({ page }) => {

@@ -7,93 +7,75 @@ test.describe('Pricing Page', () => {
 
   test('renders hero section', async ({ page }) => {
     await expect(page.getByText('Simple, Transparent Pricing')).toBeVisible();
-    await expect(page.getByText('Protect your companies')).toBeVisible();
-    await expect(page.getByText('Start free. Upgrade when you need more')).toBeVisible();
+    await expect(page.getByText('Pay Only for')).toBeVisible();
+    await expect(page.getByText('What You Monitor')).toBeVisible();
   });
 
-  test('renders billing toggle (Monthly/Annual)', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Monthly' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Annual/ })).toBeVisible();
+  test('renders per-service pricing description', async ({ page }) => {
+    await expect(page.getByText('£1 per month per company')).toBeVisible();
   });
 
-  test('renders three pricing cards', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Starter' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Professional' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Enterprise' })).toBeVisible();
+  test('renders four service cards', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Companies House', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Corporate Tax', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Self Assessment', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'VAT Returns', exact: true })).toBeVisible();
   });
 
-  test('Starter plan shows Free price', async ({ page }) => {
-    await expect(page.getByText('Free').first()).toBeVisible();
+  test('each service shows £1 price', async ({ page }) => {
+    // Service cards each show £1; FAQ text also mentions £1 so count > 4
+    const prices = page.getByText('£1');
+    await expect(prices.first()).toBeVisible();
+    const count = await prices.count();
+    expect(count).toBeGreaterThanOrEqual(4);
   });
 
-  test('Professional plan shows price', async ({ page }) => {
-    // Monthly default
-    await expect(page.getByText('£49').or(page.getByText('£39'))).toBeVisible();
+  test('each service shows unit pricing', async ({ page }) => {
+    const units = page.getByText('/month per company');
+    await expect(units.first()).toBeVisible();
+    const count = await units.count();
+    expect(count).toBe(4);
   });
 
-  test('Enterprise plan shows price', async ({ page }) => {
-    await expect(page.getByText('£199').or(page.getByText('£159'))).toBeVisible();
+  test('service cards show features', async ({ page }) => {
+    // Companies House features
+    await expect(page.getByText('Annual return deadlines')).toBeVisible();
+    await expect(page.getByText('Accounts filing dates')).toBeVisible();
+    await expect(page.getByText('Director changes').first()).toBeVisible();
+    // Corporate Tax features
+    await expect(page.getByText('Corporation tax returns')).toBeVisible();
+    // VAT Returns features
+    await expect(page.getByText('MTD compliance').first()).toBeVisible();
   });
 
-  test('switching to Annual billing updates prices', async ({ page }) => {
-    await page.getByRole('button', { name: /Annual/ }).click();
-    await expect(page.getByText('£39')).toBeVisible();
-    await expect(page.getByText('£159')).toBeVisible();
+  test('service CTAs link to signup', async ({ page }) => {
+    const addServiceLinks = page.getByRole('link', { name: /Add Service/ });
+    await expect(addServiceLinks.first()).toBeVisible();
+    const count = await addServiceLinks.count();
+    expect(count).toBe(4);
+    await expect(addServiceLinks.first()).toHaveAttribute('href', '/signup');
   });
 
-  test('switching back to Monthly restores prices', async ({ page }) => {
-    await page.getByRole('button', { name: /Annual/ }).click();
-    await page.getByRole('button', { name: 'Monthly' }).click();
-    await expect(page.getByText('£49')).toBeVisible();
-    await expect(page.getByText('£199')).toBeVisible();
-  });
-
-  test('shows Most Popular badge on Professional card', async ({ page }) => {
-    await expect(page.getByText('Most Popular')).toBeVisible();
-  });
-
-  test('Starter CTA links to signup', async ({ page }) => {
-    const starterCta = page.getByRole('link', { name: /Get Started Free/ });
-    await expect(starterCta).toBeVisible();
-    await expect(starterCta).toHaveAttribute('href', '/signup');
-  });
-
-  test('Professional CTA links to signup', async ({ page }) => {
-    const proCta = page.getByRole('link', { name: /Start 14-Day Trial/ });
-    await expect(proCta).toBeVisible();
-    await expect(proCta).toHaveAttribute('href', '/signup');
-  });
-
-  test('Enterprise CTA links to book-demo', async ({ page }) => {
-    const entCta = page.getByRole('link', { name: /Contact Sales/ });
-    await expect(entCta).toBeVisible();
-    await expect(entCta).toHaveAttribute('href', '/book-demo');
-  });
-
-  test('renders feature comparison table', async ({ page }) => {
-    await expect(page.getByText('Compare All Features')).toBeVisible();
-    // Check table columns
-    await expect(page.getByText('Feature').first()).toBeVisible();
-    // Check some feature rows
-    await expect(page.getByText('Companies').first()).toBeVisible();
-    await expect(page.getByText('Team Members').first()).toBeVisible();
-    await expect(page.getByText('Email Alerts').first()).toBeVisible();
+  test('renders How It Works section', async ({ page }) => {
+    await expect(page.getByText('How It Works')).toBeVisible();
+    await expect(page.getByText('Add your companies')).toBeVisible();
+    await expect(page.getByText('Pick your services')).toBeVisible();
+    await expect(page.getByText('Stay compliant')).toBeVisible();
   });
 
   test('renders FAQ section with questions', async ({ page }) => {
     await expect(page.getByText('Frequently Asked Questions')).toBeVisible();
-    await expect(page.getByText('Can I switch plans at any time?')).toBeVisible();
-    await expect(page.getByText('What happens when my trial ends?')).toBeVisible();
+    await expect(page.getByText('How does per-company pricing work?')).toBeVisible();
+    await expect(page.getByText('Can I add or remove services at any time?')).toBeVisible();
+    await expect(page.getByText('Is there a minimum commitment?')).toBeVisible();
     await expect(page.getByText('Do you offer discounts for charities?')).toBeVisible();
     await expect(page.getByText('How does Companies House monitoring work?')).toBeVisible();
     await expect(page.getByText('Is my data secure?')).toBeVisible();
-    await expect(page.getByText('Can I export my compliance data?')).toBeVisible();
   });
 
-  test('FAQ answers are expandable', async ({ page }) => {
-    // Click first FAQ question
-    await page.getByText('Can I switch plans at any time?').click();
-    await expect(page.getByText('Yes. Upgrade instantly or downgrade')).toBeVisible();
+  test('FAQ answers are visible', async ({ page }) => {
+    // FAQs are always expanded (no accordion toggle)
+    await expect(page.getByText('Each service costs £1 per month for each company you monitor')).toBeVisible();
   });
 
   test('renders bottom CTA section', async ({ page }) => {
