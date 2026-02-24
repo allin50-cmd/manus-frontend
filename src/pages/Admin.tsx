@@ -25,7 +25,7 @@ import {
   GitCommit,
   Calendar
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 interface Lead {
   id: string;
