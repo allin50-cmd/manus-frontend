@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 
-type AlertVariant = 'default' | 'info' | 'success' | 'warning' | 'error';
+export type AlertVariant = 'default' | 'info' | 'success' | 'warning' | 'error' | 'destructive';
 
 interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: AlertVariant;
@@ -10,11 +10,12 @@ interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const variantConfig: Record<AlertVariant, { classes: string; Icon: React.ElementType }> = {
-  default: { classes: 'bg-white/5 border-white/10 text-gray-300', Icon: Info },
-  info:    { classes: 'bg-blue-500/10 border-blue-500/30 text-blue-300', Icon: Info },
-  success: { classes: 'bg-green-500/10 border-green-500/30 text-green-300', Icon: CheckCircle2 },
-  warning: { classes: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300', Icon: AlertTriangle },
-  error:   { classes: 'bg-red-500/10 border-red-500/30 text-red-300', Icon: AlertCircle },
+  default:     { classes: 'bg-white/5 border-white/10 text-gray-300', Icon: Info },
+  info:        { classes: 'bg-blue-500/10 border-blue-500/30 text-blue-300', Icon: Info },
+  success:     { classes: 'bg-green-500/10 border-green-500/30 text-green-300', Icon: CheckCircle2 },
+  warning:     { classes: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300', Icon: AlertTriangle },
+  error:       { classes: 'bg-red-500/10 border-red-500/30 text-red-300', Icon: AlertCircle },
+  destructive: { classes: 'bg-red-500/10 border-red-500/30 text-red-300', Icon: AlertCircle },
 };
 
 export function Alert({ variant = 'default', title, className, children, ...props }: AlertProps) {
@@ -33,6 +34,10 @@ export function Alert({ variant = 'default', title, className, children, ...prop
   );
 }
 
+export function AlertTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+  return <h5 className={cn('font-semibold mb-1 leading-none tracking-tight', className)} {...props} />;
+}
+
 export function AlertDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-sm', className)} {...props} />;
+  return <p className={cn('text-sm opacity-90', className)} {...props} />;
 }

@@ -146,11 +146,11 @@ function ToolExecutionCard({ execution }: { execution: MCPToolExecution }) {
               {JSON.stringify(execution.input, null, 2)}
             </pre>
           </div>
-          {execution.output && (
+          {execution.output != null && (
             <div>
               <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Output</p>
               <pre className="text-xs text-green-400 bg-black/20 rounded-lg p-2 overflow-x-auto max-h-40">
-                {JSON.stringify(execution.output, null, 2)}
+                {JSON.stringify(execution.output as Record<string, unknown>, null, 2)}
               </pre>
             </div>
           )}

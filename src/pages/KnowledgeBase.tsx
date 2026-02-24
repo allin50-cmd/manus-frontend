@@ -64,11 +64,13 @@ export default function KnowledgeBase() {
         return;
       }
 
-      const res = await executeTool('search_knowledge_base', {
+      type KBResult = { results: Array<{ id: string; title: string; excerpt: string; score: number; category?: string; updatedAt?: string }> };
+      const rawResult = await executeTool('search_knowledge_base', {
         query,
         top_k: 8,
         ...(category !== 'all' ? { categories: [category] } : {}),
-      }) as { results: Array<{ id: string; title: string; excerpt: string; score: number; category?: string; updatedAt?: string }> };
+      });
+      const res = (rawResult.output as KBResult) ?? { results: [] };
 
       const articles: Article[] = (res.results || []).map((r) => ({
         id: r.id,
