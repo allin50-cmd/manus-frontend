@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DeploymentStatusPanel } from '@/components/admin/DeploymentStatusPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -18,14 +19,8 @@ import {
   MessageSquare,
   RefreshCw,
   Rocket,
-  CheckCircle,
-  XCircle,
-  Clock,
-  ExternalLink,
-  GitCommit,
-  Calendar
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 interface Lead {
   id: string;
@@ -75,21 +70,11 @@ interface Contact {
   createdAt: string;
 }
 
-interface Deployment {
-  id: string;
-  environment: string;
-  status: string;
-  commit: string;
-  workflowRun: string;
-  deployedAt: string;
-}
-
 export default function Admin() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
   const [complianceBundles, setComplianceBundles] = useState<ComplianceBundle[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,22 +84,17 @@ export default function Admin() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
+      const [leadsRes, intakeRes, bundlesRes, contactsRes] = await Promise.all([
         fetch('/api/admin/leads'),
         fetch('/api/admin/intake-forms'),
         fetch('/api/admin/compliance-bundles'),
         fetch('/api/admin/contacts'),
-        fetch('/api/deployments/status'),
       ]);
 
       if (leadsRes.ok) setLeads(await leadsRes.json());
       if (intakeRes.ok) setIntakeForms(await intakeRes.json());
       if (bundlesRes.ok) setComplianceBundles(await bundlesRes.json());
       if (contactsRes.ok) setContacts(await contactsRes.json());
-      if (deploymentsRes.ok) {
-        const data = await deploymentsRes.json();
-        setDeployments(data.deployments || []);
-      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
@@ -125,45 +105,6 @@ export default function Admin() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
-  };
-
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  };
-
-  const getEnvironmentColor = (environment: string) => {
-    switch (environment.toLowerCase()) {
-      case 'prod':
-      case 'production':
-        return 'bg-green-500/20 text-green-400 border-green-500/50';
-      case 'staging':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
-      case 'dev':
-      case 'development':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
-      default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
-      case 'failed':
-        return <XCircle className="w-4 h-4 text-red-400" />;
-      case 'in_progress':
-        return <Clock className="w-4 h-4 text-yellow-400 animate-pulse" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-400" />;
-    }
   };
 
   const getUrgencyColor = (urgency: string) => {
@@ -180,13 +121,6 @@ export default function Admin() {
         return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
     }
   };
-
-  // Sort deployments by environment order
-  const sortedDeployments = [...deployments].sort((a, b) => {
-    const order = { prod: 0, production: 0, staging: 1, dev: 2, development: 2 };
-    return (order[a.environment.toLowerCase() as keyof typeof order] || 3) -
-           (order[b.environment.toLowerCase() as keyof typeof order] || 3);
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4">
@@ -208,71 +142,6 @@ export default function Admin() {
             </Button>
           </div>
         </div>
-
-        {/* Deployment Status Panel */}
-        <Card className="mb-8 bg-[#13151C] border-[#2A2D3A]">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Rocket className="w-5 h-5 text-[#5A4BFF]" />
-                  Deployment Status
-                </CardTitle>
-                <CardDescription className="text-sm text-gray-400 mt-1">
-                  Latest deployment status across all environments
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {sortedDeployments.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <Rocket className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p>No deployments recorded yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {sortedDeployments.map((deployment) => (
-                  <div
-                    key={deployment.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-[#1A1D28] border border-[#2A2D3A] hover:border-[#3A3D4A] transition-colors"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="flex-shrink-0">
-                        {getStatusIcon(deployment.status)}
-                      </div>
-
-                      <div className="flex-shrink-0">
-                        <Badge
-                          variant="outline"
-                          className={`${getEnvironmentColor(deployment.environment)} uppercase font-semibold px-3 py-1`}
-                        >
-                          {deployment.environment}
-                        </Badge>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-gray-400 text-sm">
-                            {formatRelativeTime(deployment.deployedAt)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <GitCommit className="w-3 h-3" />
-                            <code className="font-mono">{deployment.commit.substring(0, 7)}</code>
-                          </div>
-                          <span className="text-gray-600">•</span>
-                          <span className="font-mono">Run #{deployment.workflowRun}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -343,6 +212,10 @@ export default function Admin() {
             <TabsTrigger value="contacts" className="data-[state=active]:bg-green-500">
               <MessageSquare className="w-4 h-4 mr-2" />
               Contacts
+            </TabsTrigger>
+            <TabsTrigger value="deployments" className="data-[state=active]:bg-[#5A4BFF]">
+              <Rocket className="w-4 h-4 mr-2" />
+              Deployments
             </TabsTrigger>
           </TabsList>
 
@@ -530,6 +403,11 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Deployments Tab */}
+          <TabsContent value="deployments">
+            <DeploymentStatusPanel />
           </TabsContent>
         </Tabs>
       </div>

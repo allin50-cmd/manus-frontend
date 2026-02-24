@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 export default function BookDemo() {
   const [, setLocation] = useLocation();

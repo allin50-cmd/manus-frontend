@@ -1,0 +1,101 @@
+version: '3.9'
+
+services:
+  # ─── PostgreSQL Database ───────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: fineguard-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fineguard
+      POSTGRES_USER: fineguard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fineguard_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fineguard -d fineguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Azurite (Azure Storage Emulator) ────────────────────────────────────
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: fineguard-azurite
+    restart: unless-stopped
+    command: azurite --loose --skipApiVersionCheck
+    ports:
+      - "10000:10000"  # Blob
+      - "10001:10001"  # Queue
+      - "10002:10002"  # Table
+    volumes:
+      - azurite_data:/data
+
+  # ─── Redis (for queuing / session) ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: fineguard-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ─── FineGuard API Server ─────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: fineguard-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://fineguard:${POSTGRES_PASSWORD:-fineguard_dev_password}@postgres:5432/fineguard
+      AZURE_STORAGE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UKvz1+hP0AEqnxOMFdMEL;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      AUDIT_BLOB_CONTAINER: fineguard-audit
+      REDIS_URL: redis://redis:6379
+      HMRC_ENVIRONMENT: sandbox
+      LOCAL_ENCRYPTION_KEY: ${LOCAL_ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ─── DB Migration (one-shot) ──────────────────────────────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: fineguard-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://fineguard:${POSTGRES_PASSWORD:-fineguard_dev_password}@postgres:5432/fineguard
+    command: npm run db:migrate
+    profiles:
+      - migrate
+
+volumes:
+  postgres_data:
+  azurite_data:
