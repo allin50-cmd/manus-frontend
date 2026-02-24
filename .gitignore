@@ -59,6 +59,9 @@ Thumbs.db
 
 # Azure
 .azure/
+local.settings.json
+__pycache__/
+*.pyc
 
 # Secrets and credentials
 *.pem

@@ -7,7 +7,7 @@ enriches via Microsoft Graph, maps to FineGuard firms, and takes
 automated remediation actions (lock tenant, create tasks).
 
 Deployment:
-  Azure Functions Python v2 runtime
+  Azure Functions Python v1 programming model (folder-per-function)
 """
 
 import os
