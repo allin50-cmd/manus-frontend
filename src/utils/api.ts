@@ -100,7 +100,7 @@ export function saveUser(user: UserProfile): void {
 }
 
 // HTTP helpers
-async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
+async function apiFetch(path: string, options: RequestInit = {}, signal?: AbortSignal): Promise<Response> {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<Respon
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  return fetch(`${API_BASE}${path}`, { ...options, headers });
+  return fetch(`${API_BASE}${path}`, { ...options, headers, signal });
 }
 
 // Auth API
@@ -141,8 +141,8 @@ export async function logout() {
   clearAuth();
 }
 
-export async function fetchMe(): Promise<UserProfile> {
-  const res = await apiFetch('/auth/me');
+export async function fetchMe(signal?: AbortSignal): Promise<UserProfile> {
+  const res = await apiFetch('/auth/me', {}, signal);
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || 'Not authenticated');
   saveUser(data.user);

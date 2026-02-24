@@ -23,10 +23,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    fetchMe()
+
+    // Timeout prevents infinite hang when backend is unreachable
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    fetchMe(controller.signal)
       .then((me) => setUser(me))
       .catch(() => clearAuth())
-      .finally(() => setLoading(false));
+      .finally(() => {
+        clearTimeout(timeout);
+        setLoading(false);
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
