@@ -1,6 +1,6 @@
 # ============================================================================
 # VaultLine Brand Suite – Production Dockerfile
-# Multi-stage build optimised for Azure App Service (Linux)
+# Multi-stage build optimized for Azure App Service (Linux)
 # ============================================================================
 
 # ---------- Stage 1: Install ALL deps and build the frontend ----------
