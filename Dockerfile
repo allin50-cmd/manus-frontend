@@ -53,10 +53,6 @@ COPY integrations ./integrations
 COPY package.json ./
 COPY drizzle.config.ts ./
 
-# Install tsx globally for running TypeScript server in production
-# (alternative: compile to JS — but tsx is simpler and works well)
-RUN npm install -g tsx
-
 # Copy drizzle migrations if they exist
 COPY drizzle ./drizzle
 
@@ -75,4 +71,5 @@ EXPOSE 8080
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Run database migrations then start server
-CMD ["sh", "-c", "tsx server/db/migrate.ts 2>/dev/null; tsx server/index.ts"]
+# tsx is a production dependency (in node_modules/.bin); no global install needed
+CMD ["sh", "-c", "node_modules/.bin/tsx server/db/migrate.ts 2>/dev/null; node_modules/.bin/tsx server/index.ts"]
