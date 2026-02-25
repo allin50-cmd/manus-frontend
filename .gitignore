@@ -45,8 +45,8 @@ lerna-debug.log*
 # Bulk data imports
 data/
 
-# Drizzle
-drizzle/
+# Drizzle (track migrations; ignore generated metadata)
+drizzle/meta/
 
 # OS
 .DS_Store
