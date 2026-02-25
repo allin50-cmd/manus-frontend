@@ -124,9 +124,10 @@ export default function AddCompanyView({ onBack, onAdded }: AddCompanyViewProps)
               value={companyNumber}
               onChange={(e) => setCompanyNumber(e.target.value)}
               required
+              disabled={loading}
               maxLength={8}
               pattern="[A-Za-z0-9]{2,8}"
-              className="w-full bg-white/5 border border-white/10 rounded-full py-5 pl-16 pr-6 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 font-mono text-lg tracking-wider"
+              className="w-full bg-white/5 border border-white/10 rounded-full py-5 pl-16 pr-6 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 font-mono text-lg tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div className="relative">

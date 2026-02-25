@@ -1,6 +1,6 @@
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '../../context/AuthContext';
-import { Home, BarChart3, Building2, Bell, User } from 'lucide-react';
+import { Home, BarChart3, Building2, User } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function MobileNav() {
@@ -13,13 +13,12 @@ export default function MobileNav() {
     { href: '/', label: 'Home', icon: Home },
     { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
     { href: '/reports', label: 'Reports', icon: Building2 },
-    { href: '/alerts', label: 'Alerts', icon: Bell },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 
   return (
     <nav className="theme-mobile-nav lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0A0B14]/95 backdrop-blur-xl border-t border-white/10 safe-area-bottom">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-4 h-16">
         {links.map((l) => {
           const active = location === l.href || (l.href === '/dashboard' && location.startsWith('/dashboard'));
           return (

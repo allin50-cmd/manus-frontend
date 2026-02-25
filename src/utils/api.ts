@@ -108,17 +108,30 @@ async function apiFetch(path: string, options: RequestInit = {}, signal?: AbortS
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers, signal });
+  // 30-second timeout — prevents UI hanging indefinitely on slow/unresponsive backend.
+  // Merges with any caller-supplied signal (e.g. AuthContext's 5s startup timeout).
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  signal?.addEventListener('abort', () => controller.abort());
 
-  // Global session-expiry handler: if the server rejects a previously-authenticated request,
-  // clear the stale token and redirect to login (guards against logout on any page).
-  if (res.status === 401 && token && !window.location.pathname.startsWith('/login')) {
-    clearAuth();
-    window.location.href = '/login';
-    throw new Error('Session expired — please sign in again');
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    // Global session-expiry handler: clear stale token and redirect to login on 401.
+    if (res.status === 401 && token && !window.location.pathname.startsWith('/login')) {
+      clearAuth();
+      window.location.href = '/login';
+      throw new Error('Session expired — please sign in again');
+    }
+
+    return res;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return res;
 }
 
 // Auth API
