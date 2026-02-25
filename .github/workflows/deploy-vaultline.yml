@@ -206,6 +206,30 @@ jobs:
           done
           echo "::warning::Health check did not return 200 after 10 attempts (~6 min)"
 
+      - name: Dump container logs (dev)
+        if: always()
+        run: |
+          APP="${{ secrets.AZURE_WEBAPP_NAME_DEV }}"
+          RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
+          if [ -n "$RG" ] && [ -n "$APP" ]; then
+            echo "=== Enabling app logging ==="
+            az webapp log config --name "$APP" --resource-group "$RG" \
+              --application-logging filesystem --docker-container-logging filesystem \
+              --level information --output none 2>/dev/null || true
+            echo "=== Downloading container logs ==="
+            az webapp log download --name "$APP" --resource-group "$RG" \
+              --log-file /tmp/webapp-logs.zip 2>/dev/null || true
+            if [ -f /tmp/webapp-logs.zip ]; then
+              unzip -q /tmp/webapp-logs.zip -d /tmp/webapp-logs/ 2>/dev/null || true
+              echo "=== Container stdout/stderr ==="
+              find /tmp/webapp-logs -name "*.log" | xargs cat 2>/dev/null | tail -100 || true
+            fi
+            echo "=== App Service properties ==="
+            az webapp show --name "$APP" --resource-group "$RG" \
+              --query "{state:state,defaultHostName:defaultHostName,containerSettings:siteConfig.linuxFxVersion}" \
+              -o table 2>/dev/null || true
+          fi
+
   # --------------------------------------------------------------------------
   # 5. DEPLOY TO STAGING (manual dispatch only)
   # --------------------------------------------------------------------------
