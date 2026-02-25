@@ -49,6 +49,7 @@ COPY --from=builder /app/dist ./dist
 
 # Copy server source (tsx compiles on the fly)
 COPY server ./server
+COPY integrations ./integrations
 COPY package.json ./
 COPY drizzle.config.ts ./
 
