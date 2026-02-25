@@ -12,9 +12,6 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     headless: true,
     viewport: { width: 1440, height: 900 },
-    launchOptions: {
-      executablePath: '/root/.cache/ms-playwright/chromium-1194/chrome-linux/chrome',
-    },
   },
   webServer: {
     command: 'npm run dev',
