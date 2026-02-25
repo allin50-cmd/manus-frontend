@@ -24,11 +24,12 @@ test.describe('Auth-Gated Pages (unauthenticated)', () => {
     expect(url.includes('/login') || url.includes('/reports')).toBeTruthy();
   });
 
-  test('Onboarding redirects to /signup when not authenticated', async ({ page }) => {
+  test('Onboarding redirects to signup when not authenticated', async ({ page }) => {
     await page.goto('/onboarding');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
     const url = page.url();
-    expect(url.includes('/signup') || url.includes('/onboarding')).toBeTruthy();
+    // Redirects to landing page with signup modal open
+    expect(url.includes('signup=true') || url === '/' || url.includes('/onboarding')).toBeTruthy();
   });
 });
 

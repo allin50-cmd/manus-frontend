@@ -5,8 +5,8 @@ test.describe('Onboarding Page (unauthenticated)', () => {
     await page.goto('/onboarding');
     await page.waitForTimeout(1500);
     const url = page.url();
-    // Should redirect to /signup since user is not authenticated
-    expect(url.includes('/signup') || url.includes('/onboarding')).toBeTruthy();
+    // Should redirect to landing page with signup modal
+    expect(url.includes('signup=true') || url === '/' || url.includes('/onboarding')).toBeTruthy();
   });
 });
 
@@ -35,10 +35,11 @@ test.describe('Landing Page - Onboarding Entry Points', () => {
   });
 
   test('signup leads toward onboarding flow', async ({ page }) => {
-    // Verify the signup -> onboarding chain exists
-    await page.goto('/signup');
-    await expect(page.getByRole('heading', { name: 'Create Your Account' })).toBeVisible();
+    // /signup redirects to /?signup=true which opens the signup modal
+    await page.goto('/?signup=true');
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Get Started Free' })).toBeVisible();
     // After successful signup, user would be redirected to /onboarding
-    // We verify the page structure exists
+    // We verify the modal structure exists
   });
 });

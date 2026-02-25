@@ -45,9 +45,10 @@ test.describe('Login Flow', () => {
     await expect(createLink).toBeVisible();
   });
 
-  test('Create one free link navigates to /signup', async ({ page }) => {
+  test('Create one free link opens signup modal', async ({ page }) => {
     await page.getByRole('link', { name: 'Create one free' }).click();
-    await expect(page).toHaveURL('/signup');
+    // Link now goes to /?signup=true which opens the signup modal on the landing page
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
   });
 
   test('form fields are fillable', async ({ page }) => {
