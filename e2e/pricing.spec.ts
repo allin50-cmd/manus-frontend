@@ -53,7 +53,7 @@ test.describe('Pricing Page', () => {
     await expect(addServiceLinks.first()).toBeVisible();
     const count = await addServiceLinks.count();
     expect(count).toBe(4);
-    await expect(addServiceLinks.first()).toHaveAttribute('href', '/signup');
+    await expect(addServiceLinks.first()).toHaveAttribute('href', '/signup?service=Companies%20House');
   });
 
   test('renders How It Works section', async ({ page }) => {

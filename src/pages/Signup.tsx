@@ -41,6 +41,7 @@ export default function Signup() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedIntent, setSelectedIntent] = useState<string>('');
+  const serviceParam = new URLSearchParams(window.location.search).get('service');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -95,6 +96,12 @@ export default function Signup() {
           <div className={`w-8 h-1 rounded-full transition-colors ${step >= 1 ? 'bg-[#5A4BFF]' : 'bg-white/10'}`} />
           <div className={`w-8 h-1 rounded-full transition-colors ${step >= 2 ? 'bg-[#5A4BFF]' : 'bg-white/10'}`} />
         </div>
+
+        {serviceParam && (
+          <div className="mb-6 px-4 py-3 rounded-xl bg-[#5A4BFF]/10 border border-[#5A4BFF]/30 text-sm text-slate-300 text-center">
+            You selected <span className="text-white font-semibold">{serviceParam}</span> monitoring — you can activate it after creating your account.
+          </div>
+        )}
 
         {step === 1 && (
           <div className="space-y-4">

@@ -1,8 +1,10 @@
 import { Link } from 'wouter';
 import { Shield, Github, Twitter, Linkedin, Mail } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { isAuthenticated } = useAuth();
 
   const productLinks = [
     { href: '/', label: 'FineGuard' },
@@ -24,6 +26,13 @@ export default function Footer() {
     { href: '/terms', label: 'Terms of Service' },
     { href: '/help', label: 'Help Center' },
   ];
+
+  const accountLinks = isAuthenticated ? [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/billing', label: 'Billing' },
+    { href: '/settings', label: 'Settings' },
+    { href: '/reports', label: 'Reports' },
+  ] : [];
 
   return (
     <footer className="bg-[#0A0B14] border-t border-white/10">
@@ -83,6 +92,16 @@ export default function Footer() {
             </ul>
           </div>
         </div>
+
+        {/* Authenticated Account Links */}
+        {isAuthenticated && (
+          <div className="border-t border-white/5 py-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Your Account:</span>
+            {accountLinks.map((l) => (
+              <Link key={l.href} href={l.href} className="text-xs text-slate-400 hover:text-white transition-colors">{l.label}</Link>
+            ))}
+          </div>
+        )}
 
         {/* Bottom Bar */}
         <div className="py-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
