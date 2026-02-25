@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Router, Route, Switch, useLocation } from 'wouter';
+import { Router, Route, Switch, useLocation, Redirect } from 'wouter';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -72,7 +72,7 @@ export default function App() {
             <Route path="/signup" component={Signup} />
             <Route path="/dashboard" component={Dashboard} />
             <Route path="/settings" component={Profile} />
-            <Route path="/alerts" component={Reports} />
+            <Route path="/alerts"><Redirect to="/dashboard" /></Route>
             <Route path="/devops" component={DevOps} />
             <Route path="/acsp" component={Acsp} />
             <Route path="/workflows" component={Workflows} />

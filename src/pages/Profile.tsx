@@ -18,7 +18,9 @@ export default function Profile() {
   usePageTitle('Profile');
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeSection, setActiveSection] = useState<'profile' | 'security' | 'notifications' | 'billing'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'security' | 'notifications' | 'billing'>(
+    () => window.location.pathname === '/settings' ? 'security' : 'profile'
+  );
   const [profileName, setProfileName] = useState(user?.name || '');
   const [profileCompany, setProfileCompany] = useState(user?.company || '');
   const [saving, setSaving] = useState(false);

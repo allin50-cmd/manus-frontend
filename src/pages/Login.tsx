@@ -80,6 +80,15 @@ export default function Login() {
                 </button>
               </div>
             </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => toast.info('Password reset coming soon — contact support@fineguard.co.uk')}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                Forgot your password?
+              </button>
+            </div>
             <Button type="submit" disabled={loading} className="w-full bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white py-3 rounded-full font-bold text-base">
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>

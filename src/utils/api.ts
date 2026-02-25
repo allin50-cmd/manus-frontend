@@ -108,7 +108,17 @@ async function apiFetch(path: string, options: RequestInit = {}, signal?: AbortS
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  return fetch(`${API_BASE}${path}`, { ...options, headers, signal });
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers, signal });
+
+  // Global session-expiry handler: if the server rejects a previously-authenticated request,
+  // clear the stale token and redirect to login (guards against logout on any page).
+  if (res.status === 401 && token && !window.location.pathname.startsWith('/login')) {
+    clearAuth();
+    window.location.href = '/login';
+    throw new Error('Session expired — please sign in again');
+  }
+
+  return res;
 }
 
 // Auth API
@@ -686,5 +696,7 @@ export async function forwardComplianceEvent(event: {
     method: 'POST',
     body: JSON.stringify(event),
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to forward compliance event');
+  return data;
 }

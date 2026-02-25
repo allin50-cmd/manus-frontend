@@ -94,7 +94,7 @@ export default function Header() {
               <>
                 {/* Alerts Bell */}
                 <button
-                  onClick={() => setLocation('/alerts')}
+                  onClick={() => setLocation('/dashboard')}
                   className="relative p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
                   aria-label="View alerts"
                 >
