@@ -8,6 +8,7 @@ import {
   type MonitoredCompany, type ComplianceDetail, type AlertItem
 } from '../utils/api';
 import { formatDateShort } from '../utils/formatting';
+import { toast } from 'sonner';
 import AlertTriggerPanel from './AlertTriggerPanel';
 
 interface CompanyDetailViewProps {
@@ -55,6 +56,10 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
   };
 
   const handleDelete = async () => {
+    if (refreshing) {
+      toast.error('Please wait for refresh to complete');
+      return;
+    }
     if (!confirm('Remove this company from monitoring? This will also delete all related alerts.')) return;
     setDeleting(true);
     try {

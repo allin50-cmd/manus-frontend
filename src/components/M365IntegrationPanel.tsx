@@ -7,6 +7,7 @@ export default function M365IntegrationPanel() {
   const [status, setStatus] = useState<M365Status | null>(null);
   const [guide, setGuide] = useState<M365ConfigStep[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [testingChannel, setTestingChannel] = useState<'outlook' | null>(null);
   const [testEmail, setTestEmail] = useState('');
 
@@ -16,16 +17,21 @@ export default function M365IntegrationPanel() {
 
   const loadM365Info = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const [statusData, guideData] = await Promise.all([
         fetchM365Status().catch(() => null),
         fetchM365ConfigGuide().catch(() => null),
       ]);
 
-      if (statusData) setStatus(statusData);
-      if (guideData) setGuide(guideData.steps);
+      if (!statusData && !guideData) {
+        setLoadError('Unable to load M365 configuration. Check your connection and try again.');
+      } else {
+        if (statusData) setStatus(statusData);
+        if (guideData) setGuide(guideData.steps);
+      }
     } catch (err) {
-      console.error('Failed to load M365 info:', err);
+      setLoadError('Failed to load M365 integration status');
     } finally {
       setLoading(false);
     }
@@ -77,6 +83,14 @@ export default function M365IntegrationPanel() {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 text-slate-500 animate-spin" />
+        </div>
+      ) : loadError ? (
+        <div className="py-8 text-center">
+          <AlertCircle size={32} className="text-slate-500 mx-auto mb-3" />
+          <p className="text-sm text-slate-400 mb-4">{loadError}</p>
+          <button onClick={loadM365Info} className="text-sm text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+            Retry
+          </button>
         </div>
       ) : configured ? (
         <>

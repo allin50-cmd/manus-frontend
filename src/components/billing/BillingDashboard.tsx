@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, CheckCircle, AlertTriangle, ExternalLink, Loader2, Building2, FileText, Calculator, Receipt, Plus, Minus } from 'lucide-react';
 import { toast } from 'sonner';
+import { getToken } from '../../utils/api';
 
 interface Subscription {
   id: string;
@@ -46,7 +47,7 @@ export default function BillingDashboard() {
 
   const fetchSubscription = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const res = await fetch('/api/billing/subscription', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -67,7 +68,7 @@ export default function BillingDashboard() {
   const handleToggleService = async (serviceKey: string) => {
     setToggling(serviceKey);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const isActive = activeServices.includes(serviceKey);
       const res = await fetch('/api/billing/toggle-service', {
         method: 'POST',
@@ -99,7 +100,7 @@ export default function BillingDashboard() {
   const handleManageBilling = async () => {
     setPortalLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       const res = await fetch('/api/billing/portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

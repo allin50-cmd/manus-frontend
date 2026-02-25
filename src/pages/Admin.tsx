@@ -26,6 +26,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'wouter';
+import { getToken } from '../utils/api';
 
 interface Lead {
   id: string;
@@ -86,6 +89,8 @@ interface Deployment {
 
 export default function Admin() {
   usePageTitle('Admin');
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
   const [complianceBundles, setComplianceBundles] = useState<ComplianceBundle[]>([]);
@@ -94,17 +99,26 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setLocation('/login');
+      return;
+    }
     fetchAllData();
-  }, []);
+  }, [isAuthenticated, authLoading, setLocation]);
+
+  if (authLoading || !isAuthenticated) return null;
 
   const fetchAllData = async () => {
     setLoading(true);
+    const token = getToken();
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     try {
       const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
-        fetch('/api/admin/leads'),
-        fetch('/api/admin/intake-forms'),
-        fetch('/api/admin/compliance-bundles'),
-        fetch('/api/admin/contacts'),
+        fetch('/api/admin/leads', { headers: authHeaders }),
+        fetch('/api/admin/intake-forms', { headers: authHeaders }),
+        fetch('/api/admin/compliance-bundles', { headers: authHeaders }),
+        fetch('/api/admin/contacts', { headers: authHeaders }),
         fetch('/api/deployments/status'),
       ]);
 

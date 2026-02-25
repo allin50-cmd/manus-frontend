@@ -76,10 +76,10 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={loadDashboard} className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition">
+          <button onClick={loadDashboard} aria-label="Refresh dashboard" className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition">
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button onClick={onViewAlerts} className="relative p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition">
+          <button onClick={onViewAlerts} aria-label="View alerts" className="relative p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition">
             <Bell size={18} />
             {stats && stats.unreadAlerts > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
@@ -87,10 +87,10 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
               </span>
             )}
           </button>
-          <button onClick={onSettings} className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition">
+          <button onClick={onSettings} aria-label="Settings" className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition">
             <Settings size={18} />
           </button>
-          <button onClick={onLogout} className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-400 hover:bg-white/10 transition">
+          <button onClick={onLogout} aria-label="Sign out" className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-400 hover:bg-white/10 transition">
             <LogOut size={18} />
           </button>
         </div>

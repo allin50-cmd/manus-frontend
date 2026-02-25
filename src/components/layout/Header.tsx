@@ -107,6 +107,9 @@ export default function Header() {
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                    aria-haspopup="menu"
+                    aria-expanded={profileOpen}
+                    aria-label="User menu"
                   >
                     <div className="w-8 h-8 rounded-full bg-[#5A4BFF]/20 border border-[#5A4BFF]/40 flex items-center justify-center">
                       <User className="w-4 h-4 text-[#5A4BFF]" />
@@ -154,7 +157,7 @@ export default function Header() {
             )}
 
             {/* Mobile Menu Button */}
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
               {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
@@ -181,6 +184,12 @@ export default function Header() {
                 <div className="border-t border-white/10 my-2" />
                 <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-base text-slate-300 hover:text-white rounded-xl hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                   <User className="w-5 h-5" /> Profile
+                </Link>
+                <Link href="/settings" className="flex items-center gap-3 px-4 py-3 text-base text-slate-300 hover:text-white rounded-xl hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                  <Settings className="w-5 h-5" /> Settings
+                </Link>
+                <Link href="/billing" className="flex items-center gap-3 px-4 py-3 text-base text-slate-300 hover:text-white rounded-xl hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                  <CreditCard className="w-5 h-5" /> Billing
                 </Link>
                 <button onClick={() => { handleLogout(); setMobileOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-base text-red-400 hover:bg-red-500/10 rounded-xl w-full">
                   <LogOut className="w-5 h-5" /> Sign Out

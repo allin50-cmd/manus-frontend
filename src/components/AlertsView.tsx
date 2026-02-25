@@ -27,19 +27,23 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
   useEffect(() => { loadAlerts(); }, []);
 
   const handleMarkRead = async (id: string) => {
+    const prev = alertsList;
+    setAlertsList(list => list.map(a => a.id === id ? { ...a, read: true } : a));
     try {
       await markAlertRead(id);
-      setAlertsList(prev => prev.map(a => a.id === id ? { ...a, read: true } : a));
     } catch (err) {
+      setAlertsList(prev);
       toast.error('Failed to mark alert as read');
     }
   };
 
   const handleMarkAll = async () => {
+    const prev = alertsList;
+    setAlertsList(list => list.map(a => ({ ...a, read: true })));
     try {
       await markAllAlertsRead();
-      setAlertsList(prev => prev.map(a => ({ ...a, read: true })));
     } catch (err) {
+      setAlertsList(prev);
       toast.error('Failed to mark all alerts as read');
     }
   };

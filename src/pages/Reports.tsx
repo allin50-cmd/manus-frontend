@@ -127,8 +127,13 @@ export default function Reports() {
   ];
 
   const handleExportCSV = () => {
-    const rows = companies.map((c) => [c.companyNumber, c.companyName, c.companyStatus, c.complianceStatus, c.riskLevel, c.accountsNextDue, c.confirmationNextDue].join(','));
-    const csv = ['Company Number,Company Name,Status,Compliance,Risk,Accounts Due,Confirmation Due', ...rows].join('\n');
+    const escapeCSV = (val: string | null | undefined) => {
+      if (val == null) return '""';
+      const s = String(val).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+    const rows = companies.map((c) => [escapeCSV(c.companyNumber), escapeCSV(c.companyName), escapeCSV(c.companyStatus), escapeCSV(c.complianceStatus), escapeCSV(c.riskLevel), escapeCSV(c.accountsNextDue), escapeCSV(c.confirmationNextDue)].join(','));
+    const csv = ['"Company Number","Company Name","Status","Compliance","Risk","Accounts Due","Confirmation Due"', ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
