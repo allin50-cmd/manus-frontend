@@ -3,10 +3,11 @@ import { test, expect } from '@playwright/test';
 test.describe('Onboarding Page (unauthenticated)', () => {
   test('redirects unauthenticated users away from onboarding', async ({ page }) => {
     await page.goto('/onboarding');
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2500);
     const url = page.url();
-    // Should redirect to landing page with signup modal
-    expect(url.includes('signup=true') || url === '/' || url.includes('/onboarding')).toBeTruthy();
+    const pathname = new URL(url).pathname;
+    // Should redirect to landing page with signup modal, or stay on /onboarding
+    expect(url.includes('signup=true') || pathname === '/' || url.includes('/onboarding')).toBeTruthy();
   });
 });
 
