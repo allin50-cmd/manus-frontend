@@ -21,6 +21,11 @@ export default function Dashboard() {
     if (!loading && !isAuthenticated) setLocation('/login');
   }, [loading, isAuthenticated, setLocation]);
 
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get('view') as DashView | null;
+    if (param && ['alerts', 'settings', 'add_company'].includes(param)) setView(param);
+  }, []);
+
   const handleLogout = useCallback(async () => {
     await logout();
     setLocation('/');

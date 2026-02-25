@@ -19,7 +19,7 @@ export default function UserSettings({ user, onBack, onLogout }: UserSettingsPro
         <ArrowLeft size={20} /> Dashboard
       </button>
 
-      <h1 className="text-3xl font-black text-white mb-8">Account Settings</h1>
+      <h1 className="text-3xl font-black text-white mb-8">Account Overview</h1>
 
       {/* Profile card */}
       <div className="bg-white/5 border border-white/10 rounded-3xl p-8 mb-6">

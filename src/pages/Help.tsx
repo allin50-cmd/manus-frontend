@@ -48,6 +48,7 @@ export default function Help() {
   usePageTitle('Help Centre');
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [expandedArticle, setExpandedArticle] = useState<Article | null>(null);
 
   const filtered = articles.filter((a) => {
     const matchesSearch = !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.snippet.toLowerCase().includes(search.toLowerCase());
@@ -101,8 +102,43 @@ export default function Help() {
         </div>
       </section>
 
+      {/* Article Detail */}
+      {expandedArticle && (
+        <section className="py-8 pb-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <button
+              onClick={() => setExpandedArticle(null)}
+              className="flex items-center gap-2 text-[#5A4BFF] hover:text-white transition-colors mb-8 text-sm font-medium"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" /> Back to articles
+            </button>
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              {(() => {
+                const cat = categories.find((c) => c.id === expandedArticle.category);
+                return (
+                  <>
+                    <div className="flex items-center gap-2 mb-4">
+                      {cat && <cat.icon className={clsx('w-5 h-5', cat.color)} />}
+                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">{cat?.label}</span>
+                    </div>
+                    <h2 className="text-2xl font-black text-white mb-6">{expandedArticle.title}</h2>
+                    <p className="text-slate-300 leading-relaxed mb-8">{expandedArticle.snippet}</p>
+                    <div className="border-t border-white/10 pt-6 flex items-center gap-4">
+                      <p className="text-sm text-slate-500">Need more detail on this topic?</p>
+                      <Link href="/contact" className="text-sm text-[#5A4BFF] font-medium hover:underline">
+                        Contact Support
+                      </Link>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Articles */}
-      <section className="py-8 pb-20">
+      {!expandedArticle && <section className="py-8 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           {filtered.length === 0 ? (
             <div className="text-center py-16">
@@ -117,7 +153,7 @@ export default function Help() {
               {filtered.map((article) => {
                 const cat = categories.find((c) => c.id === article.category);
                 return (
-                  <div key={article.title} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/[0.07] transition-colors cursor-pointer group">
+                  <div key={article.title} onClick={() => setExpandedArticle(article)} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/[0.07] transition-colors cursor-pointer group" role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setExpandedArticle(article)}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5">
@@ -135,7 +171,7 @@ export default function Help() {
             </div>
           )}
         </div>
-      </section>
+      </section>}
 
       {/* Contact CTA */}
       <section className="py-16 border-t border-white/5">
