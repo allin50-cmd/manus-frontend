@@ -79,22 +79,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
  * Health check endpoint
  */
 app.get('/api/health', async (req: Request, res: Response) => {
+  let dbStatus = 'connected';
   try {
-    // Check database connection
     await db.select().from(deploymentStatus).limit(1);
-
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      database: 'connected',
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      database: 'disconnected',
-    });
+  } catch {
+    dbStatus = 'disconnected';
   }
+
+  // Always return 200 — server is up. DB status is informational.
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: dbStatus,
+  });
 });
 
 // ============================================================================
