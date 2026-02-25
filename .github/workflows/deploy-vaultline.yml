@@ -163,14 +163,18 @@ jobs:
 
       - name: Configure App Service settings (dev)
         run: |
-          az webapp config appsettings set \
-            --name "${{ secrets.AZURE_WEBAPP_NAME_DEV }}" \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP_DEV }}" \
-            --settings \
-              WEBSITES_PORT=8080 \
-              NODE_ENV=production \
-              DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}" \
-            --output none || true
+          APP="${{ secrets.AZURE_WEBAPP_NAME_DEV }}"
+          RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
+          if [ -n "$RG" ] && [ -n "$APP" ]; then
+            echo "Setting app settings for $APP in resource group $RG"
+            az webapp config appsettings set \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --settings WEBSITES_PORT=8080 NODE_ENV=production \
+              --output none
+          else
+            echo "::warning::Could not determine resource group — skipping app settings"
+          fi
 
       - name: Deploy container to App Service (dev)
         uses: azure/webapps-deploy@v3
@@ -219,14 +223,18 @@ jobs:
 
       - name: Configure App Service settings (staging)
         run: |
-          az webapp config appsettings set \
-            --name "${{ secrets.AZURE_WEBAPP_NAME_STAGING }}" \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP_STAGING }}" \
-            --settings \
-              WEBSITES_PORT=8080 \
-              NODE_ENV=production \
-              DATABASE_URL="${{ secrets.DATABASE_URL_STAGING }}" \
-            --output none || true
+          APP="${{ secrets.AZURE_WEBAPP_NAME_STAGING }}"
+          RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
+          if [ -n "$RG" ] && [ -n "$APP" ]; then
+            echo "Setting app settings for $APP in resource group $RG"
+            az webapp config appsettings set \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --settings WEBSITES_PORT=8080 NODE_ENV=production \
+              --output none
+          else
+            echo "::warning::Could not determine resource group — skipping app settings"
+          fi
 
       - name: Deploy container to App Service (staging)
         uses: azure/webapps-deploy@v3
@@ -275,14 +283,18 @@ jobs:
 
       - name: Configure App Service settings (prod)
         run: |
-          az webapp config appsettings set \
-            --name "${{ secrets.AZURE_WEBAPP_NAME_PROD }}" \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP_PROD }}" \
-            --settings \
-              WEBSITES_PORT=8080 \
-              NODE_ENV=production \
-              DATABASE_URL="${{ secrets.DATABASE_URL_PROD }}" \
-            --output none || true
+          APP="${{ secrets.AZURE_WEBAPP_NAME_PROD }}"
+          RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
+          if [ -n "$RG" ] && [ -n "$APP" ]; then
+            echo "Setting app settings for $APP in resource group $RG"
+            az webapp config appsettings set \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --settings WEBSITES_PORT=8080 NODE_ENV=production \
+              --output none
+          else
+            echo "::warning::Could not determine resource group — skipping app settings"
+          fi
 
       - name: Deploy container to App Service (prod)
         uses: azure/webapps-deploy@v3
