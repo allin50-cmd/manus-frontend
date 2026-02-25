@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { addCompany, updateProfile, updateAlertPreferences } from '../utils/api';
@@ -38,8 +38,13 @@ export default function Onboarding() {
     weeklyDigest: false,
   });
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setLocation('/?signup=true');
+    }
+  }, [isAuthenticated, setLocation]);
+
   if (!isAuthenticated) {
-    setLocation('/signup');
     return null;
   }
 
