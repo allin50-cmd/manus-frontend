@@ -166,14 +166,23 @@ jobs:
           APP="${{ secrets.AZURE_WEBAPP_NAME_DEV }}"
           RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
           if [ -n "$RG" ] && [ -n "$APP" ]; then
-            echo "Setting app settings for $APP in resource group $RG"
+            echo "Configuring registry credentials and app settings for $APP in $RG"
+            # Set ACR pull credentials so Azure can pull the image
+            az webapp config container set \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --docker-registry-server-url "https://${{ secrets.ACR_LOGIN_SERVER }}" \
+              --docker-registry-server-user "${{ secrets.ACR_USERNAME }}" \
+              --docker-registry-server-password "${{ secrets.ACR_PASSWORD }}" \
+              --output none
+            # Set runtime app settings
             az webapp config appsettings set \
               --name "$APP" \
               --resource-group "$RG" \
               --settings WEBSITES_PORT=8080 NODE_ENV=production \
               --output none
           else
-            echo "::warning::Could not determine resource group — skipping app settings"
+            echo "::warning::Could not determine resource group — skipping config"
           fi
 
       - name: Deploy container to App Service (dev)
@@ -250,14 +259,21 @@ jobs:
           APP="${{ secrets.AZURE_WEBAPP_NAME_STAGING }}"
           RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
           if [ -n "$RG" ] && [ -n "$APP" ]; then
-            echo "Setting app settings for $APP in resource group $RG"
+            echo "Configuring registry credentials and app settings for $APP in $RG"
+            az webapp config container set \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --docker-registry-server-url "https://${{ secrets.ACR_LOGIN_SERVER }}" \
+              --docker-registry-server-user "${{ secrets.ACR_USERNAME }}" \
+              --docker-registry-server-password "${{ secrets.ACR_PASSWORD }}" \
+              --output none
             az webapp config appsettings set \
               --name "$APP" \
               --resource-group "$RG" \
               --settings WEBSITES_PORT=8080 NODE_ENV=production \
               --output none
           else
-            echo "::warning::Could not determine resource group — skipping app settings"
+            echo "::warning::Could not determine resource group — skipping config"
           fi
 
       - name: Deploy container to App Service (staging)
@@ -310,14 +326,21 @@ jobs:
           APP="${{ secrets.AZURE_WEBAPP_NAME_PROD }}"
           RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
           if [ -n "$RG" ] && [ -n "$APP" ]; then
-            echo "Setting app settings for $APP in resource group $RG"
+            echo "Configuring registry credentials and app settings for $APP in $RG"
+            az webapp config container set \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --docker-registry-server-url "https://${{ secrets.ACR_LOGIN_SERVER }}" \
+              --docker-registry-server-user "${{ secrets.ACR_USERNAME }}" \
+              --docker-registry-server-password "${{ secrets.ACR_PASSWORD }}" \
+              --output none
             az webapp config appsettings set \
               --name "$APP" \
               --resource-group "$RG" \
               --settings WEBSITES_PORT=8080 NODE_ENV=production \
               --output none
           else
-            echo "::warning::Could not determine resource group — skipping app settings"
+            echo "::warning::Could not determine resource group — skipping config"
           fi
 
       - name: Deploy container to App Service (prod)
