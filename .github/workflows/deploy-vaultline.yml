@@ -166,20 +166,19 @@ jobs:
           APP="${{ secrets.AZURE_WEBAPP_NAME_DEV }}"
           RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
           if [ -n "$RG" ] && [ -n "$APP" ]; then
-            echo "Configuring registry credentials and app settings for $APP in $RG"
-            # Set ACR pull credentials so Azure can pull the image
-            az webapp config container set \
-              --name "$APP" \
-              --resource-group "$RG" \
-              --docker-registry-server-url "https://${{ secrets.ACR_LOGIN_SERVER }}" \
-              --docker-registry-server-user "${{ secrets.ACR_USERNAME }}" \
-              --docker-registry-server-password "${{ secrets.ACR_PASSWORD }}" \
-              --output none
-            # Set runtime app settings
+            echo "Configuring all settings for $APP in $RG"
+            # Set all settings in one call: registry credentials + runtime config
+            # DOCKER_REGISTRY_SERVER_* are the app-settings-based auth mechanism
+            # (more persistent than az webapp config container set credentials)
             az webapp config appsettings set \
               --name "$APP" \
               --resource-group "$RG" \
-              --settings WEBSITES_PORT=8080 NODE_ENV=production \
+              --settings \
+                DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}" \
+                DOCKER_REGISTRY_SERVER_USERNAME="${{ secrets.ACR_USERNAME }}" \
+                DOCKER_REGISTRY_SERVER_PASSWORD="${{ secrets.ACR_PASSWORD }}" \
+                WEBSITES_PORT=8080 \
+                NODE_ENV=production \
               --output none
           else
             echo "::warning::Could not determine resource group — skipping config"
@@ -259,18 +258,16 @@ jobs:
           APP="${{ secrets.AZURE_WEBAPP_NAME_STAGING }}"
           RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
           if [ -n "$RG" ] && [ -n "$APP" ]; then
-            echo "Configuring registry credentials and app settings for $APP in $RG"
-            az webapp config container set \
-              --name "$APP" \
-              --resource-group "$RG" \
-              --docker-registry-server-url "https://${{ secrets.ACR_LOGIN_SERVER }}" \
-              --docker-registry-server-user "${{ secrets.ACR_USERNAME }}" \
-              --docker-registry-server-password "${{ secrets.ACR_PASSWORD }}" \
-              --output none
+            echo "Configuring all settings for $APP in $RG"
             az webapp config appsettings set \
               --name "$APP" \
               --resource-group "$RG" \
-              --settings WEBSITES_PORT=8080 NODE_ENV=production \
+              --settings \
+                DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}" \
+                DOCKER_REGISTRY_SERVER_USERNAME="${{ secrets.ACR_USERNAME }}" \
+                DOCKER_REGISTRY_SERVER_PASSWORD="${{ secrets.ACR_PASSWORD }}" \
+                WEBSITES_PORT=8080 \
+                NODE_ENV=production \
               --output none
           else
             echo "::warning::Could not determine resource group — skipping config"
@@ -326,18 +323,16 @@ jobs:
           APP="${{ secrets.AZURE_WEBAPP_NAME_PROD }}"
           RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
           if [ -n "$RG" ] && [ -n "$APP" ]; then
-            echo "Configuring registry credentials and app settings for $APP in $RG"
-            az webapp config container set \
-              --name "$APP" \
-              --resource-group "$RG" \
-              --docker-registry-server-url "https://${{ secrets.ACR_LOGIN_SERVER }}" \
-              --docker-registry-server-user "${{ secrets.ACR_USERNAME }}" \
-              --docker-registry-server-password "${{ secrets.ACR_PASSWORD }}" \
-              --output none
+            echo "Configuring all settings for $APP in $RG"
             az webapp config appsettings set \
               --name "$APP" \
               --resource-group "$RG" \
-              --settings WEBSITES_PORT=8080 NODE_ENV=production \
+              --settings \
+                DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}" \
+                DOCKER_REGISTRY_SERVER_USERNAME="${{ secrets.ACR_USERNAME }}" \
+                DOCKER_REGISTRY_SERVER_PASSWORD="${{ secrets.ACR_PASSWORD }}" \
+                WEBSITES_PORT=8080 \
+                NODE_ENV=production \
               --output none
           else
             echo "::warning::Could not determine resource group — skipping config"
