@@ -167,19 +167,24 @@ jobs:
           RG=$(az webapp list --query "[?name=='$APP'].resourceGroup | [0]" -o tsv 2>/dev/null || true)
           if [ -n "$RG" ] && [ -n "$APP" ]; then
             echo "Configuring all settings for $APP in $RG"
-            # Set all settings in one call: registry credentials + runtime config
-            # DOCKER_REGISTRY_SERVER_* are the app-settings-based auth mechanism
-            # (more persistent than az webapp config container set credentials)
+            # Derive ACR name from the login server hostname (e.g. "foo.azurecr.io" -> "foo")
+            ACR_NAME=$(echo "${{ secrets.ACR_LOGIN_SERVER }}" | cut -d'.' -f1)
+            # Fetch admin credentials directly from ACR (avoids stale/mismatched secrets)
+            ACR_USER=$(az acr credential show --name "$ACR_NAME" --query "username" -o tsv 2>/dev/null || echo "${{ secrets.ACR_USERNAME }}")
+            ACR_PWD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv 2>/dev/null || echo "${{ secrets.ACR_PASSWORD }}")
+            echo "ACR_USER resolved: ${ACR_USER:0:4}... (truncated)"
+            # Set DOCKER_REGISTRY_SERVER_* app settings + runtime config
             az webapp config appsettings set \
               --name "$APP" \
               --resource-group "$RG" \
               --settings \
                 DOCKER_REGISTRY_SERVER_URL="https://${{ secrets.ACR_LOGIN_SERVER }}" \
-                DOCKER_REGISTRY_SERVER_USERNAME="${{ secrets.ACR_USERNAME }}" \
-                DOCKER_REGISTRY_SERVER_PASSWORD="${{ secrets.ACR_PASSWORD }}" \
+                DOCKER_REGISTRY_SERVER_USERNAME="$ACR_USER" \
+                DOCKER_REGISTRY_SERVER_PASSWORD="$ACR_PWD" \
                 WEBSITES_PORT=8080 \
                 NODE_ENV=production \
               --output none
+            echo "App settings applied."
           else
             echo "::warning::Could not determine resource group — skipping config"
           fi
