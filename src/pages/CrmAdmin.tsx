@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { useAuth } from '../context/AuthContext';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function CrmAdmin() {
   usePageTitle('CRM');
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) setLocation('/login');
+  }, [authLoading, isAuthenticated, setLocation]);
+
+  if (authLoading || !isAuthenticated) return null;
 
   return (
     <div className="relative w-full bg-[#0a0c0f]" style={{ minHeight: 'calc(100vh - 4rem)' }}>

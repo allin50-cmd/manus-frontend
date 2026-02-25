@@ -47,7 +47,7 @@ export default function Onboarding() {
   const isAdvisor = intent === 'accountant' || intent === 'acsp_provider';
 
   const next = () => setStep((s) => Math.min(s + 1, 5));
-  const prev = () => setStep((s) => Math.max(s - 1, 1));
+  const prev = () => { setCompanyError(''); setStep((s) => Math.max(s - 1, 1)); };
 
   const handleStep2Continue = async () => {
     if (!companyNumber.trim()) {

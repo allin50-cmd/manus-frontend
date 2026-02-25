@@ -26,6 +26,7 @@ export default function BillingDashboard() {
   const [activeServices, setActiveServices] = useState<string[]>([]);
   const [companyCount, setCompanyCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -59,6 +60,7 @@ export default function BillingDashboard() {
         setCompanyCount(data.companyCount || data.subscription?.companyCount || 0);
       }
     } catch {
+      setFetchError(true);
       toast.error('Failed to load billing info');
     } finally {
       setLoading(false);
@@ -124,6 +126,20 @@ export default function BillingDashboard() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-[#5A4BFF] animate-spin" />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <p className="text-slate-400">Failed to load billing info. Check your connection.</p>
+        <button
+          onClick={() => { setFetchError(false); setLoading(true); fetchSubscription(); }}
+          className="px-5 py-2.5 bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white rounded-full text-sm font-bold transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
