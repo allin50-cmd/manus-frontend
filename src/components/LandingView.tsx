@@ -71,7 +71,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
               className={`w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:ring-2 transition-all ${
                 isValidEmail(heroEmail)
                   ? 'border-green-500/50 focus:border-green-500/70 focus:ring-green-500/20'
-                  : heroEmail.length > 3
+                  : heroEmail.includes('@') && !isValidEmail(heroEmail)
                   ? 'border-red-500/50 focus:border-red-500/70 focus:ring-red-500/20'
                   : 'border-white/10 focus:border-[#5A4BFF]/60 focus:ring-[#5A4BFF]/20'
               }`}
@@ -403,7 +403,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
               className={`w-full pl-12 pr-4 py-5 rounded-full bg-white/5 border-2 text-white placeholder:text-slate-500 text-lg focus:outline-none focus:ring-2 transition-all ${
                 isValidEmail(ctaEmail)
                   ? 'border-green-500/50 focus:border-green-500/70 focus:ring-green-500/20'
-                  : ctaEmail.length > 3
+                  : ctaEmail.includes('@') && !isValidEmail(ctaEmail)
                   ? 'border-red-500/50 focus:border-red-500/70 focus:ring-red-500/20'
                   : 'border-white/10 focus:border-[#5A4BFF]/60 focus:ring-[#5A4BFF]/20'
               }`}

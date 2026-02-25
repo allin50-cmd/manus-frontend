@@ -97,7 +97,7 @@ export default function Login() {
 
         <p className="text-center mt-6 text-sm text-slate-400">
           Don't have an account?{' '}
-          <Link href="/signup" className="text-[#5A4BFF] font-medium hover:underline">Create one free</Link>
+          <Link href="/?signup=true" className="text-[#5A4BFF] font-medium hover:underline">Create one free</Link>
         </p>
       </div>
     </div>

@@ -193,7 +193,14 @@ export default function LandingSignupModal({
       await register(email, name, password, company || undefined, selectedIntent || undefined);
       setStep(3);
     } catch (err: any) {
-      toast.error(err.message || 'Registration failed');
+      const msg = err.message || 'Registration failed';
+      if (msg.toLowerCase().includes('already registered')) {
+        toast.error('This email is already registered. Try signing in instead.', {
+          action: { label: 'Sign in', onClick: () => { onClose(); window.location.href = '/login'; } },
+        });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -308,7 +315,7 @@ export default function LandingSignupModal({
 
               <button
                 type="button"
-                onClick={() => { directionRef.current = 'forward'; setSelectedIntent('individual'); setStep(2); }}
+                onClick={() => { directionRef.current = 'forward'; setSelectedIntent(''); setStep(2); }}
                 disabled={!!advancingFrom}
                 className="w-full text-center text-sm text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
               >
