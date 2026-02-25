@@ -161,6 +161,17 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Configure App Service settings (dev)
+        run: |
+          az webapp config appsettings set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_DEV }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP_DEV }}" \
+            --settings \
+              WEBSITES_PORT=8080 \
+              NODE_ENV=production \
+              DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}" \
+            --output none || true
+
       - name: Deploy container to App Service (dev)
         uses: azure/webapps-deploy@v3
         with:
@@ -180,15 +191,16 @@ jobs:
 
       - name: Smoke test
         run: |
-          sleep 10
-          for i in 1 2 3 4 5; do
+          echo "Waiting 90s for container cold-start..."
+          sleep 90
+          for i in $(seq 1 10); do
             CODE=$(curl -s -o /dev/null -w '%{http_code}' \
               "https://${{ secrets.AZURE_WEBAPP_NAME_DEV }}.azurewebsites.net/api/health" || true)
-            [ "$CODE" = "200" ] && echo "Health check passed" && exit 0
-            echo "Attempt $i: HTTP $CODE – retrying in 10s..."
-            sleep 10
+            [ "$CODE" = "200" ] && echo "Health check passed on attempt $i" && exit 0
+            echo "Attempt $i: HTTP $CODE – retrying in 30s..."
+            sleep 30
           done
-          echo "::warning::Health check did not return 200 after 5 attempts"
+          echo "::warning::Health check did not return 200 after 10 attempts (~6 min)"
 
   # --------------------------------------------------------------------------
   # 5. DEPLOY TO STAGING (manual dispatch only)
@@ -204,6 +216,17 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Configure App Service settings (staging)
+        run: |
+          az webapp config appsettings set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_STAGING }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP_STAGING }}" \
+            --settings \
+              WEBSITES_PORT=8080 \
+              NODE_ENV=production \
+              DATABASE_URL="${{ secrets.DATABASE_URL_STAGING }}" \
+            --output none || true
 
       - name: Deploy container to App Service (staging)
         uses: azure/webapps-deploy@v3
@@ -224,15 +247,16 @@ jobs:
 
       - name: Smoke test
         run: |
-          sleep 10
-          for i in 1 2 3 4 5; do
+          echo "Waiting 90s for container cold-start..."
+          sleep 90
+          for i in $(seq 1 10); do
             CODE=$(curl -s -o /dev/null -w '%{http_code}' \
               "https://${{ secrets.AZURE_WEBAPP_NAME_STAGING }}.azurewebsites.net/api/health" || true)
-            [ "$CODE" = "200" ] && echo "Health check passed" && exit 0
-            echo "Attempt $i: HTTP $CODE – retrying in 10s..."
-            sleep 10
+            [ "$CODE" = "200" ] && echo "Health check passed on attempt $i" && exit 0
+            echo "Attempt $i: HTTP $CODE – retrying in 30s..."
+            sleep 30
           done
-          echo "::warning::Health check did not return 200 after 5 attempts"
+          echo "::warning::Health check did not return 200 after 10 attempts (~6 min)"
 
   # --------------------------------------------------------------------------
   # 6. DEPLOY TO PRODUCTION (manual only, requires GitHub environment approval)
@@ -248,6 +272,17 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Configure App Service settings (prod)
+        run: |
+          az webapp config appsettings set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_PROD }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP_PROD }}" \
+            --settings \
+              WEBSITES_PORT=8080 \
+              NODE_ENV=production \
+              DATABASE_URL="${{ secrets.DATABASE_URL_PROD }}" \
+            --output none || true
 
       - name: Deploy container to App Service (prod)
         uses: azure/webapps-deploy@v3
@@ -268,15 +303,16 @@ jobs:
 
       - name: Smoke test
         run: |
-          sleep 15
-          for i in 1 2 3 4 5; do
+          echo "Waiting 90s for container cold-start..."
+          sleep 90
+          for i in $(seq 1 10); do
             CODE=$(curl -s -o /dev/null -w '%{http_code}' \
               "https://${{ secrets.AZURE_WEBAPP_NAME_PROD }}.azurewebsites.net/api/health" || true)
-            [ "$CODE" = "200" ] && echo "Health check passed" && exit 0
-            echo "Attempt $i: HTTP $CODE – retrying in 15s..."
-            sleep 15
+            [ "$CODE" = "200" ] && echo "Health check passed on attempt $i" && exit 0
+            echo "Attempt $i: HTTP $CODE – retrying in 30s..."
+            sleep 30
           done
-          echo "::error::Production health check failed after 5 attempts"
+          echo "::error::Production health check failed after 10 attempts (~6 min)"
           exit 1
 
   # --------------------------------------------------------------------------
