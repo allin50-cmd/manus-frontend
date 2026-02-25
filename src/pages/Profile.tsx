@@ -4,14 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { updateProfile, changePassword, updateAlertPreferences } from '../utils/api';
 import { toast } from 'sonner';
 import {
-  User, Shield, CreditCard,
-  Key, Bell, LogOut, ChevronRight, Loader2,
+  User, Shield,
+  Key, Bell, LogOut, ChevronRight, Loader2, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { clsx } from 'clsx';
 import { usePageTitle } from '../hooks/usePageTitle';
+import BillingDashboard from '../components/billing/BillingDashboard';
 
 export default function Profile() {
   usePageTitle('Profile');
@@ -205,7 +206,7 @@ export default function Profile() {
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8">
                     <h2 className="text-xl font-bold text-white mb-2">Two-Factor Authentication</h2>
                     <p className="text-sm text-slate-400 mb-4">Add an extra layer of security to your account.</p>
-                    <Button className="bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-full font-bold">
+                    <Button onClick={() => toast.info('Two-factor authentication is coming soon!')} className="bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-full font-bold">
                       <Shield className="w-4 h-4 mr-2" /> Enable 2FA
                     </Button>
                   </div>
@@ -265,29 +266,7 @@ export default function Profile() {
               )}
 
               {activeSection === 'billing' && (
-                <div className="space-y-6">
-                  <div className="bg-gradient-to-br from-[#5A4BFF]/10 to-indigo-600/10 border border-[#5A4BFF]/20 rounded-2xl p-6 sm:p-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-bold text-white">Current Plan</h2>
-                      <span className="text-sm bg-[#5A4BFF]/20 text-[#5A4BFF] px-3 py-1 rounded-full font-bold">{user.plan || 'Starter'}</span>
-                    </div>
-                    <p className="text-slate-400 text-sm mb-6">
-                      {user.plan === 'professional' ? 'Monitor up to 100 companies with advanced features.'
-                        : user.plan === 'enterprise' ? 'Unlimited monitoring with dedicated support.'
-                        : 'Free plan with up to 3 monitored companies.'}
-                    </p>
-                    <a href="/pricing" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5A4BFF] text-white rounded-full font-bold text-sm hover:bg-[#6B5BFF] transition-colors">
-                      Upgrade Plan <ChevronRight className="w-4 h-4" />
-                    </a>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8">
-                    <h2 className="text-xl font-bold text-white mb-4">Payment Method</h2>
-                    <p className="text-sm text-slate-400 mb-4">No payment method on file.</p>
-                    <Button onClick={() => toast.info('Payment integration coming soon!')} className="bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-full font-bold">
-                      <CreditCard className="w-4 h-4 mr-2" /> Add Payment Method
-                    </Button>
-                  </div>
-                </div>
+                <BillingDashboard />
               )}
             </div>
           </div>

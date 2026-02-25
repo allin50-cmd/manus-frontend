@@ -32,6 +32,7 @@ import DevOps from './pages/DevOps';
 import Acsp from './pages/Acsp';
 import Workflows from './pages/Workflows';
 import CrmAdmin from './pages/CrmAdmin';
+import Billing from './pages/Billing';
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="/acsp" component={Acsp} />
             <Route path="/workflows" component={Workflows} />
             <Route path="/crm" component={CrmAdmin} />
+            <Route path="/billing" component={Billing} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

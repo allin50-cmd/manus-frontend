@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Shield, User, Mail, MessageSquare, X, CheckCircle, CalendarClock } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,20 +85,19 @@ export default function BookDemoModal({ open, onClose, initialEmail }: BookDemoM
     e.preventDefault();
     setLoading(true);
     try {
-      // Attempt API call; gracefully degrade if endpoint doesn't exist
-      const res = await fetch('/api/demo-request', {
+      const res = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({ name, email, message, source: 'demo_request' }),
       });
-      if (!res.ok && res.status !== 404) {
+      if (!res.ok) {
         throw new Error('Request failed');
       }
+      setSubmitted(true);
     } catch {
-      // Silently swallow network errors — treat as success from user's PoV
+      toast.error('Something went wrong. Please try again or email us directly.');
     } finally {
       setLoading(false);
-      setSubmitted(true);
     }
   };
 

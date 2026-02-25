@@ -1,14 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import {
-  Download, Building2,
+  Download, Building2, Search, ArrowUpDown,
   AlertTriangle, CheckCircle, Clock, BarChart3,
-  PieChart,
+  PieChart, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { fetchDashboard, fetchAlerts, type MonitoredCompany, type AlertItem, type DashboardStats } from '../utils/api';
 import { clsx } from 'clsx';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { toast } from 'sonner';
+
+type SortKey = 'companyName' | 'companyNumber' | 'complianceStatus' | 'riskLevel' | 'accountsNextDue' | 'confirmationNextDue';
+type SortDir = 'asc' | 'desc';
+
+const PAGE_SIZE = 10;
 
 export default function Reports() {
   usePageTitle('Reports');
@@ -18,7 +24,14 @@ export default function Reports() {
   const [companies, setCompanies] = useState<MonitoredCompany[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'companies' | 'alerts'>('overview');
+
+  // Table interactivity state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('companyName');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -31,14 +44,74 @@ export default function Reports() {
         setCompanies(dash.companies);
         setAlerts(alertList);
       })
-      .catch(() => {})
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load reports data');
+        toast.error('Failed to load reports data');
+      })
       .finally(() => setLoading(false));
   }, [isAuthenticated, setLocation]);
+
+  // Filtered + sorted + paginated companies
+  const filteredCompanies = useMemo(() => {
+    let result = [...companies];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.companyName?.toLowerCase().includes(q) ||
+          c.companyNumber?.toLowerCase().includes(q) ||
+          c.complianceStatus?.toLowerCase().includes(q) ||
+          c.riskLevel?.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      const aVal = a[sortKey] ?? '';
+      const bVal = b[sortKey] ?? '';
+      const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return result;
+  }, [companies, searchQuery, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCompanies.length / PAGE_SIZE));
+  const paginatedCompanies = filteredCompanies.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset page when search changes
+  useEffect(() => { setCurrentPage(1); }, [searchQuery]);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="w-10 h-10 border-4 border-[#5A4BFF]/30 border-t-[#5A4BFF] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error && !stats) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <AlertTriangle className="w-12 h-12 text-red-400" />
+        <p className="text-red-400 text-lg font-medium">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-5 py-2.5 bg-[#5A4BFF] text-white rounded-full font-bold text-sm hover:bg-[#6B5BFF] transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -64,6 +137,18 @@ export default function Reports() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const SortableHeader = ({ label, colKey }: { label: string; colKey: SortKey }) => (
+    <th
+      className="text-left py-3 px-5 text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors select-none"
+      onClick={() => handleSort(colKey)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={clsx('w-3 h-3', sortKey === colKey ? 'text-[#5A4BFF]' : 'text-slate-600')} />
+      </span>
+    </th>
+  );
 
   return (
     <div className="min-h-screen">
@@ -163,20 +248,34 @@ export default function Reports() {
 
           {activeTab === 'companies' && (
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+              {/* Search Bar */}
+              <div className="p-4 border-b border-white/10">
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search companies..."
+                    className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/60 focus:ring-1 focus:ring-[#5A4BFF]/20 transition-all"
+                  />
+                </div>
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px]">
                   <thead>
                     <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-5 text-xs font-medium text-slate-400 uppercase tracking-wider">Company</th>
-                      <th className="text-left py-3 px-5 text-xs font-medium text-slate-400 uppercase tracking-wider">Number</th>
-                      <th className="text-center py-3 px-5 text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
-                      <th className="text-center py-3 px-5 text-xs font-medium text-slate-400 uppercase tracking-wider">Risk</th>
-                      <th className="text-left py-3 px-5 text-xs font-medium text-slate-400 uppercase tracking-wider">Accounts Due</th>
-                      <th className="text-left py-3 px-5 text-xs font-medium text-slate-400 uppercase tracking-wider">Confirmation Due</th>
+                      <SortableHeader label="Company" colKey="companyName" />
+                      <SortableHeader label="Number" colKey="companyNumber" />
+                      <SortableHeader label="Status" colKey="complianceStatus" />
+                      <SortableHeader label="Risk" colKey="riskLevel" />
+                      <SortableHeader label="Accounts Due" colKey="accountsNextDue" />
+                      <SortableHeader label="Confirmation Due" colKey="confirmationNextDue" />
                     </tr>
                   </thead>
                   <tbody>
-                    {companies.map((c) => (
+                    {paginatedCompanies.map((c) => (
                       <tr key={c.id} className="border-b border-white/5 hover:bg-white/[0.03]">
                         <td className="py-3 px-5 text-sm font-medium text-white">{c.companyName}</td>
                         <td className="py-3 px-5 text-sm text-slate-400 font-mono">{c.companyNumber}</td>
@@ -194,12 +293,51 @@ export default function Reports() {
                         <td className="py-3 px-5 text-sm text-slate-400">{c.confirmationNextDue ? new Date(c.confirmationNextDue).toLocaleDateString() : '-'}</td>
                       </tr>
                     ))}
-                    {companies.length === 0 && (
-                      <tr><td colSpan={6} className="py-12 text-center text-slate-500">No companies monitored yet.</td></tr>
+                    {paginatedCompanies.length === 0 && (
+                      <tr><td colSpan={6} className="py-12 text-center text-slate-500">
+                        {searchQuery ? 'No companies match your search.' : 'No companies monitored yet.'}
+                      </td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {filteredCompanies.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-5 py-3 border-t border-white/10">
+                  <span className="text-xs text-slate-500">
+                    Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredCompanies.length)} of {filteredCompanies.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={clsx(
+                          'w-8 h-8 rounded-lg text-xs font-medium transition-colors',
+                          page === currentPage ? 'bg-[#5A4BFF] text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        )}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

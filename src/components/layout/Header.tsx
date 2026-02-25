@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   Shield, Menu, X, Bell, User, LogOut, ChevronDown,
   Building2, FileText, BarChart3, HelpCircle, Settings, GitBranch,
-  Moon, Sun,
+  Moon, Sun, CreditCard,
 } from 'lucide-react';
 
 export default function Header() {
@@ -94,7 +94,7 @@ export default function Header() {
               <>
                 {/* Alerts Bell */}
                 <button
-                  onClick={() => setLocation('/dashboard')}
+                  onClick={() => setLocation('/alerts')}
                   className="relative p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
                   aria-label="View alerts"
                 >
@@ -128,6 +128,9 @@ export default function Header() {
                         </Link>
                         <Link href="/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors" onClick={() => setProfileOpen(false)}>
                           <Settings className="w-4 h-4" /> Settings
+                        </Link>
+                        <Link href="/billing" className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors" onClick={() => setProfileOpen(false)}>
+                          <CreditCard className="w-4 h-4" /> Billing
                         </Link>
                         <div className="border-t border-white/10 mt-1 pt-1">
                           <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 w-full transition-colors">
