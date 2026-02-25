@@ -9,13 +9,15 @@ import * as schema from './schema';
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL environment variable is not set');
+  console.warn('[db] WARNING: DATABASE_URL is not set — DB queries will fail at runtime');
 }
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 // Create postgres connection – tuned for Azure App Service
-const client = postgres(databaseUrl, {
+// Falls back to a placeholder URL so the process can start even without DB configured;
+// all queries will fail gracefully at runtime.
+const client = postgres(databaseUrl ?? 'postgres://localhost/placeholder', {
   max: IS_PRODUCTION ? 20 : 10,        // Azure B1+ can handle 20 connections
   idle_timeout: IS_PRODUCTION ? 30 : 20, // Keep connections warm longer in prod
   connect_timeout: 15,                    // Azure PG can be slow on cold start
