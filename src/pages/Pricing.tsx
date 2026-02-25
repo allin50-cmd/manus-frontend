@@ -103,7 +103,7 @@ export default function Pricing() {
                   ))}
                 </ul>
                 <Link
-                  href="/signup"
+                  href={`/signup?service=${encodeURIComponent(service.name)}`}
                   className="w-full py-3 rounded-full text-center font-bold text-sm transition-colors flex items-center justify-center gap-2 bg-[#5A4BFF] text-white hover:bg-[#6B5BFF] shadow-lg shadow-[#5A4BFF]/25"
                 >
                   <Plus className="w-4 h-4" /> Add Service

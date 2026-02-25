@@ -77,10 +77,13 @@ export default function Onboarding() {
       await updateProfile({ onboardingComplete: true });
       await refreshUser();
     } catch {
-      // Non-critical — continue anyway
+      toast.error('Could not save profile — your progress may not be saved');
     }
-    try { await updateAlertPreferences(alertPrefs); } catch { /* non-critical */ }
-    // Route based on intent
+    try {
+      await updateAlertPreferences(alertPrefs);
+    } catch {
+      toast.error('Could not save alert preferences — you can update them later in Settings');
+    }
     if (isAdvisor) {
       setLocation('/acsp');
     } else {
@@ -92,7 +95,7 @@ export default function Onboarding() {
     try {
       await updateProfile({ onboardingComplete: true });
     } catch {
-      // Non-critical
+      toast.error('Could not save profile — your progress may not be saved');
     }
     setLocation('/dashboard');
   };

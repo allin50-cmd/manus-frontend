@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Send, Bell, CheckCircle, Loader2, Mail, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { getToken } from '../utils/api';
 
 interface AlertTriggerPanelProps {
   companyId: string;
@@ -36,16 +37,20 @@ export default function AlertTriggerPanel({ companyId, companyName, riskLevel }:
 
     setLoading(true);
     try {
+      const token = getToken();
       const response = await fetch('/api/alerts/trigger', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           companyId,
           companyName,
           issueType: formData.issueType,
           title: formData.title,
           description: formData.description,
-          riskLevel: riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1),
+          riskLevel: riskLevel ? riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1) : 'Medium',
           deadline: formData.deadline || undefined,
           triggerType: 'manual',
           channels: formData.channels,

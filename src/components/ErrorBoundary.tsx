@@ -2,24 +2,24 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Shield, RefreshCw } from 'lucide-react';
 
 interface Props { children: ReactNode }
-interface State { hasError: boolean }
+interface State { hasError: boolean; error: Error | null }
 
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
 
-  componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
-    // Production: send to error tracking service
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[ErrorBoundary] Uncaught error:', error, errorInfo);
   }
 
   handleReset = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, error: null });
   };
 
   render() {
@@ -29,9 +29,14 @@ export default class ErrorBoundary extends Component<Props, State> {
           <div className="text-center max-w-md">
             <Shield className="w-16 h-16 text-[#5A4BFF] mx-auto mb-6" />
             <h1 className="text-3xl font-black text-white mb-3">Something went wrong</h1>
-            <p className="text-slate-400 mb-8">
+            <p className="text-slate-400 mb-4">
               An unexpected error occurred. Please try refreshing the page.
             </p>
+            {this.state.error && (
+              <p className="text-xs text-slate-600 bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-8 font-mono break-words text-left">
+                {this.state.error.message}
+              </p>
+            )}
             <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={this.handleReset}
