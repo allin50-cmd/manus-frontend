@@ -92,7 +92,7 @@ echo ""
 
 # ---------- 2. Azure Container Registry -------------------------------------
 bold "Step 2/6 — Azure Container Registry"
-if az acr show --name "$ACR_NAME" &>/dev/null 2>&1; then
+if az acr show --name "$ACR_NAME" --resource-group "$RG" &>/dev/null 2>&1; then
   ok "ACR '$ACR_NAME' already exists"
 else
   info "Creating ACR '$ACR_NAME' (Basic SKU, admin enabled)..."
@@ -105,9 +105,9 @@ else
   ok "ACR created"
 fi
 
-ACR_SERVER=$(az acr show --name "$ACR_NAME" --query "loginServer" -o tsv)
-ACR_USER=$(az acr credential show --name "$ACR_NAME" --query "username" -o tsv)
-ACR_PASS=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
+ACR_SERVER=$(az acr show --name "$ACR_NAME" --resource-group "$RG" --query "loginServer" -o tsv)
+ACR_USER=$(az acr credential show --name "$ACR_NAME" --resource-group "$RG" --query "username" -o tsv)
+ACR_PASS=$(az acr credential show --name "$ACR_NAME" --resource-group "$RG" --query "passwords[0].value" -o tsv)
 ok "ACR credentials retrieved: $ACR_SERVER"
 echo ""
 
