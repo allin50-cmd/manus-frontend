@@ -16,4 +16,10 @@ export default defineConfig({
       executablePath: '/root/.cache/ms-playwright/chromium-1194/chrome-linux/chrome',
     },
   },
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
+  },
 });
