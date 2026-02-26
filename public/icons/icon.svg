@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#1d4ed8"/>
+  <!-- Shield outline -->
+  <path d="M256 64 L400 120 L400 256 C400 340 340 400 256 440 C172 400 112 340 112 256 L112 120 Z"
+        fill="none" stroke="white" stroke-width="24" stroke-linejoin="round"/>
+  <!-- Checkmark -->
+  <polyline points="192,260 236,304 316,208"
+            fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- F letter (top-left badge) -->
+  <rect x="52" y="52" width="80" height="80" rx="16" fill="white" opacity="0.15"/>
+  <text x="92" y="108" font-size="52" font-family="system-ui,sans-serif" font-weight="800"
+        fill="white" text-anchor="middle">F</text>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Solid background fills entire square (maskable safe zone = inner 80%) -->
+  <rect width="512" height="512" fill="#1d4ed8"/>
+  <!-- Shield centred within the safe zone (approx 200-312 area) -->
+  <path d="M256 128 L360 168 L360 256 C360 316 316 360 256 392 C196 360 152 316 152 256 L152 168 Z"
+        fill="none" stroke="white" stroke-width="20" stroke-linejoin="round"/>
+  <!-- Checkmark -->
+  <polyline points="210,258 244,292 306,214"
+            fill="none" stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

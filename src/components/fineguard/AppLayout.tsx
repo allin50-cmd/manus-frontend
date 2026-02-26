@@ -3,8 +3,11 @@ import { useLocation } from 'wouter';
 import {
   LayoutDashboard, Rocket, History, Settings, HelpCircle,
   Users, Building2, Menu, X, Shield, ChevronDown, ChevronRight,
+  Download, WifiOff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 interface NavItem {
   label: string;
@@ -84,6 +87,70 @@ function SidebarLink({ item }: { item: NavItem }) {
   );
 }
 
+/** Dismissible banner that appears when a new SW update is available. */
+function UpdateBanner({ onUpdate }: { onUpdate: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <div className="flex items-center justify-between gap-4 bg-brand-gold/10 border-b border-brand-gold/20 px-6 py-2 text-xs text-brand-gold">
+      <span>A new version of FineGuard is available.</span>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onUpdate}
+          className="font-semibold underline hover:no-underline"
+        >
+          Update now
+        </button>
+        <button onClick={() => setDismissed(true)} aria-label="Dismiss">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Dismissible banner offering to install the PWA. */
+function InstallBanner({ onInstall, onDismiss }: { onInstall: () => void; onDismiss: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 bg-blue-50 border-b border-blue-100 px-6 py-2 text-xs text-blue-700">
+      <span className="flex items-center gap-2">
+        <Download className="h-3.5 w-3.5 shrink-0" />
+        Install FineGuard on your device for offline access.
+      </span>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onInstall}
+          className="font-semibold underline hover:no-underline"
+        >
+          Install
+        </button>
+        <button onClick={onDismiss} aria-label="Dismiss">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Thin offline indicator strip. */
+function OfflineBanner() {
+  const [online, setOnline] = useState(navigator.onLine);
+  React.useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+  if (online) return null;
+  return (
+    <div className="flex items-center gap-2 bg-amber-50 border-b border-amber-200 px-6 py-1.5 text-xs text-amber-700">
+      <WifiOff className="h-3.5 w-3.5" />
+      You are offline — showing cached data.
+    </div>
+  );
+}
+
 interface AppLayoutProps {
   title: string;
   children: React.ReactNode;
@@ -92,6 +159,21 @@ interface AppLayoutProps {
 export function AppLayout({ title, children }: AppLayoutProps) {
   const [, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [installDismissed, setInstallDismissed] = useState(false);
+
+  // PWA install prompt
+  const { canInstall, promptInstall } = usePWAInstall();
+
+  // Service-worker update flow (vite-plugin-pwa virtual module)
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      // Poll for updates every 60 s in production
+      if (r) setInterval(() => r.update(), 60_000);
+    },
+  });
 
   const sidebar = (
     <nav className="flex flex-col h-full">
@@ -144,6 +226,16 @@ export function AppLayout({ title, children }: AppLayoutProps) {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* PWA banners (stacked above the header) */}
+        <OfflineBanner />
+        {needRefresh && <UpdateBanner onUpdate={() => updateServiceWorker(true)} />}
+        {canInstall && !installDismissed && (
+          <InstallBanner
+            onInstall={async () => { await promptInstall(); setInstallDismissed(true); }}
+            onDismiss={() => setInstallDismissed(true)}
+          />
+        )}
+
         {/* Top bar */}
         <header className="flex h-14 items-center gap-4 border-b border-gray-200 bg-white px-6 shrink-0">
           <button
