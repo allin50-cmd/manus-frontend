@@ -1,41 +1,136 @@
 {
   "frontend": {
-    "framework": "React",
-    "language": "TypeScript",
-    "ui": "Fluent UI v9",
-    "routing": "React Router v6",
+    "framework": "React 18",
+    "language": "TypeScript 5",
+    "bundler": "Vite 5",
+    "styling": "Tailwind CSS 3",
+    "routing": "wouter 3",
+    "packageManager": "pnpm 8+",
+    "nodeRequirement": ">=20.0.0",
     "telemetry": "Application Insights Web SDK",
-    "pages": [
-      "Dashboard",
-      "Deploy",
-      "DeploymentHistory",
-      "DeploymentDetails",
-      "SettingsDomains",
-      "SettingsCopilot",
-      "SettingsTeams",
-      "SettingsPowerAutomate",
-      "Help",
-      "PartnerOverview",
-      "TenantOverview"
-    ],
-    "components": [
-      "Card",
-      "CardGrid",
-      "Table",
-      "ToggleGroup",
-      "Form",
-      "StatusPill",
-      "LogViewer",
-      "StepTimeline",
-      "Markdown"
-    ],
+
+    "pwa": {
+      "plugin": "vite-plugin-pwa 0.20",
+      "serviceWorker": "Workbox (auto-generated)",
+      "registerType": "autoUpdate",
+      "manifest": {
+        "name": "FineGuard – Compliance Automation",
+        "short_name": "FineGuard",
+        "display": "standalone",
+        "start_url": "/app",
+        "theme_color": "#1d4ed8",
+        "background_color": "#0f172a",
+        "scope": "/"
+      },
+      "icons": {
+        "icon": "public/icons/icon.svg",
+        "iconMaskable": "public/icons/icon-maskable.svg",
+        "shortcuts": [
+          { "name": "Deploy",    "url": "/app/deploy",    "icon": "public/icons/shortcut-deploy.svg" },
+          { "name": "Dashboard", "url": "/app",           "icon": "public/icons/shortcut-dashboard.svg" }
+        ]
+      },
+      "caching": {
+        "api": {
+          "pattern": "/api/*",
+          "strategy": "NetworkFirst",
+          "networkTimeoutSeconds": 5,
+          "maxAgeSeconds": 60
+        },
+        "assets": {
+          "pattern": "*.{png,jpg,svg,woff2}",
+          "strategy": "CacheFirst",
+          "maxAgeSeconds": 2592000
+        },
+        "shell": {
+          "pattern": "**/*.{js,css,html}",
+          "strategy": "Precache"
+        }
+      },
+      "offlineFallback": "/index.html",
+      "hooks": {
+        "usePWAInstall": "src/hooks/usePWAInstall.ts"
+      }
+    },
+
     "authentication": {
-      "provider": "Entra ID",
+      "provider": "Microsoft Entra ID (via Azure SWA)",
       "principalHeader": "x-ms-client-principal"
     },
+
     "roles": {
       "practice": ["FineGuard.Admin", "FineGuard.Operator", "FineGuard.ReadOnly"],
       "partner": ["FineGuard.PartnerAdmin"]
-    }
+    },
+
+    "routes": {
+      "marketing": [
+        { "path": "/",                  "page": "FineGuard",        "description": "Product landing page" },
+        { "path": "/fineguard",         "page": "FineGuard",        "description": "Product landing page (alias)" },
+        { "path": "/vaultline",         "page": "VaultLine",        "description": "VaultLine product page" },
+        { "path": "/ultai",             "page": "UltAi",            "description": "UltAi Secure Intake page" },
+        { "path": "/compliance-bundle", "page": "ComplianceBundle", "description": "Compliance bundle purchase" },
+        { "path": "/intake-sheet",      "page": "IntakeSheet",      "description": "Client intake form" },
+        { "path": "/book-demo",         "page": "BookDemo",         "description": "Demo booking form" },
+        { "path": "/about",             "page": "About",            "description": "About the company" },
+        { "path": "/pricing",           "page": "Pricing",          "description": "Pricing tiers" },
+        { "path": "/team",              "page": "Team",             "description": "Team members" },
+        { "path": "/admin",             "page": "Admin",            "description": "Internal admin panel" }
+      ],
+      "portal": [
+        { "path": "/app",                          "page": "Dashboard",             "description": "Deployment stats overview" },
+        { "path": "/app/dashboard",                "page": "Dashboard",             "description": "Deployment stats overview (alias)" },
+        { "path": "/app/deploy",                   "page": "Deploy",                "description": "New deployment wizard" },
+        { "path": "/app/history",                  "page": "DeploymentHistory",     "description": "All deployment runs" },
+        { "path": "/app/history/:id",              "page": "DeploymentDetails",     "description": "Per-run steps and logs" },
+        { "path": "/app/settings/domains",         "page": "SettingsDomains",       "description": "SharePoint and Functions domain config" },
+        { "path": "/app/settings/copilot",         "page": "SettingsCopilot",       "description": "Azure OpenAI / Copilot config" },
+        { "path": "/app/settings/teams",           "page": "SettingsTeams",         "description": "Teams channel and webhook config" },
+        { "path": "/app/settings/power-automate",  "page": "SettingsPowerAutomate", "description": "Power Automate flow toggles" },
+        { "path": "/app/help",                     "page": "Help",                  "description": "FAQ and getting-started checklist" },
+        { "path": "/app/partners",                 "page": "PartnerOverview",       "description": "Managed practices and partner programme" },
+        { "path": "/app/tenants/:id",              "page": "TenantOverview",        "description": "Per-practice deadline calendar" }
+      ]
+    },
+
+    "components": {
+      "layout": [
+        { "name": "AppLayout",  "path": "src/components/fineguard/AppLayout.tsx",  "description": "Sidebar shell with mobile drawer, PWA banners, SW update flow" }
+      ],
+      "fineguard": [
+        { "name": "Card",          "path": "src/components/fineguard/Card.tsx",         "description": "Stat / content card" },
+        { "name": "CardGrid",      "path": "src/components/fineguard/CardGrid.tsx",     "description": "Responsive card grid" },
+        { "name": "Table",         "path": "src/components/fineguard/Table.tsx",        "description": "Generic typed data table with empty state" },
+        { "name": "ToggleGroup",   "path": "src/components/fineguard/ToggleGroup.tsx",  "description": "Pill-style tab switcher" },
+        { "name": "Form",          "path": "src/components/fineguard/Form.tsx",         "description": "Labelled fields with hint and error state" },
+        { "name": "StatusPill",    "path": "src/components/fineguard/StatusPill.tsx",   "description": "Coloured badge: Running/Success/Failed/Pending/Warning" },
+        { "name": "LogViewer",     "path": "src/components/fineguard/LogViewer.tsx",    "description": "Dark terminal log output with auto-scroll" },
+        { "name": "StepTimeline",  "path": "src/components/fineguard/StepTimeline.tsx", "description": "Vertical deployment step list with per-step icons" }
+      ],
+      "ui": [
+        { "name": "Button",   "path": "src/components/ui/button.tsx" },
+        { "name": "Input",    "path": "src/components/ui/input.tsx" },
+        { "name": "Badge",    "path": "src/components/ui/badge.tsx" },
+        { "name": "Card",     "path": "src/components/ui/card.tsx" },
+        { "name": "Label",    "path": "src/components/ui/label.tsx" },
+        { "name": "Textarea", "path": "src/components/ui/textarea.tsx" },
+        { "name": "Alert",    "path": "src/components/ui/alert.tsx" },
+        { "name": "Tabs",     "path": "src/components/ui/tabs.tsx" },
+        { "name": "Table",    "path": "src/components/ui/table.tsx" },
+        { "name": "Select",   "path": "src/components/ui/select.tsx" }
+      ],
+      "admin": [
+        { "name": "DeploymentStatusPanel", "path": "src/components/admin/DeploymentStatusPanel.tsx" }
+      ]
+    },
+
+    "hooks": [
+      {
+        "name": "usePWAInstall",
+        "path": "src/hooks/usePWAInstall.ts",
+        "exports": ["canInstall", "isInstalled", "promptInstall", "outcome"],
+        "description": "Captures beforeinstallprompt, exposes native install prompt lifecycle"
+      }
+    ]
   }
 }

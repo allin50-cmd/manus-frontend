@@ -2,24 +2,83 @@
   "infrastructure": {
     "iac": "Bicep",
     "environments": ["dev", "staging", "prod"],
+
     "resources": [
-      "Azure Static Web App",
-      "Azure Function App",
-      "Azure Cosmos DB Account",
-      "Cosmos Database: FineGuard",
-      "Containers: Deployments, Settings",
-      "Azure Storage Account"
+      {
+        "type": "Microsoft.Web/staticSites",
+        "name": "Azure Static Web App",
+        "sku": "Standard",
+        "note": "Hosts frontend + linked Azure Functions backend"
+      },
+      {
+        "type": "Microsoft.Web/sites",
+        "name": "Azure Function App",
+        "runtime": "node:18"
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts",
+        "name": "Azure Cosmos DB Account",
+        "api": "SQL (Core)"
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+        "name": "FineGuard database"
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+        "names": ["Deployments", "Settings"]
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "Azure Storage Account",
+        "use": "Function App backing store"
+      },
+      {
+        "type": "Microsoft.Insights/components",
+        "name": "Application Insights",
+        "use": "Frontend and backend telemetry"
+      }
     ],
-    "ci_cd": {
+
+    "hosting": {
+      "provider": "Azure Static Web Apps",
+      "configFile": "staticwebapp.config.json",
+      "navigationFallback": "/index.html",
+      "apiRuntime": "node:18",
+      "caching": {
+        "assets": "public, max-age=31536000, immutable",
+        "pages": "must-revalidate, max-age=3600"
+      },
+      "securityHeaders": [
+        "Content-Security-Policy",
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+        "X-XSS-Protection",
+        "Referrer-Policy",
+        "Permissions-Policy"
+      ]
+    },
+
+    "cicd": {
       "provider": "GitHub Actions",
-      "workflow": "azure-static-web-apps.yml",
-      "environmentSelection": "Branch-based (main/staging/dev)",
+      "workflow": ".github/workflows/azure-static-web-apps.yml",
+      "trigger": {
+        "push": ["main", "staging", "dev"],
+        "pullRequest": ["main"]
+      },
+      "environmentMapping": {
+        "main":    "prod",
+        "staging": "staging",
+        "dev":     "dev"
+      },
       "steps": [
-        "Install dependencies",
-        "Build frontend",
-        "Build backend",
+        "Checkout",
+        "Install dependencies (pnpm)",
+        "Build frontend (vite build → generates SW + manifest)",
+        "Build backend (tsc)",
         "Inject environment config",
-        "Deploy SWA and Functions"
+        "Deploy to Azure Static Web Apps (SWA CLI)",
+        "Link Azure Functions"
       ],
       "requiredSecrets": [
         "SWA_TOKEN_DEV",
@@ -29,10 +88,11 @@
         "APPINSIGHTS_CONNECTION_STRING"
       ]
     },
+
     "telemetry": {
-      "frontend": "App Insights Web SDK",
-      "backend": "App Insights Node SDK",
-      "distributedTracing": "traceparent headers"
+      "frontend": "Application Insights Web SDK (auto page-view + custom events)",
+      "backend": "Application Insights Node SDK",
+      "distributedTracing": "traceparent headers (W3C)"
     }
   }
 }
