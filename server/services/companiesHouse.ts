@@ -182,9 +182,10 @@ export class CompaniesHouseService {
   /**
    * Check if error is retryable
    */
-  private isRetryableError(error: any): boolean {
-    if (error.message?.includes('rate limit')) return false;
-    if (error.message?.includes('Invalid')) return false;
+  private isRetryableError(error: unknown): boolean {
+    const msg = error instanceof Error ? error.message : '';
+    if (msg.includes('rate limit')) return false;
+    if (msg.includes('Invalid')) return false;
     return true; // Network errors are retryable
   }
 
@@ -214,7 +215,7 @@ export class CompaniesHouseService {
         throw new Error(`Failed to fetch filing history: ${response.status}`);
       }
 
-      const data = await response.json() as any;
+      const data = await response.json() as { items?: FilingHistoryItem[] };
       const items = data.items || [];
       console.log(`📈 Filing history retrieved: ${items.length} filings`);
       return items;

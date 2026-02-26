@@ -1,5 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { pgTable, uuid, varchar, timestamp, text } from 'drizzle-orm/pg-core';
 
 /**
  * Deployment Status Table

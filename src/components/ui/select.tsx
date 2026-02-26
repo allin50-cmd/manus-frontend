@@ -21,7 +21,7 @@ export function SelectTrigger({ children, className }: { children: React.ReactNo
 export function SelectValue({ placeholder }: { placeholder?: string }) {
   return <span className="text-gray-400 text-sm">{placeholder}</span>;
 }
-export function SelectContent({ children }: { children: React.ReactNode }) { return <>{children}</>; }
+export function SelectContent({ children, className: _className }: { children: React.ReactNode; className?: string }) { return <>{children}</>; }
 export function SelectItem({ value, children }: { value: string; children: React.ReactNode }) {
   return <option value={value}>{children as string}</option>;
 }

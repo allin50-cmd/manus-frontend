@@ -1,5 +1,5 @@
 import { useParams, useLocation } from 'wouter';
-import { ArrowLeft, Calendar, FileCheck, AlertCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, AlertCircle, Clock } from 'lucide-react';
 import { AppLayout } from '@/components/fineguard/AppLayout';
 import { Card } from '@/components/fineguard/Card';
 import { CardGrid } from '@/components/fineguard/CardGrid';

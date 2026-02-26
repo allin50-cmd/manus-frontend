@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import {
   LayoutDashboard, Rocket, History, Settings, HelpCircle,
-  Users, Building2, Menu, X, Shield, ChevronDown, ChevronRight,
+  Users, Menu, X, Shield, ChevronDown, ChevronRight,
   Download, WifiOff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

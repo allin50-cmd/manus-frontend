@@ -157,13 +157,11 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
   try {
     const { environment, limit = '50' } = req.query;
 
-    let query = db.select().from(deploymentStatus);
-
-    if (environment && typeof environment === 'string') {
-      query = query.where(eq(deploymentStatus.environment, environment)) as any;
-    }
-
-    const deployments = await query
+    const base = db.select().from(deploymentStatus);
+    const filtered = environment && typeof environment === 'string'
+      ? base.where(eq(deploymentStatus.environment, environment))
+      : base;
+    const deployments = await filtered
       .orderBy(desc(deploymentStatus.deployedAt))
       .limit(parseInt(limit as string));
 
@@ -333,7 +331,6 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
 app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
   try {
     const {
-      companyName,
       companyNumber,
       requestorName,
       requestorEmail,
@@ -622,7 +619,7 @@ app.get('*', (req: Request, res: Response) => {
 // ERROR HANDLING
 // ============================================================================
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
