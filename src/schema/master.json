@@ -232,6 +232,68 @@
     }
   },
 
+  "teamsApp": {
+    "manifestVersion": "1.17",
+    "manifestFile": "teams/manifest.json",
+    "appId": "7c3a2b5d-9e4f-4a1c-b8d6-2f5e8a3c1b0d",
+    "packageName": "co.uk.fineguard.app",
+
+    "icons": {
+      "color": "teams/color.png",
+      "outline": "teams/outline.png",
+      "note": "color.png must be 192x192 px; outline.png must be 32x32 px transparent/white"
+    },
+
+    "staticTabs": [
+      { "entityId": "dashboard", "name": "Dashboard", "url": "/app",          "scopes": ["personal"] },
+      { "entityId": "deploy",    "name": "Deploy",     "url": "/app/deploy",   "scopes": ["personal"] },
+      { "entityId": "partners",  "name": "Partners",   "url": "/app/partners", "scopes": ["personal"] },
+      { "entityId": "history",   "name": "History",    "url": "/app/history",  "scopes": ["personal"] }
+    ],
+
+    "configurableTabs": [
+      {
+        "configurationUrl": "/teams/config",
+        "scopes": ["team", "groupChat"],
+        "context": ["channelTab", "privateChatTab", "meetingChatTab"]
+      }
+    ],
+
+    "permissions": ["identity", "messageTeamMembers"],
+
+    "validDomains": [
+      "fineguard.co.uk",
+      "app.fineguard.co.uk",
+      "*.azurewebsites.net",
+      "*.azurestaticapps.net"
+    ],
+
+    "webApplicationInfo": {
+      "entraClientIdPlaceholder": "{{ENTRA_CLIENT_ID}}",
+      "resource": "api://app.fineguard.co.uk/{{ENTRA_CLIENT_ID}}"
+    },
+
+    "resourceSpecificPermissions": [
+      { "name": "ChannelMessage.Send.Group", "type": "Application" },
+      { "name": "TeamSettings.Read.Group",   "type": "Application" }
+    ],
+
+    "packaging": {
+      "command": "zip fineguard-teams-app.zip teams/manifest.json teams/color.png teams/outline.png",
+      "output": "fineguard-teams-app.zip"
+    },
+
+    "deployment": {
+      "method": "Teams Admin Center",
+      "steps": [
+        "Teams Admin Center → Manage Apps → Upload → select fineguard-teams-app.zip",
+        "Set app visibility to your organisation",
+        "Teams Admin Center → Setup Policies → Add FineGuard to pinned apps"
+      ],
+      "alternativeMethod": "Intune (push silent install to all M365 users)"
+    }
+  },
+
   "infrastructure": {
     "iac": "Bicep",
     "environments": ["dev", "staging", "prod"],

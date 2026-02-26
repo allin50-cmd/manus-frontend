@@ -1,0 +1,115 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.0",
+  "id": "7c3a2b5d-9e4f-4a1c-b8d6-2f5e8a3c1b0d",
+  "packageName": "co.uk.fineguard.app",
+
+  "developer": {
+    "name": "FineGuard",
+    "websiteUrl": "https://fineguard.co.uk",
+    "privacyUrl": "https://fineguard.co.uk/privacy",
+    "termsOfUseUrl": "https://fineguard.co.uk/terms"
+  },
+
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+
+  "name": {
+    "short": "FineGuard",
+    "full": "FineGuard Compliance Cloud"
+  },
+
+  "description": {
+    "short": "UK compliance automation for accountancy firms",
+    "full": "FineGuard automates UK statutory compliance deadlines, filings and audit trails — natively inside Microsoft 365. Manage all client tenants, receive real-time Teams alerts, and maintain a complete audit log in SharePoint. Covers MTD ITSA, VAT, Corporation Tax, Annual Accounts, and Confirmation Statements."
+  },
+
+  "accentColor": "#B4A000",
+
+  "staticTabs": [
+    {
+      "entityId": "dashboard",
+      "name": "Dashboard",
+      "contentUrl": "https://app.fineguard.co.uk/app",
+      "websiteUrl": "https://app.fineguard.co.uk/app",
+      "scopes": ["personal"]
+    },
+    {
+      "entityId": "deploy",
+      "name": "Deploy",
+      "contentUrl": "https://app.fineguard.co.uk/app/deploy",
+      "websiteUrl": "https://app.fineguard.co.uk/app/deploy",
+      "scopes": ["personal"]
+    },
+    {
+      "entityId": "partners",
+      "name": "Partners",
+      "contentUrl": "https://app.fineguard.co.uk/app/partners",
+      "websiteUrl": "https://app.fineguard.co.uk/app/partners",
+      "scopes": ["personal"]
+    },
+    {
+      "entityId": "history",
+      "name": "History",
+      "contentUrl": "https://app.fineguard.co.uk/app/history",
+      "websiteUrl": "https://app.fineguard.co.uk/app/history",
+      "scopes": ["personal"]
+    }
+  ],
+
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://app.fineguard.co.uk/teams/config",
+      "canUpdateConfiguration": true,
+      "scopes": ["team", "groupChat"],
+      "context": ["channelTab", "privateChatTab", "meetingChatTab"]
+    }
+  ],
+
+  "bots": [],
+  "connectors": [],
+  "composeExtensions": [],
+
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+
+  "validDomains": [
+    "fineguard.co.uk",
+    "app.fineguard.co.uk",
+    "*.azurewebsites.net",
+    "*.azurestaticapps.net"
+  ],
+
+  "webApplicationInfo": {
+    "id": "{{ENTRA_CLIENT_ID}}",
+    "resource": "api://app.fineguard.co.uk/{{ENTRA_CLIENT_ID}}"
+  },
+
+  "authorization": {
+    "permissions": {
+      "resourceSpecific": [
+        {
+          "name": "ChannelMessage.Send.Group",
+          "type": "Application"
+        },
+        {
+          "name": "TeamSettings.Read.Group",
+          "type": "Application"
+        }
+      ]
+    }
+  },
+
+  "_readme": {
+    "icons": "Replace color.png (192x192) and outline.png (32x32 transparent/white) before packaging",
+    "entraClientId": "Replace {{ENTRA_CLIENT_ID}} with the App Registration Client ID from Entra ID",
+    "packaging": "zip teams/manifest.json teams/color.png teams/outline.png → fineguard-teams-app.zip",
+    "upload": "Teams Admin Center → Manage Apps → Upload → select fineguard-teams-app.zip",
+    "pinning": "Teams Admin Center → Setup Policies → Add FineGuard to pinned apps for all users"
+  }
+}
