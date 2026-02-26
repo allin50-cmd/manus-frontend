@@ -1,0 +1,41 @@
+{
+  "frontend": {
+    "framework": "React",
+    "language": "TypeScript",
+    "ui": "Fluent UI v9",
+    "routing": "React Router v6",
+    "telemetry": "Application Insights Web SDK",
+    "pages": [
+      "Dashboard",
+      "Deploy",
+      "DeploymentHistory",
+      "DeploymentDetails",
+      "SettingsDomains",
+      "SettingsCopilot",
+      "SettingsTeams",
+      "SettingsPowerAutomate",
+      "Help",
+      "PartnerOverview",
+      "TenantOverview"
+    ],
+    "components": [
+      "Card",
+      "CardGrid",
+      "Table",
+      "ToggleGroup",
+      "Form",
+      "StatusPill",
+      "LogViewer",
+      "StepTimeline",
+      "Markdown"
+    ],
+    "authentication": {
+      "provider": "Entra ID",
+      "principalHeader": "x-ms-client-principal"
+    },
+    "roles": {
+      "practice": ["FineGuard.Admin", "FineGuard.Operator", "FineGuard.ReadOnly"],
+      "partner": ["FineGuard.PartnerAdmin"]
+    }
+  }
+}

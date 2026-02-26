@@ -1,0 +1,38 @@
+{
+  "infrastructure": {
+    "iac": "Bicep",
+    "environments": ["dev", "staging", "prod"],
+    "resources": [
+      "Azure Static Web App",
+      "Azure Function App",
+      "Azure Cosmos DB Account",
+      "Cosmos Database: FineGuard",
+      "Containers: Deployments, Settings",
+      "Azure Storage Account"
+    ],
+    "ci_cd": {
+      "provider": "GitHub Actions",
+      "workflow": "azure-static-web-apps.yml",
+      "environmentSelection": "Branch-based (main/staging/dev)",
+      "steps": [
+        "Install dependencies",
+        "Build frontend",
+        "Build backend",
+        "Inject environment config",
+        "Deploy SWA and Functions"
+      ],
+      "requiredSecrets": [
+        "SWA_TOKEN_DEV",
+        "SWA_TOKEN_STAGING",
+        "SWA_TOKEN_PROD",
+        "COSMOS_KEY",
+        "APPINSIGHTS_CONNECTION_STRING"
+      ]
+    },
+    "telemetry": {
+      "frontend": "App Insights Web SDK",
+      "backend": "App Insights Node SDK",
+      "distributedTracing": "traceparent headers"
+    }
+  }
+}

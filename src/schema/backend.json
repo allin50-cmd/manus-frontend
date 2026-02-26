@@ -1,0 +1,67 @@
+{
+  "backend": {
+    "runtime": "Azure Functions",
+    "language": "TypeScript (ESM)",
+    "telemetry": "Application Insights Node SDK",
+    "endpoints": [
+      { "method": "GET",  "path": "/api/me" },
+      { "method": "POST", "path": "/api/deploy" },
+      { "method": "GET",  "path": "/api/logs" },
+      { "method": "GET",  "path": "/api/runs" },
+      { "method": "GET",  "path": "/api/runById" },
+      { "method": "GET",  "path": "/api/settings" },
+      { "method": "POST", "path": "/api/settings/domains" },
+      { "method": "POST", "path": "/api/settings/copilot" },
+      { "method": "POST", "path": "/api/settings/teams" },
+      { "method": "POST", "path": "/api/settings/power-automate" },
+      { "method": "GET",  "path": "/api/overview" },
+      { "method": "GET",  "path": "/api/overviewByTenant" }
+    ],
+    "database": {
+      "provider": "Cosmos DB SQL API",
+      "database": "FineGuard",
+      "containers": [
+        {
+          "name": "Deployments",
+          "partitionKey": "/ownerId",
+          "schema": "deploymentRun"
+        },
+        {
+          "name": "Settings",
+          "partitionKey": "/ownerId",
+          "schema": "settingsDocument"
+        }
+      ],
+      "schemas": {
+        "deploymentRun": {
+          "id": "string",
+          "ownerId": "string",
+          "tenantName": "string",
+          "tenantEmail": "string",
+          "createdAt": "ISO8601",
+          "status": "Running | Success | Failed",
+          "runtimeEndpoint": "string",
+          "config": {
+            "sharePointDomain": "string",
+            "functionsDomain": "string"
+          },
+          "steps": [],
+          "logs": []
+        },
+        "settingsDocument": {
+          "id": "string",
+          "ownerId": "string",
+          "domains": {},
+          "copilot": {},
+          "teams": {},
+          "powerAutomate": {},
+          "updatedAt": "ISO8601"
+        }
+      }
+    },
+    "authentication": {
+      "provider": "Entra ID (via SWA auth)",
+      "header": "x-ms-client-principal"
+    }
+  }
+}
