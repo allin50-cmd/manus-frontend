@@ -664,6 +664,24 @@ export async function changePassword(currentPassword: string, newPassword: strin
   if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to change password');
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await apiFetch('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to send reset email');
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const res = await apiFetch('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to reset password');
+}
+
 // ============================================================================
 // M365 INTEGRATION API
 // ============================================================================

@@ -1,10 +1,11 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense, Component, type ReactNode, type ErrorInfo } from 'react';
 import { Router, Route, Switch, useLocation } from 'wouter';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
+import { RefreshCw } from 'lucide-react';
 
 // Eagerly loaded: landing page (first paint) and lightweight redirects
 import FineGuard from './pages/FineGuard';
@@ -35,6 +36,7 @@ const Acsp = lazy(() => import('./pages/Acsp'));
 const Workflows = lazy(() => import('./pages/Workflows'));
 const CrmAdmin = lazy(() => import('./pages/CrmAdmin'));
 const Billing = lazy(() => import('./pages/Billing'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -53,6 +55,32 @@ function PageLoader() {
   );
 }
 
+/** Catches chunk-load failures (e.g. network errors during lazy import) */
+class RouteErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('[RouteErrorBoundary]', error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            <h2 className="text-xl font-bold text-white mb-2">Failed to load page</h2>
+            <p className="text-slate-400 text-sm mb-6">This may be a network issue. Please try again.</p>
+            <button
+              onClick={() => { this.setState({ error: null }); window.location.reload(); }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#5A4BFF] text-white rounded-full font-bold text-sm hover:bg-[#6B5BFF] transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" /> Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function AlertsRedirect() {
   const [, setLocation] = useLocation();
   useEffect(() => { setLocation('/dashboard?view=alerts'); }, [setLocation]);
@@ -68,6 +96,7 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Layout>
+          <RouteErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Switch>
               <Route path="/" component={FineGuard} />
@@ -89,6 +118,7 @@ export default function App() {
               <Route path="/profile" component={Profile} />
               <Route path="/onboarding" component={Onboarding} />
               <Route path="/login" component={Login} />
+              <Route path="/forgot-password" component={ForgotPassword} />
               <Route path="/signup" component={Signup} />
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/settings" component={Profile} />
@@ -101,6 +131,7 @@ export default function App() {
               <Route component={NotFound} />
             </Switch>
           </Suspense>
+          </RouteErrorBoundary>
         </Layout>
       </Router>
     </AuthProvider>
