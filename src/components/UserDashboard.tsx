@@ -1,11 +1,15 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
 import {
   Shield, Plus, Bell, Settings, LogOut, RefreshCw,
-  AlertTriangle, CheckCircle, Clock, Building, ChevronRight, AlertCircle, Search
+  AlertTriangle, CheckCircle, Clock, Building, ChevronRight, AlertCircle, Search,
+  ArrowUpDown, Download,
 } from 'lucide-react';
 import { fetchDashboard, type DashboardStats, type MonitoredCompany, type AlertItem, type UserProfile } from '../utils/api';
 import M365IntegrationPanel from './M365IntegrationPanel';
+
+const RISK_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2, secure: 3 };
+const STATUS_ORDER: Record<string, number> = { overdue: 0, warning: 1, compliant: 2 };
 
 interface UserDashboardProps {
   user: UserProfile;
@@ -23,6 +27,9 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'risk' | 'status'>('name');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -32,6 +39,7 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
       setStats(data.stats);
       setCompanies(data.companies);
       setRecentAlerts(data.recentAlerts);
+      setLastRefreshed(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard');
     } finally {
@@ -41,30 +49,83 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
 
   useEffect(() => { loadDashboard(); }, []);
 
+  // Keyboard shortcut: Ctrl/Cmd+K to focus search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  const formatLastRefreshed = useCallback(() => {
+    if (!lastRefreshed) return '';
+    const diff = Math.floor((Date.now() - lastRefreshed.getTime()) / 1000);
+    if (diff < 10) return 'Just now';
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return lastRefreshed.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }, [lastRefreshed]);
+
   const getRiskBadge = (risk: string | null) => {
     switch (risk) {
-      case 'high': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30">HIGH</span>;
-      case 'medium': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">MEDIUM</span>;
-      case 'low': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">LOW</span>;
-      default: return <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30">SECURE</span>;
+      case 'high': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30" role="status">HIGH RISK</span>;
+      case 'medium': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" role="status">MEDIUM RISK</span>;
+      case 'low': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30" role="status">LOW RISK</span>;
+      default: return <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-500/20 text-green-400 border border-green-500/30" role="status">SECURE</span>;
     }
   };
 
   const getStatusIcon = (status: string | null) => {
     switch (status) {
-      case 'overdue': return <AlertCircle size={20} className="text-red-400" />;
-      case 'warning': return <AlertTriangle size={20} className="text-yellow-400" />;
-      default: return <CheckCircle size={20} className="text-green-400" />;
+      case 'overdue': return <span className="flex items-center gap-1"><AlertCircle size={20} className="text-red-400" aria-hidden="true" /><span className="sr-only">Overdue</span></span>;
+      case 'warning': return <span className="flex items-center gap-1"><AlertTriangle size={20} className="text-yellow-400" aria-hidden="true" /><span className="sr-only">Warning</span></span>;
+      default: return <span className="flex items-center gap-1"><CheckCircle size={20} className="text-green-400" aria-hidden="true" /><span className="sr-only">Compliant</span></span>;
     }
   };
 
   const filteredCompanies = useMemo(() => {
-    if (!searchQuery.trim()) return companies;
-    const q = searchQuery.toLowerCase();
-    return companies.filter(
-      (c) => c.companyName.toLowerCase().includes(q) || c.companyNumber.toLowerCase().includes(q)
-    );
-  }, [companies, searchQuery]);
+    let list = companies;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (c) => c.companyName.toLowerCase().includes(q) || c.companyNumber.toLowerCase().includes(q)
+      );
+    }
+    return [...list].sort((a, b) => {
+      if (sortBy === 'risk') {
+        return (RISK_ORDER[a.riskLevel || 'secure'] ?? 3) - (RISK_ORDER[b.riskLevel || 'secure'] ?? 3);
+      }
+      if (sortBy === 'status') {
+        return (STATUS_ORDER[a.complianceStatus || 'compliant'] ?? 2) - (STATUS_ORDER[b.complianceStatus || 'compliant'] ?? 2);
+      }
+      return a.companyName.localeCompare(b.companyName);
+    });
+  }, [companies, searchQuery, sortBy]);
+
+  const exportCsv = useCallback(() => {
+    if (companies.length === 0) return;
+    const headers = ['Company Name', 'Company Number', 'Status', 'Risk Level', 'Compliance', 'Last Checked'];
+    const rows = companies.map(c => [
+      `"${c.companyName.replace(/"/g, '""')}"`,
+      c.companyNumber,
+      c.companyStatus || 'active',
+      c.riskLevel || 'secure',
+      c.complianceStatus || 'compliant',
+      c.lastCheckedAt || '',
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fineguard-companies-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [companies]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -82,7 +143,10 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
           <Shield size={32} className="text-blue-500" />
           <div>
             <h1 className="text-2xl font-black text-white">FineGuard Pro</h1>
-            <p className="text-slate-500 text-sm">{user.name} &middot; {user.plan} plan</p>
+            <p className="text-slate-500 text-sm">
+              {user.name} &middot; {user.plan} plan
+              {lastRefreshed && <span className="text-slate-600"> &middot; Updated {formatLastRefreshed()}</span>}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -178,24 +242,48 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
         <div id="tour-companies" className="lg:col-span-2">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-black text-white">Monitored Companies</h2>
-            <button
-              onClick={onAddCompany}
-              className="flex items-center gap-2 bg-blue-500 text-navy px-5 py-3 rounded-full font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]"
-            >
-              <Plus size={16} /> Add Company
-            </button>
+            <div className="flex items-center gap-2">
+              {companies.length > 0 && (
+                <button
+                  onClick={exportCsv}
+                  aria-label="Export companies to CSV"
+                  className="flex items-center gap-2 px-4 py-3 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition text-sm font-semibold"
+                >
+                  <Download size={14} /> Export
+                </button>
+              )}
+              <button
+                onClick={onAddCompany}
+                className="flex items-center gap-2 bg-blue-500 text-navy px-5 py-3 rounded-full font-bold text-sm hover:scale-105 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+              >
+                <Plus size={16} /> Add Company
+              </button>
+            </div>
           </div>
 
           {companies.length > 3 && (
-            <div className="relative mb-4">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search companies..."
-                className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/50 transition"
-              />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search companies... (Ctrl+K)"
+                  className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/50 transition"
+                />
+              </div>
+              <div className="flex items-center">
+                <button
+                  onClick={() => setSortBy(sortBy === 'name' ? 'risk' : sortBy === 'risk' ? 'status' : 'name')}
+                  className="flex items-center gap-1.5 px-3 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition text-xs font-semibold whitespace-nowrap"
+                  aria-label="Change sort order"
+                >
+                  <ArrowUpDown size={14} />
+                  {sortBy === 'name' ? 'A-Z' : sortBy === 'risk' ? 'Risk' : 'Status'}
+                </button>
+              </div>
             </div>
           )}
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
-import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [errorHint, setErrorHint] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) setLocation('/dashboard');
@@ -26,11 +28,28 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorHint('');
     try {
       await login(email, password);
+      setFailedAttempts(0);
       toast.success('Welcome back!');
       setLocation('/dashboard');
     } catch (err: any) {
+      const msg = (err.message || 'Login failed').toLowerCase();
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+
+      if (msg.includes('not found') || msg.includes('no account')) {
+        setErrorHint('No account found with this email. Check for typos or create a new account.');
+      } else if (msg.includes('password') || msg.includes('invalid credentials') || msg.includes('incorrect')) {
+        setErrorHint(attempts >= 3
+          ? 'Multiple failed attempts. Try resetting your password.'
+          : 'Incorrect password. Please try again.');
+      } else if (msg.includes('locked') || msg.includes('too many')) {
+        setErrorHint('Account temporarily locked due to too many failed attempts. Please try again later or reset your password.');
+      } else {
+        setErrorHint('Unable to sign in. Please check your credentials and try again.');
+      }
       toast.error(err.message || 'Login failed');
     } finally {
       setLoading(false);
@@ -47,6 +66,19 @@ export default function Login() {
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+          {errorHint && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-5 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm text-red-300">{errorHint}</p>
+                {failedAttempts >= 3 && (
+                  <Link href="/forgot-password" className="text-sm text-[#5A4BFF] hover:underline mt-1 inline-block font-medium">
+                    Reset your password
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <Label htmlFor="login-email" className="text-slate-300 mb-1.5 block">Email</Label>

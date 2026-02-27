@@ -12,6 +12,7 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
+  const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('all');
 
   const loadAlerts = async () => {
     setLoading(true);
@@ -82,9 +83,21 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
   };
 
   const filteredAlerts = useMemo(() => {
-    if (severityFilter === 'all') return alertsList;
-    return alertsList.filter(a => a.severity === severityFilter);
-  }, [alertsList, severityFilter]);
+    let list = alertsList;
+    if (severityFilter !== 'all') {
+      list = list.filter(a => a.severity === severityFilter);
+    }
+    if (readFilter === 'unread') {
+      list = list.filter(a => !a.read);
+    } else if (readFilter === 'read') {
+      list = list.filter(a => a.read);
+    }
+    return list;
+  }, [alertsList, severityFilter, readFilter]);
+
+  const formatAlertType = (type: string) => {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
 
   const unreadCount = alertsList.filter(a => !a.read).length;
 
@@ -140,6 +153,20 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
               {level}{level !== 'all' && ` (${alertsList.filter(a => a.severity === level).length})`}
             </button>
           ))}
+          <span className="w-px h-5 bg-white/10 mx-1" />
+          {(['all', 'unread', 'read'] as const).map((rf) => (
+            <button
+              key={rf}
+              onClick={() => setReadFilter(rf)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition ${
+                readFilter === rf
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+              }`}
+            >
+              {rf}
+            </button>
+          ))}
         </div>
       )}
 
@@ -186,7 +213,7 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
                       alert.severity === 'critical' ? 'text-red-400' :
                       alert.severity === 'warning' ? 'text-yellow-400' : 'text-blue-400'
                     }`}>{alert.severity}</span>
-                    <span className="text-slate-600 text-xs">{alert.type.replace(/_/g, ' ')}</span>
+                    <span className="text-slate-600 text-xs">{formatAlertType(alert.type)}</span>
                     {!alert.read && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
                   </div>
                 </div>
