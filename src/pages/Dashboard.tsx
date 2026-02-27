@@ -39,7 +39,18 @@ export default function Dashboard() {
   const handleBackToDashboard = useCallback(() => setView('dashboard'), []);
   const handleCompanyAdded = useCallback((id: string) => { setSelectedCompanyId(id); setView('company_detail'); }, []);
 
-  if (loading || !isAuthenticated || !user) return null;
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#5A4BFF]/30 border-t-[#5A4BFF] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 text-sm">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) return null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">

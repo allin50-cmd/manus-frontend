@@ -33,6 +33,10 @@ export default function FineGuard() {
     if (!loading && !isAuthenticated) {
       const params = new URLSearchParams(search);
       if (params.get('signup') === 'true') {
+        const emailParam = params.get('email') || '';
+        const serviceParam = params.get('service') || '';
+        if (emailParam) setSignupEmail(emailParam);
+        if (serviceParam) setSignupPlan(serviceParam);
         setSignupOpen(true);
         window.history.replaceState({}, '', '/');
       } else if (params.get('demo') === 'true') {
@@ -84,7 +88,6 @@ export default function FineGuard() {
   return (
     <div className="max-w-7xl mx-auto px-4">
       <LandingView
-        onEnterVault={() => setLocation('/login')}
         onBookDemo={openDemoModal}
         onStartMonitoring={() => openSignupModal()}
         onStartWithEmail={(email) => openSignupModal({ email })}

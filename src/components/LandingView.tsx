@@ -4,14 +4,12 @@ import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bel
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 interface LandingViewProps {
-  onEnterVault?: () => void;
   onBookDemo: (email?: string) => void;
   onStartMonitoring: () => void;
   /** Open signup modal with email pre-filled */
   onStartWithEmail?: (email: string) => void;
   /** Open signup modal with intent + optional plan pre-selected */
   onStartWithIntent?: (intent: string, plan?: string) => void;
-  hologram?: string;
 }
 
 export default function LandingView({ onBookDemo, onStartMonitoring, onStartWithEmail, onStartWithIntent }: LandingViewProps) {

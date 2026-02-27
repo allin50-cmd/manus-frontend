@@ -439,8 +439,8 @@ export default function LandingSignupModal({
 
               <p className="text-xs text-slate-500 text-center mt-2">
                 By creating an account, you agree to our{' '}
-                <Link href="/terms" className="text-[#5A4BFF] hover:underline">Terms</Link> and{' '}
-                <Link href="/privacy" className="text-[#5A4BFF] hover:underline">Privacy Policy</Link>.
+                <Link href="/terms" onClick={onClose} className="text-[#5A4BFF] hover:underline">Terms</Link> and{' '}
+                <Link href="/privacy" onClick={onClose} className="text-[#5A4BFF] hover:underline">Privacy Policy</Link>.
               </p>
               <div className="flex items-center justify-center gap-4 pt-1 text-xs text-slate-500">
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 256-bit SSL</span>

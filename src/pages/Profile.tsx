@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile, changePassword, updateAlertPreferences } from '../utils/api';
@@ -44,10 +44,11 @@ export default function Profile() {
   );
   const [savingPrefs, setSavingPrefs] = useState(false);
 
-  if (!isAuthenticated || !user) {
-    setLocation('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!isAuthenticated) setLocation('/login');
+  }, [isAuthenticated, setLocation]);
+
+  if (!isAuthenticated || !user) return null;
 
   const handleLogout = async () => {
     await logout();

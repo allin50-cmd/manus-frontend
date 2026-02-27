@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -17,10 +17,11 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (isAuthenticated) {
-    setLocation('/dashboard');
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) setLocation('/dashboard');
+  }, [isAuthenticated, setLocation]);
+
+  if (isAuthenticated) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

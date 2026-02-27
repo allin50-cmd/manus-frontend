@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'wouter';
 import {
   Shield, Plus, Bell, Settings, LogOut, RefreshCw,
   AlertTriangle, CheckCircle, Clock, Building, ChevronRight, AlertCircle
@@ -126,16 +127,16 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
 
       {/* Quick Access */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <a href="/acsp" className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 text-center hover:bg-emerald-500/20 transition group">
+        <Link href="/acsp" className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 text-center hover:bg-emerald-500/20 transition group">
           <Shield size={24} className="text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
           <div className="text-sm font-bold text-white">ACSP</div>
           <div className="text-xs text-slate-500">Service Provider</div>
-        </a>
-        <a href="/workflows" className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center hover:bg-blue-500/20 transition group">
+        </Link>
+        <Link href="/workflows" className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center hover:bg-blue-500/20 transition group">
           <Clock size={24} className="text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
           <div className="text-sm font-bold text-white">Workflows</div>
           <div className="text-xs text-slate-500">Team & Tasks</div>
-        </a>
+        </Link>
         <button id="tour-add-company" onClick={onAddCompany} className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4 text-center hover:bg-purple-500/20 transition group">
           <Plus size={24} className="text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
           <div className="text-sm font-bold text-white">Add Company</div>
