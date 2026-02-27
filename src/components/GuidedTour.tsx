@@ -54,6 +54,11 @@ export default function GuidedTour() {
     }
   }, []);
 
+  const dismiss = useCallback(() => {
+    setActive(false);
+    localStorage.setItem(TOUR_KEY, 'true');
+  }, []);
+
   // Position tooltip relative to target element
   const positionTooltip = useCallback(() => {
     if (!active) return;
@@ -124,7 +129,7 @@ export default function GuidedTour() {
 
     // Scroll target into view
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [active, currentStep]);
+  }, [active, currentStep, dismiss]);
 
   useEffect(() => {
     positionTooltip();
@@ -135,11 +140,6 @@ export default function GuidedTour() {
       window.removeEventListener('scroll', positionTooltip, true);
     };
   }, [positionTooltip]);
-
-  const dismiss = useCallback(() => {
-    setActive(false);
-    localStorage.setItem(TOUR_KEY, 'true');
-  }, []);
 
   const nextStep = () => {
     if (currentStep < tourSteps.length - 1) {

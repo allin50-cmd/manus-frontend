@@ -207,7 +207,6 @@ export default function Onboarding() {
       if (p.alertPrefs) setAlertPrefs(p.alertPrefs);
       if (p.teamEmail) setTeamEmail(p.teamEmail);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   // ------ Persist progress on step/state changes ------

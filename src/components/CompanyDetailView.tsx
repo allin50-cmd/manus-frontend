@@ -41,6 +41,7 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, [companyId]);
 
   const handleRefresh = async () => {

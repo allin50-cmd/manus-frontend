@@ -123,13 +123,13 @@ export function parseDateValue(value: any): string | null {
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 
   // Try DD/MM/YYYY or DD-MM-YYYY
-  const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  const dmyMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (dmyMatch) {
     return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
   }
 
   // Try MM/DD/YYYY
-  const mdyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  const mdyMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (mdyMatch && parseInt(mdyMatch[1]) > 12) {
     // Day > 12 means DD/MM/YYYY (already handled above)
     return null;
