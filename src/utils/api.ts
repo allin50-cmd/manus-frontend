@@ -206,6 +206,27 @@ export async function fetchCompanies(): Promise<MonitoredCompany[]> {
   return data.companies;
 }
 
+export interface CompanySearchResult {
+  companyNumber: string;
+  companyName: string;
+  companyStatus: string | null;
+  postTown: string | null;
+  incorporationDate: string | null;
+}
+
+export async function searchCompanies(
+  query: string,
+  limit: number = 8,
+  by: 'name' | 'number' | 'postcode' = 'name',
+): Promise<CompanySearchResult[]> {
+  const res = await apiFetch(
+    `/companies/search?q=${encodeURIComponent(query)}&limit=${limit}&by=${by}`,
+  );
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Search failed');
+  return data.results;
+}
+
 export async function addCompany(companyNumber: string, notes?: string): Promise<{
   company: MonitoredCompany;
   compliance: ComplianceDetail;
