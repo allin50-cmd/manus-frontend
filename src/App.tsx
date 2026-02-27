@@ -7,6 +7,7 @@ import UltAi            from '@/pages/UltAi';
 import ComplianceBundle from '@/pages/ComplianceBundle';
 import IntakeSheet      from '@/pages/IntakeSheet';
 import BookDemo         from '@/pages/BookDemo';
+import Demo             from '@/pages/Demo';
 import About            from '@/pages/About';
 import Pricing          from '@/pages/Pricing';
 import Team             from '@/pages/Team';
@@ -37,6 +38,7 @@ export default function App() {
       <Route path="/compliance-bundle"  component={ComplianceBundle} />
       <Route path="/intake-sheet"       component={IntakeSheet} />
       <Route path="/book-demo"          component={BookDemo} />
+      <Route path="/demo"               component={Demo} />
       <Route path="/about"              component={About} />
       <Route path="/pricing"            component={Pricing} />
       <Route path="/team"               component={Team} />
