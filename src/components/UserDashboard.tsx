@@ -104,7 +104,16 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
       )}
 
       {/* Stats row */}
-      {stats && (
+      {loading && !stats ? (
+        <div id="tour-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center animate-pulse">
+              <div className="h-9 w-12 bg-white/10 rounded-lg mx-auto mb-2" />
+              <div className="h-3 w-16 bg-white/5 rounded mx-auto" />
+            </div>
+          ))}
+        </div>
+      ) : stats && (
         <div id="tour-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center">
             <div className="text-3xl font-black text-white">{stats.totalCompanies}</div>
@@ -218,7 +227,16 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
               )}
             </div>
 
-            {recentAlerts.length === 0 ? (
+            {loading && recentAlerts.length === 0 ? (
+              <div className="space-y-3">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="border border-white/10 bg-white/5 rounded-2xl p-4 animate-pulse">
+                    <div className="h-4 w-3/4 bg-white/10 rounded mb-2" />
+                    <div className="h-3 w-full bg-white/5 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : recentAlerts.length === 0 ? (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
                 <Bell size={32} className="text-slate-600 mx-auto mb-3" />
                 <p className="text-slate-500 text-sm">No new alerts</p>

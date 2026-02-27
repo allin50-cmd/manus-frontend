@@ -59,7 +59,15 @@ export default function GuidedTour() {
     if (!active) return;
     const step = tourSteps[currentStep];
     const el = document.getElementById(step.targetId);
-    if (!el) return;
+    if (!el) {
+      // Target element not found — skip to next step or dismiss
+      if (currentStep < tourSteps.length - 1) {
+        setCurrentStep((s) => s + 1);
+      } else {
+        dismiss();
+      }
+      return;
+    }
 
     const rect = el.getBoundingClientRect();
     const gap = 12;
@@ -151,9 +159,10 @@ export default function GuidedTour() {
   const isLast = currentStep === tourSteps.length - 1;
   const isFirst = currentStep === 0;
 
-  // Highlight target element
+  // Highlight target element — bail if element is missing (race condition during render)
   const targetEl = document.getElementById(step.targetId);
   const targetRect = targetEl?.getBoundingClientRect();
+  if (!targetEl) return null;
 
   return (
     <>

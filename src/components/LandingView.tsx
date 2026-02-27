@@ -38,18 +38,18 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
     <div className="space-y-32 py-12">
       {/* Hero Section */}
       <section className="text-center py-20 animate-in fade-in duration-1000">
-        <div className="relative w-64 h-64 mx-auto mb-12">
+        <div className="relative w-40 h-40 sm:w-56 sm:h-56 md:w-64 md:h-64 mx-auto mb-8 sm:mb-12">
           <div className="absolute inset-0 bg-[#5A4BFF]/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-[#5A4BFF] to-blue-600 rounded-full opacity-20"></div>
           <div className="relative w-full h-full flex items-center justify-center">
-            <Shield size={80} className="text-[#5A4BFF]" />
+            <Shield className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 text-[#5A4BFF]" />
           </div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 border-2 border-[#5A4BFF]/20 rounded-full animate-ping"></div>
         </div>
-        <h1 className="text-7xl md:text-8xl font-black text-white tracking-tighter leading-none mb-8 drop-shadow-[0_0_60px_rgba(255,255,255,0.15)]">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter leading-none mb-6 sm:mb-8 drop-shadow-[0_0_60px_rgba(255,255,255,0.15)]">
           Never Miss a <br /><span className="text-[#5A4BFF] italic">Compliance Deadline</span> Again
         </h1>
-        <p className="text-2xl text-slate-400 max-w-3xl mx-auto mb-10 font-medium leading-relaxed opacity-90">
+        <p className="text-lg sm:text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-8 sm:mb-10 font-medium leading-relaxed opacity-90 px-2">
           FineGuard automatically monitors Companies House records and alerts you before compliance problems damage your business or your clients.
         </p>
 
@@ -124,8 +124,8 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       </section>
 
       {/* Problem Section */}
-      <section className="max-w-5xl mx-auto px-6 py-20 bg-white/5 rounded-[4rem] border border-white/10 backdrop-blur-sm">
-        <h2 className="text-5xl md:text-6xl font-black text-white text-center mb-16 leading-tight">
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20 bg-white/5 rounded-3xl sm:rounded-[4rem] border border-white/10 backdrop-blur-sm">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white text-center mb-10 sm:mb-16 leading-tight">
           Compliance mistakes happen quietly — <span className="text-[#5A4BFF]">until it's too late.</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
@@ -165,7 +165,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
 
       {/* Solution Section */}
       <section id="features" className="text-center py-20">
-        <h2 className="text-5xl md:text-6xl font-black text-white mb-8 leading-tight">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 leading-tight">
           Compliance protection, <span className="text-[#5A4BFF]">automated.</span>
         </h2>
         <p className="text-2xl text-slate-300 max-w-3xl mx-auto mb-16">
@@ -189,8 +189,8 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       </section>
 
       {/* Microsoft 365 Integration Section */}
-      <section className="text-center py-20 bg-white/5 rounded-[4rem] border border-white/10 backdrop-blur-sm px-6">
-        <h2 className="text-5xl md:text-6xl font-black text-white mb-8 leading-tight">
+      <section className="text-center py-12 sm:py-20 bg-white/5 rounded-3xl sm:rounded-[4rem] border border-white/10 backdrop-blur-sm px-4 sm:px-6">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 leading-tight">
           Integrated into <span className="text-[#5A4BFF]">Microsoft 365.</span>
         </h2>
         <p className="text-2xl text-slate-300 max-w-3xl mx-auto mb-16">
@@ -228,7 +228,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
 
       {/* Dashboard Preview */}
       <section className="max-w-5xl mx-auto py-20">
-        <h2 className="text-5xl md:text-6xl font-black text-white text-center mb-8 leading-tight">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white text-center mb-8 leading-tight">
           See risks before they <span className="text-[#5A4BFF]">become problems.</span>
         </h2>
         <p className="text-2xl text-slate-300 text-center mb-16">
@@ -254,7 +254,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
 
       {/* Testimonials */}
       <section id="testimonials" className="py-20 max-w-6xl mx-auto px-6">
-        <h2 className="text-5xl font-black text-white text-center mb-16">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white text-center mb-10 sm:mb-16">
           Trusted by <span className="text-[#5A4BFF]">professionals.</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -293,38 +293,41 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
 
       {/* Who It's For */}
       <section className="py-20">
-        <h2 className="text-5xl md:text-6xl font-black text-white text-center mb-16">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white text-center mb-10 sm:mb-16">
           Built for <span className="text-[#5A4BFF]">businesses and advisors.</span>
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto px-2">
+          <div className="bg-white/5 p-8 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-white/10 text-center flex flex-col">
             <Users size={64} className="mx-auto mb-6 text-[#5A4BFF]" />
             <h3 className="text-2xl font-black mb-4">Accountants & Advisors</h3>
             <p className="text-slate-400 flex-1">Protect your entire client base while reducing admin workload.</p>
             <button
               onClick={() => onStartWithIntent ? onStartWithIntent('accountant') : onStartMonitoring()}
+              aria-label="Get started as an accountant or advisor"
               className="mt-6 w-full py-3 rounded-full bg-[#5A4BFF]/15 border border-[#5A4BFF]/30 text-[#5A4BFF] font-bold text-sm hover:bg-[#5A4BFF]/25 transition-colors flex items-center justify-center gap-2"
             >
               Get Started <ArrowRight size={16} />
             </button>
           </div>
-          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center flex flex-col">
+          <div className="bg-white/5 p-8 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-white/10 text-center flex flex-col">
             <Briefcase size={64} className="mx-auto mb-6 text-[#5A4BFF]" />
             <h3 className="text-2xl font-black mb-4">Company Formation Agents</h3>
             <p className="text-slate-400 flex-1">Add compliance protection as a new client service.</p>
             <button
               onClick={() => onStartWithIntent ? onStartWithIntent('acsp_provider') : onStartMonitoring()}
+              aria-label="Get started as a company formation agent"
               className="mt-6 w-full py-3 rounded-full bg-[#5A4BFF]/15 border border-[#5A4BFF]/30 text-[#5A4BFF] font-bold text-sm hover:bg-[#5A4BFF]/25 transition-colors flex items-center justify-center gap-2"
             >
               Get Started <ArrowRight size={16} />
             </button>
           </div>
-          <div className="bg-white/5 p-10 rounded-[3rem] border border-white/10 text-center flex flex-col">
+          <div className="bg-white/5 p-8 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-white/10 text-center flex flex-col">
             <Shield size={64} className="mx-auto mb-6 text-[#5A4BFF]" />
             <h3 className="text-2xl font-black mb-4">SMEs & Directors</h3>
             <p className="text-slate-400 flex-1">Stay compliant without chasing paperwork.</p>
             <button
               onClick={() => onStartWithIntent ? onStartWithIntent('business_owner') : onStartMonitoring()}
+              aria-label="Get started as a business owner or director"
               className="mt-6 w-full py-3 rounded-full bg-[#5A4BFF]/15 border border-[#5A4BFF]/30 text-[#5A4BFF] font-bold text-sm hover:bg-[#5A4BFF]/25 transition-colors flex items-center justify-center gap-2"
             >
               Get Started <ArrowRight size={16} />
@@ -335,7 +338,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
 
       {/* Pricing Teaser */}
       <section id="pricing" className="py-20 max-w-5xl mx-auto px-6">
-        <h2 className="text-5xl font-black text-white text-center mb-4">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white text-center mb-4">
           Pay only for <span className="text-[#5A4BFF]">what you monitor.</span>
         </h2>
         <p className="text-xl text-slate-400 text-center mb-16">
@@ -348,14 +351,14 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
             { name: 'Self Assessment', features: ['Tax return deadlines', 'Payment due dates', 'Quarterly reminders'] },
             { name: 'VAT Returns', features: ['VAT return deadlines', 'Payment schedules', 'MTD compliance'] },
           ].map((service) => (
-            <div key={service.name} className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center hover:border-[#5A4BFF]/30 transition-colors">
+            <div key={service.name} className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center hover:border-[#5A4BFF]/30 transition-colors focus-within:border-[#5A4BFF]/40 focus-within:ring-2 focus-within:ring-[#5A4BFF]/20">
               <h3 className="text-lg font-bold text-white mb-2">{service.name}</h3>
               <div className="text-3xl font-black text-white mb-1">£1</div>
               <p className="text-xs text-slate-500 mb-4">/month per company</p>
-              <ul className="text-slate-400 space-y-1.5 text-sm mb-6 text-left">
+              <ul className="text-slate-400 space-y-1.5 text-sm mb-6 text-left" aria-label={`${service.name} features`}>
                 {service.features.map((f) => (
                   <li key={f} className="flex items-start gap-2">
-                    <span className="text-[#5A4BFF] mt-0.5">•</span>
+                    <span className="text-[#5A4BFF] mt-0.5" aria-hidden="true">•</span>
                     {f}
                   </li>
                 ))}
@@ -363,6 +366,7 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
               <button
                 onClick={() => onStartWithIntent ? onStartWithIntent('', service.name) : onStartMonitoring()}
                 className="w-full py-2.5 rounded-full bg-[#5A4BFF] text-white font-bold text-sm hover:bg-[#6B5BFF] transition-colors"
+                aria-label={`Add ${service.name} service`}
               >
                 Add Service
               </button>
@@ -377,8 +381,8 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
       </section>
 
       {/* Final CTA */}
-      <section className="text-center py-20 px-6 bg-white/5 rounded-[4rem] border border-white/10">
-        <h2 className="text-6xl font-black text-white mb-6">
+      <section className="text-center py-12 sm:py-20 px-4 sm:px-6 bg-white/5 rounded-3xl sm:rounded-[4rem] border border-white/10">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6">
           Protect companies before <span className="text-[#5A4BFF]">problems start.</span>
         </h2>
         <p className="text-2xl text-slate-300 mb-10">
