@@ -664,6 +664,16 @@ export async function changePassword(currentPassword: string, newPassword: strin
   if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to change password');
 }
 
+export async function deleteAccount(password: string): Promise<void> {
+  const res = await apiFetch('/auth/delete-account', {
+    method: 'DELETE',
+    body: JSON.stringify({ password }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to delete account');
+  clearAuth();
+}
+
 export async function requestPasswordReset(email: string): Promise<void> {
   const res = await apiFetch('/auth/forgot-password', {
     method: 'POST',

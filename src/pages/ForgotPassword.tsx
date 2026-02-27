@@ -3,7 +3,7 @@ import { useLocation, Link, useSearch } from 'wouter';
 import { useAuth } from '../context/AuthContext';
 import { requestPasswordReset, resetPassword } from '../utils/api';
 import { toast } from 'sonner';
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Reset mode state
   const [newPassword, setNewPassword] = useState('');
@@ -35,6 +36,12 @@ export default function ForgotPassword() {
     if (isAuthenticated) setLocation('/dashboard');
   }, [isAuthenticated, setLocation]);
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
   if (isAuthenticated) return null;
 
   const pwStrength = newPassword.length === 0 ? 0 : newPassword.length < 8 ? 1 : newPassword.length < 12 ? 2 : 3;
@@ -45,9 +52,11 @@ export default function ForgotPassword() {
     try {
       await requestPasswordReset(email);
       setSent(true);
+      setResendCooldown(60);
     } catch {
       // Always show success to prevent email enumeration
       setSent(true);
+      setResendCooldown(60);
     } finally {
       setLoading(false);
     }
@@ -127,15 +136,35 @@ export default function ForgotPassword() {
                 <CheckCircle className="w-8 h-8 text-green-400" />
               </div>
               <h2 className="text-xl font-bold text-white mb-3">Check your inbox</h2>
-              <p className="text-slate-400 text-sm mb-6">
+              <p className="text-slate-400 text-sm mb-4">
                 If an account exists for <span className="text-white font-medium">{email}</span>, we've sent a password reset link. Check your spam folder if you don't see it.
               </p>
-              <button
-                onClick={() => { setSent(false); setEmail(''); }}
-                className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                Try a different email
-              </button>
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mb-6">
+                <Clock className="w-3.5 h-3.5" />
+                <span>The link expires in 1 hour</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  disabled={resendCooldown > 0 || loading}
+                  onClick={async () => {
+                    setLoading(true);
+                    try { await requestPasswordReset(email); } catch { /* prevent enumeration */ }
+                    setLoading(false);
+                    setResendCooldown(60);
+                    toast.success('Reset link resent');
+                  }}
+                  className="flex items-center gap-2 text-sm text-[#5A4BFF] hover:text-[#6B5BFF] transition-colors disabled:text-slate-600 disabled:cursor-not-allowed font-medium"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend reset link'}
+                </button>
+                <button
+                  onClick={() => { setSent(false); setEmail(''); setResendCooldown(0); }}
+                  className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  Try a different email
+                </button>
+              </div>
             </div>
           )}
 

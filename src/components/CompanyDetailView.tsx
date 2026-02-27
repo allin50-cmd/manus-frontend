@@ -256,15 +256,28 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
                 <Clock size={20} /> Upcoming Deadlines
               </h3>
               <div className="space-y-3">
-                {compliance.upcomingDeadlines.map((d, i) => (
-                  <div key={i} className="bg-yellow-500/10 rounded-2xl p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-semibold">{d.description}</p>
-                      <p className="text-yellow-300 text-sm">Due: {formatDate(d.dueDate)}</p>
+                {compliance.upcomingDeadlines.map((d, i) => {
+                  const urgent = d.daysUntilDue <= 14;
+                  const soon = d.daysUntilDue <= 30;
+                  return (
+                    <div key={i} className={`rounded-2xl p-4 flex items-center justify-between ${
+                      urgent ? 'bg-red-500/10' : soon ? 'bg-yellow-500/10' : 'bg-yellow-500/5'
+                    }`}>
+                      <div>
+                        <p className="text-white font-semibold">{d.description}</p>
+                        <p className={`text-sm ${urgent ? 'text-red-300' : 'text-yellow-300'}`}>Due: {formatDate(d.dueDate)}</p>
+                      </div>
+                      <div className="text-right shrink-0 ml-4">
+                        <span className={`text-lg font-black ${
+                          urgent ? 'text-red-400' : soon ? 'text-yellow-400' : 'text-green-400'
+                        }`}>{d.daysUntilDue}</span>
+                        <p className={`text-xs ${
+                          urgent ? 'text-red-300' : soon ? 'text-yellow-300' : 'text-green-300'
+                        }`}>{d.daysUntilDue === 1 ? 'day left' : 'days left'}</p>
+                      </div>
                     </div>
-                    <span className="text-yellow-400 font-bold">{d.daysUntilDue} days</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

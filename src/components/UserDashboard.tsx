@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'wouter';
 import {
   Shield, Plus, Bell, Settings, LogOut, RefreshCw,
-  AlertTriangle, CheckCircle, Clock, Building, ChevronRight, AlertCircle
+  AlertTriangle, CheckCircle, Clock, Building, ChevronRight, AlertCircle, Search
 } from 'lucide-react';
 import { fetchDashboard, type DashboardStats, type MonitoredCompany, type AlertItem, type UserProfile } from '../utils/api';
 import M365IntegrationPanel from './M365IntegrationPanel';
@@ -22,6 +22,7 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
   const [recentAlerts, setRecentAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -56,6 +57,14 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
       default: return <CheckCircle size={20} className="text-green-400" />;
     }
   };
+
+  const filteredCompanies = useMemo(() => {
+    if (!searchQuery.trim()) return companies;
+    const q = searchQuery.toLowerCase();
+    return companies.filter(
+      (c) => c.companyName.toLowerCase().includes(q) || c.companyNumber.toLowerCase().includes(q)
+    );
+  }, [companies, searchQuery]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -177,6 +186,19 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
             </button>
           </div>
 
+          {companies.length > 3 && (
+            <div className="relative mb-4">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search companies..."
+                className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/50 transition"
+              />
+            </div>
+          )}
+
           {loading && companies.length === 0 ? (
             <div className="bg-white/5 border border-white/10 rounded-3xl p-12 text-center">
               <RefreshCw size={32} className="animate-spin text-slate-500 mx-auto mb-4" />
@@ -194,9 +216,14 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
                 Add Your First Company
               </button>
             </div>
+          ) : filteredCompanies.length === 0 ? (
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
+              <Search size={32} className="text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400 text-sm">No companies match &ldquo;{searchQuery}&rdquo;</p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {companies.map((company) => (
+              {filteredCompanies.map((company) => (
                 <button
                   key={company.id}
                   onClick={() => onViewCompany(company.id)}

@@ -70,6 +70,7 @@ export default function LandingSignupModal({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionRef = useRef<'forward' | 'back'>('forward');
@@ -84,6 +85,7 @@ export default function LandingSignupModal({
       setPassword('');
       setShowPassword(false);
       setLoading(false);
+      setTermsAccepted(false);
       setAdvancingFrom('');
 
       if (autoAdvanceTimer.current) {
@@ -186,6 +188,10 @@ export default function LandingSignupModal({
     }
     if (companyRequired && !company.trim()) {
       toast.error('Company name is required for your account type');
+      return;
+    }
+    if (!termsAccepted) {
+      toast.error('Please accept the Terms of Service and Privacy Policy');
       return;
     }
     setLoading(true);
@@ -437,11 +443,19 @@ export default function LandingSignupModal({
                 </Button>
               </div>
 
-              <p className="text-xs text-slate-500 text-center mt-2">
-                By creating an account, you agree to our{' '}
-                <Link href="/terms" onClick={onClose} className="text-[#5A4BFF] hover:underline">Terms</Link> and{' '}
-                <Link href="/privacy" onClick={onClose} className="text-[#5A4BFF] hover:underline">Privacy Policy</Link>.
-              </p>
+              <label className="flex items-start gap-2.5 mt-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-[#5A4BFF] focus:ring-[#5A4BFF]/50 shrink-0"
+                />
+                <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors">
+                  I agree to the{' '}
+                  <Link href="/terms" onClick={onClose} className="text-[#5A4BFF] hover:underline">Terms of Service</Link> and{' '}
+                  <Link href="/privacy" onClick={onClose} className="text-[#5A4BFF] hover:underline">Privacy Policy</Link>
+                </span>
+              </label>
               <div className="flex items-center justify-center gap-4 pt-1 text-xs text-slate-500">
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> 256-bit SSL</span>
                 <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> No credit card</span>

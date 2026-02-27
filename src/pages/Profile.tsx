@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
-import { updateProfile, changePassword, updateAlertPreferences } from '../utils/api';
+import { updateProfile, changePassword, updateAlertPreferences, deleteAccount } from '../utils/api';
 import { toast } from 'sonner';
 import {
   User, Shield,
-  Key, Bell, LogOut, ChevronRight, Loader2, CreditCard,
+  Key, Bell, LogOut, ChevronRight, Loader2, CreditCard, AlertTriangle, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,12 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+
+  // Account deletion state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Notification prefs state
   const defaultPrefs: Record<string, boolean> = {
@@ -212,6 +218,79 @@ export default function Profile() {
                     <Button onClick={() => toast.info('Two-factor authentication is coming soon!')} className="bg-white/10 hover:bg-white/15 text-white border border-white/20 rounded-full font-bold">
                       <Shield className="w-4 h-4 mr-2" /> Enable 2FA
                     </Button>
+                  </div>
+
+                  {/* Danger Zone */}
+                  <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 sm:p-8">
+                    <h2 className="text-xl font-bold text-red-400 mb-2 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" /> Danger Zone
+                    </h2>
+                    <p className="text-sm text-slate-400 mb-4">
+                      Permanently delete your account and all associated data. This action cannot be undone.
+                    </p>
+                    {!showDeleteConfirm ? (
+                      <Button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-full font-bold"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete Account
+                      </Button>
+                    ) : (
+                      <div className="space-y-4 max-w-md bg-red-500/5 border border-red-500/20 rounded-xl p-5">
+                        <p className="text-sm text-red-300 font-medium">
+                          This will permanently delete your account, all monitored companies, alerts, and data.
+                        </p>
+                        <div>
+                          <Label className="text-slate-300 mb-1.5 block text-sm">Enter your password to confirm</Label>
+                          <Input
+                            type="password"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                            placeholder="Current password"
+                            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-slate-300 mb-1.5 block text-sm">
+                            Type <span className="text-red-400 font-mono">delete my account</span> to confirm
+                          </Label>
+                          <Input
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            placeholder="delete my account"
+                            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500"
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); setDeleteConfirmText(''); }}
+                            variant="outline"
+                            className="border-white/10 text-slate-300 hover:bg-white/5 rounded-full"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            disabled={deletingAccount || deleteConfirmText !== 'delete my account' || !deletePassword}
+                            onClick={async () => {
+                              setDeletingAccount(true);
+                              try {
+                                await deleteAccount(deletePassword);
+                                toast.success('Account deleted. Goodbye!');
+                                setLocation('/');
+                              } catch (err) {
+                                toast.error(err instanceof Error ? err.message : 'Failed to delete account');
+                              } finally {
+                                setDeletingAccount(false);
+                              }
+                            }}
+                            className="bg-red-500 hover:bg-red-600 text-white rounded-full font-bold"
+                          >
+                            {deletingAccount && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Permanently Delete
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

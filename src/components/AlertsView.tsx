@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Bell, CheckCheck, RefreshCw, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { ArrowLeft, Bell, CheckCheck, RefreshCw, AlertCircle, AlertTriangle, Info, Filter } from 'lucide-react';
 import { fetchAlerts, markAlertRead, markAllAlertsRead, type AlertItem } from '../utils/api';
 
 interface AlertsViewProps {
@@ -11,6 +11,7 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
   const [alertsList, setAlertsList] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
 
   const loadAlerts = async () => {
     setLoading(true);
@@ -80,6 +81,11 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
     } catch { return ''; }
   };
 
+  const filteredAlerts = useMemo(() => {
+    if (severityFilter === 'all') return alertsList;
+    return alertsList.filter(a => a.severity === severityFilter);
+  }, [alertsList, severityFilter]);
+
   const unreadCount = alertsList.filter(a => !a.read).length;
 
   return (
@@ -114,6 +120,29 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
         )}
       </div>
 
+      {/* Severity filter chips */}
+      {alertsList.length > 0 && (
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
+          <Filter size={14} className="text-slate-500" />
+          {(['all', 'critical', 'warning', 'info'] as const).map((level) => (
+            <button
+              key={level}
+              onClick={() => setSeverityFilter(level)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase transition ${
+                severityFilter === level
+                  ? level === 'critical' ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : level === 'warning' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                    : level === 'info' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    : 'bg-[#5A4BFF]/20 text-[#5A4BFF] border border-[#5A4BFF]/30'
+                  : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+              }`}
+            >
+              {level}{level !== 'all' && ` (${alertsList.filter(a => a.severity === level).length})`}
+            </button>
+          ))}
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6">
           <p className="text-red-400 text-sm">{error}</p>
@@ -131,9 +160,14 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
           <h3 className="text-lg font-bold text-white mb-2">No alerts yet</h3>
           <p className="text-slate-500">Alerts will appear here when compliance issues are detected.</p>
         </div>
+      ) : filteredAlerts.length === 0 ? (
+        <div className="text-center py-16 bg-white/5 border border-white/10 rounded-3xl">
+          <Filter size={32} className="text-slate-600 mx-auto mb-3" />
+          <p className="text-slate-400 text-sm">No {severityFilter} alerts</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {alertsList.map((alert) => (
+          {filteredAlerts.map((alert) => (
             <div
               key={alert.id}
               onClick={() => !alert.read && handleMarkRead(alert.id)}
