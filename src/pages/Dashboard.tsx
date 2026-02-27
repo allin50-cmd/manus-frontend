@@ -6,6 +6,7 @@ import AddCompanyView from '../components/AddCompanyView';
 import CompanyDetailView from '../components/CompanyDetailView';
 import AlertsView from '../components/AlertsView';
 import UserSettings from '../components/UserSettings';
+import GuidedTour from '../components/GuidedTour';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 type DashView = 'dashboard' | 'add_company' | 'company_detail' | 'alerts' | 'settings';
@@ -43,14 +44,17 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {view === 'dashboard' && (
-        <UserDashboard
-          user={user}
-          onAddCompany={handleAddCompany}
-          onViewCompany={handleViewCompany}
-          onViewAlerts={handleViewAlerts}
-          onSettings={handleSettings}
-          onLogout={handleLogout}
-        />
+        <>
+          <UserDashboard
+            user={user}
+            onAddCompany={handleAddCompany}
+            onViewCompany={handleViewCompany}
+            onViewAlerts={handleViewAlerts}
+            onSettings={handleSettings}
+            onLogout={handleLogout}
+          />
+          <GuidedTour />
+        </>
       )}
       {view === 'add_company' && (
         <AddCompanyView

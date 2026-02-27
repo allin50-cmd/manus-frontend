@@ -104,7 +104,7 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
 
       {/* Stats row */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <div id="tour-stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center">
             <div className="text-3xl font-black text-white">{stats.totalCompanies}</div>
             <div className="text-xs uppercase tracking-wider mt-1 text-slate-500">Monitored</div>
@@ -136,7 +136,7 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
           <div className="text-sm font-bold text-white">Workflows</div>
           <div className="text-xs text-slate-500">Team & Tasks</div>
         </a>
-        <button onClick={onAddCompany} className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4 text-center hover:bg-purple-500/20 transition group">
+        <button id="tour-add-company" onClick={onAddCompany} className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-4 text-center hover:bg-purple-500/20 transition group">
           <Plus size={24} className="text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
           <div className="text-sm font-bold text-white">Add Company</div>
           <div className="text-xs text-slate-500">Monitor new</div>
@@ -156,7 +156,7 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
       {/* Companies + Alerts grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Companies list */}
-        <div className="lg:col-span-2">
+        <div id="tour-companies" className="lg:col-span-2">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-black text-white">Monitored Companies</h2>
             <button
@@ -206,7 +206,7 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
         </div>
 
         {/* Sidebar: Recent alerts + M365 */}
-        <div className="space-y-6">
+        <div id="tour-alerts" className="space-y-6">
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-black text-white">Recent Alerts</h2>

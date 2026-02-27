@@ -176,8 +176,10 @@ export default function Onboarding() {
   const [addingCompany, setAddingCompany] = useState(false);
   const [companyError, setCompanyError] = useState('');
   const [companyAdded, setCompanyAdded] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const resultListRef = useRef<HTMLDivElement>(null);
 
   // Step 2 — alert prefs
   const [alertPrefs, setAlertPrefs] = useState(() => getDefaultAlertPrefs(user?.userIntent));
@@ -246,6 +248,35 @@ export default function Onboarding() {
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [searchQuery, searchMode]);
+
+  // ------ Keyboard navigation for search dropdown ------
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!showResults || searchResults.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((i) => (i + 1) % searchResults.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((i) => (i <= 0 ? searchResults.length - 1 : i - 1));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelectCompany(searchResults[highlightedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowResults(false);
+      setHighlightedIndex(-1);
+    }
+  };
+
+  // Reset highlight when results change
+  useEffect(() => { setHighlightedIndex(-1); }, [searchResults]);
+
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (highlightedIndex >= 0 && resultListRef.current) {
+      const el = resultListRef.current.children[highlightedIndex] as HTMLElement;
+      el?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightedIndex]);
 
   // ------ Click outside to close dropdown ------
   useEffect(() => {
@@ -358,21 +389,29 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-xl">
-        {/* Progress bar — 3 circles */}
+        {/* Progress bar — 3 circles with labels */}
         <div className="flex items-center justify-center gap-2 mb-12">
           {steps.map((s, i) => (
             <div key={s.id} className="flex items-center gap-2">
-              <div className={clsx(
-                'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
-                step >= s.id
-                  ? 'bg-[#5A4BFF] text-white shadow-lg shadow-[#5A4BFF]/30'
-                  : 'bg-white/5 text-slate-500 border border-white/10',
-              )}>
-                <s.icon className="w-5 h-5" />
+              <div className="flex flex-col items-center gap-1.5">
+                <div className={clsx(
+                  'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
+                  step >= s.id
+                    ? 'bg-[#5A4BFF] text-white shadow-lg shadow-[#5A4BFF]/30'
+                    : 'bg-white/5 text-slate-500 border border-white/10',
+                )}>
+                  <s.icon className="w-5 h-5" />
+                </div>
+                <span className={clsx(
+                  'text-[10px] font-medium transition-colors duration-300',
+                  step >= s.id ? 'text-[#5A4BFF]' : 'text-slate-600',
+                )}>
+                  {s.title}
+                </span>
               </div>
               {i < steps.length - 1 && (
                 <div className={clsx(
-                  'w-16 sm:w-20 h-0.5 rounded-full transition-all duration-300',
+                  'w-16 sm:w-20 h-0.5 rounded-full transition-all duration-300 mb-5',
                   step > s.id ? 'bg-[#5A4BFF]' : 'bg-white/10',
                 )} />
               )}
@@ -455,20 +494,35 @@ export default function Onboarding() {
                           setSelectedCompanyName('');
                         }}
                         onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
+                        onKeyDown={handleSearchKeyDown}
                         placeholder={getSearchPlaceholder(isAdvisor, intent)}
                         disabled={addingCompany}
                         className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500"
+                        role="combobox"
+                        aria-expanded={showResults && searchResults.length > 0}
+                        aria-activedescendant={highlightedIndex >= 0 ? `search-result-${highlightedIndex}` : undefined}
                       />
 
                       {/* Search results dropdown */}
                       {showResults && searchResults.length > 0 && (
-                        <div className="absolute z-20 top-full mt-1 w-full bg-[#111327] border border-white/10 rounded-xl shadow-xl max-h-64 overflow-y-auto">
-                          {searchResults.map((r) => (
+                        <div
+                          ref={resultListRef}
+                          role="listbox"
+                          className="absolute z-20 top-full mt-1 w-full bg-[#111327] border border-white/10 rounded-xl shadow-xl max-h-64 overflow-y-auto"
+                        >
+                          {searchResults.map((r, idx) => (
                             <button
                               key={r.companyNumber}
+                              id={`search-result-${idx}`}
+                              role="option"
+                              aria-selected={highlightedIndex === idx}
                               type="button"
                               onClick={() => handleSelectCompany(r)}
-                              className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                              onMouseEnter={() => setHighlightedIndex(idx)}
+                              className={clsx(
+                                'w-full text-left px-4 py-3 transition-colors border-b border-white/5 last:border-b-0',
+                                highlightedIndex === idx ? 'bg-white/10' : 'hover:bg-white/5',
+                              )}
                             >
                               <p className="text-sm font-medium text-white truncate">{r.companyName}</p>
                               <div className="flex items-center gap-3 mt-0.5">
@@ -630,7 +684,7 @@ export default function Onboarding() {
             {/* ═══════════════════════════════════════ */}
             {step === 3 && (
               <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6 pulse-glow" style={{ '--tw-shadow-color': 'rgba(34, 197, 94, 0.2)' } as React.CSSProperties}>
                   <CheckCircle className="w-10 h-10 text-green-400" />
                 </div>
                 <h2 className="text-3xl font-black text-white mb-4">You're All Set!</h2>
