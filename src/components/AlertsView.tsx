@@ -1,10 +1,23 @@
 import { useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Bell, CheckCheck, RefreshCw, AlertCircle, AlertTriangle, Info, Filter } from 'lucide-react';
+import { ArrowLeft, Bell, CheckCheck, RefreshCw, AlertCircle, AlertTriangle, Info, Filter, Search } from 'lucide-react';
 import { fetchAlerts, markAlertRead, markAllAlertsRead, type AlertItem } from '../utils/api';
 
 interface AlertsViewProps {
   onBack: () => void;
+}
+
+function getTimeGroup(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const hours = diff / (1000 * 60 * 60);
+  const days = hours / 24;
+  if (hours < 24) return 'Today';
+  if (days < 2) return 'Yesterday';
+  if (days < 7) return 'This Week';
+  if (days < 30) return 'This Month';
+  return 'Older';
 }
 
 export default function AlertsView({ onBack }: AlertsViewProps) {
@@ -13,6 +26,7 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
   const [error, setError] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
   const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadAlerts = async () => {
     setLoading(true);
@@ -84,6 +98,10 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
 
   const filteredAlerts = useMemo(() => {
     let list = alertsList;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(a => a.title.toLowerCase().includes(q) || a.message.toLowerCase().includes(q));
+    }
     if (severityFilter !== 'all') {
       list = list.filter(a => a.severity === severityFilter);
     }
@@ -93,7 +111,23 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
       list = list.filter(a => a.read);
     }
     return list;
-  }, [alertsList, severityFilter, readFilter]);
+  }, [alertsList, severityFilter, readFilter, searchQuery]);
+
+  const groupedAlerts = useMemo(() => {
+    const groups: { label: string; items: AlertItem[] }[] = [];
+    const order = ['Today', 'Yesterday', 'This Week', 'This Month', 'Older'];
+    const map = new Map<string, AlertItem[]>();
+    filteredAlerts.forEach(a => {
+      const group = getTimeGroup(a.createdAt);
+      if (!map.has(group)) map.set(group, []);
+      map.get(group)!.push(a);
+    });
+    order.forEach(label => {
+      const items = map.get(label);
+      if (items && items.length > 0) groups.push({ label, items });
+    });
+    return groups;
+  }, [filteredAlerts]);
 
   const formatAlertType = (type: string) => {
     return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -125,13 +159,27 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-6">
         <Bell size={28} className="text-blue-400" />
         <h1 className="text-2xl font-black text-white">Alerts</h1>
         {unreadCount > 0 && (
           <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">{unreadCount} unread</span>
         )}
       </div>
+
+      {/* Search */}
+      {alertsList.length > 3 && (
+        <div className="relative mb-4">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search alerts..."
+            className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/50 transition"
+          />
+        </div>
+      )}
 
       {/* Severity filter chips */}
       {alertsList.length > 0 && (
@@ -190,33 +238,47 @@ export default function AlertsView({ onBack }: AlertsViewProps) {
       ) : filteredAlerts.length === 0 ? (
         <div className="text-center py-16 bg-white/5 border border-white/10 rounded-3xl">
           <Filter size={32} className="text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">No {severityFilter} alerts</p>
+          <p className="text-slate-400 text-sm">
+            {searchQuery ? `No alerts matching "${searchQuery}"` : `No ${severityFilter} alerts`}
+          </p>
+          {(searchQuery || severityFilter !== 'all') && (
+            <button onClick={() => { setSearchQuery(''); setSeverityFilter('all'); setReadFilter('all'); }} className="text-[#5A4BFF] text-xs font-semibold mt-2 hover:underline">
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredAlerts.map((alert) => (
-            <div
-              key={alert.id}
-              onClick={() => !alert.read && handleMarkRead(alert.id)}
-              className={`border rounded-2xl p-5 transition cursor-pointer hover:bg-white/5 ${getSeverityStyle(alert.severity, alert.read)}`}
-            >
-              <div className="flex items-start gap-3">
-                {getSeverityIcon(alert.severity)}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className={`font-semibold text-sm ${alert.read ? 'text-slate-400' : 'text-white'}`}>{alert.title}</p>
-                    <span className="text-slate-600 text-xs whitespace-nowrap">{formatDate(alert.createdAt)}</span>
+        <div className="space-y-6">
+          {groupedAlerts.map((group) => (
+            <div key={group.label}>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">{group.label}</h3>
+              <div className="space-y-3">
+                {group.items.map((alert) => (
+                  <div
+                    key={alert.id}
+                    onClick={() => !alert.read && handleMarkRead(alert.id)}
+                    className={`border rounded-2xl p-5 transition cursor-pointer hover:bg-white/5 ${getSeverityStyle(alert.severity, alert.read)}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {getSeverityIcon(alert.severity)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-4">
+                          <p className={`font-semibold text-sm ${alert.read ? 'text-slate-400' : 'text-white'}`}>{alert.title}</p>
+                          <span className="text-slate-600 text-xs whitespace-nowrap">{formatDate(alert.createdAt)}</span>
+                        </div>
+                        <p className="text-slate-400 text-sm mt-1">{alert.message}</p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className={`text-xs font-bold uppercase ${
+                            alert.severity === 'critical' ? 'text-red-400' :
+                            alert.severity === 'warning' ? 'text-yellow-400' : 'text-blue-400'
+                          }`}>{alert.severity}</span>
+                          <span className="text-slate-600 text-xs">{formatAlertType(alert.type)}</span>
+                          {!alert.read && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-slate-400 text-sm mt-1">{alert.message}</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className={`text-xs font-bold uppercase ${
-                      alert.severity === 'critical' ? 'text-red-400' :
-                      alert.severity === 'warning' ? 'text-yellow-400' : 'text-blue-400'
-                    }`}>{alert.severity}</span>
-                    <span className="text-slate-600 text-xs">{formatAlertType(alert.type)}</span>
-                    {!alert.read && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           ))}

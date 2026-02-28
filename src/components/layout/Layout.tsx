@@ -2,6 +2,7 @@ import React from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import MobileNav from './MobileNav';
+import BackToTop from '../BackToTop';
 import { useAuth } from '../../context/AuthContext';
 
 interface LayoutProps {
@@ -26,6 +27,7 @@ export default function Layout({ children, hideFooter }: LayoutProps) {
       </main>
       {!hideFooter && <Footer />}
       <MobileNav />
+      <BackToTop />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { clsx } from 'clsx';
 import { usePageTitle } from '../hooks/usePageTitle';
 import BillingDashboard from '../components/billing/BillingDashboard';
+import Breadcrumb from '../components/Breadcrumb';
 
 export default function Profile() {
   usePageTitle('Profile');
@@ -74,6 +75,7 @@ export default function Profile() {
     <div className="min-h-screen">
       <section className="py-8 sm:py-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <Breadcrumb items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Profile' }]} />
           {/* Header */}
           <div className="flex items-center gap-6 mb-10">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#5A4BFF] to-indigo-600 flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-[#5A4BFF]/25">

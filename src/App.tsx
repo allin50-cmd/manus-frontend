@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/layout/Layout';
+import KeyboardShortcuts from './components/KeyboardShortcuts';
 import { RefreshCw } from 'lucide-react';
 
 // Eagerly loaded: landing page (first paint) and lightweight redirects
@@ -87,6 +88,11 @@ function AlertsRedirect() {
   return null;
 }
 
+function KeyboardShortcutsWithNav() {
+  const [, setLocation] = useLocation();
+  return <KeyboardShortcuts onNavigate={setLocation} />;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -95,6 +101,7 @@ export default function App() {
       <Toaster position="top-right" richColors />
       <Router>
         <ScrollToTop />
+        <KeyboardShortcutsWithNav />
         <Layout>
           <RouteErrorBoundary>
           <Suspense fallback={<PageLoader />}>

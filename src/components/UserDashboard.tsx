@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import {
   Shield, Plus, Bell, Settings, LogOut, RefreshCw,
   AlertTriangle, CheckCircle, Clock, Building, ChevronRight, ChevronLeft, AlertCircle, Search,
-  ArrowUpDown, Download, Filter,
+  ArrowUpDown, Download, Filter, FileText, Zap,
 } from 'lucide-react';
 import { fetchDashboard, type DashboardStats, type MonitoredCompany, type AlertItem, type UserProfile } from '../utils/api';
 import M365IntegrationPanel from './M365IntegrationPanel';
@@ -456,6 +456,44 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
 
           {/* M365 Integration Panel */}
           <M365IntegrationPanel />
+
+          {/* Quick Actions */}
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-5">
+            <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+              <Zap size={14} className="text-[#5A4BFF]" /> Quick Actions
+            </h3>
+            <div className="space-y-2">
+              <button
+                onClick={onAddCompany}
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <Plus size={16} className="text-blue-400" />
+                Add new company
+              </button>
+              <Link
+                href="/reports"
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <FileText size={16} className="text-green-400" />
+                View reports
+              </Link>
+              <button
+                onClick={onViewAlerts}
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <Bell size={16} className="text-amber-400" />
+                Manage alerts
+              </button>
+              <button
+                onClick={exportCsv}
+                disabled={companies.length === 0}
+                className="w-full flex items-center gap-3 p-3 rounded-xl text-left text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <Download size={16} className="text-purple-400" />
+                Export CSV
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

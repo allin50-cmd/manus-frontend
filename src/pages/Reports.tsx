@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import {
   Download, Building2, Search, ArrowUpDown,
   AlertTriangle, CheckCircle, Clock, BarChart3,
-  PieChart, ChevronLeft, ChevronRight,
+  PieChart, ChevronLeft, ChevronRight, ShieldAlert, TrendingUp,
 } from 'lucide-react';
 import { fetchDashboard, fetchAlerts, type MonitoredCompany, type AlertItem, type DashboardStats } from '../utils/api';
 import { clsx } from 'clsx';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { toast } from 'sonner';
+import Breadcrumb from '../components/Breadcrumb';
 
 type SortKey = 'companyName' | 'companyNumber' | 'complianceStatus' | 'riskLevel' | 'accountsNextDue' | 'confirmationNextDue';
 type SortDir = 'asc' | 'desc';
@@ -159,6 +160,7 @@ export default function Reports() {
     <div className="min-h-screen">
       <section className="py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <Breadcrumb items={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Reports' }]} />
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
@@ -206,47 +208,117 @@ export default function Reports() {
 
           {/* Tab Content */}
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Compliance Breakdown */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-[#5A4BFF]" /> Compliance Breakdown</h3>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Compliant', count: stats?.compliantCount ?? 0, color: 'bg-green-500', pct: stats && stats.totalCompanies > 0 ? Math.round(((stats.compliantCount) / stats.totalCompanies) * 100) : 0 },
-                    { label: 'Warning', count: stats?.warningCount ?? 0, color: 'bg-amber-500', pct: stats && stats.totalCompanies > 0 ? Math.round(((stats.warningCount) / stats.totalCompanies) * 100) : 0 },
-                    { label: 'Overdue', count: stats?.overdueCount ?? 0, color: 'bg-red-500', pct: stats && stats.totalCompanies > 0 ? Math.round(((stats.overdueCount) / stats.totalCompanies) * 100) : 0 },
-                  ].map((item) => (
-                    <div key={item.label}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm text-slate-300">{item.label}</span>
-                        <span className="text-sm font-bold text-white">{item.count} ({item.pct}%)</span>
-                      </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div className={clsx('h-full rounded-full transition-all duration-500', item.color)} style={{ width: `${item.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-[#5A4BFF]" /> Recent Alerts</h3>
-                {alerts.length === 0 ? (
-                  <p className="text-slate-500 text-sm">No alerts to display.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {alerts.slice(0, 8).map((alert) => (
-                      <div key={alert.id} className="flex items-start gap-3">
-                        <div className={clsx('w-2 h-2 rounded-full mt-2 flex-shrink-0', alert.severity === 'critical' ? 'bg-red-500' : alert.severity === 'warning' ? 'bg-amber-500' : 'bg-blue-500')} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm text-white truncate">{alert.title}</p>
-                          <p className="text-xs text-slate-500">{new Date(alert.createdAt).toLocaleDateString()}</p>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Compliance Breakdown */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-[#5A4BFF]" /> Compliance Breakdown</h3>
+                  <div className="space-y-4">
+                    {[
+                      { label: 'Compliant', count: stats?.compliantCount ?? 0, color: 'bg-green-500', pct: stats && stats.totalCompanies > 0 ? Math.round(((stats.compliantCount) / stats.totalCompanies) * 100) : 0 },
+                      { label: 'Warning', count: stats?.warningCount ?? 0, color: 'bg-amber-500', pct: stats && stats.totalCompanies > 0 ? Math.round(((stats.warningCount) / stats.totalCompanies) * 100) : 0 },
+                      { label: 'Overdue', count: stats?.overdueCount ?? 0, color: 'bg-red-500', pct: stats && stats.totalCompanies > 0 ? Math.round(((stats.overdueCount) / stats.totalCompanies) * 100) : 0 },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm text-slate-300">{item.label}</span>
+                          <span className="text-sm font-bold text-white">{item.count} ({item.pct}%)</span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className={clsx('h-full rounded-full transition-all duration-500', item.color)} style={{ width: `${item.pct}%` }} />
                         </div>
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
+
+                {/* Risk Level Breakdown */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-[#5A4BFF]" /> Risk Distribution</h3>
+                  {(() => {
+                    const riskCounts = { high: 0, medium: 0, low: 0, secure: 0 };
+                    companies.forEach(c => {
+                      const r = (c.riskLevel || 'secure') as keyof typeof riskCounts;
+                      if (r in riskCounts) riskCounts[r]++;
+                      else riskCounts.secure++;
+                    });
+                    const total = companies.length || 1;
+                    const items = [
+                      { label: 'High Risk', count: riskCounts.high, color: 'bg-red-500', textColor: 'text-red-400' },
+                      { label: 'Medium Risk', count: riskCounts.medium, color: 'bg-amber-500', textColor: 'text-amber-400' },
+                      { label: 'Low Risk', count: riskCounts.low, color: 'bg-blue-500', textColor: 'text-blue-400' },
+                      { label: 'Secure', count: riskCounts.secure, color: 'bg-green-500', textColor: 'text-green-400' },
+                    ];
+                    return (
+                      <div className="space-y-4">
+                        {items.map((item) => (
+                          <div key={item.label}>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-sm text-slate-300">{item.label}</span>
+                              <span className="text-sm font-bold text-white">{item.count} ({Math.round((item.count / total) * 100)}%)</span>
+                            </div>
+                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                              <div className={clsx('h-full rounded-full transition-all duration-500', item.color)} style={{ width: `${Math.round((item.count / total) * 100)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Alert Severity Summary */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#5A4BFF]" /> Alert Summary</h3>
+                  {alerts.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No alerts to display.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {(['critical', 'warning', 'info'] as const).map((severity) => {
+                        const count = alerts.filter(a => a.severity === severity).length;
+                        const unread = alerts.filter(a => a.severity === severity && !a.read).length;
+                        return (
+                          <div key={severity} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                            <div className="flex items-center gap-3">
+                              <div className={clsx('w-8 h-8 rounded-lg flex items-center justify-center',
+                                severity === 'critical' ? 'bg-red-500/15' : severity === 'warning' ? 'bg-amber-500/15' : 'bg-blue-500/15'
+                              )}>
+                                <AlertTriangle className={clsx('w-4 h-4', severity === 'critical' ? 'text-red-400' : severity === 'warning' ? 'text-amber-400' : 'text-blue-400')} />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-white capitalize">{severity}</p>
+                                {unread > 0 && <p className="text-xs text-slate-500">{unread} unread</p>}
+                              </div>
+                            </div>
+                            <span className="text-lg font-black text-white">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Activity */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-[#5A4BFF]" /> Recent Alerts</h3>
+                  {alerts.length === 0 ? (
+                    <p className="text-slate-500 text-sm">No alerts to display.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {alerts.slice(0, 8).map((alert) => (
+                        <div key={alert.id} className="flex items-start gap-3">
+                          <div className={clsx('w-2 h-2 rounded-full mt-2 flex-shrink-0', alert.severity === 'critical' ? 'bg-red-500' : alert.severity === 'warning' ? 'bg-amber-500' : 'bg-blue-500')} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-white truncate">{alert.title}</p>
+                            <p className="text-xs text-slate-500">{new Date(alert.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
