@@ -2,8 +2,8 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
 import {
   Shield, Plus, Bell, Settings, LogOut, RefreshCw,
-  AlertTriangle, CheckCircle, Clock, Building, ChevronRight, AlertCircle, Search,
-  ArrowUpDown, Download,
+  AlertTriangle, CheckCircle, Clock, Building, ChevronRight, ChevronLeft, AlertCircle, Search,
+  ArrowUpDown, Download, Filter,
 } from 'lucide-react';
 import { fetchDashboard, type DashboardStats, type MonitoredCompany, type AlertItem, type UserProfile } from '../utils/api';
 import M365IntegrationPanel from './M365IntegrationPanel';
@@ -29,7 +29,10 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
   const [searchQuery, setSearchQuery] = useState('');
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'risk' | 'status'>('name');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'compliant' | 'warning' | 'overdue'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const COMPANIES_PER_PAGE = 10;
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -95,6 +98,9 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
         (c) => c.companyName.toLowerCase().includes(q) || c.companyNumber.toLowerCase().includes(q)
       );
     }
+    if (statusFilter !== 'all') {
+      list = list.filter((c) => (c.complianceStatus || 'compliant') === statusFilter);
+    }
     return [...list].sort((a, b) => {
       if (sortBy === 'risk') {
         return (RISK_ORDER[a.riskLevel || 'secure'] ?? 3) - (RISK_ORDER[b.riskLevel || 'secure'] ?? 3);
@@ -104,7 +110,16 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
       }
       return a.companyName.localeCompare(b.companyName);
     });
-  }, [companies, searchQuery, sortBy]);
+  }, [companies, searchQuery, sortBy, statusFilter]);
+
+  const totalPages = Math.ceil(filteredCompanies.length / COMPANIES_PER_PAGE);
+  const paginatedCompanies = useMemo(() => {
+    const start = (currentPage - 1) * COMPANIES_PER_PAGE;
+    return filteredCompanies.slice(start, start + COMPANIES_PER_PAGE);
+  }, [filteredCompanies, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, sortBy]);
 
   const exportCsv = useCallback(() => {
     if (companies.length === 0) return;
@@ -262,29 +277,53 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
           </div>
 
           {companies.length > 3 && (
-            <div className="flex items-center gap-3 mb-4">
-              <div className="relative flex-1">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search companies... (Ctrl+K)"
-                  className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/50 transition"
-                />
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="relative flex-1">
+                  <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search companies... (Ctrl+K)"
+                    className="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/50 transition"
+                  />
+                </div>
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setSortBy(sortBy === 'name' ? 'risk' : sortBy === 'risk' ? 'status' : 'name')}
+                    className="flex items-center gap-1.5 px-3 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition text-xs font-semibold whitespace-nowrap"
+                    aria-label="Change sort order"
+                  >
+                    <ArrowUpDown size={14} />
+                    {sortBy === 'name' ? 'A-Z' : sortBy === 'risk' ? 'Risk' : 'Status'}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center">
-                <button
-                  onClick={() => setSortBy(sortBy === 'name' ? 'risk' : sortBy === 'risk' ? 'status' : 'name')}
-                  className="flex items-center gap-1.5 px-3 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition text-xs font-semibold whitespace-nowrap"
-                  aria-label="Change sort order"
-                >
-                  <ArrowUpDown size={14} />
-                  {sortBy === 'name' ? 'A-Z' : sortBy === 'risk' ? 'Risk' : 'Status'}
-                </button>
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <Filter size={14} className="text-slate-500" />
+                {(['all', 'compliant', 'warning', 'overdue'] as const).map((s) => {
+                  const count = s === 'all' ? companies.length : companies.filter(c => (c.complianceStatus || 'compliant') === s).length;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setStatusFilter(s)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold capitalize transition ${
+                        statusFilter === s
+                          ? s === 'overdue' ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : s === 'warning' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                            : s === 'compliant' ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : 'bg-[#5A4BFF]/20 text-[#5A4BFF] border border-[#5A4BFF]/30'
+                          : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      {s}{s !== 'all' ? ` (${count})` : ''}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            </>
           )}
 
           {loading && companies.length === 0 ? (
@@ -307,26 +346,73 @@ export default function UserDashboard({ user, onAddCompany, onViewCompany, onVie
           ) : filteredCompanies.length === 0 ? (
             <div className="bg-white/5 border border-white/10 rounded-3xl p-8 text-center">
               <Search size={32} className="text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm">No companies match &ldquo;{searchQuery}&rdquo;</p>
+              <p className="text-slate-400 text-sm">
+                {searchQuery ? <>No companies match &ldquo;{searchQuery}&rdquo;</> : `No ${statusFilter} companies`}
+              </p>
+              {statusFilter !== 'all' && (
+                <button onClick={() => setStatusFilter('all')} className="text-[#5A4BFF] text-xs font-semibold mt-2 hover:underline">
+                  Clear filter
+                </button>
+              )}
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredCompanies.map((company) => (
-                <button
-                  key={company.id}
-                  onClick={() => onViewCompany(company.id)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-4 hover:bg-white/10 transition text-left group"
-                >
-                  {getStatusIcon(company.complianceStatus)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-bold truncate">{company.companyName}</p>
-                    <p className="text-slate-500 text-sm">{company.companyNumber} &middot; {company.companyStatus || 'active'}</p>
+            <>
+              <div className="space-y-3">
+                {paginatedCompanies.map((company) => (
+                  <button
+                    key={company.id}
+                    onClick={() => onViewCompany(company.id)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-4 hover:bg-white/10 transition text-left group"
+                  >
+                    {getStatusIcon(company.complianceStatus)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold truncate">{company.companyName}</p>
+                      <p className="text-slate-500 text-sm">{company.companyNumber} &middot; {company.companyStatus || 'active'}</p>
+                    </div>
+                    {getRiskBadge(company.riskLevel)}
+                    <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-300 transition" />
+                  </button>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-slate-500 text-xs">
+                    {(currentPage - 1) * COMPANIES_PER_PAGE + 1}&ndash;{Math.min(currentPage * COMPANIES_PER_PAGE, filteredCompanies.length)} of {filteredCompanies.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition disabled:opacity-30 disabled:pointer-events-none"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage(p)}
+                        className={`w-8 h-8 rounded-xl text-xs font-bold transition ${
+                          p === currentPage
+                            ? 'bg-[#5A4BFF] text-white'
+                            : 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition disabled:opacity-30 disabled:pointer-events-none"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
                   </div>
-                  {getRiskBadge(company.riskLevel)}
-                  <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-300 transition" />
-                </button>
-              ))}
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 

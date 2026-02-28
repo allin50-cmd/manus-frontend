@@ -251,6 +251,16 @@ export async function fetchCompanyDetail(id: string): Promise<{
   return { company: data.company, compliance: data.compliance, alerts: data.alerts };
 }
 
+export async function updateCompanyNotes(id: string, notes: string): Promise<MonitoredCompany> {
+  const res = await apiFetch(`/companies/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ notes }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to update company');
+  return data.company;
+}
+
 export async function removeCompany(id: string): Promise<void> {
   const res = await apiFetch(`/companies/${id}`, { method: 'DELETE' });
   const data = await res.json();

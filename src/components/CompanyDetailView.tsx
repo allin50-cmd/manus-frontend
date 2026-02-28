@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   ArrowLeft, RefreshCw, Trash2, AlertCircle,
-  FileText, Clock, Shield, Building, Bell
+  FileText, Clock, Shield, Building, Bell,
+  Copy, Check, Pencil, X as XIcon, Save,
 } from 'lucide-react';
 import {
-  fetchCompanyDetail, refreshCompany, removeCompany,
+  fetchCompanyDetail, refreshCompany, removeCompany, updateCompanyNotes,
   type MonitoredCompany, type ComplianceDetail, type AlertItem
 } from '../utils/api';
 import { formatDateShort } from '../utils/formatting';
@@ -25,6 +26,11 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
   const [refreshing, setRefreshing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -72,6 +78,37 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
     }
   };
 
+  const handleCopyNumber = async () => {
+    if (!company) return;
+    try {
+      await navigator.clipboard.writeText(company.companyNumber);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+
+  const handleEditNotes = () => {
+    setNotesValue(company?.notes || '');
+    setEditingNotes(true);
+    setTimeout(() => notesRef.current?.focus(), 50);
+  };
+
+  const handleSaveNotes = async () => {
+    setSavingNotes(true);
+    try {
+      const updated = await updateCompanyNotes(companyId, notesValue);
+      setCompany(updated);
+      setEditingNotes(false);
+      toast.success('Notes saved');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save notes');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   const formatDate = (d: string | null) => formatDateShort(d);
 
   if (loading) {
@@ -96,7 +133,7 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
   return (
     <div className="py-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8">
         <button onClick={onBack} className="flex items-center gap-2 text-blue-400 hover:text-white transition">
           <ArrowLeft size={20} /> Dashboard
         </button>
@@ -104,18 +141,18 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition text-sm font-semibold"
+            className="flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition text-sm font-semibold"
           >
             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </button>
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition text-sm font-semibold"
+            className="flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition text-sm font-semibold"
           >
             <Trash2 size={16} />
-            {deleting ? 'Removing...' : 'Remove'}
+            <span className="hidden sm:inline">{deleting ? 'Removing...' : 'Remove'}</span>
           </button>
         </div>
       </div>
@@ -127,19 +164,34 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
       )}
 
       {/* Company header card */}
-      <div className="bg-white/5 border border-white/10 rounded-3xl p-8 mb-6">
-        <div className="flex items-start justify-between">
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-5 sm:p-8 mb-6">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center">
-              <Building size={28} className="text-blue-400" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center shrink-0">
+              <Building size={24} className="text-blue-400 sm:w-7 sm:h-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-white">{company.companyName}</h1>
-              <p className="text-slate-500">{company.companyNumber} &middot; {company.companyStatus || 'active'}</p>
+              <h1 className="text-xl sm:text-2xl font-black text-white">{company.companyName}</h1>
+              <div className="flex items-center gap-2 mt-0.5">
+                <button
+                  onClick={handleCopyNumber}
+                  className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 transition-colors group"
+                  aria-label="Copy company number"
+                >
+                  <span className="font-mono text-sm">{company.companyNumber}</span>
+                  {copied ? (
+                    <Check size={14} className="text-green-400" />
+                  ) : (
+                    <Copy size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </button>
+                <span className="text-slate-600">&middot;</span>
+                <span className="text-slate-500 text-sm">{company.companyStatus || 'active'}</span>
+              </div>
             </div>
           </div>
           {compliance && (
-            <div className={`px-5 py-2 rounded-full text-sm font-bold uppercase ${
+            <div className={`px-5 py-2 rounded-full text-sm font-bold uppercase shrink-0 ${
               compliance.status === 'compliant' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
               compliance.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
               'bg-red-500/20 text-red-400 border border-red-500/30'
@@ -148,11 +200,56 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
             </div>
           )}
         </div>
-        {company.notes && (
-          <p className="text-slate-400 text-sm mt-4 pl-[4.5rem]">{company.notes}</p>
-        )}
+
+        {/* Notes section */}
+        <div className="mt-4 pl-0 sm:pl-[4rem]">
+          {editingNotes ? (
+            <div className="space-y-2">
+              <textarea
+                ref={notesRef}
+                value={notesValue}
+                onChange={(e) => setNotesValue(e.target.value)}
+                placeholder="Add notes about this company..."
+                rows={3}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-[#5A4BFF]/50 resize-none"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSaveNotes}
+                  disabled={savingNotes}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#5A4BFF] text-white text-xs font-bold hover:bg-[#6B5BFF] transition-colors disabled:opacity-50"
+                >
+                  <Save size={12} /> {savingNotes ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setEditingNotes(false)}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/5 text-slate-400 text-xs font-bold hover:bg-white/10 transition-colors"
+                >
+                  <XIcon size={12} /> Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleEditNotes}
+              className="group flex items-start gap-2 text-left w-full"
+            >
+              {company.notes ? (
+                <>
+                  <p className="text-slate-400 text-sm flex-1">{company.notes}</p>
+                  <Pencil size={14} className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 shrink-0" />
+                </>
+              ) : (
+                <span className="text-slate-600 text-sm flex items-center gap-1.5 hover:text-slate-400 transition-colors">
+                  <Pencil size={14} /> Add notes
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+
         {company.lastCheckedAt && (
-          <p className="text-slate-600 text-xs mt-3 pl-[4.5rem]">Last checked: {formatDate(company.lastCheckedAt)}</p>
+          <p className="text-slate-600 text-xs mt-3 pl-0 sm:pl-[4rem]">Last checked: {formatDate(company.lastCheckedAt)}</p>
         )}
       </div>
 
@@ -232,13 +329,13 @@ export default function CompanyDetailView({ companyId, onBack, onDeleted }: Comp
               </h3>
               <div className="space-y-3">
                 {compliance.overdueFilings.map((f, i) => (
-                  <div key={i} className="bg-red-500/10 rounded-2xl p-4 flex items-center justify-between">
+                  <div key={i} className="bg-red-500/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <p className="text-white font-semibold">{f.description}</p>
                       <p className="text-red-300 text-sm">Due: {formatDate(f.dueDate)} ({Math.abs(f.daysUntilDue)} days overdue)</p>
                     </div>
                     {f.penaltyRisk !== undefined && f.penaltyRisk > 0 && (
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-red-400 font-black text-xl">&pound;{f.penaltyRisk.toLocaleString()}</p>
                         <p className="text-red-300 text-xs">penalty risk</p>
                       </div>

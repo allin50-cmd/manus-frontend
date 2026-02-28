@@ -82,17 +82,23 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-1">
-            {publicLinks.map((l) => (
-              <Link key={l.href} href={l.href} className="px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
-                {l.label}
-              </Link>
-            ))}
-            {isAuthenticated && authLinks.map((l) => (
-              <Link key={l.href} href={l.href} className="px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-white/5 transition-colors flex items-center gap-1.5">
-                <l.icon className="w-4 h-4" />
-                {l.label}
-              </Link>
-            ))}
+            {publicLinks.map((l) => {
+              const active = l.href === '/' ? isLandingPage : location.startsWith(l.href);
+              return (
+                <Link key={l.href} href={l.href} className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`} aria-current={active ? 'page' : undefined}>
+                  {l.label}
+                </Link>
+              );
+            })}
+            {isAuthenticated && authLinks.map((l) => {
+              const active = location.startsWith(l.href);
+              return (
+                <Link key={l.href} href={l.href} className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${active ? 'text-[#5A4BFF] bg-[#5A4BFF]/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`} aria-current={active ? 'page' : undefined}>
+                  <l.icon className="w-4 h-4" />
+                  {l.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right Side */}
@@ -187,19 +193,25 @@ export default function Header() {
       {mobileOpen && (
         <div className="lg:hidden bg-[#0A0B14]/95 backdrop-blur-xl border-t border-white/10 animate-in">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-1">
-            {publicLinks.map((l) => (
-              <Link key={l.href} href={l.href} className="block px-4 py-3 text-base font-medium text-slate-300 hover:text-white rounded-xl hover:bg-white/5 transition-colors" onClick={() => setMobileOpen(false)}>
-                {l.label}
-              </Link>
-            ))}
+            {publicLinks.map((l) => {
+              const active = l.href === '/' ? isLandingPage : location.startsWith(l.href);
+              return (
+                <Link key={l.href} href={l.href} className={`block px-4 py-3 text-base font-medium rounded-xl transition-colors ${active ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`} onClick={() => setMobileOpen(false)}>
+                  {l.label}
+                </Link>
+              );
+            })}
             {isAuthenticated && (
               <>
                 <div className="border-t border-white/10 my-2" />
-                {authLinks.map((l) => (
-                  <Link key={l.href} href={l.href} className="flex items-center gap-3 px-4 py-3 text-base font-medium text-slate-300 hover:text-white rounded-xl hover:bg-white/5 transition-colors" onClick={() => setMobileOpen(false)}>
-                    <l.icon className="w-5 h-5" /> {l.label}
-                  </Link>
-                ))}
+                {authLinks.map((l) => {
+                  const active = location.startsWith(l.href);
+                  return (
+                    <Link key={l.href} href={l.href} className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-colors ${active ? 'text-[#5A4BFF] bg-[#5A4BFF]/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`} onClick={() => setMobileOpen(false)}>
+                      <l.icon className="w-5 h-5" /> {l.label}
+                    </Link>
+                  );
+                })}
                 <div className="border-t border-white/10 my-2" />
                 <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-base text-slate-300 hover:text-white rounded-xl hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                   <User className="w-5 h-5" /> Profile

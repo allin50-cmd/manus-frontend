@@ -1,5 +1,32 @@
 import { useState } from 'react';
-import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap, Mail, CheckCircle } from 'lucide-react';
+import { AlertCircle, Users, Briefcase, Shield, ArrowRight, Star, BarChart3, Bell, FileText, Zap, Mail, CheckCircle, ChevronDown } from 'lucide-react';
+
+const faqItems = [
+  {
+    q: 'What is FineGuard?',
+    a: 'FineGuard is a compliance monitoring platform that automatically tracks your Companies House filings, deadlines, and director changes. It alerts you before problems arise so you never miss a filing deadline.',
+  },
+  {
+    q: 'How does pricing work?',
+    a: 'Each monitoring service costs £1 per company per month. You only pay for the services you need — Companies House, Corporate Tax, Self Assessment, or VAT Returns. There are no setup fees or long-term contracts.',
+  },
+  {
+    q: 'Do I need a credit card to start?',
+    a: 'No. You can sign up and monitor your first company for free. We only ask for payment details when you add paid services or exceed the free tier.',
+  },
+  {
+    q: 'How quickly are alerts sent?',
+    a: 'FineGuard checks Companies House records multiple times per day. When a change is detected — such as a new filing, deadline approaching, or director change — you are alerted within minutes via email or in-app notification.',
+  },
+  {
+    q: 'Can I monitor companies for my clients?',
+    a: 'Absolutely. FineGuard is built for accountancy firms and company formation agents. You can monitor hundreds of client companies from a single dashboard and manage them via the ACSP panel.',
+  },
+  {
+    q: 'Does FineGuard integrate with Microsoft 365?',
+    a: 'Yes. FineGuard integrates with Microsoft Teams, Outlook, and Power Automate so you can receive compliance alerts directly in your existing workflow. M365 integration is optional.',
+  },
+];
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
@@ -10,6 +37,30 @@ interface LandingViewProps {
   onStartWithEmail?: (email: string) => void;
   /** Open signup modal with intent + optional plan pre-selected */
   onStartWithIntent?: (intent: string, plan?: string) => void;
+}
+
+function FaqAccordion({ question, answer }: { question: string; answer: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-white/10 rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-white/5 transition-colors"
+        aria-expanded={open}
+      >
+        <span className="text-white font-semibold text-base">{question}</span>
+        <ChevronDown
+          size={20}
+          className={`text-slate-400 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-200 ${open ? 'max-h-96' : 'max-h-0'}`}
+      >
+        <p className="px-5 pb-5 text-slate-400 text-sm leading-relaxed">{answer}</p>
+      </div>
+    </div>
+  );
 }
 
 export default function LandingView({ onBookDemo, onStartMonitoring, onStartWithEmail, onStartWithIntent }: LandingViewProps) {
@@ -287,6 +338,18 @@ export default function LandingView({ onBookDemo, onStartMonitoring, onStartWith
                 <div className="text-slate-500 text-sm">{t.role}</div>
               </div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 max-w-3xl mx-auto px-6">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white text-center mb-10 sm:mb-16">
+          Frequently asked <span className="text-[#5A4BFF]">questions.</span>
+        </h2>
+        <div className="space-y-3">
+          {faqItems.map((item) => (
+            <FaqAccordion key={item.q} question={item.q} answer={item.a} />
           ))}
         </div>
       </section>

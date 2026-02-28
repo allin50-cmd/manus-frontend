@@ -1109,6 +1109,39 @@ app.get('/api/companies/:id', async (req: Request, res: Response) => {
 });
 
 /**
+ * PATCH /api/companies/:id
+ * Update company notes
+ */
+app.patch('/api/companies/:id', async (req: Request, res: Response) => {
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth) return res.status(401).json({ ok: false, error: 'Not authenticated' });
+
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    if (typeof notes !== 'string') {
+      return res.status(400).json({ ok: false, error: 'Notes must be a string' });
+    }
+
+    const [updated] = await db
+      .update(monitoredCompanies)
+      .set({ notes: notes.trim() || null })
+      .where(and(eq(monitoredCompanies.id, id), eq(monitoredCompanies.userId, auth.userId)))
+      .returning();
+
+    if (!updated) {
+      return res.status(404).json({ ok: false, error: 'Company not found' });
+    }
+
+    res.json({ ok: true, company: updated });
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update company' });
+  }
+});
+
+/**
  * DELETE /api/companies/:id
  * Remove a company from monitoring
  */
