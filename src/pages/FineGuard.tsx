@@ -20,6 +20,7 @@ const FineGuard = () => {
   const [showIntake, setShowIntake] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
+  const [submittedPayload, setSubmittedPayload] = useState<Record<string, unknown> | null>(null);
   const [formData, setFormData] = useState({
     firmName: '',
     email: '',
@@ -63,6 +64,7 @@ const FineGuard = () => {
     };
 
     console.log("POSTING JSON TO POWER AUTOMATE:", payload);
+    setSubmittedPayload(payload);
 
     // Artificial delay to simulate provisioning
     setTimeout(() => {
@@ -502,13 +504,7 @@ const FineGuard = () => {
                   <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-left overflow-hidden">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">JSON Payload Debug (Simulation)</p>
                     <pre className="text-[10px] font-mono whitespace-pre-wrap">
-                      {JSON.stringify({
-                        firmName: formData.firmName,
-                        email: formData.email,
-                        clientCount: formData.clientCount,
-                        services: formData.services,
-                        source: "FineGuard Landing"
-                      }, null, 2)}
+                      {JSON.stringify(submittedPayload, null, 2)}
                     </pre>
                   </div>
                   <button
