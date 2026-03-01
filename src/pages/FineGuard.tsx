@@ -4,9 +4,14 @@ import {
   CheckCircle,
   BarChart3,
   ChevronRight,
+  ChevronDown,
   X,
   Menu,
-  Zap
+  Zap,
+  Star,
+  TrendingUp,
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 
 const FineGuard = () => {
@@ -25,6 +30,8 @@ const FineGuard = () => {
   });
 
   const [showLegal, setShowLegal] = useState<'privacy' | 'terms' | null>(null);
+  const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [formErrors, setFormErrors] = useState<{ email?: string }>({});
 
   // Mobile Sticky CTA visibility logic
   const [showSticky, setShowSticky] = useState(false);
@@ -40,6 +47,28 @@ const FineGuard = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // ESC closes any open modal
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showLegal) { setShowLegal(null); return; }
+      if (showIntake) { setShowIntake(false); setFormStep(1); setSubmitError(null); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showLegal, showIntake]);
+
+  const validateEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const goToStep2 = () => {
+    const err: { email?: string } = {};
+    if (!validateEmail(formData.email)) err.email = 'Enter a valid email address';
+    if (Object.keys(err).length) { setFormErrors(err); return; }
+    setFormErrors({});
+    setFormStep(2);
+  };
 
   const toggleService = (service: string) => {
     setFormData(prev => ({
@@ -234,32 +263,75 @@ const FineGuard = () => {
         </div>
 
         <div className="md:col-span-6 relative order-1 md:order-2">
-          <div className="aspect-[4/3] bg-gray-200 rounded-2xl overflow-hidden shadow-2xl relative">
-            {/* Hero Placeholder/Video */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300">
-               <div className="text-center">
-                  <div className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                    <Shield className="w-8 h-8 text-blue-600" />
+          <div className="aspect-[4/3] bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-200 flex flex-col">
+            {/* Mini dashboard header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-bold">FineGuard Dashboard</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span className="text-[10px] text-gray-500">Live</span>
+              </div>
+            </div>
+            {/* Stat row */}
+            <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+              {[
+                { label: 'VAT', count: 23, color: 'text-blue-600' },
+                { label: 'Corp Tax', count: 18, color: 'text-purple-600' },
+                { label: 'CH', count: 12, color: 'text-green-600' }
+              ].map((s, i) => (
+                <div key={i} className="px-4 py-3 text-center">
+                  <p className={`text-xl font-bold ${s.color}`}>{s.count}</p>
+                  <p className="text-[10px] text-gray-400">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            {/* Client rows */}
+            <div className="flex-1 divide-y divide-gray-50 overflow-hidden">
+              {[
+                { name: 'Meridian Consulting', type: 'VAT Return', days: 3, status: 'urgent' },
+                { name: 'Ashford & Sons Ltd', type: 'Corporation Tax', days: 14, status: 'warning' },
+                { name: 'Blue Ridge Tech', type: 'Companies House', days: 31, status: 'ok' },
+                { name: 'Hartley Retail Group', type: 'VAT Return', days: 47, status: 'ok' }
+              ].map((row, i) => (
+                <div key={i} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-800">{row.name}</p>
+                    <p className="text-[10px] text-gray-400">{row.type}</p>
                   </div>
-                  <span className="text-sm font-medium text-gray-400 uppercase tracking-widest">Dashboard Preview</span>
-               </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    row.status === 'urgent' ? 'bg-red-100 text-red-700' :
+                    row.status === 'warning' ? 'bg-amber-100 text-amber-700' :
+                    'bg-green-100 text-green-700'
+                  }`}>
+                    {row.days}d
+                  </span>
+                </div>
+              ))}
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Floating Card */}
-            <div
-              className="absolute bottom-6 right-6 bg-white p-4 rounded-xl shadow-2xl border border-gray-100 w-[240px] md:w-[260px]"
-              style={{ animation: 'float 4s ease-in-out infinite' }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Live Alert</span>
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+      {/* Trust / Stats Band */}
+      <section className="bg-white border-y border-gray-100 py-10">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <p className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">Trusted by 200+ UK accounting practices</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { value: '200+', label: 'Practices onboarded', icon: <Shield className="w-5 h-5 text-blue-500" /> },
+              { value: '18,400', label: 'Deadlines monitored', icon: <TrendingUp className="w-5 h-5 text-green-500" /> },
+              { value: '0', label: 'Missed filings (YTD)', icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
+              { value: '60s', label: 'HMRC refresh interval', icon: <Clock className="w-5 h-5 text-blue-500" /> }
+            ].map((stat, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex justify-center mb-2">{stat.icon}</div>
+                <p className="text-3xl font-bold tracking-tight">{stat.value}</p>
+                <p className="text-xs text-gray-500">{stat.label}</p>
               </div>
-              <p className="text-xs font-semibold mb-1">VAT Return: ABC Ltd</p>
-              <p className="text-[10px] text-gray-500">Deadline: 07 July (3 days left)</p>
-              <div className="mt-3 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 w-[85%]"></div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -343,23 +415,52 @@ const FineGuard = () => {
             <p className="text-gray-400 max-w-2xl mx-auto">One screen. Every client. Zero blind spots.</p>
           </div>
 
-          <div className="relative rounded-t-3xl border-t border-x border-gray-800 bg-gray-900 aspect-video shadow-2xl overflow-hidden">
-             {/* Dashboard Mockup */}
-             <div className="p-8 h-full">
-                <div className="flex gap-4 mb-8">
-                  <div className="w-1/4 h-32 bg-gray-800 rounded-xl animate-pulse"></div>
-                  <div className="w-1/4 h-32 bg-gray-800 rounded-xl animate-pulse"></div>
-                  <div className="w-1/4 h-32 bg-gray-800 rounded-xl animate-pulse"></div>
-                  <div className="w-1/4 h-32 bg-gray-800 rounded-xl animate-pulse"></div>
+          <div className="relative rounded-t-3xl border-t border-x border-gray-800 bg-gray-900 shadow-2xl overflow-hidden">
+            {/* Stat cards */}
+            <div className="grid grid-cols-4 gap-4 p-6 pb-0">
+              {[
+                { label: 'Active Clients', value: '82', sub: '+4 this month', color: 'text-blue-400' },
+                { label: 'VAT Filings', value: '247', sub: '3 due this week', color: 'text-purple-400' },
+                { label: 'Corp Tax', value: '118', sub: 'All on track', color: 'text-green-400' },
+                { label: 'Overdue', value: '0', sub: 'Perfect score', color: 'text-green-400' }
+              ].map((card, i) => (
+                <div key={i} className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{card.label}</p>
+                  <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">{card.sub}</p>
                 </div>
-                <div className="w-full h-full bg-gray-800 rounded-xl animate-pulse"></div>
-             </div>
+              ))}
+            </div>
 
-             {/* Center Overlay Caption */}
-             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-full flex items-center gap-3">
-               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-               <span className="text-sm font-medium">Monitoring 412 active filings across 82 clients</span>
-             </div>
+            {/* Table */}
+            <div className="p-6">
+              <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="grid grid-cols-4 px-4 py-2 border-b border-gray-700 text-[10px] text-gray-500 uppercase tracking-wider">
+                  <span>Client</span><span>Filing type</span><span>Deadline</span><span>Status</span>
+                </div>
+                {[
+                  { client: 'Meridian Consulting', type: 'VAT Return', deadline: '07 Jul 2025', badge: 'bg-red-900 text-red-300', status: 'Urgent' },
+                  { client: 'Ashford & Sons', type: 'Corporation Tax', deadline: '31 Jul 2025', badge: 'bg-amber-900 text-amber-300', status: 'Due soon' },
+                  { client: 'Blue Ridge Tech', type: 'Companies House', deadline: '14 Aug 2025', badge: 'bg-green-900 text-green-300', status: 'On track' },
+                  { client: 'Hartley Retail', type: 'VAT Return', deadline: '07 Sep 2025', badge: 'bg-green-900 text-green-300', status: 'On track' },
+                ].map((row, i) => (
+                  <div key={i} className="grid grid-cols-4 px-4 py-3 border-b border-gray-700/50 text-xs hover:bg-gray-750 transition-colors">
+                    <span className="text-white font-medium">{row.client}</span>
+                    <span className="text-gray-400">{row.type}</span>
+                    <span className="text-gray-400">{row.deadline}</span>
+                    <span className={`inline-flex items-center self-center px-2 py-0.5 rounded-full text-[10px] font-bold w-fit ${row.badge}`}>{row.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom bar */}
+            <div className="px-6 pb-6">
+              <div className="bg-white/5 backdrop-blur border border-white/10 px-5 py-3 rounded-full flex items-center gap-3 w-fit mx-auto">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">Monitoring 412 active filings across 82 clients</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -394,6 +495,48 @@ const FineGuard = () => {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-24 bg-white border-t border-gray-100">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <h2 className="text-3xl font-semibold text-center mb-14">What practices say</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "We had a VAT penalty two years ago that cost us a client and £3,000. Since switching to FineGuard we haven't missed a single deadline across 60+ clients.",
+                name: "Sarah Okafor",
+                firm: "Okafor & Partners, Birmingham",
+                rating: 5
+              },
+              {
+                quote: "The 60-second HMRC refresh is a game changer. We used to check manually every morning — now the system just tells us when something needs action.",
+                name: "James Whitfield",
+                firm: "Whitfield Accounting, Leeds",
+                rating: 5
+              },
+              {
+                quote: "Setup took about 10 minutes. Our whole team was using it by the end of the day. The dashboard is the first thing we open every morning.",
+                name: "Priya Mehta",
+                firm: "Meridian Accountants, London",
+                rating: 5
+              }
+            ].map((t, i) => (
+              <div key={i} className="p-8 border border-gray-200 rounded-2xl bg-gray-50 flex flex-col gap-6">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: t.rating }).map((_, j) => (
+                    <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 leading-relaxed text-sm flex-1">"{t.quote}"</p>
+                <div>
+                  <p className="font-semibold text-sm">{t.name}</p>
+                  <p className="text-xs text-gray-400">{t.firm}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="py-24 bg-gray-100 border-t border-gray-200">
         <div className="max-w-[1200px] mx-auto px-6 text-center">
@@ -405,6 +548,52 @@ const FineGuard = () => {
           >
             {variant === 'A' ? 'Start monitoring' : 'Protect your firm now'}
           </button>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-24 bg-white border-t border-gray-100">
+        <div className="max-w-[720px] mx-auto px-6">
+          <h2 className="text-3xl font-semibold text-center mb-12">Common questions</h2>
+          <div className="space-y-2">
+            {[
+              {
+                q: 'Which filing types does FineGuard monitor?',
+                a: 'VAT returns, Corporation Tax (CT600), Companies House confirmation statements and accounts, and Self Assessment deadlines. Coverage expands regularly — see the roadmap in your dashboard.'
+              },
+              {
+                q: 'How does FineGuard connect to HMRC and Companies House?',
+                a: 'We use the official HMRC MTD (Making Tax Digital) and Companies House REST APIs, polling every 60 seconds. No screen-scraping; no shared credentials.'
+              },
+              {
+                q: 'What happens if a deadline is about to be missed?',
+                a: 'You receive a graded alert sequence: email at 30 days, 14 days, 7 days, 3 days, and 1 day before the deadline, plus optional SMS. Each alert links directly to the relevant filing portal.'
+              },
+              {
+                q: 'Is my client data secure?',
+                a: 'Data is processed within the Microsoft Azure UK South region, encrypted at rest (AES-256) and in transit (TLS 1.3). FineGuard holds ISO 27001 certification and is fully GDPR-compliant.'
+              },
+              {
+                q: 'Can I cancel at any time?',
+                a: 'Yes. Monthly subscriptions can be cancelled from the billing portal with immediate effect. You retain read-only access to historical data for 90 days after cancellation.'
+              }
+            ].map((item, i) => (
+              <div key={i} className="border border-gray-200 rounded-2xl overflow-hidden">
+                <button
+                  className="w-full flex justify-between items-center p-6 text-left hover:bg-gray-50 transition-colors"
+                  onClick={() => setFaqOpen(faqOpen === i ? null : i)}
+                >
+                  <span className="font-semibold text-sm pr-4">{item.q}</span>
+                  <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${faqOpen === i ? 'rotate-180' : ''}`} />
+                </button>
+                {faqOpen === i && (
+                  <div className="px-6 pb-6 text-sm text-gray-500 leading-relaxed border-t border-gray-100 pt-4">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -443,8 +632,18 @@ const FineGuard = () => {
 
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-bold">Practice Intake</h2>
-              <button onClick={() => {setShowIntake(false); setFormStep(1); setSubmitError(null)}} className="p-2 hover:bg-gray-100 rounded-full">
+              <div>
+                <h2 className="text-xl font-bold">Practice Intake</h2>
+                {formStep <= 2 && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {[1, 2].map(s => (
+                      <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${s <= formStep ? 'bg-blue-600 w-8' : 'bg-gray-200 w-4'}`} />
+                    ))}
+                    <span className="text-[10px] text-gray-400 font-medium ml-1">Step {formStep} of 2</span>
+                  </div>
+                )}
+              </div>
+              <button onClick={() => {setShowIntake(false); setFormStep(1); setSubmitError(null); setFormErrors({});}} className="p-2 hover:bg-gray-100 rounded-full">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -467,10 +666,11 @@ const FineGuard = () => {
                     <input
                       type="email"
                       placeholder="you@firm.com"
-                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full p-4 bg-gray-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) => { setFormData({...formData, email: e.target.value}); setFormErrors({}); }}
                     />
+                    {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-2">Number of Clients</label>
@@ -488,7 +688,7 @@ const FineGuard = () => {
                   </div>
                   <button
                     disabled={!formData.firmName || !formData.email || !formData.clientCount}
-                    onClick={() => setFormStep(2)}
+                    onClick={goToStep2}
                     className="w-full py-4 bg-black text-white rounded-xl font-bold disabled:opacity-30 transition-all"
                   >
                     Next: Configure Services
