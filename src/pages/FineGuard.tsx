@@ -14,6 +14,13 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+const PROVISION_STEPS = [
+  'Connecting to Power Automate',
+  'Creating monitoring tenant',
+  'Configuring HMRC API access',
+  'Dispatching welcome email',
+];
+
 const LIVE_ALERTS = [
   { msg: 'Alert: Meridian Consulting — VAT return due in 3 days', color: 'bg-red-50 border-red-100 text-red-700' },
   { msg: 'Checked: Ashford & Sons — Corporation Tax on track', color: 'bg-green-50 border-green-100 text-green-700' },
@@ -51,6 +58,10 @@ const FineGuard = () => {
   const [alertIndex, setAlertIndex] = useState(0);
   const [counts, setCounts] = useState(STAT_TARGETS.map(() => 0));
   const [countersStarted, setCountersStarted] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [roiClients, setRoiClients] = useState(50);
+  const [provisionStep, setProvisionStep] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   // Mobile Sticky CTA visibility logic
   const [showSticky, setShowSticky] = useState(false);
@@ -99,6 +110,32 @@ const FineGuard = () => {
     if (trustRef.current) obs.observe(trustRef.current);
     return () => obs.disconnect();
   }, [countersStarted]);
+
+  // Scroll-reveal for sections
+  useEffect(() => {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('[data-reveal]').forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
+  // Drive provision step checklist while form is at step 3
+  useEffect(() => {
+    if (formStep !== 3) { setProvisionStep(0); return; }
+    let s = 0;
+    const id = setInterval(() => {
+      s++;
+      if (s < PROVISION_STEPS.length) setProvisionStep(s);
+      else clearInterval(id);
+    }, 480);
+    return () => clearInterval(id);
+  }, [formStep]);
 
   // ESC closes any open modal
   useEffect(() => {
@@ -167,16 +204,24 @@ const FineGuard = () => {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {
-      // fallback for non-secure contexts
+    const doFallback = () => {
       const el = document.createElement('textarea');
       el.value = text;
       document.body.appendChild(el);
       el.select();
       document.execCommand('copy');
       document.body.removeChild(el);
+    };
+    navigator.clipboard.writeText(text).catch(doFallback).finally(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  const starterPrice = billingCycle === 'annual' ? 39 : 49;
+  const proPrice     = billingCycle === 'annual' ? 79 : 99;
+  const roiHoursSaved = Math.round(roiClients * 0.5);
+  const roiNetSaving  = Math.max(0, roiHoursSaved * 75 - proPrice);
 
   // Theme Constants
   const colors = {
@@ -397,7 +442,7 @@ const FineGuard = () => {
       </section>
 
       {/* Reality Split */}
-      <section className="bg-white py-24">
+      <section className="bg-white py-24" data-reveal>
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-0 border border-gray-200 rounded-3xl overflow-hidden">
             <div className="p-12 bg-gray-50">
@@ -434,7 +479,7 @@ const FineGuard = () => {
       </section>
 
       {/* How It Works */}
-      <section id="how" className="py-24 max-w-[1200px] mx-auto px-6">
+      <section id="how" className="py-24 max-w-[1200px] mx-auto px-6" data-reveal>
         <h2 className="text-3xl font-semibold mb-12 text-center">Three steps to safety</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[
@@ -542,15 +587,31 @@ const FineGuard = () => {
 
       {/* Pricing */}
       <section id="pricing" className="py-24 px-6">
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-[1200px] mx-auto" data-reveal>
           <h2 className="text-3xl font-semibold text-center mb-4">Simple, transparent pricing</h2>
-          <p className="text-center text-gray-500 mb-14">No setup fees. Cancel any time. All plans include a 14-day free trial.</p>
+          <p className="text-center text-gray-500 mb-8">No setup fees. Cancel any time. All plans include a 14-day free trial.</p>
+
+          {/* Billing toggle */}
+          <div className="flex items-center justify-center gap-4 mb-14">
+            <span className={`text-sm font-medium transition-colors ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-400'}`}>Monthly</span>
+            <button
+              onClick={() => setBillingCycle(b => b === 'monthly' ? 'annual' : 'monthly')}
+              aria-label="Toggle billing cycle"
+              className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${billingCycle === 'annual' ? 'bg-blue-600' : 'bg-gray-200'}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${billingCycle === 'annual' ? 'translate-x-6' : 'translate-x-0.5'}`} />
+            </button>
+            <span className={`text-sm font-medium transition-colors ${billingCycle === 'annual' ? 'text-gray-900' : 'text-gray-400'}`}>
+              Annual <span className="text-green-600 font-bold ml-1">–20%</span>
+            </span>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-6 items-start">
             {/* Starter */}
             <div className="p-8 bg-white border border-gray-200 rounded-3xl shadow-sm">
               <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Starter</h3>
               <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-4xl font-bold">£49</span>
+                <span className="text-4xl font-bold tabular-nums">£{starterPrice}</span>
                 <span className="text-gray-400 text-sm">/mo</span>
               </div>
               <p className="text-xs text-gray-400 mb-8">Up to 30 monitored clients</p>
@@ -572,7 +633,7 @@ const FineGuard = () => {
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-wider">Most popular</div>
               <h3 className="text-sm font-bold text-gray-400 uppercase mb-4">Practice Pro</h3>
               <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-4xl font-bold">£99</span>
+                <span className="text-4xl font-bold tabular-nums">£{proPrice}</span>
                 <span className="text-gray-400 text-sm">/mo</span>
               </div>
               <p className="text-xs text-gray-400 mb-8">Up to 100 monitored clients</p>
@@ -613,7 +674,7 @@ const FineGuard = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 bg-white border-t border-gray-100">
+      <section className="py-24 bg-white border-t border-gray-100" data-reveal>
         <div className="max-w-[1200px] mx-auto px-6">
           <h2 className="text-3xl font-semibold text-center mb-14">What practices say</h2>
           <div className="grid md:grid-cols-3 gap-6">
@@ -654,6 +715,56 @@ const FineGuard = () => {
         </div>
       </section>
 
+      {/* ROI Calculator */}
+      <section className="py-24 bg-gray-50 border-t border-gray-100" data-reveal>
+        <div className="max-w-[800px] mx-auto px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-semibold mb-3">What's your practice worth per hour?</h2>
+            <p className="text-gray-500">Drag to see how much FineGuard saves you each month.</p>
+          </div>
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-10 space-y-8">
+            <div>
+              <div className="flex justify-between items-baseline mb-4">
+                <label className="text-sm font-semibold">Monitored clients</label>
+                <span className="text-3xl font-bold tabular-nums">{roiClients}</span>
+              </div>
+              <input
+                type="range" min={10} max={500} step={5} value={roiClients}
+                onChange={e => setRoiClients(+e.target.value)}
+                className="w-full accent-blue-600 h-2 rounded-full cursor-pointer"
+              />
+              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>10</span><span>500</span></div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 pt-2">
+              <div className="text-center p-5 bg-blue-50 rounded-2xl">
+                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2">Hours saved / mo</p>
+                <p className="text-3xl font-bold text-blue-700 tabular-nums">{roiHoursSaved}</p>
+                <p className="text-xs text-blue-400 mt-1">at 30 min/client</p>
+              </div>
+              <div className="text-center p-5 bg-green-50 rounded-2xl">
+                <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider mb-2">Value saved / mo</p>
+                <p className="text-3xl font-bold text-green-700 tabular-nums">£{(roiHoursSaved * 75).toLocaleString()}</p>
+                <p className="text-xs text-green-400 mt-1">at £75/hr billing rate</p>
+              </div>
+              <div className="text-center p-5 bg-gray-900 rounded-2xl">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Net saving / mo</p>
+                <p className="text-3xl font-bold text-white tabular-nums">£{roiNetSaving.toLocaleString()}</p>
+                <p className="text-xs text-gray-400 mt-1">after Pro plan cost</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowIntake(true)}
+              className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg"
+              style={{ backgroundColor: variant === 'B' ? '#dc2626' : '#2563eb' }}
+            >
+              Start saving £{roiNetSaving.toLocaleString()} / month →
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="py-24 bg-gray-100 border-t border-gray-200">
         <div className="max-w-[1200px] mx-auto px-6 text-center">
@@ -669,7 +780,7 @@ const FineGuard = () => {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-24 bg-white border-t border-gray-100">
+      <section id="faq" className="py-24 bg-white border-t border-gray-100" data-reveal>
         <div className="max-w-[720px] mx-auto px-6">
           <h2 className="text-3xl font-semibold text-center mb-12">Common questions</h2>
           <div className="space-y-2">
@@ -850,11 +961,26 @@ const FineGuard = () => {
               )}
 
               {formStep === 3 && (
-                <div className="py-20 text-center space-y-6">
-                  <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <div>
-                    <p className="font-bold text-lg">Triggering Power Automate...</p>
-                    <p className="text-gray-500 text-sm mt-2">Provisioning your monitoring tenant ID.</p>
+                <div className="py-12 space-y-8">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-14 h-14 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="font-bold text-lg text-center">Provisioning your environment…</p>
+                  </div>
+                  <div className="space-y-3 max-w-xs mx-auto">
+                    {PROVISION_STEPS.map((step, i) => (
+                      <div key={i} className={`flex items-center gap-3 text-sm transition-all duration-300 ${
+                        i < provisionStep ? 'text-green-600' :
+                        i === provisionStep ? 'text-gray-900 font-medium' : 'text-gray-300'
+                      }`}>
+                        {i < provisionStep
+                          ? <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                          : i === provisionStep
+                            ? <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                            : <div className="w-4 h-4 rounded-full border-2 border-gray-200 flex-shrink-0" />
+                        }
+                        {step}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -952,6 +1078,13 @@ const FineGuard = () => {
         </div>
       )}
 
+      {/* Clipboard toast */}
+      {copied && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[300] bg-gray-900 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-2xl pointer-events-none" style={{ animation: 'fadeSlideIn 0.3s ease' }}>
+          Copied to clipboard ✓
+        </div>
+      )}
+
       {/* Global CSS for animations */}
       <style>{`
         @keyframes float {
@@ -964,6 +1097,15 @@ const FineGuard = () => {
           to   { opacity: 1; transform: translateX(0); }
         }
         html { scroll-behavior: smooth; }
+        [data-reveal] {
+          opacity: 0;
+          transform: translateY(28px);
+          transition: opacity 0.6s cubic-bezier(.16,1,.3,1), transform 0.6s cubic-bezier(.16,1,.3,1);
+        }
+        [data-reveal].visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
       `}</style>
     </div>
   );
