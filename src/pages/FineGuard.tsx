@@ -21,6 +21,7 @@ const FineGuard = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [submittedPayload, setSubmittedPayload] = useState<Record<string, unknown> | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firmName: '',
     email: '',
@@ -54,22 +55,35 @@ const FineGuard = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     setFormStep(3); // Loading/Processing
 
-    // Simulate Power Automate POST
     const payload = {
       ...formData,
       source: `FineGuard Landing - Variant ${variant}`,
       timestamp: new Date().toISOString()
     };
 
-    console.log("POSTING JSON TO POWER AUTOMATE:", payload);
-    setSubmittedPayload(payload);
+    const webhookUrl = import.meta.env.VITE_POWER_AUTOMATE_URL as string | undefined;
 
-    // Artificial delay to simulate provisioning
-    setTimeout(() => {
+    try {
+      if (webhookUrl) {
+        const res = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      } else {
+        // No webhook configured — simulate a short delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      setSubmittedPayload(payload);
       setFormStep(4); // Success
-    }, 2000);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Submission failed');
+      setFormStep(2); // Return to service selection so user can retry
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -399,7 +413,7 @@ const FineGuard = () => {
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-xl font-bold">Practice Intake</h2>
-              <button onClick={() => {setShowIntake(false); setFormStep(1)}} className="p-2 hover:bg-gray-100 rounded-full">
+              <button onClick={() => {setShowIntake(false); setFormStep(1); setSubmitError(null)}} className="p-2 hover:bg-gray-100 rounded-full">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -453,6 +467,11 @@ const FineGuard = () => {
 
               {formStep === 2 && (
                 <div className="space-y-6">
+                  {submitError && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                      Submission failed: {submitError}. Please try again.
+                    </div>
+                  )}
                   <h3 className="font-bold">Which services do you provide?</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {['VAT', 'Companies House', 'Corporation Tax', 'Self Assessment'].map(service => (
@@ -508,7 +527,7 @@ const FineGuard = () => {
                     </pre>
                   </div>
                   <button
-                    onClick={() => {setShowIntake(false); setFormStep(1)}}
+                    onClick={() => {setShowIntake(false); setFormStep(1); setSubmitError(null)}}
                     className="w-full py-4 bg-black text-white rounded-xl font-bold"
                   >
                     Finish
