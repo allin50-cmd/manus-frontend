@@ -14,6 +14,21 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+const LIVE_ALERTS = [
+  { msg: 'Alert: Meridian Consulting — VAT return due in 3 days', color: 'bg-red-50 border-red-100 text-red-700' },
+  { msg: 'Checked: Ashford & Sons — Corporation Tax on track', color: 'bg-green-50 border-green-100 text-green-700' },
+  { msg: 'Alert: Blue Ridge Tech — CH confirmation due in 31 days', color: 'bg-amber-50 border-amber-100 text-amber-700' },
+];
+
+const STAT_TARGETS = [200, 18400, 0, 60];
+
+const formatCount = (idx: number, val: number) => {
+  if (idx === 0) return `${val.toLocaleString()}+`;
+  if (idx === 1) return val.toLocaleString();
+  if (idx === 2) return `${val}`;
+  return `${val}s`;
+};
+
 const FineGuard = () => {
   const [variant, setVariant] = useState<'A' | 'B'>('A'); // 'A' (Control) or 'B' (Urgent)
   const [showIntake, setShowIntake] = useState(false);
@@ -32,21 +47,58 @@ const FineGuard = () => {
   const [showLegal, setShowLegal] = useState<'privacy' | 'terms' | null>(null);
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [formErrors, setFormErrors] = useState<{ email?: string }>({});
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [alertIndex, setAlertIndex] = useState(0);
+  const [counts, setCounts] = useState(STAT_TARGETS.map(() => 0));
+  const [countersStarted, setCountersStarted] = useState(false);
 
   // Mobile Sticky CTA visibility logic
   const [showSticky, setShowSticky] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
+  const trustRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
+      setNavScrolled(window.scrollY > 24);
       if (heroRef.current) {
         const heroBottom = heroRef.current.getBoundingClientRect().bottom;
         setShowSticky(heroBottom < 0);
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Cycling live alert ticker
+  useEffect(() => {
+    const t = setInterval(() => setAlertIndex(i => (i + 1) % LIVE_ALERTS.length), 3200);
+    return () => clearInterval(t);
+  }, []);
+
+  // Animated counters — fire once when trust band enters viewport
+  useEffect(() => {
+    if (countersStarted) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setCountersStarted(true);
+      STAT_TARGETS.forEach((target, idx) => {
+        if (target === 0) return;
+        const duration = 1400;
+        const steps = 60;
+        const step = target / steps;
+        let current = 0;
+        let tick = 0;
+        const id = setInterval(() => {
+          tick++;
+          current = Math.min(Math.round(step * tick), target);
+          setCounts(prev => { const next = [...prev]; next[idx] = current; return next; });
+          if (current >= target) clearInterval(id);
+        }, duration / steps);
+      });
+    }, { threshold: 0.4 });
+    if (trustRef.current) obs.observe(trustRef.current);
+    return () => obs.disconnect();
+  }, [countersStarted]);
 
   // ESC closes any open modal
   useEffect(() => {
@@ -154,26 +206,28 @@ const FineGuard = () => {
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="max-w-[1200px] mx-auto px-6 py-6 flex justify-between items-center">
-        <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
-          <Shield className="w-8 h-8 text-blue-600" />
-          <span>FineGuard</span>
-        </div>
-        <div className="hidden md:flex gap-8 items-center text-sm font-medium text-gray-500">
-          <a href="#how" className="hover:text-black">How it works</a>
-          <a href="#pricing" className="hover:text-black">Pricing</a>
-          <button
-            onClick={() => setShowIntake(true)}
-            className="bg-black text-white px-6 py-2.5 rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            {variant === 'A' ? 'Start monitoring' : 'Protect your firm'}
+      {/* Navigation — sticky with scroll-aware blur */}
+      <div className={`sticky top-0 z-50 transition-all duration-300 ${navScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100' : 'bg-transparent'}`}>
+        <nav className="max-w-[1200px] mx-auto px-6 py-5 flex justify-between items-center">
+          <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
+            <Shield className="w-8 h-8 text-blue-600" />
+            <span>FineGuard</span>
+          </div>
+          <div className="hidden md:flex gap-8 items-center text-sm font-medium text-gray-500">
+            <a href="#how" className="hover:text-black transition-colors">How it works</a>
+            <a href="#pricing" className="hover:text-black transition-colors">Pricing</a>
+            <a href="#faq" className="hover:text-black transition-colors">FAQ</a>
+            <button
+              onClick={() => setShowIntake(true)}
+              className="bg-black text-white px-6 py-2.5 rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              {variant === 'A' ? 'Start monitoring' : 'Protect your firm'}
+            </button>
+          </div>
+          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
-        </div>
-        <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
-          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </nav>
+        </nav>
 
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
@@ -200,6 +254,7 @@ const FineGuard = () => {
           </button>
         </div>
       )}
+      </div>{/* end sticky nav wrapper */}
 
       {/* Hero Section */}
       <section ref={heroRef} className={`max-w-[1200px] mx-auto px-6 pt-12 pb-20 grid md:grid-cols-12 gap-12 items-center ${variant === 'B' ? 'bg-gray-50' : ''}`}>
@@ -311,6 +366,11 @@ const FineGuard = () => {
                 </div>
               ))}
             </div>
+            {/* Cycling live alert ticker */}
+            <div key={alertIndex} className={`flex items-center gap-2 px-5 py-2.5 border-t text-[10px] font-medium ${LIVE_ALERTS[alertIndex].color}`} style={{ animation: 'fadeSlideIn 0.35s ease' }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70 flex-shrink-0"></span>
+              {LIVE_ALERTS[alertIndex].msg}
+            </div>
           </div>
         </div>
       </section>
@@ -319,16 +379,16 @@ const FineGuard = () => {
       <section className="bg-white border-y border-gray-100 py-10">
         <div className="max-w-[1200px] mx-auto px-6">
           <p className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">Trusted by 200+ UK accounting practices</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div ref={trustRef} className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: '200+', label: 'Practices onboarded', icon: <Shield className="w-5 h-5 text-blue-500" /> },
-              { value: '18,400', label: 'Deadlines monitored', icon: <TrendingUp className="w-5 h-5 text-green-500" /> },
-              { value: '0', label: 'Missed filings (YTD)', icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
-              { value: '60s', label: 'HMRC refresh interval', icon: <Clock className="w-5 h-5 text-blue-500" /> }
-            ].map((stat, i) => (
-              <div key={i} className="space-y-1">
+              { idx: 0, label: 'Practices onboarded', icon: <Shield className="w-5 h-5 text-blue-500" /> },
+              { idx: 1, label: 'Deadlines monitored', icon: <TrendingUp className="w-5 h-5 text-green-500" /> },
+              { idx: 2, label: 'Missed filings (YTD)', icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
+              { idx: 3, label: 'HMRC refresh interval', icon: <Clock className="w-5 h-5 text-blue-500" /> }
+            ].map((stat) => (
+              <div key={stat.idx} className="space-y-1">
                 <div className="flex justify-center mb-2">{stat.icon}</div>
-                <p className="text-3xl font-bold tracking-tight">{stat.value}</p>
+                <p className="text-3xl font-bold tracking-tight tabular-nums">{formatCount(stat.idx, counts[stat.idx])}</p>
                 <p className="text-xs text-gray-500">{stat.label}</p>
               </div>
             ))}
@@ -407,6 +467,21 @@ const FineGuard = () => {
         </div>
       </section>
 
+      {/* Integration Strip */}
+      <section className="py-14 bg-gray-50 border-y border-gray-100">
+        <div className="max-w-[1200px] mx-auto px-6 text-center">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">Connects with your existing tools</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {['Xero', 'Sage', 'IRIS', 'QuickBooks', 'CCH', 'Digita', 'TaxCalc', 'BrightPay'].map(tool => (
+              <div key={tool} className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-500 shadow-sm hover:border-gray-300 hover:text-gray-700 transition-colors">
+                {tool}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-6">API integrations · CSV import · Direct OAuth</p>
+        </div>
+      </section>
+
       {/* Control Panel (Full Width Image) */}
       <section className="py-24 bg-black text-white overflow-hidden">
         <div className="max-w-[1200px] mx-auto px-6">
@@ -467,31 +542,73 @@ const FineGuard = () => {
 
       {/* Pricing */}
       <section id="pricing" className="py-24 px-6">
-        <div className="max-w-[400px] mx-auto p-10 bg-white border border-gray-200 rounded-3xl shadow-xl">
-          <div className="text-center mb-8">
-            <h3 className="text-lg font-bold text-blue-600 uppercase mb-2">Practice Pro</h3>
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="text-5xl font-bold">£99</span>
-              <span className="text-gray-400">/mo</span>
-            </div>
-            <p className="text-gray-500 mt-4">Up to 100 monitored clients</p>
-          </div>
-
-          <div className="space-y-4 mb-10">
-            {['Unlimited VAT checks', 'Companies House direct sync', 'Custom SMS alerts', 'Multi-user access'].map((item, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-gray-600">{item}</span>
+        <div className="max-w-[1200px] mx-auto">
+          <h2 className="text-3xl font-semibold text-center mb-4">Simple, transparent pricing</h2>
+          <p className="text-center text-gray-500 mb-14">No setup fees. Cancel any time. All plans include a 14-day free trial.</p>
+          <div className="grid md:grid-cols-3 gap-6 items-start">
+            {/* Starter */}
+            <div className="p-8 bg-white border border-gray-200 rounded-3xl shadow-sm">
+              <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Starter</h3>
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-4xl font-bold">£49</span>
+                <span className="text-gray-400 text-sm">/mo</span>
               </div>
-            ))}
-          </div>
+              <p className="text-xs text-gray-400 mb-8">Up to 30 monitored clients</p>
+              <div className="space-y-3 mb-8">
+                {['VAT monitoring', 'Companies House sync', 'Email alerts', '1 user seat'].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setShowIntake(true)} className="w-full py-3 border border-gray-300 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">
+                Start free trial
+              </button>
+            </div>
 
-          <button
-            onClick={() => setShowIntake(true)}
-            className="w-full py-4 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg"
-          >
-            Get Started
-          </button>
+            {/* Pro — highlighted */}
+            <div className="p-8 bg-black text-white rounded-3xl shadow-2xl ring-2 ring-black relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-wider">Most popular</div>
+              <h3 className="text-sm font-bold text-gray-400 uppercase mb-4">Practice Pro</h3>
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-4xl font-bold">£99</span>
+                <span className="text-gray-400 text-sm">/mo</span>
+              </div>
+              <p className="text-xs text-gray-400 mb-8">Up to 100 monitored clients</p>
+              <div className="space-y-3 mb-8">
+                {['Everything in Starter', 'Corporation Tax monitoring', 'SMS + email alerts', '5 user seats', 'Priority support'].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm text-gray-300">
+                    <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setShowIntake(true)} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-lg">
+                Start free trial
+              </button>
+            </div>
+
+            {/* Enterprise */}
+            <div className="p-8 bg-white border border-gray-200 rounded-3xl shadow-sm">
+              <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Enterprise</h3>
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-4xl font-bold">Custom</span>
+              </div>
+              <p className="text-xs text-gray-400 mb-8">Unlimited clients · bespoke SLA</p>
+              <div className="space-y-3 mb-8">
+                {['Everything in Pro', 'Unlimited client seats', 'Dedicated account manager', 'Custom API access', 'White-label option'].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setShowIntake(true)} className="w-full py-3 border border-gray-300 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">
+                Talk to sales
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -842,9 +959,11 @@ const FineGuard = () => {
           50% { transform: translateY(-10px); }
           100% { transform: translateY(0px); }
         }
-        html {
-          scroll-behavior: smooth;
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateX(-6px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
+        html { scroll-behavior: smooth; }
       `}</style>
     </div>
   );
