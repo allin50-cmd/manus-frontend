@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Shield,
-  AlertTriangle,
   CheckCircle,
-  Clock,
   BarChart3,
-  ArrowRight,
   ChevronRight,
   X,
   Menu,
-  Zap,
-  Lock,
-  ExternalLink,
-  ChevronDown
+  Zap
 } from 'lucide-react';
 
 const FineGuard = () => {
@@ -29,6 +23,8 @@ const FineGuard = () => {
     clientCount: '',
     services: [] as string[]
   });
+
+  const [showLegal, setShowLegal] = useState<'privacy' | 'terms' | null>(null);
 
   // Mobile Sticky CTA visibility logic
   const [showSticky, setShowSticky] = useState(false);
@@ -54,8 +50,7 @@ const FineGuard = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setSubmitError(null);
     setFormStep(3); // Loading/Processing
 
@@ -91,12 +86,15 @@ const FineGuard = () => {
   };
 
   const copyToClipboard = (text: string) => {
-    const el = document.createElement('textarea');
-    el.value = text;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
+    navigator.clipboard.writeText(text).catch(() => {
+      // fallback for non-secure contexts
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    });
   };
 
   // Theme Constants
@@ -143,10 +141,36 @@ const FineGuard = () => {
             {variant === 'A' ? 'Start monitoring' : 'Protect your firm'}
           </button>
         </div>
-        <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-          <Menu />
+        <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
+          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-white border-b border-gray-200 px-6 pb-6 space-y-4 shadow-sm">
+          <a
+            href="#how"
+            className="block py-3 text-sm font-medium text-gray-600 hover:text-black border-b border-gray-100"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            How it works
+          </a>
+          <a
+            href="#pricing"
+            className="block py-3 text-sm font-medium text-gray-600 hover:text-black border-b border-gray-100"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Pricing
+          </a>
+          <button
+            onClick={() => { setIsMenuOpen(false); setShowIntake(true); }}
+            className="w-full py-3 bg-black text-white rounded-xl font-bold text-sm"
+          >
+            {variant === 'A' ? 'Start monitoring' : 'Protect your firm'}
+          </button>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section ref={heroRef} className={`max-w-[1200px] mx-auto px-6 pt-12 pb-20 grid md:grid-cols-12 gap-12 items-center ${variant === 'B' ? 'bg-gray-50' : ''}`}>
@@ -180,7 +204,10 @@ const FineGuard = () => {
               {variant === 'A' ? 'Start monitoring' : 'Protect your firm now'}
               <ChevronRight className="w-5 h-5" />
             </button>
-            <button className="px-8 py-4 rounded-xl text-lg font-semibold border border-gray-300 hover:bg-white transition-all">
+            <button
+              onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-8 py-4 rounded-xl text-lg font-semibold border border-gray-300 hover:bg-white transition-all"
+            >
               Watch Demo
             </button>
           </div>
@@ -388,10 +415,10 @@ const FineGuard = () => {
             <Shield className="w-5 h-5" />
             FineGuard
           </div>
-          <p>© 2024 FineGuard Technologies Ltd. All rights reserved.</p>
+          <p>© 2025 FineGuard Technologies Ltd. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-black">Privacy</a>
-            <a href="#" className="hover:text-black">Terms</a>
+            <button onClick={() => setShowLegal('privacy')} className="hover:text-black transition-colors">Privacy</button>
+            <button onClick={() => setShowLegal('terms')} className="hover:text-black transition-colors">Terms</button>
           </div>
         </div>
       </footer>
@@ -558,6 +585,51 @@ const FineGuard = () => {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy / Terms Modal */}
+      {showLegal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <h2 className="text-xl font-bold">
+                {showLegal === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
+              </h2>
+              <button onClick={() => setShowLegal(null)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-8 overflow-y-auto max-h-[60vh] space-y-4 text-sm text-gray-600 leading-relaxed">
+              {showLegal === 'privacy' ? (
+                <>
+                  <p><strong className="text-gray-900">Data we collect:</strong> Firm name, contact email, client count, and selected services submitted via this intake form.</p>
+                  <p><strong className="text-gray-900">How we use it:</strong> To provision your FineGuard monitoring environment and send you onboarding communications. We do not sell your data.</p>
+                  <p><strong className="text-gray-900">Storage:</strong> Data is processed via Microsoft Power Automate and stored within the Microsoft 365 ecosystem (UK region). Retention is 24 months from last activity.</p>
+                  <p><strong className="text-gray-900">Your rights:</strong> You may request access, correction, or deletion of your data at any time by emailing <span className="text-blue-600">privacy@fineguard.io</span>.</p>
+                  <p><strong className="text-gray-900">Cookies:</strong> This site does not use tracking cookies. No third-party analytics scripts are loaded.</p>
+                  <p className="text-xs text-gray-400">Last updated: January 2025</p>
+                </>
+              ) : (
+                <>
+                  <p><strong className="text-gray-900">Service:</strong> FineGuard provides automated deadline monitoring for UK accounting firms. The service is provided on a subscription basis and does not constitute legal or tax advice.</p>
+                  <p><strong className="text-gray-900">Accuracy:</strong> We source deadline data directly from HMRC and Companies House APIs. While we take care to ensure accuracy, you retain responsibility for all client filing obligations.</p>
+                  <p><strong className="text-gray-900">Subscription:</strong> Monthly billing. Cancel at any time. No refunds for partial months.</p>
+                  <p><strong className="text-gray-900">Liability:</strong> FineGuard Technologies Ltd is not liable for any penalties or losses arising from missed deadlines, system downtime, or data inaccuracies beyond the value of one month's subscription.</p>
+                  <p><strong className="text-gray-900">Governing law:</strong> These terms are governed by the laws of England and Wales.</p>
+                  <p className="text-xs text-gray-400">Last updated: January 2025</p>
+                </>
+              )}
+            </div>
+            <div className="p-6 border-t border-gray-100">
+              <button
+                onClick={() => setShowLegal(null)}
+                className="w-full py-3 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
