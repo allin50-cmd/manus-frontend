@@ -21,6 +21,7 @@ const FineGuard = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [submittedPayload, setSubmittedPayload] = useState<Record<string, unknown> | null>(null);
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firmName: '',
@@ -74,9 +75,12 @@ const FineGuard = () => {
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json().catch(() => ({}));
+        if (json.tenantId) setTenantId(json.tenantId);
       } else {
-        // No webhook configured — simulate a short delay
+        // No webhook configured — simulate a short delay + fake tenantId
         await new Promise(resolve => setTimeout(resolve, 1500));
+        setTenantId(`FG-${Math.random().toString(36).slice(2, 10).toUpperCase()}`);
       }
       setSubmittedPayload(payload);
       setFormStep(4); // Success
@@ -512,25 +516,45 @@ const FineGuard = () => {
               )}
 
               {formStep === 4 && (
-                <div className="py-12 text-center space-y-6 animate-in slide-in-from-bottom duration-300">
-                  <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="py-8 text-center space-y-6 animate-in slide-in-from-bottom duration-300">
+                  <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle className="w-10 h-10" />
                   </div>
-                  <h3 className="text-2xl font-bold">System Provisioned</h3>
-                  <p className="text-gray-600 max-w-sm mx-auto">
-                    Your monitoring system is being set up. Check your email (<strong>{formData.email}</strong>) for your unique TenantId and dashboard access.
-                  </p>
-                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-left overflow-hidden">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">JSON Payload Debug (Simulation)</p>
-                    <pre className="text-[10px] font-mono whitespace-pre-wrap">
+                  <div>
+                    <h3 className="text-2xl font-bold">System Provisioned</h3>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Welcome email sent to <strong>{formData.email}</strong>
+                    </p>
+                  </div>
+
+                  {tenantId && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-left space-y-1">
+                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Your Tenant ID</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-2xl font-mono font-bold text-blue-800 tracking-widest">{tenantId}</p>
+                        <button
+                          onClick={() => copyToClipboard(tenantId)}
+                          className="text-[11px] px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-blue-500">Keep this safe — you'll need it to access your dashboard.</p>
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-left space-y-2">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Submitted payload</p>
+                    <pre className="text-[10px] font-mono text-gray-600 whitespace-pre-wrap overflow-auto max-h-40">
                       {JSON.stringify(submittedPayload, null, 2)}
                     </pre>
                   </div>
+
                   <button
-                    onClick={() => {setShowIntake(false); setFormStep(1); setSubmitError(null)}}
-                    className="w-full py-4 bg-black text-white rounded-xl font-bold"
+                    onClick={() => { setShowIntake(false); setFormStep(1); setSubmitError(null); setTenantId(null); }}
+                    className="w-full py-4 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-colors"
                   >
-                    Finish
+                    Done
                   </button>
                 </div>
               )}

@@ -1,0 +1,134 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "notificationEmail": {
+      "defaultValue": "intake@yourfirm.com",
+      "type": "String",
+      "metadata": {
+        "description": "Address that receives new FineGuard intake alerts"
+      }
+    }
+  },
+  "triggers": {
+    "FineGuard_Intake_Webhook": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "method": "POST",
+        "schema": {
+          "type": "object",
+          "required": ["firmName", "email", "clientCount", "services", "source", "timestamp"],
+          "properties": {
+            "firmName":    { "type": "string", "description": "Name of the accounting firm" },
+            "email":       { "type": "string", "format": "email" },
+            "clientCount": { "type": "string", "description": "e.g. '1-20', '21-100', '101-500', '500+'" },
+            "services": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Selected services: VAT, Companies House, Corporation Tax, Self Assessment"
+            },
+            "source":    { "type": "string", "description": "Landing page variant, e.g. 'FineGuard Landing - Variant A'" },
+            "timestamp": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "Parse_Payload": {
+      "type": "ParseJson",
+      "runAfter": {},
+      "inputs": {
+        "content": "@triggerBody()",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "firmName":    { "type": "string" },
+            "email":       { "type": "string" },
+            "clientCount": { "type": "string" },
+            "services":    { "type": "array", "items": { "type": "string" } },
+            "source":      { "type": "string" },
+            "timestamp":   { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "Generate_Tenant_ID": {
+      "type": "Compose",
+      "runAfter": { "Parse_Payload": ["Succeeded"] },
+      "inputs": "@{concat('FG-', toUpper(substring(guid(), 0, 8)))}"
+    },
+
+    "Build_Email_Body": {
+      "type": "Compose",
+      "runAfter": { "Generate_Tenant_ID": ["Succeeded"] },
+      "inputs": "@{concat(\n  '<h2>New FineGuard Intake</h2>',\n  '<table style=\"border-collapse:collapse;font-family:sans-serif\">',\n  '<tr><td style=\"padding:8px;font-weight:bold\">Firm</td><td style=\"padding:8px\">', body('Parse_Payload')?['firmName'], '</td></tr>',\n  '<tr><td style=\"padding:8px;font-weight:bold\">Email</td><td style=\"padding:8px\">', body('Parse_Payload')?['email'], '</td></tr>',\n  '<tr><td style=\"padding:8px;font-weight:bold\">Client count</td><td style=\"padding:8px\">', body('Parse_Payload')?['clientCount'], '</td></tr>',\n  '<tr><td style=\"padding:8px;font-weight:bold\">Services</td><td style=\"padding:8px\">', join(body('Parse_Payload')?['services'], ', '), '</td></tr>',\n  '<tr><td style=\"padding:8px;font-weight:bold\">Source</td><td style=\"padding:8px\">', body('Parse_Payload')?['source'], '</td></tr>',\n  '<tr><td style=\"padding:8px;font-weight:bold\">Tenant ID</td><td style=\"padding:8px\"><strong>', outputs('Generate_Tenant_ID'), '</strong></td></tr>',\n  '<tr><td style=\"padding:8px;font-weight:bold\">Submitted</td><td style=\"padding:8px\">', body('Parse_Payload')?['timestamp'], '</td></tr>',\n  '</table>'\n)}"
+    },
+
+    "Send_Notification_Email": {
+      "type": "ApiConnection",
+      "runAfter": { "Build_Email_Body": ["Succeeded"] },
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/v2/Mail",
+        "body": {
+          "To": "@parameters('notificationEmail')",
+          "Subject": "@{concat('🛡️ FineGuard Intake: ', body('Parse_Payload')?['firmName'], ' (', outputs('Generate_Tenant_ID'), ')')}",
+          "Body": "@outputs('Build_Email_Body')",
+          "IsHtml": true,
+          "Importance": "Normal"
+        }
+      }
+    },
+
+    "Send_Welcome_Email_To_Firm": {
+      "type": "ApiConnection",
+      "runAfter": { "Send_Notification_Email": ["Succeeded"] },
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/v2/Mail",
+        "body": {
+          "To": "@body('Parse_Payload')?['email']",
+          "Subject": "Welcome to FineGuard — Your monitoring is live",
+          "Body": "@{concat(\n  '<p>Hi ', body('Parse_Payload')?['firmName'], ',</p>',\n  '<p>Thanks for registering with <strong>FineGuard</strong>. Your monitoring environment is being provisioned now.</p>',\n  '<p><strong>Your Tenant ID: ', outputs('Generate_Tenant_ID'), '</strong></p>',\n  '<p>Monitored services: ', join(body('Parse_Payload')?['services'], ', '), '</p>',\n  '<p>You will receive dashboard access within 24 hours.</p>',\n  '<p>— The FineGuard Team</p>'\n)}",
+          "IsHtml": true,
+          "Importance": "High"
+        }
+      }
+    },
+
+    "Respond_200_OK": {
+      "type": "Response",
+      "runAfter": { "Send_Welcome_Email_To_Firm": ["Succeeded", "Failed"] },
+      "inputs": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "status": "provisioned",
+          "tenantId": "@outputs('Generate_Tenant_ID')",
+          "firmName": "@body('Parse_Payload')?['firmName']",
+          "message": "Monitoring environment queued. Check your email for dashboard access."
+        }
+      }
+    }
+  },
+  "outputs": {}
+}
