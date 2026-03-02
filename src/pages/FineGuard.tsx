@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   LayoutDashboard, Users, ShieldAlert, Settings, Menu, X, ArrowRight,
   ShieldCheck, RefreshCw, Search, Clock, AlertTriangle, CheckCircle2,
   Activity, Edit2, Home, Building2, Briefcase, Layers, ArrowLeft,
   Check, Map, Globe, Smartphone, ChevronRight, Mail, Terminal, Bell,
-  TrendingUp, Zap, Lock, Filter,
+  TrendingUp, Zap, Lock, Filter, Download, ChevronLeft, Calendar,
+  ChevronUp, ChevronDown, ArrowUpDown,
 } from 'lucide-react';
 
 // ─── CONFIGURATION ────────────────────────────────────────────────────────────
@@ -85,13 +86,54 @@ function daysLabel(dateStr: string, status: Client['Status']): string {
   if (d === 0) return 'Due today';
   return `${d}d left`;
 }
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// ─── ANIMATED COUNTER ─────────────────────────────────────────────────────────
+function useCountUp(target: number | undefined, duration = 700): number {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!target) { setVal(0); return; }
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      setVal(Math.round(p * target));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, duration]);
+  return val;
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+type ToastType = 'success' | 'info' | 'warn' | 'error';
+interface Toast { id: number; msg: string; type: ToastType; }
+
+// ─── ACTIVITY & ONBOARDING CONSTANTS ─────────────────────────────────────────
+const ACTIVITY_LOG = [
+  { id: 1, time: '2m ago',  action: 'Alert dispatched', detail: 'Innovate UK · VAT Return overdue',  icon: Bell,          cls: 'bg-red-50 text-red-600' },
+  { id: 2, time: '8m ago',  action: 'Sync complete',    detail: '6 client records refreshed',        icon: RefreshCw,     cls: 'bg-emerald-50 text-emerald-600' },
+  { id: 3, time: '31m ago', action: 'Record updated',   detail: 'ABC Ltd · deadline rescheduled',    icon: Edit2,         cls: 'bg-blue-50 text-blue-600' },
+  { id: 4, time: '1h ago',  action: 'Deadline passed',  detail: 'Cedar & Fox · Corp. Tax',           icon: AlertTriangle, cls: 'bg-amber-50 text-amber-600' },
+  { id: 5, time: '3h ago',  action: 'Client added',     detail: 'Hallmark Trust registered',         icon: Users,         cls: 'bg-slate-100 text-slate-500' },
+  { id: 6, time: '5h ago',  action: 'Report exported',  detail: 'Compliance matrix downloaded',      icon: Download,      cls: 'bg-slate-100 text-slate-500' },
+];
+
+const ONBOARDING_STEPS = [
+  { id: 1, label: 'Create account',           done: true  },
+  { id: 2, label: 'Complete intake form',      done: true  },
+  { id: 3, label: 'Connect SharePoint',        done: true  },
+  { id: 4, label: 'Review risk triage',        done: false },
+  { id: 5, label: 'Export compliance report',  done: false },
+];
 
 // ─── VIEW TYPES ───────────────────────────────────────────────────────────────
 type ViewName =
   | 'marketing' | 'intake' | 'setup'
   | 'agency-dash' | 'firm-summary' | 'portfolio'
   | 'risks' | 'portal' | 'mobile-alerts'
-  | 'mobile-engine' | 'sitemap' | 'settings';
+  | 'mobile-engine' | 'sitemap' | 'settings' | 'timeline';
 
 interface ViewProps {
   onNavigate: (v: ViewName) => void;
@@ -108,6 +150,10 @@ interface ViewProps {
   setIntakeData: (d: { firmName: string; email: string }) => void;
   setIsEditing: (c: Client | null) => void;
   setIsAdding: (b: boolean) => void;
+  addToast: (msg: string, type?: ToastType) => void;
+  loading: boolean;
+  showOnboarding: boolean;
+  setShowOnboarding: (b: boolean) => void;
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
@@ -121,8 +167,16 @@ export default function FineGuard() {
   const [setupProgress, setSetupProgress] = useState(0);
   const [intakeStep, setIntakeStep] = useState(1);
   const [intakeData, setIntakeData] = useState({ firmName: '', email: '' });
-  const [isAdding, setIsAdding]   = useState(false);
-  const [isEditing, setIsEditing] = useState<Client | null>(null);
+  const [isAdding, setIsAdding]     = useState(false);
+  const [isEditing, setIsEditing]   = useState<Client | null>(null);
+  const [toasts, setToasts]         = useState<Toast[]>([]);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+
+  const addToast = useCallback((msg: string, type: ToastType = 'success') => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, msg, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3200);
+  }, []);
 
   const navigateTo = (newView: ViewName) => {
     if (view === newView) return;
@@ -170,8 +224,10 @@ export default function FineGuard() {
       <div className="flex items-center gap-4">
         <nav className="hidden lg:flex items-center gap-8 mr-4">
           <NavTab label="Agency Hub"          active={view === 'agency-dash'}  onClick={() => navigateTo('agency-dash')} />
-          <NavTab label="Compliance Summary"  active={view === 'firm-summary'} onClick={() => navigateTo('firm-summary')} />
-          <NavTab label="Client Portfolio"    active={view === 'portfolio'}    onClick={() => navigateTo('portfolio')} />
+          <NavTab label="Summary"             active={view === 'firm-summary'} onClick={() => navigateTo('firm-summary')} />
+          <NavTab label="Portfolio"           active={view === 'portfolio'}    onClick={() => navigateTo('portfolio')} />
+          <NavTab label="Timeline"            active={view === 'timeline'}     onClick={() => navigateTo('timeline')} />
+          <NavTab label="Triage"              active={view === 'risks'}        onClick={() => navigateTo('risks')} />
         </nav>
         <button onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all
@@ -198,6 +254,7 @@ export default function FineGuard() {
               { label: 'Summary',   v: 'firm-summary', icon: LayoutDashboard },
               { label: 'Portfolio', v: 'portfolio',    icon: Users },
               { label: 'Triage',    v: 'risks',        icon: ShieldAlert },
+              { label: 'Timeline',  v: 'timeline',     icon: Calendar },
             ]} onNav={navigateTo} />
             <MenuSection title="Mobile" items={[
               { label: 'Portal',  v: 'portal',        icon: Smartphone },
@@ -217,7 +274,7 @@ export default function FineGuard() {
       <GlobalHeader />
       <main className="flex-1">
         <div className={fullPage.includes(view) ? '' : 'p-8 md:p-12 max-w-7xl mx-auto w-full'}>
-          {renderView(view, { onNavigate: navigateTo, onStart: () => navigateTo('intake'), stats: agencyStats, summary, clients, setupProgress, setTenantId, tenantId, intakeStep, setIntakeStep, intakeData, setIntakeData, setIsEditing, setIsAdding })}
+          {renderView(view, { onNavigate: navigateTo, onStart: () => navigateTo('intake'), stats: agencyStats, summary, clients, setupProgress, setTenantId, tenantId, intakeStep, setIntakeStep, intakeData, setIntakeData, setIsEditing, setIsAdding, addToast, loading, showOnboarding, setShowOnboarding })}
         </div>
       </main>
 
@@ -233,7 +290,7 @@ export default function FineGuard() {
               {isAdding ? 'Register Entity' : 'Update Record'}
             </h2>
             <p className="text-slate-400 text-sm mb-8">Tenant: <span className="font-black text-slate-600">{tenantId}</span></p>
-            <form className="space-y-6" onSubmit={e => { e.preventDefault(); setIsAdding(false); setIsEditing(null); }}>
+            <form className="space-y-6" onSubmit={e => { e.preventDefault(); addToast(isAdding ? 'Entity registered' : 'Record updated'); setIsAdding(false); setIsEditing(null); }}>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Legal Entity Name</label>
                 <input className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-blue-600 outline-none transition font-black text-slate-900 text-lg"
@@ -252,6 +309,8 @@ export default function FineGuard() {
           </div>
         </div>
       )}
+
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }
@@ -271,6 +330,7 @@ function renderView(view: ViewName, props: ViewProps) {
     case 'mobile-engine': return <MobileEngine      />;
     case 'sitemap':       return <SiteMapHub        {...props} />;
     case 'settings':      return <SettingsView      {...props} />;
+    case 'timeline':      return <TimelineView      {...props} />;
     default:              return null;
   }
 }
@@ -603,17 +663,20 @@ const STATUS_BADGE_CLS: Record<Client['Status'], string> = {
   COMPLIANT: 'bg-emerald-50 text-emerald-700',
 };
 
-const FirmSummary = ({ summary, clients, setIsEditing, onNavigate }: Pick<ViewProps, 'summary' | 'clients' | 'setIsEditing' | 'onNavigate'>) => (
-  <div className="space-y-10">
+const FirmSummary = ({ summary, clients, setIsEditing, onNavigate, loading, showOnboarding, setShowOnboarding }: Pick<ViewProps, 'summary' | 'clients' | 'setIsEditing' | 'onNavigate' | 'loading' | 'showOnboarding' | 'setShowOnboarding'>) => (
+  <div className="space-y-8">
     <div>
       <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400 mb-2">Practice</p>
       <h1 className="text-7xl font-black tracking-tighter leading-none">Summary</h1>
     </div>
 
+    {/* Onboarding banner */}
+    {showOnboarding && <OnboardingBanner onNavigate={onNavigate} onDismiss={() => setShowOnboarding(false)} />}
+
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <BigStat title="Overdue"   val={summary?.overdue}   color="red"     icon={AlertTriangle}  />
-      <BigStat title="Due Soon"  val={summary?.dueSoon}   color="amber"   icon={Clock}          />
-      <BigStat title="Compliant" val={summary?.compliant} color="emerald" icon={CheckCircle2}   />
+      <BigStat title="Overdue"   val={summary?.overdue}   color="red"     icon={AlertTriangle}  loading={loading} />
+      <BigStat title="Due Soon"  val={summary?.dueSoon}   color="amber"   icon={Clock}          loading={loading} />
+      <BigStat title="Compliant" val={summary?.compliant} color="emerald" icon={CheckCircle2}   loading={loading} />
     </div>
 
     <div className="bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-sm">
@@ -625,26 +688,26 @@ const FirmSummary = ({ summary, clients, setIsEditing, onNavigate }: Pick<ViewPr
         </button>
       </div>
       <div className="divide-y divide-slate-50">
-        {[...clients].sort((a, b) => {
-          const order = { OVERDUE: 0, 'DUE SOON': 1, COMPLIANT: 2 };
-          return order[a.Status] - order[b.Status];
-        }).map(c => (
-          <div key={c.id}
-            className="px-10 py-6 flex items-center gap-5 hover:bg-slate-50 transition cursor-pointer group"
-            onClick={() => setIsEditing(c)}>
-            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${STATUS_ROW_CLS[c.Status]}`} />
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-slate-900 text-lg tracking-tight group-hover:text-blue-600 transition">{c.CompanyName}</p>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">{c.ServiceType}</p>
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
+          : [...clients].sort((a, b) => STATUS_ORDER[a.Status] - STATUS_ORDER[b.Status]).map(c => (
+            <div key={c.id}
+              className="px-10 py-6 flex items-center gap-5 hover:bg-slate-50 transition cursor-pointer group"
+              onClick={() => setIsEditing(c)}>
+              <div className={`w-3 h-3 rounded-full flex-shrink-0 ${STATUS_ROW_CLS[c.Status]}`} />
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-slate-900 text-lg tracking-tight group-hover:text-blue-600 transition">{c.CompanyName}</p>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">{c.ServiceType}</p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${STATUS_BADGE_CLS[c.Status]}`}>
+                  {c.Status}
+                </span>
+                <p className="text-[11px] font-mono text-slate-400 mt-1.5">{daysLabel(c.NextDeadline, c.Status)}</p>
+              </div>
             </div>
-            <div className="text-right flex-shrink-0">
-              <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${STATUS_BADGE_CLS[c.Status]}`}>
-                {c.Status}
-              </span>
-              <p className="text-[11px] font-mono text-slate-400 mt-1.5">{daysLabel(c.NextDeadline, c.Status)}</p>
-            </div>
-          </div>
-        ))}
+          ))
+        }
       </div>
     </div>
   </div>
@@ -658,9 +721,20 @@ const STATUS_TABLE_CLS: Record<Client['Status'], string> = {
   COMPLIANT: 'bg-emerald-50 text-emerald-700',
 };
 
-const PortfolioMatrix = ({ clients, setIsEditing }: Pick<ViewProps, 'clients' | 'setIsEditing'>) => {
+type SortKey = 'CompanyName' | 'ServiceType' | 'Status' | 'NextDeadline';
+
+const PortfolioMatrix = ({ clients, setIsEditing, addToast }: Pick<ViewProps, 'clients' | 'setIsEditing' | 'addToast'>) => {
+  const PAGE_SIZE = 4;
   const [query, setQuery] = useState('');
-  const [sortStatus, setSortStatus] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('Status');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(1);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+    setPage(1);
+  };
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -668,9 +742,41 @@ const PortfolioMatrix = ({ clients, setIsEditing }: Pick<ViewProps, 'clients' | 
       c.CompanyName.toLowerCase().includes(q) ||
       c.ServiceType.toLowerCase().includes(q)
     );
-    if (sortStatus) list = [...list].sort((a, b) => STATUS_ORDER[a.Status] - STATUS_ORDER[b.Status]);
+    list = [...list].sort((a, b) => {
+      let va: string | number = a[sortKey];
+      let vb: string | number = b[sortKey];
+      if (sortKey === 'Status') { va = STATUS_ORDER[a.Status]; vb = STATUS_ORDER[b.Status]; }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
     return list;
-  }, [clients, query, sortStatus]);
+  }, [clients, query, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const exportCSV = () => {
+    const rows = [['Company', 'Service', 'Status', 'Deadline']];
+    filtered.forEach(c => rows.push([c.CompanyName, c.ServiceType, c.Status, c.NextDeadline]));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'compliance-matrix.csv'; a.click();
+    URL.revokeObjectURL(url);
+    addToast('CSV exported successfully', 'success');
+  };
+
+  const SortTh = ({ label, k, right = false }: { label: string; k: SortKey; right?: boolean }) => (
+    <th className={`px-8 py-5 ${right ? 'text-right' : ''}`}>
+      <button onClick={() => handleSort(k)} className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition group">
+        {label}
+        {sortKey === k
+          ? (sortDir === 'asc' ? <ChevronUp size={12} className="text-blue-500" /> : <ChevronDown size={12} className="text-blue-500" />)
+          : <ArrowUpDown size={11} className="opacity-0 group-hover:opacity-40 transition" />
+        }
+      </button>
+    </th>
+  );
 
   return (
     <div className="space-y-6">
@@ -686,34 +792,39 @@ const PortfolioMatrix = ({ clients, setIsEditing }: Pick<ViewProps, 'clients' | 
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
             <input
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => { setQuery(e.target.value); setPage(1); }}
               className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
               placeholder="Search by name or service…"
             />
           </div>
           <button
-            onClick={() => setSortStatus(s => !s)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border
-              ${sortStatus ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-            <Filter size={14} /> Sort by Risk
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all border bg-slate-50 text-slate-500 border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600">
+            <Download size={14} /> Export CSV
           </button>
         </div>
 
         {/* table */}
         {filtered.length === 0 ? (
-          <div className="py-20 text-center text-slate-400 font-black">No matches for "{query}"</div>
+          <div className="py-20 text-center space-y-3">
+            <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto">
+              <Search size={24} className="text-slate-300" />
+            </div>
+            <p className="text-slate-400 font-black text-lg">No matches for "{query}"</p>
+            <p className="text-slate-300 text-sm">Try a different search term</p>
+          </div>
         ) : (
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-[11px] font-black uppercase text-slate-400 tracking-widest">
-                <th className="px-8 py-5">Client</th>
-                <th className="px-8 py-5">Service</th>
-                <th className="px-8 py-5">Status</th>
-                <th className="px-8 py-5 text-right">Deadline</th>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <SortTh label="Client"   k="CompanyName"  />
+                <SortTh label="Service"  k="ServiceType"  />
+                <SortTh label="Status"   k="Status"       />
+                <SortTh label="Deadline" k="NextDeadline" right />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map(c => (
+              {paginated.map(c => (
                 <tr key={c.id}
                   className="hover:bg-slate-50/80 transition cursor-pointer group"
                   onClick={() => setIsEditing(c)}>
@@ -736,8 +847,22 @@ const PortfolioMatrix = ({ clients, setIsEditing }: Pick<ViewProps, 'clients' | 
           </table>
         )}
 
-        <div className="px-8 py-4 border-t border-slate-50 flex items-center justify-between">
+        {/* footer: record count + pagination */}
+        <div className="px-8 py-5 border-t border-slate-100 flex items-center justify-between">
           <p className="text-xs text-slate-400 font-semibold">{filtered.length} of {clients.length} records</p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-xs font-black text-slate-600 w-16 text-center">{page} / {totalPages}</span>
+              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1024,18 +1149,285 @@ const StatBlock = ({
 );
 
 const BigStat = ({
-  title, val, color, icon: Icon,
+  title, val, color, icon: Icon, loading = false,
 }: {
   title: string;
   val: number | undefined;
   color: string;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
-}) => (
-  <div className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden">
-    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ${BIG_ICON_CLS[color] ?? BIG_ICON_CLS.blue}`}>
-      <Icon size={32} strokeWidth={2.5} />
+  loading?: boolean;
+}) => {
+  const animated = useCountUp(loading ? 0 : val);
+  return (
+    <div className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden">
+      {loading && <div className="absolute inset-0 bg-white/60 animate-pulse rounded-[3rem]" />}
+      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ${BIG_ICON_CLS[color] ?? BIG_ICON_CLS.emerald}`}>
+        <Icon size={32} strokeWidth={2.5} />
+      </div>
+      <p className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-400 mb-3 italic">{title}</p>
+      <h3 className="text-8xl font-black text-slate-900 tracking-tighter leading-none">{loading ? '—' : animated}</h3>
     </div>
-    <p className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-400 mb-3 italic">{title}</p>
-    <h3 className="text-8xl font-black text-slate-900 tracking-tighter leading-none">{val}</h3>
+  );
+};
+
+// ─── TOAST CONTAINER ──────────────────────────────────────────────────────────
+const TOAST_CLS: Record<ToastType, string> = {
+  success: 'bg-emerald-600 text-white',
+  info:    'bg-blue-600    text-white',
+  warn:    'bg-amber-500   text-white',
+  error:   'bg-red-600     text-white',
+};
+const TOAST_ICON: Record<ToastType, React.ComponentType<{ size?: number }>> = {
+  success: CheckCircle2,
+  info:    Activity,
+  warn:    AlertTriangle,
+  error:   X,
+};
+
+const ToastContainer = ({ toasts }: { toasts: Toast[] }) => (
+  <div className="fixed bottom-6 right-6 z-[300] flex flex-col gap-3 items-end pointer-events-none">
+    {toasts.map(t => {
+      const Icon = TOAST_ICON[t.type];
+      return (
+        <div key={t.id}
+          className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-sm font-black pointer-events-auto
+            animate-in slide-in-from-right fade-in duration-300 ${TOAST_CLS[t.type]}`}>
+          <Icon size={18} />
+          {t.msg}
+        </div>
+      );
+    })}
   </div>
 );
+
+// ─── SKELETON ROW ─────────────────────────────────────────────────────────────
+const SkeletonRow = () => (
+  <div className="px-10 py-6 flex items-center gap-5 animate-pulse">
+    <div className="w-3 h-3 rounded-full bg-slate-200 flex-shrink-0" />
+    <div className="flex-1 space-y-2">
+      <div className="h-5 w-2/5 bg-slate-200 rounded-lg" />
+      <div className="h-3 w-1/4 bg-slate-100 rounded" />
+    </div>
+    <div className="space-y-2 text-right">
+      <div className="h-5 w-20 bg-slate-200 rounded-full ml-auto" />
+      <div className="h-3 w-12 bg-slate-100 rounded ml-auto" />
+    </div>
+  </div>
+);
+
+// ─── ONBOARDING BANNER ────────────────────────────────────────────────────────
+const OnboardingBanner = ({
+  onNavigate, onDismiss,
+}: { onNavigate: (v: ViewName) => void; onDismiss: () => void }) => {
+  const done = ONBOARDING_STEPS.filter(s => s.done).length;
+  const total = ONBOARDING_STEPS.length;
+  return (
+    <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-100">
+        <div className="h-full bg-blue-500 transition-all duration-700 rounded-full" style={{ width: `${(done / total) * 100}%` }} />
+      </div>
+      <button onClick={onDismiss}
+        className="absolute top-5 right-5 p-2 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition">
+        <X size={16} />
+      </button>
+      <div className="flex items-start gap-6">
+        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+          <ShieldCheck size={24} className="text-blue-600" />
+        </div>
+        <div className="flex-1 min-w-0 pr-8">
+          <p className="font-black text-slate-900 text-lg tracking-tight">Getting Started</p>
+          <p className="text-xs text-slate-400 font-semibold mt-0.5 mb-5">{done} of {total} steps complete</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            {ONBOARDING_STEPS.map(s => (
+              <div key={s.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black transition
+                ${s.done ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'}`}>
+                {s.done
+                  ? <Check size={12} className="text-emerald-500 flex-shrink-0" />
+                  : <div className="w-3 h-3 rounded-full border-2 border-slate-300 flex-shrink-0" />
+                }
+                <span className="truncate">{s.label}</span>
+              </div>
+            ))}
+          </div>
+          {done < total && (
+            <button onClick={() => onNavigate('risks')}
+              className="mt-4 flex items-center gap-1.5 text-[11px] font-black text-blue-600 hover:text-blue-700 transition">
+              Next: Review risk triage <ChevronRight size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── CALENDAR STRIP ───────────────────────────────────────────────────────────
+const CalendarStrip = ({ clients }: { clients: Client[] }) => {
+  const today = new Date();
+  const todayStr = toDateStr(today);
+
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return d;
+  });
+
+  const deadlineMap = useMemo(() => {
+    const map: Record<string, Client[]> = {};
+    clients.forEach(c => {
+      if (!map[c.NextDeadline]) map[c.NextDeadline] = [];
+      map[c.NextDeadline].push(c);
+    });
+    return map;
+  }, [clients]);
+
+  return (
+    <div className="overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex gap-3 w-max">
+        {days.map(d => {
+          const ds = toDateStr(d);
+          const isToday = ds === todayStr;
+          const hits = deadlineMap[ds] ?? [];
+          return (
+            <div key={ds}
+              className={`w-[68px] flex-shrink-0 flex flex-col items-center gap-2 p-3 rounded-2xl transition-all
+                ${isToday
+                  ? 'bg-blue-600 shadow-lg shadow-blue-500/30'
+                  : hits.length > 0
+                    ? 'bg-white border-2 border-amber-200 shadow-sm'
+                    : 'bg-white border border-slate-100 hover:border-slate-200'
+                }`}>
+              <p className={`text-[10px] font-black uppercase tracking-wider ${isToday ? 'text-blue-200' : 'text-slate-400'}`}>
+                {d.toLocaleDateString('en-GB', { weekday: 'short' })}
+              </p>
+              <p className={`text-2xl font-black leading-none ${isToday ? 'text-white' : hits.length > 0 ? 'text-amber-600' : 'text-slate-700'}`}>
+                {d.getDate()}
+              </p>
+              <div className="flex gap-0.5 flex-wrap justify-center min-h-[10px]">
+                {hits.map(c => (
+                  <div key={c.id} title={c.CompanyName}
+                    className={`w-2 h-2 rounded-full ${c.Status === 'OVERDUE' ? 'bg-red-500' : c.Status === 'DUE SOON' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── ACTIVITY FEED ────────────────────────────────────────────────────────────
+const ActivityFeed = () => (
+  <div className="space-y-2">
+    {ACTIVITY_LOG.map((item, i) => {
+      const Icon = item.icon;
+      return (
+        <div key={item.id} className="flex items-start gap-4 group">
+          {/* timeline spine */}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${item.cls}`}>
+              <Icon size={16} />
+            </div>
+            {i < ACTIVITY_LOG.length - 1 && <div className="w-px flex-1 bg-slate-100 my-1 min-h-[16px]" />}
+          </div>
+          <div className="flex-1 pb-4 min-w-0">
+            <div className="flex items-baseline gap-2">
+              <p className="font-black text-slate-900 text-sm">{item.action}</p>
+              <span className="text-[11px] font-semibold text-slate-400 flex-shrink-0">{item.time}</span>
+            </div>
+            <p className="text-xs text-slate-500 font-semibold mt-0.5">{item.detail}</p>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+);
+
+// ─── TIMELINE VIEW ────────────────────────────────────────────────────────────
+const TimelineView = ({ clients, onNavigate }: Pick<ViewProps, 'clients' | 'onNavigate'>) => {
+  const upcoming = useMemo(() =>
+    [...clients]
+      .filter(c => c.Status !== 'OVERDUE')
+      .sort((a, b) => new Date(a.NextDeadline).getTime() - new Date(b.NextDeadline).getTime())
+      .slice(0, 3),
+    [clients]);
+
+  return (
+    <div className="space-y-10">
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400 mb-2">Schedule</p>
+          <h1 className="text-7xl font-black tracking-tighter leading-none">Timeline</h1>
+        </div>
+        <button onClick={() => onNavigate('portfolio')}
+          className="flex items-center gap-1.5 text-xs font-black text-blue-600 hover:text-blue-700 transition">
+          All clients <ChevronRight size={14} />
+        </button>
+      </div>
+
+      {/* Calendar strip */}
+      <div className="space-y-4">
+        <h3 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-2">
+          <Calendar size={18} className="text-blue-500" /> Next 30 Days
+        </h3>
+        <CalendarStrip clients={clients} />
+        <div className="flex items-center gap-6 text-[11px] font-black uppercase tracking-widest">
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" /> Today</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" /> Due soon</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" /> Compliant</span>
+        </div>
+      </div>
+
+      {/* Upcoming 3 deadlines */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {upcoming.map(c => (
+          <div key={c.id} className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-3">Next deadline</p>
+            <p className="font-black text-slate-900 text-xl tracking-tight leading-tight mb-1">{c.CompanyName}</p>
+            <p className="text-xs text-slate-400 font-semibold mb-4">{c.ServiceType}</p>
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              <span className="font-mono text-sm text-slate-400">{c.NextDeadline}</span>
+              <span className={`text-xs font-black ${c.Status === 'DUE SOON' ? 'text-amber-500' : 'text-emerald-600'}`}>
+                {daysLabel(c.NextDeadline, c.Status)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overdue alerts */}
+      {clients.filter(c => c.Status === 'OVERDUE').length > 0 && (
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-8 flex items-center gap-6">
+          <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
+            <AlertTriangle size={22} className="text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="font-black text-red-800 text-lg">
+              {clients.filter(c => c.Status === 'OVERDUE').length} overdue {clients.filter(c => c.Status === 'OVERDUE').length === 1 ? 'filing' : 'filings'}
+            </p>
+            <p className="text-sm text-red-600 font-semibold mt-0.5">
+              {clients.filter(c => c.Status === 'OVERDUE').map(c => c.CompanyName).join(' · ')}
+            </p>
+          </div>
+          <button onClick={() => onNavigate('risks')}
+            className="flex items-center gap-2 px-5 py-3 bg-red-600 text-white rounded-xl font-black text-xs uppercase tracking-wider hover:bg-red-700 transition flex-shrink-0">
+            Triage <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Activity feed */}
+      <div className="bg-white border border-slate-200 rounded-[3rem] overflow-hidden shadow-sm">
+        <div className="px-10 py-8 border-b border-slate-100">
+          <h3 className="font-black text-slate-900 text-xl tracking-tight flex items-center gap-2">
+            <Activity size={18} className="text-blue-500" /> Activity
+          </h3>
+        </div>
+        <div className="px-10 py-8">
+          <ActivityFeed />
+        </div>
+      </div>
+    </div>
+  );
+};
