@@ -1,5 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -26,20 +29,98 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const isProd = process.env.NODE_ENV === 'production';
+
+// ── Startup env validation ────────────────────────────────────────────────────
+const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
+if (!DEPLOY_RECORD_TOKEN) {
+  console.error('ERROR: DEPLOY_RECORD_TOKEN environment variable is required');
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],    // Vite injects inline scripts
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,  // Needed for some fonts/CDN assets
+}));
 
-// Logging middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+// ── Compression ───────────────────────────────────────────────────────────────
+app.use(compression());
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: isProd ? allowedOrigins : true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Deploy-Token'],
+}));
+
+// ── Body parsing with size limit ─────────────────────────────────────────────
+app.use(express.json({ limit: '50kb' }));
+app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,   // 15 minutes
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many requests, please try again later.' },
+});
+
+const hmrcLimiter = rateLimit({
+  windowMs: 60 * 1000,        // 1 minute
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'HMRC API rate limit exceeded. Please wait before retrying.' },
+});
+
+const formLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,  // 1 hour
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many form submissions. Please try again later.' },
+});
+
+app.use(generalLimiter);
+app.use('/api/hmrc', hmrcLimiter);
+
+// ── Logging middleware ────────────────────────────────────────────────────────
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (!isProd || req.path !== '/health') {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  }
   next();
 });
+
+// ── Admin auth middleware ─────────────────────────────────────────────────────
+function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
+  const token = req.headers['x-deploy-token'] || req.headers['authorization']?.replace('Bearer ', '');
+  if (!token || token !== DEPLOY_RECORD_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
 
 // ============================================================================
 // HEALTH CHECK ENDPOINT
@@ -168,6 +249,7 @@ app.get('/api/deployments/status', async (req: Request, res: Response) => {
 app.get('/api/deployments/history', async (req: Request, res: Response) => {
   try {
     const { environment, limit = '50' } = req.query;
+    const parsedLimit = Math.min(Math.max(1, parseInt(limit as string, 10) || 50), 100);
 
     let query = db.select().from(deploymentStatus);
 
@@ -177,7 +259,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
 
     const deployments = await query
       .orderBy(desc(deploymentStatus.deployedAt))
-      .limit(parseInt(limit as string));
+      .limit(parsedLimit);
 
     res.json({ deployments });
   } catch (error) {
@@ -194,7 +276,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
  * POST /api/lead
  * Submit a demo booking lead
  */
-app.post('/api/lead', async (req: Request, res: Response) => {
+app.post('/api/lead', formLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, company, product, phone, message } = req.body;
 
@@ -241,7 +323,7 @@ app.post('/api/lead', async (req: Request, res: Response) => {
  * GET /api/admin/leads
  * Get all leads (admin endpoint)
  */
-app.get('/api/admin/leads', async (req: Request, res: Response) => {
+app.get('/api/admin/leads', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const allLeads = await db
       .select()
@@ -263,7 +345,7 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
  * POST /api/intake
  * Submit a client intake form
  */
-app.post('/api/intake', async (req: Request, res: Response) => {
+app.post('/api/intake', formLimiter, async (req: Request, res: Response) => {
   try {
     const {
       clientName,
@@ -320,7 +402,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
  * GET /api/admin/intake-forms
  * Get all intake forms (admin endpoint)
  */
-app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
+app.get('/api/admin/intake-forms', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const allForms = await db
       .select()
@@ -342,7 +424,7 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
  * POST /api/compliance-bundle
  * Submit a compliance bundle request with REAL-TIME Companies House lookup
  */
-app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
+app.post('/api/compliance-bundle', formLimiter, async (req: Request, res: Response) => {
   try {
     const {
       companyName,
@@ -476,7 +558,7 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
  * GET /api/admin/compliance-bundles
  * Get all compliance bundle requests (admin endpoint)
  */
-app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => {
+app.get('/api/admin/compliance-bundles', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const allBundles = await db
       .select()
@@ -498,7 +580,7 @@ app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => 
  * POST /api/contact
  * Submit a contact form
  */
-app.post('/api/contact', async (req: Request, res: Response) => {
+app.post('/api/contact', formLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 
@@ -544,7 +626,7 @@ app.post('/api/contact', async (req: Request, res: Response) => {
  * GET /api/admin/contacts
  * Get all contacts (admin endpoint)
  */
-app.get('/api/admin/contacts', async (req: Request, res: Response) => {
+app.get('/api/admin/contacts', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const allContacts = await db
       .select()
@@ -982,7 +1064,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // START SERVER
 // ============================================================================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('');
   console.log('🚀 VaultLine Brand Suite Server');
   console.log('================================');
@@ -1014,3 +1096,20 @@ app.listen(PORT, () => {
   console.log('  GET    /api/hmrc/errors                 (Error catalogue)');
   console.log('');
 });
+
+// ── Graceful shutdown ─────────────────────────────────────────────────────────
+function shutdown(signal: string) {
+  console.log(`\n${signal} received — shutting down gracefully`);
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+  // Force exit if server hasn't closed in 10s
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
