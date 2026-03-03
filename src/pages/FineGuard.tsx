@@ -99,6 +99,7 @@ export default function FineGuard() {
             <a href="#security"  className="hover:text-brand-gold transition-colors">Security</a>
             <a href="#partners"  className="hover:text-brand-gold transition-colors">Partners</a>
             <a href="/about"     className="hover:text-brand-gold transition-colors">About</a>
+            <button onClick={() => navigate('/demo')} className="font-semibold text-brand-gold hover:text-brand-gold-dark transition-colors">Try Demo</button>
           </nav>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => navigate('/compliance-bundle')}>
@@ -130,6 +131,11 @@ export default function FineGuard() {
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" onClick={() => navigate('/app/deploy')}>
               Deploy FineGuard <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => navigate('/demo')}
+              className="border-brand-gold/60 text-brand-gold hover:bg-brand-gold/10 hover:text-brand-gold"
+            >
+              Try Demo
             </Button>
             <Button variant="outline" size="lg" onClick={() => navigate('/book-demo')}
               className="border-white/30 text-white hover:bg-white/10 hover:text-white"
