@@ -7,6 +7,18 @@ import { db } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
+import {
+  runZeroVarianceCheck,
+  calculateComplianceScore,
+  splitCTLongPeriod,
+  generateIdempotencyKey,
+  validateIdempotencyKey,
+  mockHmrcVatSubmit,
+  generateComplianceHealthPanel,
+  getCTPeriod,
+  getComplianceData,
+  ERROR_MESSAGES,
+} from './services/hmrc/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -606,6 +618,345 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// FINEGUARD — HMRC CORE LOGIC API ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/hmrc/vat/validate
+ * Zero-Variance Engine: compare internal records vs HMRC draft return.
+ * Blocks submission and returns error codes on any discrepancy.
+ *
+ * Body: HmrcVatReturn (draft from HMRC MTD API)
+ */
+app.post('/api/hmrc/vat/validate', async (req: Request, res: Response) => {
+  try {
+    const hmrcDraft = req.body;
+
+    if (!hmrcDraft?.periodKey) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Request body must be a valid HMRC VAT return draft with a periodKey.',
+      });
+    }
+
+    const result = await runZeroVarianceCheck(hmrcDraft);
+
+    if (result.passed) {
+      return res.json({
+        ok: true,
+        passed: true,
+        message: 'Zero-Variance check passed. Return is cleared for submission.',
+        result,
+      });
+    }
+
+    // Map errors to human-readable format for the UI
+    const userFacingErrors = result.errors.map(e => ({
+      code: e.code,
+      field: e.field,
+      humanReadable: e.humanReadable,
+      blocking: e.blocking,
+      variance: `£${(Math.abs(e.variance) / 100).toFixed(2)}`,
+    }));
+
+    return res.status(422).json({
+      ok: false,
+      passed: false,
+      message: 'Zero-Variance check failed. Submission blocked.',
+      errors: userFacingErrors,
+      summary: result.summary,
+      checkedAt: result.checkedAt,
+    });
+  } catch (error) {
+    console.error('Zero-Variance check error:', error);
+    res.status(500).json({ ok: false, error: 'Internal error during variance check.' });
+  }
+});
+
+/**
+ * POST /api/hmrc/vat/submit
+ * Idempotency-safe VAT return submission.
+ * Uses UUID key to prevent duplicate filings during API timeouts.
+ *
+ * Body: { vrn, periodKey, idempotencyKey? }
+ * If idempotencyKey is omitted, a new one is generated and returned.
+ */
+app.post('/api/hmrc/vat/submit', async (req: Request, res: Response) => {
+  try {
+    const { vrn, periodKey, idempotencyKey: providedKey } = req.body;
+
+    if (!vrn || !periodKey) {
+      return res.status(400).json({
+        ok: false,
+        error: 'vrn (VAT Registration Number) and periodKey are required.',
+      });
+    }
+
+    // Generate a new key if none provided (first attempt)
+    let idempotencyKey = providedKey;
+    if (!idempotencyKey) {
+      const record = generateIdempotencyKey('/organisations/vat/returns', { vrn, periodKey });
+      idempotencyKey = record.key;
+    }
+
+    // Check for immediate duplicate before calling HMRC
+    const { isDuplicate, record: existingRecord } = validateIdempotencyKey(idempotencyKey);
+    if (isDuplicate) {
+      return res.status(409).json({
+        ok: false,
+        isDuplicate: true,
+        idempotencyKey,
+        message: ERROR_MESSAGES['ERR_DUP_001'],
+        hmrcCorrelationId: existingRecord?.hmrcCorrelationId,
+        errorCode: 'ERR_DUP_001',
+      });
+    }
+
+    // Perform idempotency-safe submission
+    const result = await mockHmrcVatSubmit(vrn, periodKey, idempotencyKey);
+
+    const statusCode = result.success ? 201 : result.isDuplicate ? 409 : 500;
+    return res.status(statusCode).json({
+      ok: result.success,
+      ...result,
+    });
+  } catch (error) {
+    console.error('VAT submission error:', error);
+    res.status(500).json({ ok: false, error: 'Submission failed. Please retry using the same idempotency key.' });
+  }
+});
+
+/**
+ * POST /api/hmrc/vat/idempotency-key
+ * Generate a new UUID idempotency key for a submission session.
+ * The client should store this and reuse it on retries.
+ *
+ * Body: { vrn, periodKey }
+ */
+app.post('/api/hmrc/vat/idempotency-key', (req: Request, res: Response) => {
+  try {
+    const { vrn, periodKey } = req.body;
+    if (!vrn || !periodKey) {
+      return res.status(400).json({ ok: false, error: 'vrn and periodKey are required.' });
+    }
+    const record = generateIdempotencyKey('/organisations/vat/returns', { vrn, periodKey });
+    res.json({
+      ok: true,
+      idempotencyKey: record.key,
+      expiresAt: record.expiresAt,
+      message: 'Store this key and reuse it on all retry attempts for this submission.',
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Failed to generate idempotency key.' });
+  }
+});
+
+/**
+ * GET /api/hmrc/compliance/score
+ * Calculates the weighted compliance score for a company.
+ *
+ * Query: ?companyNumber=12345678
+ */
+app.get('/api/hmrc/compliance/score', async (req: Request, res: Response) => {
+  try {
+    const { companyNumber } = req.query;
+    if (!companyNumber || typeof companyNumber !== 'string') {
+      return res.status(400).json({ ok: false, error: 'companyNumber query parameter is required.' });
+    }
+
+    const data = await getComplianceData(companyNumber);
+    const result = calculateComplianceScore(
+      {
+        timeliness: data.timeliness,
+        accuracy: data.accuracy,
+        completeness: data.completeness,
+        risk: data.risk,
+      },
+      data.previousScore,
+    );
+
+    res.json({
+      ok: true,
+      companyNumber,
+      score: result.score,
+      grade: result.grade,
+      trend: result.trend,
+      breakdown: result.breakdown,
+      calculatedAt: result.calculatedAt,
+    });
+  } catch (error) {
+    console.error('Compliance score error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to calculate compliance score.' });
+  }
+});
+
+/**
+ * GET /api/hmrc/compliance/health
+ * Aggregated compliance health panel for the FineGuard dashboard.
+ *
+ * Query: ?companyNumber=12345678
+ */
+app.get('/api/hmrc/compliance/health', async (req: Request, res: Response) => {
+  try {
+    const { companyNumber } = req.query;
+    if (!companyNumber || typeof companyNumber !== 'string') {
+      return res.status(400).json({ ok: false, error: 'companyNumber query parameter is required.' });
+    }
+
+    // Fetch real Companies House data where available
+    let companyName = 'Unknown Company';
+    let chData = {};
+    try {
+      const profile = await companiesHouseService.getCompanyProfile(companyNumber);
+      if (profile) {
+        companyName = profile.companyName;
+        const compliance = await companiesHouseService.getComplianceStatus(companyNumber);
+        chData = {
+          accountsNextDue: compliance.accountsStatus.nextDue,
+          accountsDaysUntilDue: compliance.accountsStatus.daysUntilDue,
+          accountsOverdue: compliance.accountsStatus.overdue,
+          confirmationStatementNextDue: compliance.confirmationStatementStatus.nextDue,
+          csDaysUntilDue: compliance.confirmationStatementStatus.daysUntilDue,
+          csOverdue: compliance.confirmationStatementStatus.overdue,
+          estimatedPenalty: compliance.penalties?.reduce((s: number, p: { estimated: number }) => s + p.estimated * 100, 0) ?? 0,
+        };
+      }
+    } catch (_) {
+      // If Companies House API is unavailable, fall through with empty CH data
+    }
+
+    const scoreData = await getComplianceData(companyNumber);
+
+    // Build mock VAT / CT / SA data (production: pull from HMRC API)
+    const today = new Date();
+    const nextVatDue = new Date(today);
+    nextVatDue.setDate(nextVatDue.getDate() + 37); // Typical ~37 days to next quarter end
+    const nextCTDue = new Date(today);
+    nextCTDue.setMonth(nextCTDue.getMonth() + 3);
+
+    const panel = generateComplianceHealthPanel({
+      companyNumber,
+      companyName,
+      vat: {
+        nextReturnDue: nextVatDue.toISOString().split('T')[0],
+        daysUntilDue: 37,
+        outstandingReturns: 0,
+        lastVarianceCheckPassed: true,
+        lastReturnDate: new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        estimatedPenalty: 0,
+      },
+      ct: {
+        nextCT600Due: nextCTDue.toISOString().split('T')[0],
+        daysUntilDue: 90,
+        requiresLongPeriodSplit: false,
+        estimatedPenalty: 0,
+      },
+      sa: {
+        nextSADue: `${today.getUTCFullYear()}-01-31`,
+        daysUntilDue: 334,
+        outstandingReturns: 0,
+        estimatedPenalty: 0,
+      },
+      ch: chData,
+      scoreInputs: {
+        timeliness: scoreData.timeliness,
+        accuracy: scoreData.accuracy,
+        completeness: scoreData.completeness,
+        risk: scoreData.risk,
+      },
+      previousScore: scoreData.previousScore,
+    });
+
+    res.json({ ok: true, panel });
+  } catch (error) {
+    console.error('Compliance health panel error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to generate compliance health panel.' });
+  }
+});
+
+/**
+ * POST /api/hmrc/ct/split-period
+ * Corporation Tax Long-Period Splitter.
+ * Detects accounting periods > 12 months and generates two CT600 returns.
+ *
+ * Body: { periodRef } — refers to a mock CT period key, OR
+ * Body: { companyNumber, companyName, periodStart, periodEnd, taxableProfit,
+ *          capitalAllowances, adjustments } for custom periods.
+ */
+app.post('/api/hmrc/ct/split-period', async (req: Request, res: Response) => {
+  try {
+    const { periodRef, ...customPeriod } = req.body;
+
+    let period;
+
+    if (periodRef) {
+      period = await getCTPeriod(periodRef);
+      if (!period) {
+        return res.status(404).json({
+          ok: false,
+          error: `CT period '${periodRef}' not found. Available: CT-12M, CT-18M, CT-14M`,
+        });
+      }
+    } else if (customPeriod.companyNumber && customPeriod.periodStart && customPeriod.periodEnd) {
+      period = {
+        companyNumber: customPeriod.companyNumber,
+        companyName: customPeriod.companyName || 'Unknown Company',
+        periodStart: customPeriod.periodStart,
+        periodEnd: customPeriod.periodEnd,
+        taxableProfit: Number(customPeriod.taxableProfit) || 0,
+        capitalAllowances: Number(customPeriod.capitalAllowances) || 0,
+        adjustments: Number(customPeriod.adjustments) || 0,
+      };
+    } else {
+      return res.status(400).json({
+        ok: false,
+        error: 'Provide either periodRef or {companyNumber, periodStart, periodEnd, taxableProfit}.',
+      });
+    }
+
+    const result = splitCTLongPeriod(period);
+
+    res.json({
+      ok: true,
+      requiresSplit: result.requiresSplit,
+      splitReason: result.splitReason,
+      originalPeriod: {
+        start: result.originalPeriod.periodStart,
+        end: result.originalPeriod.periodEnd,
+      },
+      returns: result.returns.map(r => ({
+        ...r,
+        taxDueFormatted: `£${(r.taxDue / 100).toFixed(2)}`,
+        taxableProfitFormatted: `£${(r.taxableProfit / 100).toFixed(2)}`,
+        capitalAllowancesFormatted: `£${(r.capitalAllowances / 100).toFixed(2)}`,
+        ctRatePercent: `${(r.corporationTaxRate * 100).toFixed(0)}%`,
+      })),
+    });
+  } catch (error) {
+    console.error('CT period split error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to process CT period split.' });
+  }
+});
+
+/**
+ * GET /api/hmrc/errors
+ * Returns the full human-readable error message catalogue.
+ * Useful for populating the UI error state library.
+ */
+app.get('/api/hmrc/errors', (_req: Request, res: Response) => {
+  const catalogue = Object.entries(ERROR_MESSAGES).map(([code, message]) => ({
+    code,
+    message,
+    module: code.startsWith('ERR_V') ? 'MTD_VAT'
+      : code.startsWith('ERR_CT') ? 'CORPORATION_TAX'
+      : code.startsWith('ERR_SA') ? 'SELF_ASSESSMENT'
+      : 'SYSTEM',
+  }));
+
+  res.json({ ok: true, totalErrors: catalogue.length, errors: catalogue });
+});
+
+// ============================================================================
 // STATIC FILE SERVING & SPA FALLBACK
 // ============================================================================
 
@@ -652,5 +1003,14 @@ app.listen(PORT, () => {
   console.log('  GET    /api/contacts');
   console.log('  PATCH  /api/contacts/:id');
   console.log('  GET    /health');
+  console.log('');
+  console.log('FineGuard HMRC Endpoints:');
+  console.log('  POST   /api/hmrc/vat/validate          (Zero-Variance Engine)');
+  console.log('  POST   /api/hmrc/vat/submit             (Idempotent submission)');
+  console.log('  POST   /api/hmrc/vat/idempotency-key   (Generate UUID key)');
+  console.log('  GET    /api/hmrc/compliance/score       (Weighted score formula)');
+  console.log('  GET    /api/hmrc/compliance/health      (Health panel aggregator)');
+  console.log('  POST   /api/hmrc/ct/split-period        (CT Long-Period Splitter)');
+  console.log('  GET    /api/hmrc/errors                 (Error catalogue)');
   console.log('');
 });
