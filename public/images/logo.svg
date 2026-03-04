@@ -1,72 +1,78 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 250" fill="none">
   <defs>
-    <!-- Outer shield glow ring -->
-    <radialGradient id="shieldOuter" cx="50%" cy="35%" r="60%">
-      <stop offset="0%" stop-color="#7DD3FC"/>
-      <stop offset="100%" stop-color="#38BDF8"/>
+    <!-- Shield outer glow -->
+    <radialGradient id="shieldRim" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#93C5FD"/>
+      <stop offset="60%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
     </radialGradient>
-    <!-- Inner shield deep blue -->
-    <linearGradient id="shieldInner" x1="30%" y1="0%" x2="70%" y2="100%">
-      <stop offset="0%" stop-color="#3B82F6"/>
-      <stop offset="40%" stop-color="#1E40AF"/>
-      <stop offset="100%" stop-color="#1E3A8A"/>
+    <!-- Shield inner fill -->
+    <linearGradient id="shieldFill" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="45%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#172554"/>
     </linearGradient>
-    <!-- Gloss highlight -->
-    <linearGradient id="gloss" x1="0%" y1="0%" x2="30%" y2="80%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.35)"/>
+    <!-- Top gloss -->
+    <linearGradient id="gloss" x1="30%" y1="0%" x2="70%" y2="60%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
       <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
     </linearGradient>
-    <!-- Icon glow -->
-    <radialGradient id="iconGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.9)"/>
-      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    <!-- Icon inner glow -->
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(219,234,254,0.45)"/>
+      <stop offset="100%" stop-color="rgba(219,234,254,0)"/>
     </radialGradient>
-    <filter id="shadow" x="-20%" y="-10%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#1E40AF" flood-opacity="0.35"/>
+    <filter id="dropShadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1E3A8A" flood-opacity="0.4"/>
     </filter>
+    <!-- "Guard" text gradient -->
+    <linearGradient id="guardGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
   </defs>
 
-  <!-- Outer shield (light blue border) -->
-  <path d="M100 8 L175 38 L175 110 C175 155 140 185 100 200 C60 185 25 155 25 110 L25 38 Z"
-        fill="url(#shieldOuter)" filter="url(#shadow)"/>
+  <!-- ── Shield ── -->
+  <!-- Outer rim (light blue border effect) -->
+  <path d="M110 6 L186 38 L186 118 C186 162 152 194 110 210 C68 194 34 162 34 118 L34 38 Z"
+        fill="url(#shieldRim)" filter="url(#dropShadow)"/>
+  <!-- Inner shield -->
+  <path d="M110 19 L172 47 L172 118 C172 155 144 181 110 195 C76 181 48 155 48 118 L48 47 Z"
+        fill="url(#shieldFill)"/>
+  <!-- Gloss highlight -->
+  <path d="M110 19 L172 47 L172 100 Q140 55 110 30 Q80 55 48 100 L48 47 Z"
+        fill="url(#gloss)"/>
 
-  <!-- Inner shield (dark blue) -->
-  <path d="M100 20 L163 46 L163 110 C163 148 133 174 100 187 C67 174 37 148 37 110 L37 46 Z"
-        fill="url(#shieldInner)"/>
+  <!-- ── Glow halo behind icon ── -->
+  <ellipse cx="110" cy="113" rx="42" ry="42" fill="url(#glow)"/>
 
-  <!-- Gloss overlay -->
-  <path d="M100 20 L163 46 L163 95 Q130 50 100 20 Q70 50 37 95 L37 46 Z"
-        fill="url(#gloss)" opacity="0.6"/>
+  <!-- ── Document ── -->
+  <rect x="92" y="76" width="36" height="48" rx="3.5" fill="white"/>
+  <!-- Dog-ear top-right corner -->
+  <polygon points="118,76 128,76 128,86" fill="#BFDBFE"/>
+  <path d="M118 76 L118 86 L128 86" stroke="#93C5FD" stroke-width="0.8" fill="none"/>
 
-  <!-- Glow spot behind icon -->
-  <ellipse cx="100" cy="105" rx="38" ry="38" fill="url(#iconGlow)" opacity="0.25"/>
+  <!-- ── Wings ── -->
+  <!-- Left – 3 feathers -->
+  <path d="M92 109 C84 105 69 103 57 110 C66 115 79 114 92 114 Z" fill="white" opacity="0.95"/>
+  <path d="M92 116 C82 113 66 115 54 124 C65 127 80 123 92 119 Z" fill="white" opacity="0.75"/>
+  <path d="M92 123 C83 122 69 127 61 137 C71 137 84 131 92 126 Z" fill="white" opacity="0.50"/>
 
-  <!-- Document body (white) -->
-  <rect x="83" y="72" width="34" height="44" rx="3" fill="white"/>
-  <!-- Dog-ear fold -->
-  <polygon points="107,72 117,72 117,82" fill="#DBEAFE"/>
-  <line x1="107" y1="72" x2="107" y2="82" stroke="#DBEAFE" stroke-width="1"/>
-  <line x1="107" y1="82" x2="117" y2="82" stroke="#DBEAFE" stroke-width="1"/>
+  <!-- Right – 3 feathers -->
+  <path d="M128 109 C136 105 151 103 163 110 C154 115 141 114 128 114 Z" fill="white" opacity="0.95"/>
+  <path d="M128 116 C138 113 154 115 166 124 C155 127 140 123 128 119 Z" fill="white" opacity="0.75"/>
+  <path d="M128 123 C137 122 151 127 159 137 C149 137 136 131 128 126 Z" fill="white" opacity="0.50"/>
 
-  <!-- Left wing -->
-  <path d="M83 103 C75 100 62 98 52 104 C60 108 72 108 83 108 Z" fill="white" opacity="0.95"/>
-  <path d="M83 109 C73 107 60 108 50 116 C60 118 74 115 83 112 Z" fill="white" opacity="0.75"/>
-  <path d="M83 115 C74 114 63 118 56 127 C65 127 76 122 83 118 Z" fill="white" opacity="0.5"/>
+  <!-- ── Bottom emblem arc ── -->
+  <path d="M88 186 Q110 193 132 186" stroke="#93C5FD" stroke-width="1.5" fill="none" stroke-linecap="round"/>
 
-  <!-- Right wing -->
-  <path d="M117 103 C125 100 138 98 148 104 C140 108 128 108 117 108 Z" fill="white" opacity="0.95"/>
-  <path d="M117 109 C127 107 140 108 150 116 C140 118 126 115 117 112 Z" fill="white" opacity="0.75"/>
-  <path d="M117 115 C126 114 137 118 144 127 C135 127 124 122 117 118 Z" fill="white" opacity="0.5"/>
-
-  <!-- Bottom U emblem -->
-  <text x="100" y="178" text-anchor="middle" font-family="Georgia, serif" font-size="11"
-        font-weight="bold" fill="#93C5FD" letter-spacing="1">u</text>
-
-  <!-- "Fine" text - dark navy -->
-  <text x="52" y="225" font-family="'Segoe UI', Arial, sans-serif" font-size="32"
-        font-weight="800" fill="#1E3A8A" letter-spacing="-0.5">Fine</text>
-
-  <!-- "Guard" text - light blue -->
-  <text x="104" y="225" font-family="'Segoe UI', Arial, sans-serif" font-size="32"
-        font-weight="800" fill="#38BDF8" letter-spacing="-0.5">Guard</text>
+  <!-- ── Logotype ── -->
+  <!-- "Fine" – dark navy -->
+  <text x="57" y="237"
+        font-family="'Segoe UI',system-ui,Arial,sans-serif"
+        font-size="34" font-weight="800" fill="#1E3A8A" letter-spacing="-0.8">Fine</text>
+  <!-- "Guard" – sky blue gradient -->
+  <text x="113" y="237"
+        font-family="'Segoe UI',system-ui,Arial,sans-serif"
+        font-size="34" font-weight="800" fill="url(#guardGrad)" letter-spacing="-0.8">Guard</text>
 </svg>

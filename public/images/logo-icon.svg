@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 200" fill="none">
+  <defs>
+    <radialGradient id="a" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#93C5FD"/>
+      <stop offset="60%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+    <linearGradient id="b" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="45%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+    <linearGradient id="c" x1="30%" y1="0%" x2="70%" y2="60%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+    <radialGradient id="d" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(219,234,254,0.45)"/>
+      <stop offset="100%" stop-color="rgba(219,234,254,0)"/>
+    </radialGradient>
+    <filter id="s">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#1E3A8A" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Outer rim -->
+  <path d="M90 5 L162 34 L162 108 C162 150 130 180 90 196 C50 180 18 150 18 108 L18 34 Z"
+        fill="url(#a)" filter="url(#s)"/>
+  <!-- Inner fill -->
+  <path d="M90 17 L150 43 L150 108 C150 144 122 170 90 184 C58 170 30 144 30 108 L30 43 Z"
+        fill="url(#b)"/>
+  <!-- Gloss -->
+  <path d="M90 17 L150 43 L150 90 Q120 50 90 24 Q60 50 30 90 L30 43 Z"
+        fill="url(#c)"/>
+
+  <!-- Halo -->
+  <ellipse cx="90" cy="105" rx="40" ry="40" fill="url(#d)"/>
+
+  <!-- Document -->
+  <rect x="73" y="70" width="34" height="46" rx="3.5" fill="white"/>
+  <polygon points="97,70 107,70 107,80" fill="#BFDBFE"/>
+  <path d="M97 70 L97 80 L107 80" stroke="#93C5FD" stroke-width="0.8" fill="none"/>
+
+  <!-- Left wings -->
+  <path d="M73 103 C65 99 51 97 40 104 C49 109 62 108 73 108 Z" fill="white" opacity="0.95"/>
+  <path d="M73 110 C63 107 48 109 37 118 C48 121 63 117 73 113 Z" fill="white" opacity="0.75"/>
+  <path d="M73 118 C64 117 51 122 43 132 C53 132 66 126 73 121 Z" fill="white" opacity="0.50"/>
+
+  <!-- Right wings -->
+  <path d="M107 103 C115 99 129 97 140 104 C131 109 118 108 107 108 Z" fill="white" opacity="0.95"/>
+  <path d="M107 110 C117 107 132 109 143 118 C132 121 117 117 107 113 Z" fill="white" opacity="0.75"/>
+  <path d="M107 118 C116 117 129 122 137 132 C127 132 114 126 107 121 Z" fill="white" opacity="0.50"/>
+
+  <!-- Bottom arc -->
+  <path d="M70 178 Q90 186 110 178" stroke="#93C5FD" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>

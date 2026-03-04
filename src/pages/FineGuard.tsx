@@ -69,8 +69,9 @@ function DashboardMockup() {
           <div className="bg-[#0f172a] rounded-t-md overflow-hidden" style={{ minHeight: 320 }}>
             {/* Top bar */}
             <div className="flex items-center justify-between bg-[#1e293b] px-4 py-2 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <img src="/images/logo.svg" alt="FineGuard" className="h-6 w-auto" />
+              <div className="flex items-center gap-1.5">
+                <img src="/images/logo-icon.svg" alt="" className="h-5 w-auto" />
+                <span className="text-xs font-bold"><span className="text-blue-300">Fine</span><span className="text-sky-400">Guard</span></span>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-400">
                 <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-green-400 inline-block" />Live</span>
@@ -359,8 +360,11 @@ export default function FineGuard() {
       {/* ── Nav ── */}
       <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <div className="flex items-center">
-            <img src="/images/logo.svg" alt="FineGuard" className="h-10 w-auto" />
+          <div className="flex items-center gap-2">
+            <img src="/images/logo-icon.svg" alt="" className="h-9 w-auto" />
+            <span className="text-lg font-extrabold tracking-tight">
+              <span className="text-brand-navy">Fine</span><span className="text-sky-500">Guard</span>
+            </span>
           </div>
           <nav className="hidden items-center gap-6 text-sm font-medium text-gray-600 md:flex">
             <a href="#screens"   className="hover:text-brand-gold transition-colors">Product</a>
@@ -621,7 +625,12 @@ export default function FineGuard() {
       <footer className="border-t border-gray-100 bg-white py-10">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <img src="/images/logo.svg" alt="FineGuard" className="h-8 w-auto" />
+            <div className="flex items-center gap-2">
+              <img src="/images/logo-icon.svg" alt="" className="h-8 w-auto" />
+              <span className="text-base font-extrabold tracking-tight">
+                <span className="text-brand-navy">Fine</span><span className="text-sky-500">Guard</span>
+              </span>
+            </div>
             <div className="flex flex-wrap gap-5 text-sm text-gray-500">
               <a href="https://fineguard.co.uk" target="_blank" rel="noreferrer"
                 className="flex items-center gap-1 hover:text-brand-gold transition-colors">
