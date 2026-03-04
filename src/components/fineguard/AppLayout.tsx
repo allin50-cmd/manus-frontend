@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import {
   LayoutDashboard, Rocket, History, Settings, HelpCircle,
   Users, Menu, X, Shield, ChevronDown, ChevronRight,
-  Download, WifiOff,
+  Download, WifiOff, Receipt, Building2, UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
@@ -17,9 +17,12 @@ interface NavItem {
 }
 
 const nav: NavItem[] = [
-  { label: 'Dashboard',   icon: <LayoutDashboard className="h-4 w-4" />, href: '/app/dashboard' },
-  { label: 'Deploy',      icon: <Rocket className="h-4 w-4" />,          href: '/app/deploy' },
-  { label: 'History',     icon: <History className="h-4 w-4" />,         href: '/app/history' },
+  { label: 'Dashboard',        icon: <LayoutDashboard className="h-4 w-4" />, href: '/app/dashboard'        },
+  { label: 'Deploy',           icon: <Rocket className="h-4 w-4" />,          href: '/app/deploy'           },
+  { label: 'History',          icon: <History className="h-4 w-4" />,         href: '/app/history'          },
+  { label: 'VAT',              icon: <Receipt className="h-4 w-4" />,         href: '/app/vat'              },
+  { label: 'Corporation Tax',  icon: <Building2 className="h-4 w-4" />,       href: '/app/corporation-tax'  },
+  { label: 'Self Assessment',  icon: <UserCheck className="h-4 w-4" />,       href: '/app/self-assessment'  },
   {
     label: 'Settings', icon: <Settings className="h-4 w-4" />,
     children: [
@@ -29,8 +32,8 @@ const nav: NavItem[] = [
       { label: 'Power Automate', href: '/app/settings/power-automate' },
     ],
   },
-  { label: 'Partners',    icon: <Users className="h-4 w-4" />,           href: '/app/partners' },
-  { label: 'Help',        icon: <HelpCircle className="h-4 w-4" />,      href: '/app/help' },
+  { label: 'Partners',         icon: <Users className="h-4 w-4" />,           href: '/app/partners'         },
+  { label: 'Help',             icon: <HelpCircle className="h-4 w-4" />,      href: '/app/help'             },
 ];
 
 function SidebarLink({ item }: { item: NavItem }) {

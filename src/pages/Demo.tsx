@@ -5,6 +5,8 @@ import {
   FileCheck, GitBranch, ChevronRight, ArrowRight, Play,
   Rocket, History, LayoutDashboard, Settings, Users,
   X, Zap, Lock, TrendingUp, Activity, Star,
+  Receipt, Building2, UserCheck, SendHorizonal, BarChart3,
+  CircleDollarSign, FileText, RefreshCw, TriangleAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,12 +56,39 @@ const DEPLOY_STEPS = [
 ];
 
 const TABS = [
-  { id: 'dashboard',  label: 'Dashboard',    icon: <LayoutDashboard className="h-4 w-4" /> },
-  { id: 'clients',    label: 'Clients',      icon: <Users className="h-4 w-4" /> },
-  { id: 'calendar',   label: 'Calendar',     icon: <Calendar className="h-4 w-4" /> },
-  { id: 'workflow',   label: 'Workflow',     icon: <GitBranch className="h-4 w-4" /> },
-  { id: 'alerts',     label: 'Alerts',       icon: <Bell className="h-4 w-4" /> },
-  { id: 'deploy',     label: 'Installer',    icon: <Rocket className="h-4 w-4" /> },
+  { id: 'dashboard',  label: 'Dashboard',         icon: <LayoutDashboard className="h-4 w-4" /> },
+  { id: 'clients',    label: 'Clients',            icon: <Users className="h-4 w-4" /> },
+  { id: 'vat',        label: 'VAT',                icon: <Receipt className="h-4 w-4" /> },
+  { id: 'ct',         label: 'Corporation Tax',    icon: <Building2 className="h-4 w-4" /> },
+  { id: 'sa',         label: 'Self Assessment',    icon: <UserCheck className="h-4 w-4" /> },
+  { id: 'calendar',   label: 'Calendar',           icon: <Calendar className="h-4 w-4" /> },
+  { id: 'workflow',   label: 'Workflow',           icon: <GitBranch className="h-4 w-4" /> },
+  { id: 'alerts',     label: 'Alerts',             icon: <Bell className="h-4 w-4" /> },
+  { id: 'deploy',     label: 'Installer',          icon: <Rocket className="h-4 w-4" /> },
+];
+
+// ── VAT demo data ───────────────────────────────────────────────────────────
+
+const VAT_PERIODS = [
+  { id: 1, period: '01 Jan – 31 Mar 2026', due: '7 May 2026',  status: 'open'     as const, liability: '£12,450', submitted: false },
+  { id: 2, period: '01 Oct – 31 Dec 2025', due: '7 Feb 2026',  status: 'filed'    as const, liability: '£9,870',  submitted: true  },
+  { id: 3, period: '01 Jul – 30 Sep 2025', due: '7 Nov 2025',  status: 'filed'    as const, liability: '£11,230', submitted: true  },
+  { id: 4, period: '01 Apr – 30 Jun 2025', due: '7 Aug 2025',  status: 'filed'    as const, liability: '£8,640',  submitted: true  },
+];
+
+const CT_FILINGS = [
+  { id: 1, company: 'Smithson & Co Accountants',  period: 'Year ended 31 Dec 2025', due: '30 Sep 2026', taxDue: '£34,200', status: 'in_progress' as const },
+  { id: 2, company: 'Patel Advisory Services',    period: 'Year ended 31 Mar 2025', due: '31 Dec 2025', taxDue: '£18,750', status: 'filed'       as const },
+  { id: 3, company: 'Northern Tax Partners',      period: 'Year ended 31 Dec 2024', due: '30 Sep 2025', taxDue: '£22,100', status: 'overdue'     as const },
+  { id: 4, company: 'Greenfield Accountancy Ltd', period: 'Year ended 31 Mar 2026', due: '31 Dec 2026', taxDue: '£14,500', status: 'open'        as const },
+];
+
+const SA_RETURNS = [
+  { id: 1, client: 'James Smithson',   tax_year: '2024/25', income: '£98,400',  tax_due: '£31,200', due: '31 Jan 2026', status: 'filed'    as const },
+  { id: 2, client: 'Priya Patel',      tax_year: '2024/25', income: '£67,500',  tax_due: '£18,600', due: '31 Jan 2026', status: 'filed'    as const },
+  { id: 3, client: 'Robert Northern',  tax_year: '2024/25', income: '£142,000', tax_due: '£52,400', due: '31 Jan 2026', status: 'overdue'  as const },
+  { id: 4, client: 'Claire Greenfield',tax_year: '2024/25', income: '£55,000',  tax_due: '£12,750', due: '31 Jan 2026', status: 'pending'  as const },
+  { id: 5, client: 'Mark Lancaster',   tax_year: '2023/24', income: '£83,200',  tax_due: '£24,900', due: '31 Jan 2025', status: 'filed'    as const },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -378,6 +407,316 @@ function AlertsView() {
   );
 }
 
+function VATView() {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const openPeriod = VAT_PERIODS.find((p) => p.status === 'open');
+
+  function handleSubmit() {
+    setSubmitting(true);
+    setTimeout(() => { setSubmitting(false); setSubmitted(true); }, 2200);
+  }
+
+  const statusStyles: Record<string, string> = {
+    open:  'bg-amber-100 text-amber-700',
+    filed: 'bg-green-100 text-green-700',
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Liability summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Current Period Due',    value: '£12,450', icon: <CircleDollarSign className="h-5 w-5 text-amber-500" />, colour: 'text-amber-600' },
+          { label: 'Last Quarter Filed',     value: '£9,870',  icon: <CheckCircle className="h-5 w-5 text-green-500" />,      colour: 'text-green-600' },
+          { label: 'MTD Submissions YTD',    value: '3',        icon: <FileText className="h-5 w-5 text-blue-500" />,          colour: 'text-blue-600'  },
+          { label: 'Digital Records Check', value: 'Pass',     icon: <CheckCircle className="h-5 w-5 text-green-500" />,      colour: 'text-green-600' },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-500">{s.label}</span>
+              {s.icon}
+            </div>
+            <p className={`text-2xl font-bold ${s.colour}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* VAT periods table */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-brand-gold" />
+            <h3 className="font-semibold text-gray-900">VAT Return Periods</h3>
+          </div>
+          <span className="text-xs text-gray-400">MTD VAT — Quarterly scheme</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-brand-surface text-gray-500 text-xs uppercase tracking-wide">
+                <th className="px-5 py-3 text-left">Period</th>
+                <th className="px-5 py-3 text-left">Due Date</th>
+                <th className="px-5 py-3 text-left">VAT Liability</th>
+                <th className="px-5 py-3 text-left">Status</th>
+                <th className="px-5 py-3 text-left">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {VAT_PERIODS.map((p) => (
+                <tr key={p.id} className="hover:bg-brand-surface/50 transition-colors">
+                  <td className="px-5 py-3.5 font-medium text-gray-900">{p.period}</td>
+                  <td className="px-5 py-3.5 text-gray-500">{p.due}</td>
+                  <td className="px-5 py-3.5 font-semibold text-gray-900">{p.liability}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${statusStyles[p.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    {p.submitted ? (
+                      <span className="text-xs text-gray-400 flex items-center gap-1"><CheckCircle className="h-3 w-3 text-green-500" /> Submitted</span>
+                    ) : (
+                      <button
+                        onClick={handleSubmit}
+                        disabled={submitting || submitted}
+                        className="flex items-center gap-1.5 rounded-md bg-brand-gold px-3 py-1 text-xs font-semibold text-brand-navy disabled:opacity-60 transition-opacity"
+                      >
+                        {submitting ? <><RefreshCw className="h-3 w-3 animate-spin" /> Submitting…</> : submitted ? <><CheckCircle className="h-3 w-3" /> Done</> : <><SendHorizonal className="h-3 w-3" /> Submit to HMRC</>}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {submitted && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-5 py-4 flex items-center gap-3">
+          <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-green-800">VAT Return submitted successfully via MTD API</p>
+            <p className="text-xs text-green-700 mt-0.5">Confirmation ref: MTD-VAT-2026-Q1-7841 · Received by HMRC at {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-brand-gold/30 bg-brand-navy p-5 text-white text-sm">
+        <p className="font-semibold text-brand-gold mb-1">MTD VAT — fully automated</p>
+        <p className="text-slate-400 leading-relaxed">
+          FineGuard connects directly to HMRC's MTD VAT API. Obligations are pulled automatically,
+          digital records are validated before submission, and variance detection flags discrepancies
+          before they reach HMRC — preventing audit triggers.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CorpTaxView() {
+  const statusStyles: Record<string, string> = {
+    open:        'bg-gray-100 text-gray-600',
+    in_progress: 'bg-blue-100 text-blue-700',
+    filed:       'bg-green-100 text-green-700',
+    overdue:     'bg-red-100 text-red-700',
+  };
+  const statusLabel: Record<string, string> = {
+    open: 'Open', in_progress: 'In Progress', filed: 'Filed', overdue: 'Overdue',
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'CT600s Due This Year', value: '4',         colour: 'text-gray-900',   icon: <FileText className="h-5 w-5 text-gray-400" /> },
+          { label: 'Filed',               value: '1',          colour: 'text-green-600',  icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
+          { label: 'In Progress',         value: '1',          colour: 'text-blue-600',   icon: <RefreshCw className="h-5 w-5 text-blue-500" /> },
+          { label: 'Overdue',             value: '1',          colour: 'text-red-600',    icon: <TriangleAlert className="h-5 w-5 text-red-500" /> },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-500">{s.label}</span>
+              {s.icon}
+            </div>
+            <p className={`text-2xl font-bold ${s.colour}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* CT filings table */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-brand-gold" />
+          <h3 className="font-semibold text-gray-900">CT600 Filing Tracker</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-brand-surface text-gray-500 text-xs uppercase tracking-wide">
+                <th className="px-5 py-3 text-left">Company</th>
+                <th className="px-5 py-3 text-left">Accounting Period</th>
+                <th className="px-5 py-3 text-left">Filing Due</th>
+                <th className="px-5 py-3 text-left">Tax Estimate</th>
+                <th className="px-5 py-3 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {CT_FILINGS.map((c) => (
+                <tr key={c.id} className="hover:bg-brand-surface/50 transition-colors">
+                  <td className="px-5 py-3.5 font-medium text-gray-900">{c.company}</td>
+                  <td className="px-5 py-3.5 text-gray-500">{c.period}</td>
+                  <td className="px-5 py-3.5 text-gray-600">{c.due}</td>
+                  <td className="px-5 py-3.5 font-semibold text-gray-900">{c.taxDue}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyles[c.status]}`}>
+                      {statusLabel[c.status]}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Overdue alert */}
+      <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 flex items-start gap-3">
+        <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-red-800">Action required — Overdue CT600</p>
+          <p className="text-xs text-red-700 mt-0.5">Northern Tax Partners CT600 was due 30 Sep 2025. HMRC late filing penalty may apply. Submit immediately to mitigate penalties.</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-brand-gold/30 bg-brand-navy p-5 text-white text-sm">
+        <p className="font-semibold text-brand-gold mb-1">CT600 deadline engine</p>
+        <p className="text-slate-400 leading-relaxed">
+          FineGuard calculates CT filing and payment deadlines automatically from accounting period
+          end dates, alerts responsible accountants via Teams 90, 30 and 7 days before due, and
+          validates data completeness before submission.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SelfAssessmentView() {
+  const statusStyles: Record<string, string> = {
+    filed:   'bg-green-100 text-green-700',
+    overdue: 'bg-red-100 text-red-700',
+    pending: 'bg-amber-100 text-amber-700',
+  };
+
+  const totalTaxDue = SA_RETURNS.filter((r) => r.status === 'pending' || r.status === 'overdue')
+    .reduce((sum, r) => sum + parseFloat(r.tax_due.replace(/[£,]/g, '')), 0);
+
+  return (
+    <div className="space-y-5">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Returns',      value: `${SA_RETURNS.length}`,   colour: 'text-gray-900',  icon: <UserCheck className="h-5 w-5 text-gray-400" /> },
+          { label: 'Filed',             value: `${SA_RETURNS.filter(r => r.status === 'filed').length}`, colour: 'text-green-600', icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
+          { label: 'Pending / Overdue', value: `${SA_RETURNS.filter(r => r.status !== 'filed').length}`, colour: 'text-amber-600', icon: <Clock className="h-5 w-5 text-amber-500" /> },
+          { label: 'Outstanding Tax',   value: `£${totalTaxDue.toLocaleString('en-GB')}`, colour: 'text-red-600', icon: <CircleDollarSign className="h-5 w-5 text-red-500" /> },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-500">{s.label}</span>
+              {s.icon}
+            </div>
+            <p className={`text-2xl font-bold ${s.colour}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* SA returns table */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCheck className="h-4 w-4 text-brand-gold" />
+            <h3 className="font-semibold text-gray-900">Self Assessment Returns</h3>
+          </div>
+          <span className="text-xs text-gray-400">Tax year 2024/25</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-brand-surface text-gray-500 text-xs uppercase tracking-wide">
+                <th className="px-5 py-3 text-left">Client</th>
+                <th className="px-5 py-3 text-left">Tax Year</th>
+                <th className="px-5 py-3 text-left">Total Income</th>
+                <th className="px-5 py-3 text-left">Tax Due</th>
+                <th className="px-5 py-3 text-left">Deadline</th>
+                <th className="px-5 py-3 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {SA_RETURNS.map((r) => (
+                <tr key={r.id} className="hover:bg-brand-surface/50 transition-colors">
+                  <td className="px-5 py-3.5 font-medium text-gray-900">{r.client}</td>
+                  <td className="px-5 py-3.5 text-gray-500">{r.tax_year}</td>
+                  <td className="px-5 py-3.5 text-gray-700">{r.income}</td>
+                  <td className="px-5 py-3.5 font-semibold text-gray-900">{r.tax_due}</td>
+                  <td className="px-5 py-3.5 text-gray-500">{r.due}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${statusStyles[r.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {r.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Payment deadlines */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 className="h-4 w-4 text-brand-gold" />
+          <h3 className="font-semibold text-gray-900">Upcoming Payment Deadlines</h3>
+        </div>
+        <div className="space-y-3">
+          {[
+            { label: 'SA Payment on Account 1', due: '31 Jan 2026', amount: '£19,950', status: 'overdue' },
+            { label: 'SA Payment on Account 2', due: '31 Jul 2026', amount: '£19,950', status: 'upcoming' },
+            { label: 'SA Balancing Payment',    due: '31 Jan 2027', amount: 'TBC',      status: 'future'   },
+          ].map((p) => (
+            <div key={p.label} className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
+              p.status === 'overdue' ? 'border-red-200 bg-red-50' : p.status === 'upcoming' ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'
+            }`}>
+              <div>
+                <p className="text-sm font-medium text-gray-900">{p.label}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Due {p.due}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold text-gray-900">{p.amount}</p>
+                <p className={`text-xs mt-0.5 capitalize ${p.status === 'overdue' ? 'text-red-600' : p.status === 'upcoming' ? 'text-amber-600' : 'text-gray-400'}`}>
+                  {p.status}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-brand-gold/30 bg-brand-navy p-5 text-white text-sm">
+        <p className="font-semibold text-brand-gold mb-1">Self Assessment — penalty risk engine</p>
+        <p className="text-slate-400 leading-relaxed">
+          FineGuard tracks income streams, flags missing data, and calculates payment-on-account
+          obligations automatically. Penalty risk alerts fire 60, 30 and 7 days before deadlines —
+          with direct Teams notifications to the responsible accountant.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function DeployView() {
   const [started, setStarted] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
@@ -540,6 +879,9 @@ export default function Demo() {
             <Shield className="h-5 w-5 text-brand-gold lg:hidden" />
             <h1 className="text-base font-semibold text-gray-900">
               {TABS.find((t) => t.id === activeTab)?.label ?? 'FineGuard Demo'}
+              {activeTab === 'vat' && <span className="ml-2 text-xs font-normal text-purple-600 bg-purple-50 border border-purple-200 rounded-full px-2 py-0.5">MTD VAT</span>}
+              {activeTab === 'ct'  && <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">CT600</span>}
+              {activeTab === 'sa'  && <span className="ml-2 text-xs font-normal text-orange-600 bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5">HMRC SA</span>}
             </h1>
             <div className="ml-auto flex items-center gap-2">
               <Badge variant="outline" className="text-xs border-brand-gold/40 text-brand-gold hidden sm:inline-flex">
@@ -577,6 +919,9 @@ export default function Demo() {
           <main className="flex-1 overflow-y-auto p-6">
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'clients'   && <ClientsView />}
+            {activeTab === 'vat'       && <VATView />}
+            {activeTab === 'ct'        && <CorpTaxView />}
+            {activeTab === 'sa'        && <SelfAssessmentView />}
             {activeTab === 'calendar'  && <CalendarView />}
             {activeTab === 'workflow'  && <WorkflowView />}
             {activeTab === 'alerts'    && <AlertsView />}
