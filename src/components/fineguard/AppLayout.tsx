@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation } from 'wouter';
 import {
   LayoutDashboard, Rocket, History, Settings, HelpCircle,
-  Users, Menu, X, Shield, ChevronDown, ChevronRight,
+  Users, Menu, X, ChevronDown, ChevronRight,
   Download, WifiOff, Receipt, Building2, UserCheck, Building,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -183,11 +183,10 @@ export function AppLayout({ title, children }: AppLayoutProps) {
     <nav className="flex flex-col h-full">
       {/* Logo */}
       <div
-        className="flex items-center gap-2.5 px-4 py-5 cursor-pointer"
+        className="flex items-center px-4 py-4 cursor-pointer"
         onClick={() => navigate('/app/dashboard')}
       >
-        <Shield className="h-6 w-6 text-brand-gold" />
-        <span className="text-base font-bold text-white tracking-tight">FineGuard</span>
+        <img src="/images/logo.svg" alt="FineGuard" className="h-14 w-auto" />
       </div>
 
       {/* Nav */}
