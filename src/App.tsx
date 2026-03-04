@@ -29,6 +29,8 @@ import TenantOverview      from '@/pages/fineguard/TenantOverview';
 import VATPage             from '@/pages/fineguard/VATPage';
 import CorporationTaxPage  from '@/pages/fineguard/CorporationTaxPage';
 import SelfAssessmentPage  from '@/pages/fineguard/SelfAssessmentPage';
+import CompaniesHousePage  from '@/pages/fineguard/CompaniesHousePage';
+import FirmSetupPage       from '@/pages/fineguard/FirmSetupPage';
 
 export default function App() {
   return (
@@ -57,6 +59,8 @@ export default function App() {
       <Route path="/app/settings/copilot"       component={SettingsCopilot} />
       <Route path="/app/settings/teams"         component={SettingsTeams} />
       <Route path="/app/settings/power-automate" component={SettingsPowerAutomate} />
+      <Route path="/app/companies-house"  component={CompaniesHousePage} />
+      <Route path="/app/firm-setup"      component={FirmSetupPage} />
       <Route path="/app/vat"             component={VATPage} />
       <Route path="/app/corporation-tax" component={CorporationTaxPage} />
       <Route path="/app/self-assessment" component={SelfAssessmentPage} />

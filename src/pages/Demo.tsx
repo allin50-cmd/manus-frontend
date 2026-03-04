@@ -7,6 +7,7 @@ import {
   X, Zap, Lock, TrendingUp, Activity, Star,
   Receipt, Building2, UserCheck, SendHorizonal, BarChart3,
   CircleDollarSign, FileText, RefreshCw, TriangleAlert,
+  Building, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +59,7 @@ const DEPLOY_STEPS = [
 const TABS = [
   { id: 'dashboard',  label: 'Dashboard',         icon: <LayoutDashboard className="h-4 w-4" /> },
   { id: 'clients',    label: 'Clients',            icon: <Users className="h-4 w-4" /> },
+  { id: 'ch',         label: 'Companies House',    icon: <Building className="h-4 w-4" /> },
   { id: 'vat',        label: 'VAT',                icon: <Receipt className="h-4 w-4" /> },
   { id: 'ct',         label: 'Corporation Tax',    icon: <Building2 className="h-4 w-4" /> },
   { id: 'sa',         label: 'Self Assessment',    icon: <UserCheck className="h-4 w-4" /> },
@@ -66,6 +68,26 @@ const TABS = [
   { id: 'alerts',     label: 'Alerts',             icon: <Bell className="h-4 w-4" /> },
   { id: 'deploy',     label: 'Installer',          icon: <Rocket className="h-4 w-4" /> },
 ];
+
+// ── Companies House demo data ─────────────────────────────────────────────
+
+const CH_CLIENTS = [
+  { id: 1,  company: 'Apex Solutions Ltd',         reg: '12345678', service: 'VAT Return',             deadline: '28 May 2026', daysLeft: -3,  status: 'overdue'   as const, risk: 95 },
+  { id: 2,  company: 'Juniper Tech PLC',            reg: '87654321', service: 'Confirmation Statement', deadline: '15 Jun 2026', daysLeft: 17,  status: 'due_soon'  as const, risk: 62 },
+  { id: 3,  company: 'Horizon Trade Ltd',           reg: '11223344', service: 'Payroll',                deadline: '5 May 2026',  daysLeft: 61,  status: 'compliant' as const, risk: 12 },
+  { id: 4,  company: 'Innovate UK Ltd',             reg: '55667788', service: 'Annual Accounts',        deadline: '1 Apr 2026',  daysLeft: -30, status: 'overdue'   as const, risk: 98 },
+  { id: 5,  company: 'Fintech Solutions Plc',       reg: '99001122', service: 'Corporation Tax',        deadline: '7 Apr 2026',  daysLeft: 3,   status: 'due_soon'  as const, risk: 81 },
+  { id: 6,  company: 'Brighton Builders Ltd',       reg: '33445566', service: 'Confirmation Statement', deadline: '9 Apr 2026',  daysLeft: 5,   status: 'due_soon'  as const, risk: 74 },
+  { id: 7,  company: 'London Tech Hub Ltd',         reg: '77889900', service: 'VAT Return',             deadline: '11 Apr 2026', daysLeft: 7,   status: 'due_soon'  as const, risk: 70 },
+  { id: 8,  company: 'Midlands Manufacturing Ltd', reg: '22334455', service: 'Annual Accounts',        deadline: '15 Mar 2026', daysLeft: -16, status: 'overdue'   as const, risk: 99 },
+  { id: 9,  company: 'Global Services LLP',         reg: '66778899', service: 'PSC Register',           deadline: '7 Apr 2026',  daysLeft: 3,   status: 'due_soon'  as const, risk: 79 },
+];
+
+const CH_STATUS_STYLE: Record<string, { pill: string; label: string }> = {
+  overdue:   { pill: 'bg-red-100 text-red-700',     label: 'OVERDUE'   },
+  due_soon:  { pill: 'bg-amber-100 text-amber-700', label: 'DUE SOON'  },
+  compliant: { pill: 'bg-green-100 text-green-700', label: 'COMPLIANT' },
+};
 
 // ── VAT demo data ───────────────────────────────────────────────────────────
 
@@ -717,6 +739,158 @@ function SelfAssessmentView() {
   );
 }
 
+function CompaniesHouseView() {
+  const [search, setSearch] = useState('');
+  const [filterMode, setFilterMode] = useState<'all' | 'at_risk'>('all');
+
+  const overdueCount  = CH_CLIENTS.filter((c) => c.status === 'overdue').length;
+  const dueSoonCount  = CH_CLIENTS.filter((c) => c.status === 'due_soon').length;
+  const compliantCount = CH_CLIENTS.filter((c) => c.status === 'compliant').length;
+
+  const filtered = CH_CLIENTS
+    .filter((c) => {
+      const matchSearch = search === '' ||
+        c.company.toLowerCase().includes(search.toLowerCase()) ||
+        c.reg.includes(search);
+      const matchMode = filterMode === 'all' || c.status !== 'compliant';
+      return matchSearch && matchMode;
+    })
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+  return (
+    <div className="space-y-5">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Overdue',   value: overdueCount,  colour: 'text-red-600',   bg: 'border-red-200 bg-red-50',     icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
+          { label: 'Due Soon',  value: dueSoonCount,  colour: 'text-amber-600', bg: 'border-amber-200 bg-amber-50', icon: <Clock className="h-4 w-4 text-amber-500" /> },
+          { label: 'Compliant', value: compliantCount,colour: 'text-green-600', bg: 'border-green-200 bg-green-50', icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
+        ].map((s) => (
+          <div key={s.label} className={`rounded-xl border p-4 ${s.bg}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-600">{s.label}</span>
+              {s.icon}
+            </div>
+            <p className={`text-2xl font-bold ${s.colour}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Compliance score strip */}
+      <div className="rounded-xl border border-brand-gold/30 bg-brand-navy p-4 text-white">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-brand-gold" />
+            <span className="text-sm font-semibold">UK Compliance Status: Verified</span>
+          </div>
+          <span className="rounded-full bg-green-500/20 px-3 py-0.5 text-xs font-semibold text-green-400">98.5% Total Verification</span>
+        </div>
+        <div className="w-full rounded-full bg-white/10 h-2">
+          <div className="h-2 rounded-full bg-brand-gold" style={{ width: '98.5%' }} />
+        </div>
+        <div className="grid grid-cols-3 gap-4 mt-3 text-xs text-slate-400">
+          <span>✓ Verified Records: 2,450</span>
+          <span>✓ Total Records: 370</span>
+          <span>✓ Source Records: 3</span>
+        </div>
+      </div>
+
+      {/* Portfolio table */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Building className="h-4 w-4 text-brand-gold" />
+            <h3 className="font-semibold text-gray-900">Client Portfolio</h3>
+          </div>
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs ml-auto">
+            {([['all', 'All Clients'], ['at_risk', 'At Risk Only']] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                onClick={() => setFilterMode(mode)}
+                className={`px-3 py-1.5 font-medium ${filterMode === mode ? 'bg-brand-navy text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-brand-gold w-36"
+            />
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-brand-surface text-gray-500 text-xs uppercase tracking-wide">
+                <th className="px-5 py-3 text-left">Company Name</th>
+                <th className="px-5 py-3 text-left">Service Type</th>
+                <th className="px-5 py-3 text-left">Days to Deadline</th>
+                <th className="px-5 py-3 text-left">Status</th>
+                <th className="px-5 py-3 text-left">Action Required</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map((c) => (
+                <tr
+                  key={c.id}
+                  className={`hover:bg-brand-surface/50 transition-colors ${
+                    c.status === 'overdue' ? 'bg-red-50/40' :
+                    c.status === 'due_soon' && c.daysLeft <= 7 ? 'bg-amber-50/30' : ''
+                  }`}
+                >
+                  <td className="px-5 py-3.5">
+                    <p className="font-semibold text-gray-900">{c.company}</p>
+                    <p className="text-xs text-gray-400 font-mono">{c.reg}</p>
+                  </td>
+                  <td className="px-5 py-3.5 text-gray-600 text-xs">{c.service}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={`font-bold text-sm ${
+                      c.daysLeft < 0 ? 'text-red-600' :
+                      c.daysLeft <= 7 ? 'text-red-500' :
+                      c.daysLeft <= 14 ? 'text-amber-600' : 'text-gray-500'
+                    }`}>
+                      {c.daysLeft < 0 ? `${Math.abs(c.daysLeft)}d overdue` : `${c.daysLeft} days`}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${CH_STATUS_STYLE[c.status].pill}`}>
+                      {CH_STATUS_STYLE[c.status].label}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <button className={`text-xs font-semibold ${
+                      c.status === 'overdue' ? 'text-red-600 hover:underline' :
+                      c.status === 'due_soon' ? 'text-amber-600 hover:underline' : 'text-gray-400'
+                    }`}>
+                      {c.status === 'overdue' ? '⚠ File immediately →' :
+                       c.status === 'due_soon' ? 'Review & prepare →' : 'View →'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-brand-gold/30 bg-brand-navy p-5 text-white text-sm">
+        <p className="font-semibold text-brand-gold mb-1">Companies House — real-time sync</p>
+        <p className="text-slate-400 leading-relaxed">
+          FineGuard syncs with Companies House API every 15 minutes. Confirmation statement deadlines,
+          accounts due dates, director changes, and PSC register updates are tracked automatically —
+          with Teams alerts dispatched 90, 30, 14 and 7 days before each deadline.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function DeployView() {
   const [started, setStarted] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
@@ -879,6 +1053,7 @@ export default function Demo() {
             <Shield className="h-5 w-5 text-brand-gold lg:hidden" />
             <h1 className="text-base font-semibold text-gray-900">
               {TABS.find((t) => t.id === activeTab)?.label ?? 'FineGuard Demo'}
+              {activeTab === 'ch'  && <span className="ml-2 text-xs font-normal text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">CH API Live</span>}
               {activeTab === 'vat' && <span className="ml-2 text-xs font-normal text-purple-600 bg-purple-50 border border-purple-200 rounded-full px-2 py-0.5">MTD VAT</span>}
               {activeTab === 'ct'  && <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">CT600</span>}
               {activeTab === 'sa'  && <span className="ml-2 text-xs font-normal text-orange-600 bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5">HMRC SA</span>}
@@ -919,6 +1094,7 @@ export default function Demo() {
           <main className="flex-1 overflow-y-auto p-6">
             {activeTab === 'dashboard' && <DashboardView />}
             {activeTab === 'clients'   && <ClientsView />}
+            {activeTab === 'ch'        && <CompaniesHouseView />}
             {activeTab === 'vat'       && <VATView />}
             {activeTab === 'ct'        && <CorpTaxView />}
             {activeTab === 'sa'        && <SelfAssessmentView />}

@@ -26,7 +26,7 @@ const RECENT = [
 // ── Compliance Health Panel ─────────────────────────────────────────────────
 
 const COMPLIANCE_AUTHORITIES = [
-  { id: 'ch',  label: 'Companies House',  icon: <Shield className="h-4 w-4" />,   score: 92, status: 'green' as const, detail: 'All filings current',  href: '/app/dashboard'       },
+  { id: 'ch',  label: 'Companies House',  icon: <Shield className="h-4 w-4" />,   score: 92, status: 'green' as const, detail: 'All filings current',  href: '/app/companies-house'  },
   { id: 'vat', label: 'MTD VAT',          icon: <Receipt className="h-4 w-4" />,  score: 88, status: 'amber' as const, detail: '1 return open',        href: '/app/vat'              },
   { id: 'ct',  label: 'Corporation Tax',  icon: <Building2 className="h-4 w-4" />,score: 71, status: 'red'   as const, detail: '1 overdue CT600',       href: '/app/corporation-tax'  },
   { id: 'sa',  label: 'Self Assessment',  icon: <UserCheck className="h-4 w-4" />,score: 75, status: 'red'   as const, detail: '1 overdue return',      href: '/app/self-assessment'  },
