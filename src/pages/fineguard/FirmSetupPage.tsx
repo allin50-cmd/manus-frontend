@@ -1,14 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  CheckCircle, Loader2, Circle, Building, Users, Activity,
-  Shield, ArrowRight, Zap, RefreshCw, Terminal,
+  CheckCircle, XCircle, Loader2, Circle,
+  Building, Users, Activity, Shield, ArrowRight,
+  Terminal, Zap, Search, Plus, AlertCircle,
 } from 'lucide-react';
 import { AppLayout } from '@/components/fineguard/AppLayout';
 import { Card } from '@/components/fineguard/Card';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 
-// ── Types ───────────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -17,152 +19,260 @@ interface SetupStep {
   label: string;
   desc: string;
   status: StepStatus;
-  duration: number; // ms to complete
+  errorMsg?: string;
 }
 
 interface LogEntry {
   ts: string;
-  level: 'info' | 'success' | 'warn' | 'engine';
+  level: 'info' | 'success' | 'warn' | 'error' | 'engine';
   msg: string;
 }
 
-// ── Data ────────────────────────────────────────────────────────────────────
-
-const INITIAL_STEPS: SetupStep[] = [
-  { id: 1, label: 'Workspace created',      desc: 'SharePoint site and document libraries provisioned',        status: 'done',    duration: 0    },
-  { id: 2, label: 'Clients imported',       desc: '14 clients loaded from Companies House API',                status: 'done',    duration: 0    },
-  { id: 3, label: 'Activating monitoring',  desc: 'Compliance engine connecting to HMRC and CH data feeds',    status: 'running', duration: 3000 },
-  { id: 4, label: 'Teams notifications',    desc: 'Configuring alert channels for each accountant',            status: 'pending', duration: 2000 },
-  { id: 5, label: 'Deadline engine',        desc: 'Calculating all filing deadlines for current portfolio',    status: 'pending', duration: 2500 },
-  { id: 6, label: 'Zero-variance checks',   desc: 'Running pre-submission validation across all open returns', status: 'pending', duration: 2000 },
-  { id: 7, label: 'Live — system ready',    desc: 'All modules active and monitoring',                         status: 'pending', duration: 1500 },
-];
-
-const LOG_SEQUENCE: Omit<LogEntry, 'ts'>[] = [
-  { level: 'info',    msg: 'FineGuard Compliance Engine v1.0.0 initialising…' },
-  { level: 'info',    msg: 'Connecting to Companies House API…' },
-  { level: 'success', msg: 'Companies House API: authenticated (OAuth 2.0)' },
-  { level: 'info',    msg: 'Loading client portfolio: 14 companies detected' },
-  { level: 'success', msg: 'Client import complete: 14 records processed' },
-  { level: 'engine',  msg: 'Compliance engine: structured data tracking active [cite: 4]' },
-  { level: 'info',    msg: 'Connecting to HMRC MTD VAT API…' },
-  { level: 'success', msg: 'HMRC MTD VAT: authorised — 4 obligations retrieved' },
-  { level: 'info',    msg: 'Connecting to HMRC Corporation Tax endpoint…' },
-  { level: 'success', msg: 'HMRC CT: linked — 4 CT600 periods tracked' },
-  { level: 'info',    msg: 'Activating Microsoft Teams notification channels…' },
-  { level: 'success', msg: 'Teams: 3 alert channels configured' },
-  { level: 'engine',  msg: 'Deadline engine: calculating filing obligations…' },
-  { level: 'warn',    msg: 'ALERT: 3 overdue filings detected — Teams alerts dispatched' },
-  { level: 'warn',    msg: 'ALERT: 5 filings due within 14 days — accountants notified' },
-  { level: 'engine',  msg: 'Zero-variance engine: running pre-submission checks…' },
-  { level: 'success', msg: 'Pre-submission validation: 11 of 14 records pass' },
-  { level: 'warn',    msg: 'Variance flags: 3 records require accountant review' },
-  { level: 'success', msg: 'Compliance score calculated: 98.5%' },
-  { level: 'engine',  msg: '✓ FineGuard Compliance Engine is LIVE — all systems operational' },
-];
-
-function now() {
-  return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+interface SearchResult {
+  companyNumber: string;
+  companyName: string;
+  companyStatus: string;
+  companyType: string;
+  dateOfCreation: string | null;
+  address: string | null;
 }
 
-// ── Components ───────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function StepIcon({ status }: { status: StepStatus }) {
-  if (status === 'done')    return <CheckCircle className="h-6 w-6 text-green-500" />;
-  if (status === 'running') return <Loader2 className="h-6 w-6 text-brand-gold animate-spin" />;
-  if (status === 'error')   return <Circle className="h-6 w-6 text-red-400" />;
-  return <Circle className="h-6 w-6 text-gray-300" />;
+function ts() {
+  return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 const LOG_COLOUR: Record<LogEntry['level'], string> = {
   info:    'text-slate-400',
   success: 'text-green-400',
   warn:    'text-amber-400',
+  error:   'text-red-400',
   engine:  'text-brand-gold font-semibold',
 };
 
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+const SERVICE_TYPES = [
+  'Confirmation Statement', 'Annual Accounts', 'VAT Return',
+  'Corporation Tax', 'Payroll', 'Full Compliance Package',
+];
+
 export default function FirmSetupPage() {
   const [, navigate] = useLocation();
-  const [steps, setSteps]     = useState<SetupStep[]>(INITIAL_STEPS);
-  const [logs, setLogs]       = useState<LogEntry[]>([
-    { ts: now(), level: 'success', msg: 'Workspace created — SharePoint provisioned' },
-    { ts: now(), level: 'success', msg: 'Clients imported — 14 companies loaded' },
-  ]);
-  const [logIdx, setLogIdx]   = useState(2); // already shown 2 initial logs
-  const [running, setRunning] = useState(true);
-  const [done, setDone]       = useState(false);
+
+  // ── Step state ──
+  const INITIAL_STEPS: SetupStep[] = [
+    { id: 1, label: 'Health check',           desc: 'Verifying server and database connectivity',              status: 'pending' },
+    { id: 2, label: 'Companies House API',     desc: 'Authenticating with Companies House REST API',           status: 'pending' },
+    { id: 3, label: 'Add first company',       desc: 'Search and add your first client to the portfolio',      status: 'pending' },
+    { id: 4, label: 'Sync compliance data',    desc: 'Fetching live filing deadlines from Companies House',    status: 'pending' },
+    { id: 5, label: 'Portfolio ready',         desc: 'All systems connected and monitoring active',            status: 'pending' },
+  ];
+  const [steps, setSteps]   = useState<SetupStep[]>(INITIAL_STEPS);
+  const [logs, setLogs]     = useState<LogEntry[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+
+  // ── Company search ──
+  const [query, setQuery]             = useState('');
+  const [searching, setSearching]     = useState(false);
+  const [results, setResults]         = useState<SearchResult[]>([]);
+  const [searchError, setSearchError] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState<SearchResult | null>(null);
+  const [serviceType, setServiceType] = useState('Confirmation Statement');
+  const [adding, setAdding]           = useState(false);
+  const [companyAdded, setCompanyAdded] = useState(false);
+
+  // ── UI refs ──
   const logRef = useRef<HTMLDivElement>(null);
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
-  // Auto-advance steps
-  useEffect(() => {
-    if (!running) return;
-    const runningIdx = steps.findIndex((s) => s.status === 'running');
-    if (runningIdx === -1) return;
+  // ── Helpers ──
 
-    const step = steps[runningIdx];
-    const t = setTimeout(() => {
-      setSteps((prev) =>
-        prev.map((s, i) => {
-          if (i === runningIdx)     return { ...s, status: 'done' };
-          if (i === runningIdx + 1) return { ...s, status: 'running' };
-          return s;
-        }),
-      );
-    }, step.duration);
-    return () => clearTimeout(t);
-  }, [steps, running]);
+  function setStep(id: number, status: StepStatus, errorMsg?: string) {
+    setSteps((prev) =>
+      prev.map((s) => s.id === id ? { ...s, status, errorMsg } : s),
+    );
+  }
 
-  // Check if all done
-  useEffect(() => {
-    if (steps.every((s) => s.status === 'done')) {
-      setTimeout(() => setDone(true), 600);
-    }
-  }, [steps]);
+  function addLog(level: LogEntry['level'], msg: string) {
+    setLogs((prev) => [...prev, { ts: ts(), level, msg }]);
+  }
 
-  // Log streamer
-  useEffect(() => {
-    if (logIdx >= LOG_SEQUENCE.length) return;
-    const t = setTimeout(() => {
-      setLogs((prev) => [...prev, { ts: now(), ...LOG_SEQUENCE[logIdx] }]);
-      setLogIdx((i) => i + 1);
-    }, 900 + Math.random() * 600);
-    return () => clearTimeout(t);
-  }, [logIdx]);
-
-  // Auto-scroll log
   useEffect(() => {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [logs]);
 
-  const doneCount  = steps.filter((s) => s.status === 'done').length;
-  const progress   = Math.round((doneCount / steps.length) * 100);
+  // ── Step 1: Health check ──
+  const runHealthCheck = useCallback(async () => {
+    setCurrentStep(1);
+    setStep(1, 'running');
+    addLog('info', 'FineGuard Setup — running health check…');
+
+    try {
+      const res  = await fetch('/api/health');
+      const data = await res.json() as { status: string; database: string };
+
+      if (data.status === 'ok' || data.status === 'healthy') {
+        addLog('success', `Server: OK · Database: ${data.database}`);
+        setStep(1, 'done');
+        runCHCheck();
+      } else {
+        addLog('error', `Health check failed: ${data.database}`);
+        setStep(1, 'error', 'Server or database unavailable');
+      }
+    } catch (err) {
+      addLog('error', 'Cannot reach server — is the backend running?');
+      setStep(1, 'error', 'Server unreachable');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Step 2: CH API check ──
+  async function runCHCheck() {
+    setCurrentStep(2);
+    setStep(2, 'running');
+    addLog('info', 'Connecting to Companies House REST API…');
+
+    try {
+      // Probe the CH API by searching for a well-known company
+      const res  = await fetch('/api/ch/search?q=apple');
+      const data = await res.json() as { ok: boolean; results?: unknown[]; error?: string };
+
+      if (data.ok) {
+        addLog('success', `Companies House API: authenticated · ${data.results?.length ?? 0} test results returned`);
+        addLog('engine', 'Compliance Engine: structured data tracking active');
+        setStep(2, 'done');
+        setCurrentStep(3);
+        setStep(3, 'running');
+        addLog('info', 'Step 3: Add your first client company to begin monitoring');
+      } else if (data.error?.includes('API key')) {
+        addLog('error', 'COMPANIES_HOUSE_API_KEY is not configured on the server');
+        setStep(2, 'error', 'API key not configured');
+        addLog('warn', 'Set COMPANIES_HOUSE_API_KEY in your .env file and restart the server');
+      } else {
+        addLog('error', data.error || 'CH API test failed');
+        setStep(2, 'error', data.error || 'CH API error');
+      }
+    } catch {
+      addLog('error', 'Network error reaching Companies House API');
+      setStep(2, 'error', 'Network error');
+    }
+  }
+
+  // ── Company search ──
+  useEffect(() => {
+    if (query.length < 2) { setResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      setSearchError('');
+      try {
+        const res  = await fetch(`/api/ch/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json() as { ok: boolean; results?: SearchResult[]; error?: string };
+        if (data.ok) setResults(data.results ?? []);
+        else setSearchError(data.error || 'Search failed');
+      } catch {
+        setSearchError('Network error');
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // ── Step 3→4: Add company then sync ──
+  async function handleAddCompany() {
+    if (!selectedCompany) return;
+    setAdding(true);
+    addLog('info', `Adding ${selectedCompany.companyName} (${selectedCompany.companyNumber}) to portfolio…`);
+
+    try {
+      const res  = await fetch('/api/ch/portfolio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyNumber: selectedCompany.companyNumber, serviceType }),
+      });
+      const data = await res.json() as { ok: boolean; error?: string };
+
+      if (data.ok) {
+        addLog('success', `${selectedCompany.companyName} added — compliance data fetched from CH API`);
+        setStep(3, 'done');
+        setCompanyAdded(true);
+        toast.success(`${selectedCompany.companyName} added to portfolio`);
+
+        // Step 4: sync
+        setCurrentStep(4);
+        setStep(4, 'running');
+        addLog('info', 'Running compliance sync for portfolio…');
+
+        const syncRes  = await fetch('/api/ch/portfolio/sync', { method: 'POST' });
+        const syncData = await syncRes.json() as { ok: boolean; synced?: number; total?: number };
+
+        if (syncData.ok) {
+          addLog('success', `Compliance sync complete — ${syncData.synced ?? 1} of ${syncData.total ?? 1} companies updated`);
+          addLog('engine', `Deadline engine: all filing obligations calculated`);
+          setStep(4, 'done');
+
+          // Step 5
+          setCurrentStep(5);
+          setStep(5, 'running');
+          setTimeout(() => {
+            addLog('success', '✓ FineGuard Compliance Engine is LIVE — portfolio monitoring active');
+            setStep(5, 'done');
+          }, 1200);
+        } else {
+          addLog('error', 'Sync failed');
+          setStep(4, 'error', 'Sync failed');
+        }
+      } else {
+        addLog('error', data.error || 'Failed to add company');
+        toast.error(data.error || 'Failed to add company');
+      }
+    } catch {
+      addLog('error', 'Network error adding company');
+      toast.error('Network error');
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  // Start on mount
+  useEffect(() => { runHealthCheck(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const doneCount = steps.filter((s) => s.status === 'done').length;
+  const progress  = Math.round((doneCount / steps.length) * 100);
+  const allDone   = doneCount === steps.length;
+  const hasError  = steps.some((s) => s.status === 'error');
 
   return (
-    <AppLayout title="Firm Setup — Compliance Engine Initialisation">
+    <AppLayout title="Firm Setup — Companies House Integration">
       <div className="space-y-6 max-w-4xl mx-auto">
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="rounded-xl border border-brand-gold/30 bg-brand-navy p-6 text-white">
           <div className="flex items-center gap-3 mb-3">
             <Shield className="h-6 w-6 text-brand-gold" />
-            <h2 className="text-lg font-bold">Firm Setup in Progress</h2>
-            {done && (
+            <h2 className="text-lg font-bold">Companies House Integration Setup</h2>
+            {allDone && (
               <span className="ml-auto rounded-full bg-green-500/20 px-3 py-0.5 text-xs font-semibold text-green-400">
                 ✓ Complete
               </span>
             )}
+            {hasError && (
+              <span className="ml-auto rounded-full bg-red-500/20 px-3 py-0.5 text-xs font-semibold text-red-400">
+                Action required
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-400 mb-4">
-            FineGuard is connecting to Companies House, HMRC APIs, and Microsoft Teams — configuring your compliance engine automatically.
+            Connecting to the live Companies House REST API — all data is fetched in real time.
           </p>
-
-          {/* Progress bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs">
               <span className="text-slate-400">Setup Progress</span>
-              <span className="text-brand-gold font-semibold">{progress}% complete</span>
+              <span className="text-brand-gold font-semibold">{progress}%</span>
             </div>
             <div className="w-full rounded-full bg-white/10 h-3">
               <div
@@ -174,60 +284,61 @@ export default function FirmSetupPage() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4">
-          {/* Setup steps */}
-          <Card
-            title="Setup Progress"
-            icon={<Zap className="h-4 w-4 text-brand-gold" />}
-          >
-            <div className="mt-4 relative space-y-0">
+          {/* ── Steps ── */}
+          <Card title="Setup Progress" icon={<Zap className="h-4 w-4 text-brand-gold" />}>
+            <div className="mt-4">
               {steps.map((step, i) => (
                 <div key={step.id} className="flex gap-4">
                   <div className="flex flex-col items-center">
-                    <StepIcon status={step.status} />
+                    {step.status === 'done'    && <CheckCircle className="h-6 w-6 text-green-500" />}
+                    {step.status === 'running' && <Loader2 className="h-6 w-6 text-brand-gold animate-spin" />}
+                    {step.status === 'error'   && <XCircle className="h-6 w-6 text-red-500" />}
+                    {step.status === 'pending' && <Circle className="h-6 w-6 text-gray-300" />}
                     {i < steps.length - 1 && (
-                      <div className={`w-0.5 h-10 mt-0.5 transition-colors duration-700 ${
-                        step.status === 'done' ? 'bg-green-400' : 'bg-gray-200'
-                      }`} />
+                      <div className={`w-0.5 h-10 mt-0.5 transition-colors duration-700 ${step.status === 'done' ? 'bg-green-400' : 'bg-gray-200'}`} />
                     )}
                   </div>
                   <div className="pb-6 min-w-0">
-                    <p className={`text-sm font-semibold transition-colors ${
+                    <p className={`text-sm font-semibold ${
                       step.status === 'done'    ? 'text-green-700' :
-                      step.status === 'running' ? 'text-brand-gold' : 'text-gray-400'
+                      step.status === 'running' ? 'text-brand-gold' :
+                      step.status === 'error'   ? 'text-red-600'   : 'text-gray-400'
                     }`}>
                       {step.label}
                       {step.status === 'running' && (
                         <span className="ml-2 inline-flex gap-0.5 text-brand-gold">
-                          <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-                          <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-                          <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+                          {[0, 150, 300].map((d, j) => (
+                            <span key={j} className="animate-bounce" style={{ animationDelay: `${d}ms` }}>.</span>
+                          ))}
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{step.desc}</p>
+                    <p className={`text-xs mt-0.5 leading-relaxed ${step.status === 'error' ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
+                      {step.status === 'error' && step.errorMsg ? step.errorMsg : step.desc}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           </Card>
 
-          {/* Live log */}
-          <Card
-            title="Compliance Engine Log"
-            icon={<Terminal className="h-4 w-4 text-brand-gold" />}
-          >
+          {/* ── Log terminal ── */}
+          <Card title="Live Setup Log" icon={<Terminal className="h-4 w-4 text-brand-gold" />}>
             <div
               ref={logRef}
               className="mt-4 h-80 overflow-y-auto rounded-lg bg-gray-950 p-4 font-mono text-xs space-y-1.5"
               style={{ scrollBehavior: 'smooth' }}
             >
+              {logs.length === 0 && (
+                <span className="text-slate-600 animate-pulse">Initialising…</span>
+              )}
               {logs.map((entry, i) => (
                 <div key={i} className="flex gap-2">
                   <span className="text-slate-600 shrink-0">{entry.ts}</span>
                   <span className={LOG_COLOUR[entry.level]}>{entry.msg}</span>
                 </div>
               ))}
-              {!done && (
+              {!allDone && !hasError && (
                 <div className="flex items-center gap-1 text-slate-600">
                   <span className="animate-pulse">▋</span>
                 </div>
@@ -236,50 +347,182 @@ export default function FirmSetupPage() {
           </Card>
         </div>
 
-        {/* System status */}
+        {/* ── Step 3: Add company UI (shown when CH API is ready) ── */}
+        {currentStep >= 3 && !companyAdded && (
+          <Card
+            title="Add First Company to Portfolio"
+            description="Search Companies House for your first client"
+            icon={<Building className="h-4 w-4 text-brand-gold" />}
+          >
+            <div className="mt-4 space-y-4">
+              {/* Search input */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Search by company name or registration number
+                </label>
+                <div className="relative">
+                  {searching
+                    ? <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin" />
+                    : <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  }
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => { setQuery(e.target.value); setSelectedCompany(null); }}
+                    placeholder="e.g. British Airways or 00245365"
+                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                  />
+                </div>
+                {searchError && <p className="text-xs text-red-500 mt-1">{searchError}</p>}
+              </div>
+
+              {/* Results */}
+              {!selectedCompany && results.length > 0 && (
+                <div className="rounded-lg border border-gray-200 divide-y divide-gray-100 max-h-52 overflow-y-auto">
+                  {results.map((r) => (
+                    <button
+                      key={r.companyNumber}
+                      onClick={() => setSelectedCompany(r)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-brand-surface transition-colors"
+                    >
+                      <p className="text-sm font-semibold text-gray-900">{r.companyName}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {r.companyNumber} · {r.companyType}
+                        <span className={`ml-1 font-medium ${r.companyStatus === 'active' ? 'text-green-600' : 'text-red-500'}`}>
+                          · {r.companyStatus}
+                        </span>
+                        {r.address && ` · ${r.address}`}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected */}
+              {selectedCompany && (
+                <div className="rounded-lg border border-brand-gold/40 bg-brand-gold/5 px-4 py-3">
+                  <p className="text-sm font-bold text-gray-900">{selectedCompany.companyName}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {selectedCompany.companyNumber} · {selectedCompany.companyStatus}
+                    {selectedCompany.dateOfCreation && ` · Inc. ${selectedCompany.dateOfCreation}`}
+                  </p>
+                </div>
+              )}
+
+              {/* Service type */}
+              {selectedCompany && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                    Service type for this client
+                  </label>
+                  <select
+                    value={serviceType}
+                    onChange={(e) => setServiceType(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
+                  >
+                    {SERVICE_TYPES.map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  disabled={!selectedCompany || adding}
+                  onClick={handleAddCompany}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-white gap-2 h-10"
+                >
+                  {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {adding ? 'Fetching CH data…' : 'Add to Portfolio'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-10 gap-2 text-gray-500"
+                  onClick={() => navigate('/app/companies-house')}
+                >
+                  Skip — add later
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ── System status indicators ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Companies House API', connected: true,  icon: <Building className="h-4 w-4" />  },
-            { label: 'HMRC MTD VAT',        connected: doneCount >= 4, icon: <Activity className="h-4 w-4" /> },
-            { label: 'Microsoft Teams',     connected: doneCount >= 4, icon: <Users className="h-4 w-4" />   },
-            { label: 'Compliance Engine',   connected: done,   icon: <Shield className="h-4 w-4" />   },
+            { label: 'API Server',         connected: steps[0].status === 'done', icon: <Activity className="h-4 w-4" />, error: steps[0].status === 'error' },
+            { label: 'Companies House API',connected: steps[1].status === 'done', icon: <Building className="h-4 w-4" />, error: steps[1].status === 'error' },
+            { label: 'Portfolio DB',       connected: steps[3].status === 'done', icon: <Users className="h-4 w-4" />,    error: steps[3].status === 'error' },
+            { label: 'Compliance Engine',  connected: steps[4].status === 'done', icon: <Shield className="h-4 w-4" />,   error: steps[4].status === 'error' },
           ].map((sys) => (
-            <div key={sys.label} className={`rounded-xl border p-4 ${sys.connected ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
+            <div key={sys.label} className={`rounded-xl border p-4 ${sys.error ? 'border-red-200 bg-red-50' : sys.connected ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
               <div className="flex items-center gap-2 mb-2">
-                <span className={sys.connected ? 'text-green-600' : 'text-gray-400'}>{sys.icon}</span>
-                <span className={`h-2 w-2 rounded-full ${sys.connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+                <span className={sys.error ? 'text-red-500' : sys.connected ? 'text-green-600' : 'text-gray-400'}>{sys.icon}</span>
+                <span className={`h-2 w-2 rounded-full ${sys.error ? 'bg-red-500' : sys.connected ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
               </div>
               <p className="text-xs font-semibold text-gray-900">{sys.label}</p>
-              <p className={`text-xs mt-0.5 ${sys.connected ? 'text-green-600' : 'text-gray-400'}`}>
-                {sys.connected ? 'Connected' : 'Waiting…'}
+              <p className={`text-xs mt-0.5 ${sys.error ? 'text-red-600' : sys.connected ? 'text-green-600' : 'text-gray-400'}`}>
+                {sys.error ? 'Error' : sys.connected ? 'Connected' : 'Waiting…'}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Done CTA */}
-        {done && (
+        {/* ── Error remediation ── */}
+        {steps[1].status === 'error' && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-amber-800">Companies House API Key Required</h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Add your API key to the server environment variables and restart:
+                </p>
+                <code className="block mt-2 rounded bg-amber-900/10 px-3 py-2 text-xs text-amber-800 font-mono">
+                  COMPANIES_HOUSE_API_KEY=your_key_here
+                </code>
+                <p className="text-xs text-amber-600 mt-2">
+                  Free API keys are available at{' '}
+                  <a
+                    href="https://developer.company-information.service.gov.uk/get-started"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-semibold"
+                  >
+                    developer.company-information.service.gov.uk
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Completion CTA ── */}
+        {allDone && (
           <div className="rounded-xl border border-green-200 bg-green-50 p-6">
             <div className="flex items-start gap-4">
               <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center shrink-0">
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
-                <h3 className="text-base font-bold text-green-800 mb-1">FineGuard Compliance Engine is Live</h3>
+                <h3 className="text-base font-bold text-green-800 mb-1">
+                  Companies House Integration is Live
+                </h3>
                 <p className="text-sm text-green-700 mb-4">
-                  All 7 setup steps completed successfully. Your firm's compliance monitoring is now active across Companies House, HMRC MTD VAT, Corporation Tax, and Self Assessment.
+                  Your portfolio is connected to the live Companies House API.
+                  Filing deadlines, strike-off risk, and compliance scores are
+                  now updated in real time.
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Button
                     onClick={() => navigate('/app/companies-house')}
                     className="bg-green-600 hover:bg-green-700 text-white gap-2"
                   >
-                    View Client Portfolio <ArrowRight className="h-4 w-4" />
+                    View Portfolio <ArrowRight className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => navigate('/app/dashboard')}
-                    className="border-green-300 text-green-700 hover:bg-green-100 gap-2"
+                    className="border-green-300 text-green-700 hover:bg-green-100"
                   >
                     Go to Dashboard
                   </Button>
@@ -288,7 +531,6 @@ export default function FirmSetupPage() {
             </div>
           </div>
         )}
-
       </div>
     </AppLayout>
   );

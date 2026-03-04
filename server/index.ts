@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, chPortfolio } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 
@@ -572,6 +572,283 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating contact:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// COMPANIES HOUSE PORTFOLIO API
+// ============================================================================
+
+/**
+ * Helper: map CH compliance status string to portfolio status field
+ */
+function toPortfolioStatus(chStatus: string, daysUntilDue: number): string {
+  if (chStatus === 'overdue') return 'overdue';
+  if (chStatus === 'warning' || daysUntilDue <= 14) return 'due_soon';
+  return 'compliant';
+}
+
+/**
+ * GET /api/ch/search?q=...
+ * Live company search against Companies House API
+ */
+app.get('/api/ch/search', async (req: Request, res: Response) => {
+  try {
+    const q = (req.query.q as string || '').trim();
+    if (!q || q.length < 2) {
+      return res.status(400).json({ ok: false, error: 'Query must be at least 2 characters' });
+    }
+
+    const results = await companiesHouseService.searchCompanies(q, 10);
+    res.json({ ok: true, results });
+  } catch (error) {
+    console.error('CH search error:', error);
+    if (error instanceof Error && error.message.includes('API key')) {
+      return res.status(503).json({ ok: false, error: 'Companies House API key not configured' });
+    }
+    res.status(500).json({ ok: false, error: 'Search failed. Please try again.' });
+  }
+});
+
+/**
+ * GET /api/ch/company/:number
+ * Full company profile + compliance status from live CH API
+ */
+app.get('/api/ch/company/:number', async (req: Request, res: Response) => {
+  try {
+    const number = companiesHouseService.formatCompanyNumber(req.params.number);
+    if (!companiesHouseService.validateCompanyNumber(number)) {
+      return res.status(400).json({ ok: false, error: 'Invalid company number format' });
+    }
+
+    const [profile, compliance, officers, pscs] = await Promise.all([
+      companiesHouseService.getCompanyProfile(number),
+      companiesHouseService.getComplianceStatus(number),
+      companiesHouseService.getOfficers(number),
+      companiesHouseService.getPSC(number),
+    ]);
+
+    if (!profile) return res.status(404).json({ ok: false, error: 'Company not found' });
+
+    res.json({ ok: true, profile, compliance, officers, pscs });
+  } catch (error) {
+    console.error('CH company lookup error:', error);
+    res.status(500).json({ ok: false, error: 'Company lookup failed. Please try again.' });
+  }
+});
+
+/**
+ * GET /api/ch/portfolio
+ * Returns the firm's monitored portfolio with cached compliance data
+ */
+app.get('/api/ch/portfolio', async (req: Request, res: Response) => {
+  try {
+    const entries = await db
+      .select()
+      .from(chPortfolio)
+      .orderBy(chPortfolio.addedAt);
+
+    const portfolio = entries.map((e) => ({
+      ...e,
+      complianceData: e.complianceData ? JSON.parse(e.complianceData) : null,
+    }));
+
+    res.json({ ok: true, portfolio });
+  } catch (error) {
+    console.error('CH portfolio fetch error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to load portfolio' });
+  }
+});
+
+/**
+ * POST /api/ch/portfolio
+ * Add a company to the monitored portfolio.
+ * Body: { companyNumber: string, serviceType?: string }
+ */
+app.post('/api/ch/portfolio', async (req: Request, res: Response) => {
+  try {
+    const { companyNumber, serviceType } = req.body as { companyNumber?: string; serviceType?: string };
+
+    if (!companyNumber) {
+      return res.status(400).json({ ok: false, error: 'companyNumber is required' });
+    }
+
+    const formatted = companiesHouseService.formatCompanyNumber(companyNumber);
+    if (!companiesHouseService.validateCompanyNumber(formatted)) {
+      return res.status(400).json({ ok: false, error: 'Invalid company number format' });
+    }
+
+    // Validate company exists in CH and fetch live compliance data
+    const profile = await companiesHouseService.getCompanyProfile(formatted);
+    if (!profile) {
+      return res.status(404).json({ ok: false, error: 'Company not found in Companies House register' });
+    }
+
+    const compliance = await companiesHouseService.getComplianceStatus(formatted);
+
+    // Determine minimum days until due across all deadlines
+    const allDays = [
+      compliance.accountsStatus.daysUntilDue,
+      compliance.confirmationStatementStatus.daysUntilDue,
+    ];
+    const minDays = Math.min(...allDays);
+    const portfolioStatus = toPortfolioStatus(compliance.status, minDays);
+
+    // Upsert — if already tracked, refresh compliance data
+    const existing = await db
+      .select()
+      .from(chPortfolio)
+      .where(eq(chPortfolio.companyNumber, formatted))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(chPortfolio)
+        .set({
+          companyName: profile.companyName,
+          serviceType: serviceType ?? existing[0].serviceType,
+          complianceStatus: portfolioStatus,
+          complianceData: JSON.stringify(compliance),
+          lastSynced: new Date(),
+        })
+        .where(eq(chPortfolio.companyNumber, formatted));
+
+      return res.json({ ok: true, message: 'Company already in portfolio — compliance data refreshed', companyName: profile.companyName });
+    }
+
+    const [entry] = await db
+      .insert(chPortfolio)
+      .values({
+        companyNumber: formatted,
+        companyName: profile.companyName,
+        serviceType: serviceType || null,
+        complianceStatus: portfolioStatus,
+        complianceData: JSON.stringify(compliance),
+        lastSynced: new Date(),
+      })
+      .returning();
+
+    console.log(`📋 Added to portfolio: ${profile.companyName} (${formatted}) — ${portfolioStatus}`);
+    res.status(201).json({ ok: true, message: `${profile.companyName} added to portfolio`, entry });
+  } catch (error) {
+    console.error('CH add portfolio error:', error);
+    if (error instanceof Error && error.message.includes('API key')) {
+      return res.status(503).json({ ok: false, error: 'Companies House API key not configured' });
+    }
+    res.status(500).json({ ok: false, error: 'Failed to add company to portfolio' });
+  }
+});
+
+/**
+ * DELETE /api/ch/portfolio/:number
+ * Remove a company from the monitored portfolio
+ */
+app.delete('/api/ch/portfolio/:number', async (req: Request, res: Response) => {
+  try {
+    const number = companiesHouseService.formatCompanyNumber(req.params.number);
+    const deleted = await db
+      .delete(chPortfolio)
+      .where(eq(chPortfolio.companyNumber, number))
+      .returning();
+
+    if (deleted.length === 0) {
+      return res.status(404).json({ ok: false, error: 'Company not found in portfolio' });
+    }
+
+    console.log(`🗑 Removed from portfolio: ${number}`);
+    res.json({ ok: true, message: 'Company removed from portfolio' });
+  } catch (error) {
+    console.error('CH remove portfolio error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to remove company' });
+  }
+});
+
+/**
+ * POST /api/ch/portfolio/sync
+ * Re-sync compliance data for all portfolio companies from live CH API
+ */
+app.post('/api/ch/portfolio/sync', async (req: Request, res: Response) => {
+  try {
+    const entries = await db.select().from(chPortfolio);
+
+    if (entries.length === 0) {
+      return res.json({ ok: true, synced: 0, message: 'Portfolio is empty' });
+    }
+
+    let synced = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    // Sync concurrently in batches of 3 to avoid rate limiting
+    const batchSize = 3;
+    for (let i = 0; i < entries.length; i += batchSize) {
+      const batch = entries.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(async (entry) => {
+          try {
+            const [profile, compliance] = await Promise.all([
+              companiesHouseService.getCompanyProfile(entry.companyNumber),
+              companiesHouseService.getComplianceStatus(entry.companyNumber),
+            ]);
+
+            if (!profile) { failed++; return; }
+
+            const allDays = [
+              compliance.accountsStatus.daysUntilDue,
+              compliance.confirmationStatementStatus.daysUntilDue,
+            ];
+            const portfolioStatus = toPortfolioStatus(compliance.status, Math.min(...allDays));
+
+            await db
+              .update(chPortfolio)
+              .set({
+                companyName: profile.companyName,
+                complianceStatus: portfolioStatus,
+                complianceData: JSON.stringify(compliance),
+                lastSynced: new Date(),
+              })
+              .where(eq(chPortfolio.companyNumber, entry.companyNumber));
+
+            synced++;
+            console.log(`✅ Synced: ${profile.companyName} — ${portfolioStatus}`);
+          } catch (err) {
+            failed++;
+            errors.push(`${entry.companyNumber}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+        }),
+      );
+      // Brief pause between batches to respect CH API rate limits
+      if (i + batchSize < entries.length) {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+
+    res.json({ ok: true, synced, failed, total: entries.length, errors });
+  } catch (error) {
+    console.error('CH sync error:', error);
+    res.status(500).json({ ok: false, error: 'Sync failed' });
+  }
+});
+
+/**
+ * PATCH /api/ch/portfolio/:number
+ * Update metadata for a portfolio entry (serviceType, etc.)
+ */
+app.patch('/api/ch/portfolio/:number', async (req: Request, res: Response) => {
+  try {
+    const number = companiesHouseService.formatCompanyNumber(req.params.number);
+    const { serviceType } = req.body as { serviceType?: string };
+
+    const [updated] = await db
+      .update(chPortfolio)
+      .set({ serviceType: serviceType ?? null })
+      .where(eq(chPortfolio.companyNumber, number))
+      .returning();
+
+    if (!updated) return res.status(404).json({ ok: false, error: 'Company not found in portfolio' });
+    res.json({ ok: true, entry: updated });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Failed to update entry' });
   }
 });
 
