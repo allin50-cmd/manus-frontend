@@ -1,425 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>FineGuard — Interactive Demo</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0F1B35;--navy2:#1A2D52;
+  --blue:#1E40AF;--blue-mid:#2563EB;--blue-lite:#38BDF8;--blue-pale:#DBEAFE;
+  --gold:#C9A64A;--gold-d:#B8954A;
+  --surface:#F4F6FA;--white:#fff;--border:#E5E7EB;
+  --text:#111827;--muted:#6B7280;
+  --green:#16a34a;--amber:#d97706;--red:#dc2626;
+}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--surface);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
 
-  :root {
-    --navy:       #0F1B35;
-    --navy-light: #1A2D52;
-    --gold:       #C9A64A;
-    --gold-dark:  #B8954A;
-    --surface:    #F4F6FA;
-    --white:      #ffffff;
-    --border:     #E5E7EB;
-    --text:       #111827;
-    --muted:      #6B7280;
-    --green:      #16a34a;
-    --amber:      #d97706;
-    --red:        #dc2626;
-    --blue:       #2563eb;
-  }
+/* ── Banner ── */
+#banner{background:var(--navy);border-bottom:1px solid rgba(56,189,248,.25);padding:9px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:60}
+#banner .btxt{color:#fff;font-size:13px;display:flex;align-items:center;gap:8px}
+#banner .btxt strong{color:var(--blue-lite)}
+#banner .bbk{background:var(--blue-mid);color:#fff;border:none;padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;transition:background .15s}
+#banner .bbk:hover{background:var(--blue)}
+#banner .bdx{background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;flex-shrink:0;padding:4px;line-height:1}
+#banner .bdx:hover{color:#fff}
 
-  body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: var(--surface);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 14px;
-    line-height: 1.5;
-  }
+/* ── Shell ── */
+.shell{display:flex;height:calc(100vh - 43px)}
 
-  /* ── Banner ── */
-  #demo-banner {
-    background: var(--navy);
-    border-bottom: 1px solid rgba(201,166,74,.3);
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-  }
-  #demo-banner .banner-text { color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; }
-  #demo-banner .banner-text strong { color: var(--gold); }
-  #demo-banner .btn-book {
-    background: var(--gold); color: var(--navy); border: none; padding: 5px 14px;
-    border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;
-    white-space: nowrap; transition: background .15s;
-  }
-  #demo-banner .btn-book:hover { background: var(--gold-dark); }
-  #demo-banner .btn-dismiss {
-    background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; line-height: 1;
-    font-size: 18px; flex-shrink: 0;
-  }
-  #demo-banner .btn-dismiss:hover { color: #fff; }
+/* ── Sidebar ── */
+.sidebar{width:224px;flex-shrink:0;background:var(--navy);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column}
+.sidebar-logo{padding:16px 14px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.07)}
+.sidebar-logo img{width:32px;height:38px;object-fit:contain}
+.sidebar-logo .logo-txt{display:flex;flex-direction:column;line-height:1.15}
+.sidebar-logo .logo-name{font-size:16px;font-weight:800}
+.sidebar-logo .logo-name span:first-child{color:#fff}
+.sidebar-logo .logo-name span:last-child{color:var(--blue-lite)}
+.sidebar-logo .logo-sub{font-size:10px;color:#64748b;letter-spacing:.3px}
+.sidebar-nav{flex:1;padding:10px 8px;overflow-y:auto}
+.nav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:9px 12px;border-radius:7px;border:none;background:none;color:#94a3b8;font-size:13px;font-weight:500;cursor:pointer;text-align:left;transition:background .12s,color .12s;margin-bottom:2px}
+.nav-btn svg{flex-shrink:0}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-btn.active{background:rgba(56,189,248,.12);color:var(--blue-lite)}
+.nav-btn.active svg{color:var(--blue-lite)}
+.sidebar-foot{padding:14px;border-top:1px solid rgba(255,255,255,.07)}
+.btn-primary{background:var(--blue-mid);color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;width:100%;transition:background .15s}
+.btn-primary:hover{background:var(--blue)}
+.ver{font-size:11px;color:#374151;text-align:center;margin-top:8px}
 
-  /* ── Shell ── */
-  .shell { display: flex; height: calc(100vh - 44px); }
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:#fff;padding:0 24px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.topbar-logo{display:flex;align-items:center;gap:8px}
+.topbar-logo img{width:22px;height:26px;object-fit:contain}
+.topbar-logo .tl-name{font-size:14px;font-weight:800}
+.topbar-logo .tl-name span:first-child{color:var(--navy)}
+.topbar-logo .tl-name span:last-child{color:var(--blue-mid)}
+.topbar h1{font-size:15px;font-weight:600;color:var(--text)}
+.sep{width:1px;height:20px;background:var(--border)}
+.ml{margin-left:auto;display:flex;align-items:center;gap:10px}
+.badge-demo{border:1px solid rgba(37,99,235,.3);color:var(--blue-mid);padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.btn-sm{background:var(--blue-mid);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s}
+.btn-sm:hover{background:var(--blue)}
+.content{flex:1;overflow-y:auto;padding:24px}
 
-  /* ── Sidebar ── */
-  .sidebar {
-    width: 220px; flex-shrink: 0;
-    background: var(--navy);
-    border-right: 1px solid rgba(255,255,255,.05);
-    display: flex; flex-direction: column;
-  }
-  .sidebar-logo {
-    display: flex; align-items: center; gap: 10px;
-    padding: 18px 16px; cursor: pointer;
-  }
-  .sidebar-logo svg { color: var(--gold); }
-  .sidebar-logo span { color: #fff; font-weight: 700; font-size: 15px; letter-spacing: -.3px; }
-  .sidebar-nav { flex: 1; padding: 0 10px; overflow-y: auto; }
-  .nav-btn {
-    display: flex; align-items: center; gap: 10px;
-    width: 100%; padding: 10px 12px;
-    border-radius: 6px; border: none;
-    background: none; color: #94a3b8;
-    font-size: 13px; font-weight: 500;
-    cursor: pointer; text-align: left;
-    transition: background .12s, color .12s;
-    margin-bottom: 2px;
-  }
-  .nav-btn svg { flex-shrink: 0; }
-  .nav-btn:hover { background: rgba(255,255,255,.07); color: #fff; }
-  .nav-btn.active { background: rgba(255,255,255,.12); color: #fff; }
-  .sidebar-footer {
-    padding: 14px 16px;
-    border-top: 1px solid rgba(255,255,255,.08);
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .btn-gold {
-    background: var(--gold); color: var(--navy); border: none;
-    padding: 8px 16px; border-radius: 7px; font-weight: 700; font-size: 12px;
-    cursor: pointer; width: 100%; transition: background .15s;
-  }
-  .btn-gold:hover { background: var(--gold-dark); }
-  .sidebar-version { font-size: 11px; color: #475569; text-align: center; }
+/* ── Panels ── */
+.panel{display:none}.panel.active{display:block}
 
-  /* ── Main ── */
-  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .topbar {
-    height: 56px; display: flex; align-items: center; gap: 14px;
-    border-bottom: 1px solid var(--border); background: #fff;
-    padding: 0 24px; flex-shrink: 0;
-  }
-  .topbar h1 { font-size: 15px; font-weight: 600; }
-  .topbar .ml-auto { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-  .badge-demo {
-    border: 1px solid rgba(201,166,74,.4); color: var(--gold);
-    padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
-  }
-  .btn-sm-gold {
-    background: var(--gold); color: var(--navy); border: none;
-    padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px;
-    cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background .15s;
-  }
-  .btn-sm-gold:hover { background: var(--gold-dark); }
-  .content { flex: 1; overflow-y: auto; padding: 24px; }
+/* ── Cards ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card h3{font-size:14px;font-weight:600;margin-bottom:16px}
 
-  /* ── Panels ── */
-  .panel { display: none; }
-  .panel.active { display: block; }
+/* ── Stat grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.stat-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.stat-lbl{font-size:12px;color:var(--muted)}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.stat-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.si-red{background:#FEE2E2}.si-amber{background:#FEF3C7}.si-green{background:#DCFCE7}
+.stat-val{font-size:30px;font-weight:800;line-height:1}
+.c-red{color:var(--red)}.c-amber{color:var(--amber)}.c-green{color:var(--green)}.c-blue{color:var(--blue-mid)}
 
-  /* ── Cards ── */
-  .card {
-    background: #fff; border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
-  }
-  .card h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+/* ── Two col ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
 
-  /* ── Stat grid ── */
-  .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 16px; }
-  @media(max-width:900px){ .stat-grid { grid-template-columns: repeat(2,1fr); } }
-  .stat-card {
-    background: #fff; border: 1px solid var(--border); border-radius: 12px;
-    padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.05);
-  }
-  .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .stat-label { font-size: 12px; color: var(--muted); }
-  .stat-value { font-size: 28px; font-weight: 700; }
-  .c-gold { color: var(--gold); }
-  .c-green { color: var(--green); }
-  .c-amber { color: var(--amber); }
-  .c-red { color: var(--red); }
+/* ── Bar chart ── */
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:80px;margin-top:8px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.bar-fill{width:100%;border-radius:3px 3px 0 0;background:rgba(37,99,235,.65);transition:height .7s ease}
+.bar-lbl{font-size:10px;color:var(--muted)}
 
-  /* ── 2-col grid ── */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-  @media(max-width:800px){ .two-col { grid-template-columns: 1fr; } }
+/* ── MTD strip ── */
+.mtd{background:var(--navy);border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:18px 20px;color:#fff;margin-bottom:16px}
+.mtd-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.mtd-title{font-weight:600;font-size:14px}
+.mtd-pct{margin-left:auto;background:rgba(74,222,128,.15);color:#4ade80;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:600}
+.prog-bg{background:rgba(255,255,255,.1);border-radius:999px;height:8px;margin-bottom:8px}
+.prog-fill{background:var(--blue-mid);height:8px;border-radius:999px;transition:width .8s ease}
+.mtd-note{font-size:12px;color:#94a3b8}
+.mtd-note a{color:var(--blue-lite);cursor:pointer}
 
-  /* ── Deadlines in dashboard ── */
-  .deadline-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border);
-  }
-  .deadline-row:last-child { border-bottom: none; }
-  .deadline-left { display: flex; align-items: center; gap: 8px; }
-  .type-badge {
-    border-radius: 999px; padding: 2px 8px; font-size: 10px;
-    font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
-  }
-  .tb-vat  { background: #ede9fe; color: #6d28d9; }
-  .tb-ct   { background: #dbeafe; color: #1d4ed8; }
-  .tb-sa   { background: #ffedd5; color: #c2410c; }
-  .tb-paye { background: #ccfbf1; color: #0f766e; }
+/* ── Deadline rows ── */
+.dl-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.dl-row:last-child{border-bottom:none}
+.dl-left{display:flex;align-items:center;gap:8px}
+.tb{border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.tb-vat{background:#ede9fe;color:#6d28d9}.tb-ct{background:#dbeafe;color:#1d4ed8}
+.tb-sa{background:#ffedd5;color:#c2410c}.tb-paye{background:#ccfbf1;color:#0f766e}
 
-  /* ── Bar chart ── */
-  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 80px; margin-top: 8px; }
-  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
-  .bar-fill { width: 100%; border-radius: 3px 3px 0 0; background: rgba(201,166,74,.7); transition: height .6s ease; }
-  .bar-label { font-size: 10px; color: var(--muted); }
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);background:#fff}
+.tbl-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.tbl-head h3{font-size:14px;font-weight:600}
+.tbl-cnt{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--surface)}
+thead th{padding:10px 20px;text-align:left;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+tbody tr{border-top:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:rgba(244,246,250,.6)}
+td{padding:12px 20px}
+.td-name{font-weight:500}
 
-  /* ── MTD strip ── */
-  .mtd-strip {
-    background: var(--navy); border: 1px solid rgba(201,166,74,.3);
-    border-radius: 12px; padding: 20px; color: #fff; margin-bottom: 16px;
-  }
-  .mtd-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .mtd-title { font-weight: 600; font-size: 14px; }
-  .mtd-pct {
-    margin-left: auto; background: rgba(34,197,94,.15);
-    color: #4ade80; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 600;
-  }
-  .progress-bg { background: rgba(255,255,255,.1); border-radius: 999px; height: 8px; margin-bottom: 8px; }
-  .progress-fill { background: var(--gold); height: 8px; border-radius: 999px; }
-  .mtd-note { font-size: 12px; color: #94a3b8; }
-  .mtd-note a { color: var(--gold); cursor: pointer; }
+/* ── Status dot badges ── */
+.sdot{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:600}
+.sd-ok{background:#DCFCE7;color:#15803d}.sd-warn{background:#FEF9C3;color:#a16207}.sd-over{background:#FEE2E2;color:#b91c1c}
+.dot{width:6px;height:6px;border-radius:50%}
+.dot-ok{background:#16a34a}.dot-warn{background:#d97706}.dot-over{background:#dc2626}
 
-  /* ── Table ── */
-  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: #fff; }
-  .table-head { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .table-head h3 { font-size: 14px; font-weight: 600; }
-  .table-count { font-size: 12px; color: var(--muted); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead tr { background: var(--surface); }
-  thead th { padding: 10px 20px; text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-  tbody tr { border-top: 1px solid var(--border); transition: background .1s; }
-  tbody tr:hover { background: rgba(244,246,250,.6); }
-  td { padding: 12px 20px; }
-  .td-name { font-weight: 500; }
+/* ── At-risk table ── */
+.risk-row td{padding:11px 20px}
+.action-btn{background:var(--blue-pale);color:var(--blue);border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer}
+.action-btn:hover{background:var(--blue-mid);color:#fff}
+.days-chip{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:12px;font-weight:700;background:#FEF3C7;color:#b45309}
+.days-chip.overdue{background:#FEE2E2;color:#b91c1c}
 
-  /* ── Status badge ── */
-  .status-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
-  .sb-ok      { background: #dcfce7; color: #15803d; }
-  .sb-warning { background: #fef9c3; color: #a16207; }
-  .sb-overdue { background: #fee2e2; color: #b91c1c; }
+/* ── Calendar cards ── */
+.cal-card{display:flex;align-items:center;justify-content:space-between;border-radius:10px;border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;background:#fff}
+.cal-card.overdue{border-color:#fca5a5;background:#fef2f2}
+.cal-card.warning{border-color:#fcd34d;background:#fffbeb}
+.cal-left{display:flex;align-items:center;gap:12px}
+.cal-info p:first-child{font-size:13px;font-weight:600}
+.cal-info p:last-child{font-size:11px;color:var(--muted);margin-top:2px}
+.cal-right{text-align:right}
+.cal-due{font-size:13px;font-weight:600}
+.cal-days{font-size:11px;margin-top:2px}
+.cok{color:var(--green)}.cwarn{color:var(--amber)}.cover{color:var(--red)}
 
-  /* ── Calendar cards ── */
-  .cal-card {
-    display: flex; align-items: center; justify-content: space-between;
-    border-radius: 10px; border: 1px solid var(--border);
-    padding: 14px 16px; margin-bottom: 10px; background: #fff;
-  }
-  .cal-card.overdue { border-color: #fca5a5; background: #fef2f2; }
-  .cal-card.warning { border-color: #fcd34d; background: #fffbeb; }
-  .cal-left { display: flex; align-items: center; gap: 12px; }
-  .cal-info p:first-child { font-size: 13px; font-weight: 600; }
-  .cal-info p:last-child { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .cal-right { text-align: right; }
-  .cal-right .due { font-size: 13px; font-weight: 600; }
-  .cal-right .days { font-size: 11px; margin-top: 2px; }
-  .days-ok { color: var(--green); }
-  .days-warn { color: var(--amber); }
-  .days-over { color: var(--red); }
+/* ── Info strip ── */
+.info-strip{background:var(--navy);border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:18px 20px;margin-top:14px}
+.info-strip .it{color:var(--blue-lite);font-weight:600;font-size:13px;margin-bottom:6px}
+.info-strip .ib{color:#94a3b8;font-size:12px;line-height:1.6}
 
-  /* ── Info strip ── */
-  .info-strip {
-    background: var(--navy); border: 1px solid rgba(201,166,74,.3);
-    border-radius: 12px; padding: 18px 20px; margin-top: 14px;
-  }
-  .info-strip .info-title { color: var(--gold); font-weight: 600; font-size: 13px; margin-bottom: 6px; }
-  .info-strip .info-body { color: #94a3b8; font-size: 12px; line-height: 1.6; }
+/* ── Workflow ── */
+.wf-hdr{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.wf-title{font-size:14px;font-weight:600}
+.badge-ip{margin-left:auto;background:#DBEAFE;color:#1d4ed8;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:600}
+.wf-step{display:flex;gap:16px}
+.wf-line{display:flex;flex-direction:column;align-items:center}
+.wf-dot{width:28px;height:28px;border-radius:50%;border:2px solid #d1d5db;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wf-dot.done{background:var(--green);border-color:var(--green)}
+.wf-dot.active{background:var(--blue-mid);border-color:var(--blue-mid);animation:pulse 1.2s infinite}
+.wf-conn{width:2px;flex:1;background:#e5e7eb;margin:4px 0}
+.wf-conn.done{background:#86efac}
+.wf-body{padding-bottom:22px}
+.wf-lbl{font-size:13px;font-weight:600;color:#9ca3af}
+.wf-lbl.done{color:var(--green)}.wf-lbl.active{color:var(--blue-mid)}
+.wf-desc{font-size:12px;color:#9ca3af;margin-top:3px;line-height:1.5}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 
-  /* ── Workflow ── */
-  .wf-header {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
-  }
-  .wf-title { font-size: 14px; font-weight: 600; }
-  .badge-inprogress {
-    margin-left: auto; background: #dbeafe; color: #1d4ed8;
-    border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 600;
-  }
-  .wf-steps { }
-  .wf-step { display: flex; gap: 16px; }
-  .wf-line { display: flex; flex-direction: column; align-items: center; }
-  .wf-dot {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 2px solid #d1d5db; background: #fff;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: all .4s;
-  }
-  .wf-dot.done    { background: var(--green); border-color: var(--green); }
-  .wf-dot.active  { background: var(--gold); border-color: var(--gold); animation: pulse 1.2s infinite; }
-  .wf-dot.done svg { display: block; }
-  .wf-dot .dot-inner { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; }
-  .wf-dot.active .dot-inner { background: #fff; }
-  .wf-connector { width: 2px; flex: 1; background: #e5e7eb; margin: 4px 0; transition: background .4s; }
-  .wf-connector.done { background: #86efac; }
-  .wf-body { padding-bottom: 24px; }
-  .wf-step-label { font-size: 13px; font-weight: 600; color: #9ca3af; transition: color .4s; }
-  .wf-step-label.done   { color: var(--green); }
-  .wf-step-label.active { color: var(--gold); }
-  .wf-step-desc { font-size: 12px; color: #9ca3af; margin-top: 4px; line-height: 1.5; }
-  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:.6; } }
+/* ── Alerts ── */
+.urgent-alert{border:1px solid #fca5a5;background:linear-gradient(135deg,#fff1f2,#fff5f5);border-radius:12px;padding:20px;margin-bottom:14px}
+.ua-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ua-icon{width:36px;height:36px;border-radius:8px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ua-title{font-size:15px;font-weight:700;color:#9f1239}
+.ua-sub{font-size:12px;color:#be123c;margin-top:2px}
+.ua-items{list-style:none;margin-bottom:14px}
+.ua-items li{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;border-bottom:1px solid #fecdd3}
+.ua-items li:last-child{border:none}
+.ua-num{width:20px;height:20px;border-radius:50%;background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ua-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.ua-stat{background:#fff;border:1px solid #fecdd3;border-radius:8px;padding:10px 14px;text-align:center}
+.ua-stat-val{font-size:22px;font-weight:800;color:#be123c}
+.ua-stat-lbl{font-size:11px;color:#be123c;margin-top:2px}
 
-  /* ── Alerts ── */
-  .alert-feed-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-  .alert-feed-header h3 { font-size: 14px; font-weight: 600; }
-  .alert-count { font-size: 12px; color: var(--muted); }
-  .alert-card {
-    display: flex; align-items: flex-start; gap: 12px;
-    border-radius: 10px; border: 1px solid; padding: 14px 16px; margin-bottom: 10px;
-    transition: opacity .3s;
-  }
-  .alert-card.dismissed { display: none; }
-  .ac-red    { border-color: #fca5a5; background: #fef2f2; }
-  .ac-amber  { border-color: #fcd34d; background: #fffbeb; }
-  .ac-green  { border-color: #86efac; background: #f0fdf4; }
-  .ac-blue   { border-color: #93c5fd; background: #eff6ff; }
-  .alert-body { flex: 1; min-width: 0; }
-  .alert-title { font-size: 13px; font-weight: 600; }
-  .alert-msg { font-size: 12px; color: #4b5563; margin-top: 3px; line-height: 1.5; }
-  .alert-time { font-size: 11px; color: var(--muted); margin-top: 5px; }
-  .alert-dismiss {
-    background: none; border: none; color: #9ca3af; cursor: pointer; padding: 4px;
-    line-height: 1; font-size: 18px; flex-shrink: 0; transition: color .15s;
-  }
-  .alert-dismiss:hover { color: var(--text); }
-  .alert-empty {
-    border: 2px dashed var(--border); border-radius: 12px;
-    padding: 40px 20px; text-align: center; color: var(--muted);
-    display: none;
-  }
-  .alert-empty.visible { display: block; }
-  .alert-reset { color: var(--gold); background: none; border: none; cursor: pointer; font-size: 12px; text-decoration: underline; margin-top: 8px; }
-  .check-circle-big { font-size: 32px; margin-bottom: 8px; display: block; }
+.alert-card{display:flex;align-items:flex-start;gap:12px;border-radius:10px;border:1px solid;padding:13px 16px;margin-bottom:10px}
+.alert-card.dismissed{display:none}
+.ac-red{border-color:#fca5a5;background:#fef2f2}
+.ac-amber{border-color:#fcd34d;background:#fffbeb}
+.ac-green{border-color:#86efac;background:#f0fdf4}
+.ac-blue{border-color:#93c5fd;background:#eff6ff}
+.al-body{flex:1;min-width:0}
+.al-title{font-size:13px;font-weight:600}
+.al-msg{font-size:12px;color:#4b5563;margin-top:3px}
+.al-time{font-size:11px;color:var(--muted);margin-top:4px}
+.al-dis{background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;font-size:18px;flex-shrink:0;line-height:1}
+.al-dis:hover{color:var(--text)}
+.al-empty{border:2px dashed var(--border);border-radius:12px;padding:36px 20px;text-align:center;color:var(--muted);display:none}
+.al-empty.show{display:block}
+.al-reset{color:var(--blue-mid);background:none;border:none;cursor:pointer;font-size:12px;text-decoration:underline;margin-top:8px}
 
-  /* ── Installer ── */
-  .deploy-meta { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
-  .deploy-meta code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: var(--text); }
-  .btn-run {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--navy); color: #fff; border: none;
-    padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: background .15s;
-  }
-  .btn-run:hover { background: var(--navy-light); }
-  .log-window {
-    background: var(--navy); border-radius: 10px; padding: 16px 18px;
-    font-family: 'Consolas', 'Fira Code', monospace; font-size: 12px;
-    line-height: 2; display: none;
-  }
-  .log-window.visible { display: block; }
-  .log-line { display: flex; align-items: center; gap: 8px; }
-  .log-line.log-done    { color: #4ade80; }
-  .log-line.log-active  { color: var(--gold); }
-  .log-line.log-pending { color: #475569; }
-  .log-line.log-success { color: #4ade80; border-top: 1px solid rgba(255,255,255,.08); margin-top: 8px; padding-top: 8px; font-weight: 700; }
-  .dots span { animation: bounce .8s infinite; display: inline-block; }
-  .dots span:nth-child(2) { animation-delay: .15s; }
-  .dots span:nth-child(3) { animation-delay: .30s; }
-  @keyframes bounce { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
-  .deploy-success {
-    display: none; margin-top: 14px;
-    border: 1px solid #86efac; background: #f0fdf4;
-    border-radius: 10px; padding: 12px 16px;
-    display: none; align-items: center; gap: 10px; font-size: 13px; color: #15803d;
-  }
-  .deploy-success.visible { display: flex; }
+/* ── Analytics ── */
+.analytics-grid{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px}
+.compliance-ring{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px}
+.ring-wrap{position:relative;width:120px;height:120px;margin-bottom:14px}
+.ring-wrap svg{width:120px;height:120px;transform:rotate(-90deg)}
+.ring-circle-bg{fill:none;stroke:#E5E7EB;stroke-width:10}
+.ring-circle{fill:none;stroke:var(--blue-mid);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1.2s ease}
+.ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.ring-pct{font-size:20px;font-weight:800;color:var(--blue-mid)}
+.ring-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.ring-verified{font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.ring-caption{font-size:11px;color:var(--muted);text-align:center;line-height:1.4}
+.analytics-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.am-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.am-val{font-size:24px;font-weight:800;color:var(--blue-mid)}
+.am-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.pipeline{display:flex;align-items:center;gap:0;margin-top:4px}
+.pipe-step{flex:1;background:var(--blue-mid);color:#fff;text-align:center;padding:8px 4px;font-size:11px;font-weight:600;position:relative}
+.pipe-step:first-child{border-radius:8px 0 0 8px}
+.pipe-step:last-child{border-radius:0 8px 8px 0}
+.pipe-step::after{content:'';position:absolute;right:-10px;top:0;width:0;height:100%;border-top:18px solid transparent;border-bottom:18px solid transparent;border-left:10px solid var(--blue-mid);z-index:1}
+.pipe-step:last-child::after{display:none}
+.pipe-step:nth-child(2){background:#1D4ED8;margin:0 10px}
+.pipe-step:nth-child(2)::after{border-left-color:#1D4ED8}
+.pipe-step:nth-child(3){background:#1E40AF}
 
-  /* ── Responsive sidebar collapse ── */
-  @media(max-width:700px){
-    .sidebar { display: none; }
-    .shell { height: auto; flex-direction: column; }
-    .main { }
-    .mobile-tabs {
-      display: flex; overflow-x: auto; gap: 6px;
-      background: #fff; border-bottom: 1px solid var(--border); padding: 8px 12px;
-    }
-    .mobile-tab {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 6px; border: none;
-      background: none; font-size: 12px; font-weight: 500; color: var(--muted);
-      cursor: pointer; white-space: nowrap; transition: background .12s, color .12s;
-    }
-    .mobile-tab.active { background: var(--navy); color: #fff; }
-    .content { padding: 16px; padding-bottom: 80px; }
-    .stat-grid { grid-template-columns: repeat(2,1fr); }
-    .two-col { grid-template-columns: 1fr; }
-    .mobile-cta {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--navy); border-top: 1px solid rgba(201,166,74,.3);
-      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .mobile-cta span { font-size: 12px; color: #94a3b8; }
-  }
-  @media(min-width:701px){
-    .mobile-tabs, .mobile-cta { display: none; }
-  }
+/* ── Installer ── */
+.setup-hdr{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.setup-title{font-size:16px;font-weight:700}
+.setup-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+.setup-pct{margin-left:auto;font-size:20px;font-weight:800;color:var(--blue-mid)}
+.setup-prog{background:#E5E7EB;border-radius:999px;height:10px;margin-bottom:20px}
+.setup-bar{background:linear-gradient(90deg,var(--blue-mid),var(--blue-lite));height:10px;border-radius:999px;transition:width 1.5s ease}
+.setup-steps{margin-bottom:20px}
+.setup-step{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.setup-step:last-child{border:none}
+.step-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px}
+.si-done{background:#DCFCE7;color:#16a34a}
+.si-spin{background:#DBEAFE;color:var(--blue-mid);animation:spin 1s linear infinite}
+.si-wait{background:#F3F4F6;color:#9ca3af}
+@keyframes spin{to{transform:rotate(360deg)}}
+.step-txt{font-size:13px;font-weight:500}
+.step-txt.done{color:var(--green)}.step-txt.active{color:var(--blue-mid)}.step-txt.wait{color:#9ca3af}
+.log-win{background:var(--navy);border-radius:10px;padding:14px 16px;font-family:Consolas,'Fira Code',monospace;font-size:12px;line-height:2;display:none}
+.log-win.show{display:block}
+.log-ln{display:flex;align-items:center;gap:8px}
+.log-done{color:#4ade80}.log-act{color:var(--blue-lite)}.log-pnd{color:#475569}
+.log-ok{color:#4ade80;border-top:1px solid rgba(255,255,255,.08);margin-top:8px;padding-top:8px;font-weight:700}
+.dots span{animation:bounce .8s infinite;display:inline-block}
+.dots span:nth-child(2){animation-delay:.15s}
+.dots span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.setup-success{display:none;margin-top:12px;border:1px solid #86efac;background:#f0fdf4;border-radius:10px;padding:12px 16px;align-items:center;gap:10px;font-size:13px;color:#15803d}
+.setup-success.show{display:flex}
+.btn-run{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-run:hover{background:var(--navy2)}
 
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+/* ── Gallery ── */
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.gallery-card{border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.gallery-card img{width:100%;height:180px;object-fit:cover;display:block}
+.gallery-card .gc-label{padding:10px 14px;font-size:12px;font-weight:600;color:var(--text);border-top:1px solid var(--border)}
+
+/* ── Responsive ── */
+@media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}.analytics-grid{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .sidebar{display:none}
+  .mobile-tabs{display:flex;overflow-x:auto;gap:6px;background:#fff;border-bottom:1px solid var(--border);padding:8px 12px}
+  .mob-tab{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;border:none;background:none;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+  .mob-tab.active{background:var(--navy);color:#fff}
+  .content{padding:14px;padding-bottom:72px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .mobile-cta{position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:1px solid rgba(56,189,248,.2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+  .mobile-cta span{font-size:12px;color:#94a3b8}
+  .gallery-grid{grid-template-columns:1fr 1fr}
+  .analytics-metrics{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:701px){.mobile-tabs,.mobile-cta{display:none}}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
 </style>
 </head>
 <body>
 
-<!-- ── Banner ── -->
-<div id="demo-banner">
-  <div class="banner-text">
-    <span>&#9733;</span>
-    <span><strong>Interactive Demo</strong> — all data is simulated. Ready to see FineGuard in your own tenant?</span>
-    <button class="btn-book" onclick="window.open('https://fineguard.co.uk','_blank')">Book a live demo</button>
+<!-- Banner -->
+<div id="banner">
+  <div class="btxt">
+    <img src="images/logo.svg" style="width:18px;height:22px;object-fit:contain" alt=""/>
+    <span><strong>Interactive Demo</strong> — all data is simulated. See FineGuard in your own Microsoft 365 tenant.</span>
+    <button class="bbk" onclick="window.open('https://fineguard.co.uk','_blank')">Book a live demo</button>
   </div>
-  <button class="btn-dismiss" onclick="document.getElementById('demo-banner').remove();document.querySelector('.shell').style.height='100vh'" title="Dismiss">&#10005;</button>
+  <button class="bdx" onclick="document.getElementById('banner').remove();document.querySelector('.shell').style.height='100vh'" title="Dismiss">&#10005;</button>
 </div>
 
-<!-- ── Shell ── -->
+<!-- Shell -->
 <div class="shell">
 
   <!-- Sidebar -->
   <aside class="sidebar">
-    <div class="sidebar-logo" onclick="location.href='/'">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      <span>FineGuard</span>
+    <div class="sidebar-logo" onclick="switchTab('dashboard',document.querySelector('[data-tab=dashboard]'))">
+      <img src="images/logo.svg" alt="FineGuard"/>
+      <div class="logo-txt">
+        <div class="logo-name"><span>Fine</span><span>Guard</span></div>
+        <div class="logo-sub">UK Compliance Platform</div>
+      </div>
     </div>
     <nav class="sidebar-nav">
       <button class="nav-btn active" data-tab="dashboard" onclick="switchTab('dashboard',this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        Dashboard
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
       </button>
       <button class="nav-btn" data-tab="clients" onclick="switchTab('clients',this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Clients
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Client Portfolio
+      </button>
+      <button class="nav-btn" data-tab="atrisk" onclick="switchTab('atrisk',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>At Risk Clients
       </button>
       <button class="nav-btn" data-tab="calendar" onclick="switchTab('calendar',this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Calendar
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Filing Calendar
+      </button>
+      <button class="nav-btn" data-tab="analytics" onclick="switchTab('analytics',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Analytics
       </button>
       <button class="nav-btn" data-tab="workflow" onclick="switchTab('workflow',this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-        Workflow
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>Workflow
       </button>
       <button class="nav-btn" data-tab="alerts" onclick="switchTab('alerts',this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        Alerts
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Alerts
       </button>
       <button class="nav-btn" data-tab="deploy" onclick="switchTab('deploy',this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-        Installer
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>Installer
       </button>
     </nav>
-    <div class="sidebar-footer">
-      <button class="btn-gold" onclick="window.open('https://fineguard.co.uk','_blank')">Book live demo</button>
-      <p class="sidebar-version">v1.0.0 — Demo mode</p>
+    <div class="sidebar-foot">
+      <button class="btn-primary" onclick="window.open('https://fineguard.co.uk','_blank')">Book live demo</button>
+      <p class="ver">v1.0.0 — Demo mode</p>
     </div>
   </aside>
 
@@ -427,312 +342,428 @@
   <div class="main">
     <!-- Mobile tabs -->
     <div class="mobile-tabs">
-      <button class="mobile-tab active" data-tab="dashboard" onclick="switchTab('dashboard',this)">&#9783; Dashboard</button>
-      <button class="mobile-tab" data-tab="clients" onclick="switchTab('clients',this)">&#128101; Clients</button>
-      <button class="mobile-tab" data-tab="calendar" onclick="switchTab('calendar',this)">&#128197; Calendar</button>
-      <button class="mobile-tab" data-tab="workflow" onclick="switchTab('workflow',this)">&#9741; Workflow</button>
-      <button class="mobile-tab" data-tab="alerts" onclick="switchTab('alerts',this)">&#128276; Alerts</button>
-      <button class="mobile-tab" data-tab="deploy" onclick="switchTab('deploy',this)">&#128640; Installer</button>
+      <button class="mob-tab active" data-tab="dashboard" onclick="switchTab('dashboard',this)">Dashboard</button>
+      <button class="mob-tab" data-tab="clients" onclick="switchTab('clients',this)">Portfolio</button>
+      <button class="mob-tab" data-tab="atrisk" onclick="switchTab('atrisk',this)">At Risk</button>
+      <button class="mob-tab" data-tab="calendar" onclick="switchTab('calendar',this)">Calendar</button>
+      <button class="mob-tab" data-tab="analytics" onclick="switchTab('analytics',this)">Analytics</button>
+      <button class="mob-tab" data-tab="workflow" onclick="switchTab('workflow',this)">Workflow</button>
+      <button class="mob-tab" data-tab="alerts" onclick="switchTab('alerts',this)">Alerts</button>
+      <button class="mob-tab" data-tab="deploy" onclick="switchTab('deploy',this)">Installer</button>
     </div>
 
-    <!-- Top bar -->
+    <!-- Topbar -->
     <div class="topbar">
+      <div class="topbar-logo">
+        <img src="images/logo.svg" alt="FineGuard"/>
+        <div class="tl-name"><span>Fine</span><span>Guard</span></div>
+      </div>
+      <div class="sep"></div>
       <h1 id="topbar-title">Dashboard</h1>
-      <div class="ml-auto">
+      <div class="ml">
         <span class="badge-demo">Demo mode</span>
-        <button class="btn-sm-gold" onclick="window.open('https://fineguard.co.uk','_blank')">
+        <button class="btn-sm" onclick="window.open('https://fineguard.co.uk','_blank')">
           Get started
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- Content -->
     <div class="content">
 
-      <!-- ── DASHBOARD ── -->
+      <!-- ═══ DASHBOARD ═══ -->
       <div id="panel-dashboard" class="panel active">
+
+        <!-- 3 stat cards matching brand screenshots -->
         <div class="stat-grid">
           <div class="stat-card">
-            <div class="stat-header"><span class="stat-label">Total Filings</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A64A" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="stat-hdr">
+              <div><div class="stat-lbl">Overdue</div><div class="stat-sub">Requires immediate action</div></div>
+              <div class="stat-icon si-red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
             </div>
-            <div class="stat-value c-gold" id="stat-total">0</div>
+            <div class="stat-val c-red" id="s-over">0</div>
           </div>
           <div class="stat-card">
-            <div class="stat-header"><span class="stat-label">Filed</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <div class="stat-hdr">
+              <div><div class="stat-lbl">Due Soon</div><div class="stat-sub">Within 14 days</div></div>
+              <div class="stat-icon si-amber">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
             </div>
-            <div class="stat-value c-green" id="stat-filed">0</div>
+            <div class="stat-val c-amber" id="s-soon">0</div>
           </div>
           <div class="stat-card">
-            <div class="stat-header"><span class="stat-label">Pending</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="stat-hdr">
+              <div><div class="stat-lbl">Compliant</div><div class="stat-sub">All filings up to date</div></div>
+              <div class="stat-icon si-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
             </div>
-            <div class="stat-value c-amber" id="stat-pending">0</div>
+            <div class="stat-val c-green" id="s-comp">0</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-header"><span class="stat-label">Alerts</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div class="stat-value c-red" id="stat-alerts">0</div>
+        </div>
+
+        <!-- Client Portfolio table (matching screenshot 4) -->
+        <div class="tbl-wrap" style="margin-bottom:16px">
+          <div class="tbl-head">
+            <h3>Client Portfolio</h3>
+            <span class="tbl-cnt">6 clients</span>
           </div>
+          <table>
+            <thead><tr>
+              <th>Company Name</th><th>Service Type</th><th>Next Deadline</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              <tr><td class="td-name">Apex Solutions Ltd</td><td>VAT Return</td><td>28 May 2025</td><td><span class="sdot sd-over"><span class="dot dot-over"></span>Overdue</span></td></tr>
+              <tr><td class="td-name">Juniper Tech PLC</td><td>Confirmation Statement</td><td>15 Jun 2025</td><td><span class="sdot sd-warn"><span class="dot dot-warn"></span>Due Soon, 17 days</span></td></tr>
+              <tr><td class="td-name">Horizon Trade Ltd</td><td>Payroll / RTI</td><td>05 May 2025</td><td><span class="sdot sd-ok"><span class="dot dot-ok"></span>Compliant</span></td></tr>
+              <tr><td class="td-name">Northern Tax Partners</td><td>Self Assessment</td><td>31 Jan 2026</td><td><span class="sdot sd-over"><span class="dot dot-over"></span>Overdue</span></td></tr>
+              <tr><td class="td-name">Greenfield Accountancy</td><td>CT600 Corporation Tax</td><td>31 Mar 2026</td><td><span class="sdot sd-ok"><span class="dot dot-ok"></span>Compliant</span></td></tr>
+              <tr><td class="td-name">Lancaster Finance Group</td><td>VAT Return</td><td>07 Mar 2026</td><td><span class="sdot sd-warn"><span class="dot dot-warn"></span>Due Soon, 8 days</span></td></tr>
+            </tbody>
+          </table>
         </div>
 
         <div class="two-col">
           <div class="card">
             <h3>Upcoming Deadlines</h3>
-            <div class="deadline-row">
-              <div class="deadline-left"><span class="type-badge tb-vat">VAT</span><span>Smithson &amp; Co</span></div>
-              <span style="font-size:12px;color:var(--amber);font-weight:600">7 Mar</span>
-            </div>
-            <div class="deadline-row">
-              <div class="deadline-left"><span class="type-badge tb-ct">CT</span><span>Patel Advisory</span></div>
-              <span style="font-size:12px;color:var(--muted)">14 Mar</span>
-            </div>
-            <div class="deadline-row">
-              <div class="deadline-left"><span class="type-badge tb-sa">SA</span><span>Northern Tax</span></div>
-              <span style="font-size:12px;color:var(--red);font-weight:600">5d overdue</span>
-            </div>
+            <div class="dl-row"><div class="dl-left"><span class="tb tb-vat">VAT</span>Lancaster Finance</div><span style="font-size:12px;color:var(--amber);font-weight:600">7 Mar</span></div>
+            <div class="dl-row"><div class="dl-left"><span class="tb tb-ct">CT</span>Patel Advisory</div><span style="font-size:12px;color:var(--muted)">14 Mar</span></div>
+            <div class="dl-row"><div class="dl-left"><span class="tb tb-sa">SA</span>Northern Tax</div><span style="font-size:12px;color:var(--red);font-weight:600">5d overdue</span></div>
           </div>
           <div class="card">
             <h3>Filing Activity (last 6 months)</h3>
             <div class="bar-chart" id="bar-chart">
-              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="38%"></div><span class="bar-label">Sep</span></div>
-              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="55%"></div><span class="bar-label">Oct</span></div>
-              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="42%"></div><span class="bar-label">Nov</span></div>
-              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="68%"></div><span class="bar-label">Dec</span></div>
-              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="72%"></div><span class="bar-label">Jan</span></div>
-              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="60%"></div><span class="bar-label">Feb</span></div>
+              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="38%"></div><span class="bar-lbl">Sep</span></div>
+              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="55%"></div><span class="bar-lbl">Oct</span></div>
+              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="42%"></div><span class="bar-lbl">Nov</span></div>
+              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="68%"></div><span class="bar-lbl">Dec</span></div>
+              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="72%"></div><span class="bar-lbl">Jan</span></div>
+              <div class="bar-col"><div class="bar-fill" style="height:0%" data-h="60%"></div><span class="bar-lbl">Feb</span></div>
             </div>
           </div>
         </div>
 
-        <div class="mtd-strip">
-          <div class="mtd-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A64A" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <div class="mtd">
+          <div class="mtd-hdr">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             <span class="mtd-title">MTD ITSA Readiness</span>
             <span class="mtd-pct">94% compliant</span>
           </div>
-          <div class="progress-bg"><div class="progress-fill" style="width:0%" id="mtd-bar"></div></div>
+          <div class="prog-bg"><div class="prog-fill" id="mtd-bar" style="width:0%"></div></div>
           <p class="mtd-note">8 of 147 clients require action before the 5 April deadline. <a>View list →</a></p>
         </div>
       </div>
 
-      <!-- ── CLIENTS ── -->
+      <!-- ═══ CLIENTS ═══ -->
       <div id="panel-clients" class="panel">
-        <div class="table-wrap">
-          <div class="table-head">
+        <div class="tbl-wrap">
+          <div class="tbl-head">
             <h3>Client Register</h3>
-            <span class="table-count">6 clients</span>
+            <span class="tbl-cnt">6 clients</span>
           </div>
           <table>
-            <thead><tr>
-              <th>Client</th><th>VAT</th><th>CT600</th><th>SA</th><th>Status</th>
-            </tr></thead>
+            <thead><tr><th>Client</th><th>VAT</th><th>CT600</th><th>SA</th><th>Status</th></tr></thead>
             <tbody>
-              <tr><td class="td-name">Smithson &amp; Co Accountants</td><td>Q1</td><td>Apr 25</td><td>Jan 26</td><td><span class="status-badge sb-ok">&#10003; On track</span></td></tr>
-              <tr><td class="td-name">Patel Advisory Services</td><td>Q2</td><td>Sep 25</td><td>Jan 26</td><td><span class="status-badge sb-warning">&#9201; Due soon</span></td></tr>
-              <tr><td class="td-name">Northern Tax Partners</td><td>Q1</td><td>Mar 25</td><td>Jan 26</td><td><span class="status-badge sb-overdue">&#9888; Overdue</span></td></tr>
-              <tr><td class="td-name">Greenfield Accountancy Ltd</td><td>Q3</td><td>Dec 25</td><td>Jan 26</td><td><span class="status-badge sb-ok">&#10003; On track</span></td></tr>
-              <tr><td class="td-name">Lancaster Finance Group</td><td>Q4</td><td>Jun 25</td><td>Jan 26</td><td><span class="status-badge sb-warning">&#9201; Due soon</span></td></tr>
-              <tr><td class="td-name">Birchwood Tax &amp; Advisory</td><td>Q2</td><td>Nov 25</td><td>Jan 26</td><td><span class="status-badge sb-ok">&#10003; On track</span></td></tr>
+              <tr><td class="td-name">Smithson &amp; Co Accountants</td><td>Q1</td><td>Apr 25</td><td>Jan 26</td><td><span class="sdot sd-ok"><span class="dot dot-ok"></span>On track</span></td></tr>
+              <tr><td class="td-name">Patel Advisory Services</td><td>Q2</td><td>Sep 25</td><td>Jan 26</td><td><span class="sdot sd-warn"><span class="dot dot-warn"></span>Due soon</span></td></tr>
+              <tr><td class="td-name">Northern Tax Partners</td><td>Q1</td><td>Mar 25</td><td>Jan 26</td><td><span class="sdot sd-over"><span class="dot dot-over"></span>Overdue</span></td></tr>
+              <tr><td class="td-name">Greenfield Accountancy Ltd</td><td>Q3</td><td>Dec 25</td><td>Jan 26</td><td><span class="sdot sd-ok"><span class="dot dot-ok"></span>On track</span></td></tr>
+              <tr><td class="td-name">Lancaster Finance Group</td><td>Q4</td><td>Jun 25</td><td>Jan 26</td><td><span class="sdot sd-warn"><span class="dot dot-warn"></span>Due soon</span></td></tr>
+              <tr><td class="td-name">Birchwood Tax &amp; Advisory</td><td>Q2</td><td>Nov 25</td><td>Jan 26</td><td><span class="sdot sd-ok"><span class="dot dot-ok"></span>On track</span></td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- ── CALENDAR ── -->
+      <!-- ═══ AT RISK ═══ -->
+      <div id="panel-atrisk" class="panel">
+        <div class="tbl-wrap">
+          <div class="tbl-head">
+            <h3>At Risk Clients</h3>
+            <span class="tbl-cnt" style="color:var(--red);font-weight:600">6 requiring action</span>
+          </div>
+          <table>
+            <thead><tr>
+              <th>Company Name</th><th>Service Type</th><th>Days to Deadline</th><th>Status</th><th>Action Required</th>
+            </tr></thead>
+            <tbody class="risk-row">
+              <tr>
+                <td class="td-name">Innovate UK Ltd.</td><td>F&amp;F Annual Return</td>
+                <td><span class="days-chip overdue">!</span></td>
+                <td><span class="sdot sd-over"><span class="dot dot-over"></span>OVERDUE</span></td>
+                <td><button class="action-btn">Complete F&amp;F Return</button></td>
+              </tr>
+              <tr>
+                <td class="td-name">Fintech Solutions Plc</td><td>Client Onboarding Check</td>
+                <td><span class="days-chip">3</span></td>
+                <td><span class="sdot sd-warn"><span class="dot dot-warn"></span>Due Soon</span></td>
+                <td><button class="action-btn">Verify ID Docs</button></td>
+              </tr>
+              <tr>
+                <td class="td-name">Brighton Builders Ltd</td><td>Client Onboarding Check</td>
+                <td><span class="days-chip">5</span></td>
+                <td><span class="sdot sd-warn"><span class="dot dot-warn"></span>Due Soon</span></td>
+                <td><button class="action-btn">Process Annual Filing</button></td>
+              </tr>
+              <tr>
+                <td class="td-name">London Tech Hub</td><td>F&amp;F Annual Return</td>
+                <td><span class="days-chip">7</span></td>
+                <td><span class="sdot sd-warn"><span class="dot dot-warn"></span>Due Soon</span></td>
+                <td><button class="action-btn">Process Annual Filing</button></td>
+              </tr>
+              <tr>
+                <td class="td-name">Midlands Manufacturing</td><td>F&amp;F Annual Return</td>
+                <td><span class="days-chip overdue">!</span></td>
+                <td><span class="sdot sd-over"><span class="dot dot-over"></span>OVERDUE</span></td>
+                <td><button class="action-btn">Complete F&amp;F Return</button></td>
+              </tr>
+              <tr>
+                <td class="td-name">Global Services LLP</td><td>VAT Return</td>
+                <td><span class="days-chip">3</span></td>
+                <td><span class="sdot sd-warn"><span class="dot dot-warn"></span>DUE SOON</span></td>
+                <td><button class="action-btn">Process Annual Filing</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-strip">
+          <div class="it">Proactive risk monitoring</div>
+          <div class="ib">FineGuard continuously monitors all client deadlines and surfaces at-risk cases to your team before they become overdue — reducing penalty exposure across your entire portfolio.</div>
+        </div>
+      </div>
+
+      <!-- ═══ CALENDAR ═══ -->
       <div id="panel-calendar" class="panel">
         <div class="card" style="margin-bottom:14px">
           <h3>Filing Calendar — March 2026</h3>
-
           <div class="cal-card overdue">
-            <div class="cal-left">
-              <span class="type-badge tb-sa">SA</span>
-              <div class="cal-info">
-                <p>Self Assessment — 2024/25</p>
-                <p>Northern Tax Partners</p>
-              </div>
-            </div>
-            <div class="cal-right">
-              <div class="due">31 Jan</div>
-              <div class="days days-over">5d overdue</div>
-            </div>
+            <div class="cal-left"><span class="tb tb-sa">SA</span><div class="cal-info"><p>Self Assessment — 2024/25</p><p>Northern Tax Partners</p></div></div>
+            <div class="cal-right"><div class="cal-due">31 Jan</div><div class="cal-days cover">5d overdue</div></div>
           </div>
-
           <div class="cal-card warning">
-            <div class="cal-left">
-              <span class="type-badge tb-vat">VAT</span>
-              <div class="cal-info">
-                <p>VAT Return — Q1</p>
-                <p>Smithson &amp; Co Accountants</p>
-              </div>
-            </div>
-            <div class="cal-right">
-              <div class="due">7 Mar</div>
-              <div class="days days-warn">8d left</div>
-            </div>
+            <div class="cal-left"><span class="tb tb-vat">VAT</span><div class="cal-info"><p>VAT Return — Q1</p><p>Lancaster Finance Group</p></div></div>
+            <div class="cal-right"><div class="cal-due">7 Mar</div><div class="cal-days cwarn">8d left</div></div>
           </div>
-
           <div class="cal-card warning">
-            <div class="cal-left">
-              <span class="type-badge tb-ct">CT</span>
-              <div class="cal-info">
-                <p>CT600 Corporation Tax</p>
-                <p>Patel Advisory Services</p>
-              </div>
-            </div>
-            <div class="cal-right">
-              <div class="due">14 Mar</div>
-              <div class="days days-warn">15d left</div>
-            </div>
+            <div class="cal-left"><span class="tb tb-ct">CT</span><div class="cal-info"><p>CT600 Corporation Tax</p><p>Patel Advisory Services</p></div></div>
+            <div class="cal-right"><div class="cal-due">14 Mar</div><div class="cal-days cwarn">15d left</div></div>
           </div>
-
           <div class="cal-card">
-            <div class="cal-left">
-              <span class="type-badge tb-paye">PAYE</span>
-              <div class="cal-info">
-                <p>PAYE Monthly RTI</p>
-                <p>Lancaster Finance Group</p>
-              </div>
-            </div>
-            <div class="cal-right">
-              <div class="due">19 Mar</div>
-              <div class="days days-ok">20d left</div>
-            </div>
+            <div class="cal-left"><span class="tb tb-paye">PAYE</span><div class="cal-info"><p>PAYE Monthly RTI</p><p>Horizon Trade Ltd</p></div></div>
+            <div class="cal-right"><div class="cal-due">19 Mar</div><div class="cal-days cok">20d left</div></div>
           </div>
-
           <div class="cal-card">
-            <div class="cal-left">
-              <span class="type-badge tb-vat">VAT</span>
-              <div class="cal-info">
-                <p>VAT Return — Q2</p>
-                <p>Patel Advisory Services</p>
-              </div>
-            </div>
-            <div class="cal-right">
-              <div class="due">7 May</div>
-              <div class="days days-ok">69d left</div>
-            </div>
+            <div class="cal-left"><span class="tb tb-vat">VAT</span><div class="cal-info"><p>VAT Return — Q2</p><p>Patel Advisory Services</p></div></div>
+            <div class="cal-right"><div class="cal-due">7 May</div><div class="cal-days cok">69d left</div></div>
           </div>
         </div>
-
         <div class="info-strip">
-          <div class="info-title">Automated deadline calculation</div>
-          <div class="info-body">FineGuard's compliance engine automatically calculates VAT, CT, SA, PAYE, and MTD deadlines for all clients — accounting for weekends, bank holidays, and accounting period adjustments.</div>
+          <div class="it">Automated deadline calculation</div>
+          <div class="ib">FineGuard's compliance engine automatically calculates VAT, CT, SA, PAYE, and MTD deadlines for all clients — accounting for weekends, bank holidays, and accounting period adjustments.</div>
         </div>
       </div>
 
-      <!-- ── WORKFLOW ── -->
+      <!-- ═══ ANALYTICS ═══ -->
+      <div id="panel-analytics" class="panel">
+        <div style="margin-bottom:6px;font-size:13px;color:var(--muted)">Complete Control and Efficiency</div>
+        <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">UK Compliance Overview</h2>
+
+        <div class="analytics-grid">
+          <!-- Donut ring -->
+          <div class="card compliance-ring">
+            <div class="ring-verified">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Verified
+            </div>
+            <div class="ring-wrap">
+              <svg viewBox="0 0 36 36">
+                <circle class="ring-circle-bg" cx="18" cy="18" r="14"/>
+                <circle class="ring-circle" id="ring-arc" cx="18" cy="18" r="14"
+                  stroke-dasharray="87.96 87.96" stroke-dashoffset="87.96"/>
+              </svg>
+              <div class="ring-label">
+                <div class="ring-pct" id="ring-pct">0%</div>
+                <div class="ring-sub">Compliant</div>
+              </div>
+            </div>
+            <p class="ring-caption">Total Verification<br/>All Key Records Verified</p>
+          </div>
+
+          <!-- Data stream chart area -->
+          <div class="card">
+            <h3>Data Stream Analysis</h3>
+            <div style="display:flex;gap:12px;margin-bottom:12px">
+              <div style="flex:1;background:var(--surface);border-radius:8px;padding:10px 14px">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:4px">VERIFIED RECORDS</div>
+                <div style="font-size:22px;font-weight:800;color:var(--blue-mid)" id="a-verified">0</div>
+              </div>
+              <div style="flex:1;background:var(--surface);border-radius:8px;padding:10px 14px">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:4px">TOTAL RECORDS</div>
+                <div style="font-size:22px;font-weight:800;color:var(--text)" id="a-total">0</div>
+              </div>
+              <div style="flex:1;background:var(--surface);border-radius:8px;padding:10px 14px">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:4px">DATA SOURCES</div>
+                <div style="font-size:22px;font-weight:800;color:var(--text)">3</div>
+              </div>
+            </div>
+            <!-- Mini bar chart -->
+            <div style="display:flex;align-items:flex-end;gap:5px;height:60px;padding-top:8px">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%"><div style="width:100%;border-radius:2px 2px 0 0;background:#BFDBFE;height:40%"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%"><div style="width:100%;border-radius:2px 2px 0 0;background:#93C5FD;height:55%"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%"><div style="width:100%;border-radius:2px 2px 0 0;background:#60A5FA;height:45%"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%"><div style="width:100%;border-radius:2px 2px 0 0;background:#3B82F6;height:70%"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%"><div style="width:100%;border-radius:2px 2px 0 0;background:#2563EB;height:90%"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%"><div style="width:100%;border-radius:2px 2px 0 0;background:#1D4ED8;height:80%"></div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--muted)">
+              <span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric cards -->
+        <div class="analytics-metrics">
+          <div class="am-card"><div class="am-val" id="a-clients">0</div><div class="am-lbl">Total Clients Monitored</div></div>
+          <div class="am-card"><div class="am-val c-green" id="a-filed">0</div><div class="am-lbl">Filings Completed This Year</div></div>
+          <div class="am-card"><div class="am-val c-red">3</div><div class="am-lbl">Penalty Risks Active</div></div>
+        </div>
+
+        <!-- Pipeline -->
+        <div class="card">
+          <h3>Streamlined Compliance Workflow</h3>
+          <div class="pipeline">
+            <div class="pipe-step">Deadline Detected</div>
+            <div class="pipe-step">Data Collated</div>
+            <div class="pipe-step">Alert Sent</div>
+            <div class="pipe-step">Return Prepared</div>
+            <div class="pipe-step">Approved &amp; Filed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ WORKFLOW ═══ -->
       <div id="panel-workflow" class="panel">
         <div class="card" style="margin-bottom:14px">
-          <div class="wf-header">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A64A" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span class="wf-title">Live Workflow: VAT Return — Smithson &amp; Co</span>
-            <span class="badge-inprogress">In progress</span>
+          <div class="wf-hdr">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span class="wf-title">Live Workflow: VAT Return — Lancaster Finance Group</span>
+            <span class="badge-ip">In progress</span>
           </div>
-          <div class="wf-steps" id="wf-steps">
-            <!-- injected by JS -->
-          </div>
+          <div id="wf-steps"></div>
         </div>
         <div class="info-strip">
-          <div class="info-title">Power Automate-driven workflows</div>
-          <div class="info-body">Every step is orchestrated by Power Automate flows running inside your Microsoft 365 tenant. Approvals, notifications, and audit logs happen automatically — no manual chasing required.</div>
+          <div class="it">Power Automate-driven workflows</div>
+          <div class="ib">Every step is orchestrated by Power Automate flows running inside your Microsoft 365 tenant. Approvals, notifications, and audit logs happen automatically — no manual chasing required.</div>
         </div>
       </div>
 
-      <!-- ── ALERTS ── -->
+      <!-- ═══ ALERTS ═══ -->
       <div id="panel-alerts" class="panel">
-        <div class="alert-feed-header">
-          <h3>Teams Alert Feed</h3>
-          <span class="alert-count" id="alert-count">4 active</span>
-        </div>
 
-        <div class="alert-card ac-red" id="alert-1">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div class="alert-body">
-            <div class="alert-title">Overdue: Self Assessment</div>
-            <div class="alert-msg">Northern Tax Partners — 5 days overdue. Action required.</div>
-            <div class="alert-time">2h ago</div>
+        <!-- Urgent alert card matching screenshot 5 -->
+        <div class="urgent-alert">
+          <div class="ua-hdr">
+            <div class="ua-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <div>
+              <div class="ua-title">Urgent Compliance Alert</div>
+              <div class="ua-sub">2 Deadlines Due in 3 Days</div>
+            </div>
           </div>
-          <button class="alert-dismiss" onclick="dismissAlert(1)" title="Dismiss">&#10005;</button>
-        </div>
-
-        <div class="alert-card ac-amber" id="alert-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <div class="alert-body">
-            <div class="alert-title">Due in 8 days: VAT Return</div>
-            <div class="alert-msg">Smithson &amp; Co — Q1 VAT return due 7 March.</div>
-            <div class="alert-time">4h ago</div>
+          <ul class="ua-items">
+            <li><span class="ua-num">1</span>F&amp;F Annual Return</li>
+            <li><span class="ua-num">2</span>Client Onboarding Check — ABC Ltd</li>
+          </ul>
+          <div class="ua-stats">
+            <div class="ua-stat"><div class="ua-stat-val">4</div><div class="ua-stat-lbl">Clients at Risk</div></div>
+            <div class="ua-stat"><div class="ua-stat-val">112</div><div class="ua-stat-lbl">Tasks Completed</div></div>
           </div>
-          <button class="alert-dismiss" onclick="dismissAlert(2)" title="Dismiss">&#10005;</button>
         </div>
 
-        <div class="alert-card ac-green" id="alert-3">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" style="flex-shrink:0;margin-top:2px"><polyline points="20 6 9 17 4 12"/></svg>
-          <div class="alert-body">
-            <div class="alert-title">Filed: CT600</div>
-            <div class="alert-msg">Greenfield Accountancy — CT600 filed successfully.</div>
-            <div class="alert-time">1d ago</div>
-          </div>
-          <button class="alert-dismiss" onclick="dismissAlert(3)" title="Dismiss">&#10005;</button>
+        <!-- Feed -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:14px;font-weight:600">Teams Alert Feed</h3>
+          <span id="al-cnt" style="font-size:12px;color:var(--muted)">4 active</span>
         </div>
 
-        <div class="alert-card ac-blue" id="alert-4">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <div class="alert-body">
-            <div class="alert-title">MTD ITSA Reminder</div>
-            <div class="alert-msg">Quarterly MTD update due for 3 clients before 5 April.</div>
-            <div class="alert-time">2d ago</div>
-          </div>
-          <button class="alert-dismiss" onclick="dismissAlert(4)" title="Dismiss">&#10005;</button>
+        <div class="alert-card ac-red" id="al-1">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div class="al-body"><div class="al-title">Overdue: Self Assessment</div><div class="al-msg">Northern Tax Partners — 5 days overdue. Action required.</div><div class="al-time">2h ago</div></div>
+          <button class="al-dis" onclick="dismissAlert(1)" title="Dismiss">&#10005;</button>
+        </div>
+        <div class="alert-card ac-amber" id="al-2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div class="al-body"><div class="al-title">Due in 8 days: VAT Return</div><div class="al-msg">Lancaster Finance Group — Q1 VAT return due 7 March.</div><div class="al-time">4h ago</div></div>
+          <button class="al-dis" onclick="dismissAlert(2)" title="Dismiss">&#10005;</button>
+        </div>
+        <div class="alert-card ac-green" id="al-3">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" style="flex-shrink:0;margin-top:2px"><polyline points="20 6 9 17 4 12"/></svg>
+          <div class="al-body"><div class="al-title">Filed: CT600</div><div class="al-msg">Greenfield Accountancy — CT600 filed successfully.</div><div class="al-time">1d ago</div></div>
+          <button class="al-dis" onclick="dismissAlert(3)" title="Dismiss">&#10005;</button>
+        </div>
+        <div class="alert-card ac-blue" id="al-4">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <div class="al-body"><div class="al-title">MTD ITSA Reminder</div><div class="al-msg">Quarterly MTD update due for 3 clients before 5 April.</div><div class="al-time">2d ago</div></div>
+          <button class="al-dis" onclick="dismissAlert(4)" title="Dismiss">&#10005;</button>
         </div>
 
-        <div class="alert-empty" id="alert-empty">
-          <span class="check-circle-big">&#9989;</span>
+        <div class="al-empty" id="al-empty">
+          <span style="font-size:28px;display:block;margin-bottom:8px">&#9989;</span>
           All alerts cleared — great work!<br/>
-          <button class="alert-reset" onclick="resetAlerts()">Reset demo</button>
+          <button class="al-reset" onclick="resetAlerts()">Reset demo</button>
         </div>
 
-        <div class="info-strip" style="margin-top:14px">
-          <div class="info-title">Microsoft Teams-native alerts</div>
-          <div class="info-body">Alerts are delivered directly to the relevant Teams channel or personal chat — no email inbox to monitor, no separate portal to log into.</div>
+        <div class="info-strip" style="margin-top:12px">
+          <div class="it">Microsoft Teams-native alerts</div>
+          <div class="ib">Alerts are delivered directly to the relevant Teams channel or personal chat — no email inbox to monitor, no separate portal to log into.</div>
         </div>
       </div>
 
-      <!-- ── DEPLOY / INSTALLER ── -->
+      <!-- ═══ INSTALLER ═══ -->
       <div id="panel-deploy" class="panel">
         <div class="card" style="margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A64A" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-            <h3 style="margin-bottom:0">FineGuard Installer Portal — Demo Run</h3>
+          <div class="setup-hdr">
+            <img src="images/logo.svg" style="width:28px;height:33px" alt=""/>
+            <span class="setup-title">Firm Setup in Progress</span>
+            <span class="setup-pct" id="setup-pct" style="display:none">75%</span>
           </div>
-          <p class="deploy-meta">Simulated deployment into <code>demo-tenant.onmicrosoft.com</code></p>
+          <p class="setup-sub">Setting up your FineGuard environment in <code style="background:var(--surface);padding:2px 6px;border-radius:4px;font-family:monospace">demo-tenant.onmicrosoft.com</code></p>
 
           <button class="btn-run" id="btn-run" onclick="startDeploy()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Run demo deployment
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run firm setup
           </button>
 
-          <div class="log-window" id="log-window">
-            <div class="log-line log-pending" id="log-0">&#9675; Validating Azure credentials</div>
-            <div class="log-line log-pending" id="log-1">&#9675; Provisioning SharePoint site</div>
-            <div class="log-line log-pending" id="log-2">&#9675; Installing Power Automate flows</div>
-            <div class="log-line log-pending" id="log-3">&#9675; Configuring Teams notifications</div>
-            <div class="log-line log-pending" id="log-4">&#9675; Setting up Entra ID roles</div>
-            <div class="log-line log-pending" id="log-5">&#9675; Running smoke tests</div>
+          <div class="setup-steps" id="setup-steps" style="display:none">
+            <div class="setup-step"><div class="step-icon si-done" id="si-0">&#10003;</div><span class="step-txt done">Workspace created</span></div>
+            <div class="setup-step"><div class="step-icon si-done" id="si-1">&#10003;</div><span class="step-txt done">Clients imported</span></div>
+            <div class="setup-step"><div class="step-icon si-spin" id="si-2">&#10227;</div><span class="step-txt active">Activating monitoring</span></div>
+            <div class="setup-step"><div class="step-icon si-wait" id="si-3">&#9675;</div><span class="step-txt wait">Configuring Teams alerts</span></div>
+            <div class="setup-step"><div class="step-icon si-wait" id="si-4">&#9675;</div><span class="step-txt wait">Setting up Entra ID roles</span></div>
+            <div class="setup-step"><div class="step-icon si-wait" id="si-5">&#9675;</div><span class="step-txt wait">Running smoke tests</span></div>
           </div>
 
-          <div class="deploy-success" id="deploy-success">
+          <div class="log-win" id="log-win">
+            <div class="log-ln log-done">&#10003; 14:32:01 Workspace verification complete — Success</div>
+            <div class="log-ln log-done">&#10003; 14:32:03 Streamline Data Streams — Importing clients...</div>
+            <div class="log-ln log-act" id="log-active">&#9658; 14:32:08 Activating compliance monitoring <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+            <div class="log-ln log-pnd" id="log-p3">&#9675; Configuring Teams notifications</div>
+            <div class="log-ln log-pnd" id="log-p4">&#9675; Setting up Entra ID roles</div>
+            <div class="log-ln log-pnd" id="log-p5">&#9675; Running smoke tests</div>
+          </div>
+
+          <div class="setup-success" id="setup-success">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            Deployment finished in <strong>4m 12s</strong>. All 6 steps passed smoke tests.
+            Setup complete in <strong>4m 12s</strong>. All 6 steps passed. Your FineGuard tenant is ready.
           </div>
         </div>
-
         <div class="info-strip">
-          <div class="info-title">One-click tenant deployment</div>
-          <div class="info-body">The real Installer Portal deploys FineGuard into any Microsoft 365 tenant in under an hour, with live step logging, rollback support, and multi-tenant management for partners.</div>
+          <div class="it">One-click tenant deployment</div>
+          <div class="ib">The real Installer Portal deploys FineGuard into any Microsoft 365 tenant in under an hour, with live step logging, rollback support, and multi-tenant management for partners.</div>
         </div>
       </div>
 
@@ -741,188 +772,157 @@
     <!-- Mobile CTA -->
     <div class="mobile-cta">
       <span>Like what you see?</span>
-      <button class="btn-sm-gold" onclick="window.open('https://fineguard.co.uk','_blank')">
-        Book a live demo &#8250;
-      </button>
+      <button class="btn-sm" onclick="window.open('https://fineguard.co.uk','_blank')">Book a live demo &#8250;</button>
     </div>
-  </div><!-- /.main -->
-</div><!-- /.shell -->
+  </div>
+</div>
 
 <script>
-// ── Tab switching ──────────────────────────────────────────────────────────
-const TABS = ['dashboard','clients','calendar','workflow','alerts','deploy'];
-const TAB_LABELS = { dashboard:'Dashboard', clients:'Clients', calendar:'Calendar', workflow:'Workflow', alerts:'Alerts', deploy:'Installer' };
+// ── Tabs ──────────────────────────────────────────────────────────────────
+const TABS = ['dashboard','clients','atrisk','calendar','analytics','workflow','alerts','deploy'];
+const LABELS = {dashboard:'Dashboard',clients:'Client Portfolio',atrisk:'At Risk Clients',calendar:'Filing Calendar',analytics:'Analytics',workflow:'Workflow',alerts:'Alerts',deploy:'Installer'};
 
 function switchTab(id, btn) {
-  TABS.forEach(t => {
-    document.getElementById('panel-' + t).classList.remove('active');
-  });
-  document.getElementById('panel-' + id).classList.add('active');
-  document.getElementById('topbar-title').textContent = TAB_LABELS[id];
-
-  // Sidebar buttons
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('[data-tab="' + id + '"]').forEach(b => b.classList.add('active'));
-
-  if (id === 'dashboard') animateDashboard();
-  if (id === 'workflow') startWorkflow();
+  TABS.forEach(t => document.getElementById('panel-'+t).classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('topbar-title').textContent = LABELS[id];
+  document.querySelectorAll('.nav-btn,.mob-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[data-tab="'+id+'"]').forEach(b => b.classList.add('active'));
+  if (id==='dashboard') animateDash();
+  if (id==='workflow') startWF();
+  if (id==='analytics') animateAnalytics();
 }
 
-// ── Dashboard animations ───────────────────────────────────────────────────
-function countUp(el, target, duration) {
-  const start = performance.now();
+// ── Dashboard animations ─────────────────────────────────────────────────
+function countUp(el, target, dur) {
+  const t0 = performance.now();
   function tick(now) {
-    const pct = Math.min((now - start) / duration, 1);
-    el.textContent = Math.round(pct * target);
-    if (pct < 1) requestAnimationFrame(tick);
+    const p = Math.min((now-t0)/dur,1);
+    el.textContent = Math.round(p*target);
+    if(p<1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
 
-let dashAnimated = false;
-function animateDashboard() {
-  if (dashAnimated) return;
-  dashAnimated = true;
-  countUp(document.getElementById('stat-total'),   147, 1200);
-  countUp(document.getElementById('stat-filed'),   138, 1200);
-  countUp(document.getElementById('stat-pending'),   6, 1000);
-  countUp(document.getElementById('stat-alerts'),    3,  800);
-  // Bars
-  setTimeout(() => {
-    document.querySelectorAll('#bar-chart .bar-fill').forEach(bar => {
-      bar.style.height = bar.dataset.h;
-    });
-  }, 200);
-  // MTD bar
-  setTimeout(() => {
-    document.getElementById('mtd-bar').style.width = '94%';
-  }, 400);
+let dashDone=false;
+function animateDash(){
+  if(dashDone)return; dashDone=true;
+  countUp(document.getElementById('s-over'),3,600);
+  countUp(document.getElementById('s-soon'),12,900);
+  countUp(document.getElementById('s-comp'),84,1200);
+  setTimeout(()=>{ document.querySelectorAll('#bar-chart .bar-fill').forEach(b=>b.style.height=b.dataset.h); },200);
+  setTimeout(()=>{ document.getElementById('mtd-bar').style.width='94%'; },400);
 }
-animateDashboard(); // run on first load
+animateDash();
 
-// ── Workflow animation ─────────────────────────────────────────────────────
-const WF_STEPS = [
-  { label: 'Deadline detected',            desc: 'Engine calculates filing due dates for all clients' },
-  { label: 'Client data collated',         desc: 'SharePoint pulls latest figures and prior-year comparisons' },
-  { label: 'Teams alert dispatched',       desc: 'Responsible accountant notified in their Teams channel' },
-  { label: 'Return prepared',              desc: 'Staff marks return as prepared in the filing dashboard' },
-  { label: 'Partner review',              desc: 'Partner approves and signs off via Power Automate flow' },
-  { label: 'Filed & audit trail recorded', desc: 'Submission confirmed, immutable log entry created' },
-];
-
-let wfTimer = null;
-let wfIndex = 0;
-
-function buildWorkflow() {
-  const container = document.getElementById('wf-steps');
-  container.innerHTML = WF_STEPS.map((s, i) => `
-    <div class="wf-step" id="wf-step-${i}">
-      <div class="wf-line">
-        <div class="wf-dot" id="wf-dot-${i}">
-          <span class="dot-inner"></span>
-        </div>
-        ${i < WF_STEPS.length - 1 ? `<div class="wf-connector" id="wf-conn-${i}"></div>` : ''}
-      </div>
-      <div class="wf-body">
-        <div class="wf-step-label" id="wf-lbl-${i}">${s.label}</div>
-        <div class="wf-step-desc">${s.desc}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-let wfStarted = false;
-function startWorkflow() {
-  if (wfStarted) return;
-  wfStarted = true;
-  buildWorkflow();
-  wfIndex = 0;
-  advanceWorkflow();
-}
-
-function advanceWorkflow() {
-  if (wfIndex >= WF_STEPS.length) return;
-  const dot = document.getElementById('wf-dot-' + wfIndex);
-  const lbl = document.getElementById('wf-lbl-' + wfIndex);
-  if (!dot) return;
-
-  // Mark active
-  dot.classList.add('active');
-  lbl.classList.add('active');
-
-  setTimeout(() => {
-    // Mark done
-    dot.classList.remove('active');
-    dot.classList.add('done');
-    dot.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
-    lbl.classList.remove('active');
-    lbl.classList.add('done');
-    const conn = document.getElementById('wf-conn-' + wfIndex);
-    if (conn) conn.classList.add('done');
-    wfIndex++;
-    if (wfIndex < WF_STEPS.length) setTimeout(advanceWorkflow, 600);
-  }, 1200);
-}
-
-// ── Alerts ─────────────────────────────────────────────────────────────────
-let dismissedAlerts = 0;
-const totalAlerts = 4;
-
-function dismissAlert(id) {
-  document.getElementById('alert-' + id).classList.add('dismissed');
-  dismissedAlerts++;
-  const remaining = totalAlerts - dismissedAlerts;
-  document.getElementById('alert-count').textContent = remaining + ' active';
-  if (remaining === 0) {
-    document.getElementById('alert-empty').classList.add('visible');
+// ── Analytics animations ─────────────────────────────────────────────────
+let analyticsDone=false;
+function animateAnalytics(){
+  if(analyticsDone)return; analyticsDone=true;
+  // Donut ring: circumference = 2*PI*14 = 87.96
+  const circ=87.96, target=0.985;
+  const arc=document.getElementById('ring-arc');
+  const pctEl=document.getElementById('ring-pct');
+  const t0=performance.now();
+  function tick(now){
+    const p=Math.min((now-t0)/1200,1);
+    const val=p*target;
+    arc.style.strokeDashoffset=circ*(1-val);
+    pctEl.textContent=Math.round(val*100*10)/10+'%';
+    if(p<1)requestAnimationFrame(tick);
   }
+  requestAnimationFrame(tick);
+  countUp(document.getElementById('a-verified'),2450,1400);
+  countUp(document.getElementById('a-total'),370,1000);
+  countUp(document.getElementById('a-clients'),147,1200);
+  countUp(document.getElementById('a-filed'),138,1200);
 }
 
-function resetAlerts() {
-  dismissedAlerts = 0;
-  for (let i = 1; i <= totalAlerts; i++) {
-    document.getElementById('alert-' + i).classList.remove('dismissed');
-  }
-  document.getElementById('alert-count').textContent = totalAlerts + ' active';
-  document.getElementById('alert-empty').classList.remove('visible');
-}
-
-// ── Installer ──────────────────────────────────────────────────────────────
-const DEPLOY_STEPS = [
-  'Validating Azure credentials',
-  'Provisioning SharePoint site',
-  'Installing Power Automate flows',
-  'Configuring Teams notifications',
-  'Setting up Entra ID roles',
-  'Running smoke tests',
+// ── Workflow ─────────────────────────────────────────────────────────────
+const WF=[
+  {l:'Deadline detected',d:'Engine calculates filing due dates for all clients'},
+  {l:'Client data collated',d:'SharePoint pulls latest figures and prior-year comparisons'},
+  {l:'Teams alert dispatched',d:'Responsible accountant notified in their Teams channel'},
+  {l:'Return prepared',d:'Staff marks return as prepared in the filing dashboard'},
+  {l:'Partner review',d:'Partner approves and signs off via Power Automate flow'},
+  {l:'Filed & audit trail recorded',d:'Submission confirmed, immutable log entry created'},
 ];
+let wfDone=false, wfIdx=0;
+function startWF(){
+  if(wfDone)return; wfDone=true;
+  const c=document.getElementById('wf-steps');
+  c.innerHTML=WF.map((s,i)=>`<div class="wf-step"><div class="wf-line"><div class="wf-dot" id="wd-${i}"><span style="width:8px;height:8px;border-radius:50%;background:#d1d5db"></span></div>${i<WF.length-1?`<div class="wf-conn" id="wc-${i}"></div>`:''}</div><div class="wf-body"><div class="wf-lbl" id="wl-${i}">${s.l}</div><div class="wf-desc">${s.d}</div></div></div>`).join('');
+  advWF();
+}
+function advWF(){
+  if(wfIdx>=WF.length)return;
+  const d=document.getElementById('wd-'+wfIdx), l=document.getElementById('wl-'+wfIdx);
+  d.classList.add('active'); l.classList.add('active');
+  setTimeout(()=>{
+    d.classList.remove('active'); d.classList.add('done');
+    d.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+    l.classList.remove('active'); l.classList.add('done');
+    const conn=document.getElementById('wc-'+wfIdx);
+    if(conn)conn.classList.add('done');
+    wfIdx++;
+    if(wfIdx<WF.length)setTimeout(advWF,600);
+  },1200);
+}
 
-let deployRunning = false;
+// ── Alerts ───────────────────────────────────────────────────────────────
+let dismissed=0; const total=4;
+function dismissAlert(id){
+  document.getElementById('al-'+id).classList.add('dismissed');
+  dismissed++;
+  const rem=total-dismissed;
+  document.getElementById('al-cnt').textContent=rem+' active';
+  if(rem===0)document.getElementById('al-empty').classList.add('show');
+}
+function resetAlerts(){
+  dismissed=0;
+  for(let i=1;i<=total;i++)document.getElementById('al-'+i).classList.remove('dismissed');
+  document.getElementById('al-cnt').textContent=total+' active';
+  document.getElementById('al-empty').classList.remove('show');
+}
 
-function startDeploy() {
-  if (deployRunning) return;
-  deployRunning = true;
-  document.getElementById('btn-run').style.display = 'none';
-  document.getElementById('log-window').classList.add('visible');
-  document.getElementById('deploy-success').classList.remove('visible');
+// ── Installer ────────────────────────────────────────────────────────────
+const DEPLOY_STEPS=['Workspace created','Clients imported','Activating monitoring','Configuring Teams alerts','Setting up Entra ID roles','Running smoke tests'];
+let deployRunning=false;
 
-  let step = 0;
-  function next() {
-    if (step > 0) {
-      const prev = document.getElementById('log-' + (step - 1));
-      prev.className = 'log-line log-done';
-      prev.innerHTML = '&#10003; ' + DEPLOY_STEPS[step - 1];
-    }
-    if (step >= DEPLOY_STEPS.length) {
-      document.getElementById('deploy-success').classList.add('visible');
+function startDeploy(){
+  if(deployRunning)return; deployRunning=true;
+  document.getElementById('btn-run').style.display='none';
+  document.getElementById('setup-steps').style.display='block';
+  document.getElementById('log-win').classList.add('show');
+  document.getElementById('setup-pct').style.display='block';
+  let step=2; // first 2 already shown as done
+  function next(){
+    if(step>=DEPLOY_STEPS.length){
+      // All done
+      const si=document.getElementById('si-'+(DEPLOY_STEPS.length-1));
+      si.className='step-icon si-done'; si.textContent='✓';
+      document.querySelectorAll('.step-txt')[DEPLOY_STEPS.length-1].className='step-txt done';
+      document.getElementById('log-active').className='log-ln log-done';
+      document.getElementById('log-active').innerHTML='&#10003; 14:36:13 All systems operational — Setup complete';
+      document.getElementById('setup-pct').textContent='100%';
+      document.getElementById('setup-success').classList.add('show');
       return;
     }
-    const cur = document.getElementById('log-' + step);
-    cur.className = 'log-line log-active';
-    cur.innerHTML = '&rsaquo; ' + DEPLOY_STEPS[step] + ' <span class="dots"><span>.</span><span>.</span><span>.</span></span>';
-    step++;
-    setTimeout(next, 1100);
+    // Update step icon
+    const si=document.getElementById('si-'+step);
+    if(si){ si.className='step-icon si-spin'; si.textContent='↺'; }
+    document.querySelectorAll('.step-txt')[step].className='step-txt active';
+    // Update log
+    const pNode=document.getElementById('log-p'+step);
+    if(pNode){ pNode.className='log-ln log-act'; pNode.innerHTML='&#9658; '+String(14+':3'+step+':0'+step)+' '+DEPLOY_STEPS[step]+' <span class="dots"><span>.</span><span>.</span><span>.</span></span>'; }
+    // Update pct
+    document.getElementById('setup-pct').textContent=Math.round((step/DEPLOY_STEPS.length)*100)+'%';
+    setTimeout(()=>{
+      if(si){ si.className='step-icon si-done'; si.textContent='✓'; }
+      document.querySelectorAll('.step-txt')[step].className='step-txt done';
+      if(pNode){ pNode.className='log-ln log-done'; pNode.innerHTML='&#10003; '+DEPLOY_STEPS[step]+' — Success'; }
+      step++; next();
+    },1100);
   }
   next();
 }
