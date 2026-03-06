@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>FineGuard MTD Control Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1e3a5f;--blue:#2563eb;--sidebar:#0f172a;--text:#0f172a;
+  --border:#e2e8f0;--success:#16a34a;--warning:#d97706;--danger:#dc2626;
+  --bg:#f8fafc;--white:#ffffff;--muted:#64748b;--light:#f1f5f9;
+  --sidebar-w:240px;--sidebar-w-col:60px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:inherit}
+input,select{font-family:inherit}
+
+/* ── LAYOUT ── */
+#app{display:flex;min-height:100vh}
+#sidebar{width:var(--sidebar-w);background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;transition:width .25s ease;overflow:hidden;position:relative;z-index:10}
+#sidebar.collapsed{width:var(--sidebar-w-col)}
+#main-wrap{flex:1;display:flex;flex-direction:column;min-width:0}
+#topbar{height:56px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+#offline-banner{background:#fef3c7;border-bottom:1px solid #f59e0b;padding:8px 20px;font-size:13px;color:#92400e;display:none;align-items:center;gap:8px}
+#content-area{flex:1;overflow-y:auto;padding:24px}
+
+/* ── SIDEBAR ── */
+.sidebar-header{padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);min-height:64px}
+.sidebar-logo-text{overflow:hidden;white-space:nowrap;flex:1}
+.sidebar-logo-text .brand{color:#fff;font-weight:700;font-size:16px;display:block}
+.sidebar-logo-text .sub{color:#94a3b8;font-size:11px;display:block;margin-top:1px}
+.sidebar-toggle{background:none;border:none;color:#94a3b8;padding:4px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.sidebar-toggle:hover{color:#fff;background:rgba(255,255,255,.1)}
+.sidebar-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 0}
+.nav-group-label{color:#475569;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:12px 16px 4px;white-space:nowrap;overflow:hidden}
+#sidebar.collapsed .nav-group-label{opacity:0;height:0;padding:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;color:#94a3b8;font-size:13px;font-weight:500;cursor:pointer;border-radius:0;transition:all .15s;white-space:nowrap;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#e2e8f0}
+.nav-item.active{background:#2563eb;color:#fff}
+.nav-item svg{flex-shrink:0;width:16px;height:16px}
+.nav-item span{overflow:hidden;white-space:nowrap}
+#sidebar.collapsed .nav-item span{opacity:0;width:0;overflow:hidden}
+#sidebar.collapsed .nav-item{padding:8px;justify-content:center}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08)}
+.user-pill{display:flex;align-items:center;gap:8px;overflow:hidden}
+.avatar{width:30px;height:30px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0}
+.user-info{overflow:hidden;white-space:nowrap}
+.user-name{color:#e2e8f0;font-size:13px;font-weight:500}
+.user-role{color:#64748b;font-size:11px}
+#sidebar.collapsed .user-info{display:none}
+
+/* ── TOPBAR ── */
+.company-selector{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--white);cursor:pointer;font-size:13px;font-weight:500}
+.company-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0}
+.topbar-search{flex:1;max-width:320px;position:relative}
+.topbar-search input{width:100%;padding:7px 12px 7px 34px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--light)}
+.topbar-search input:focus{border-color:var(--blue);background:#fff}
+.topbar-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.topbar-spacer{flex:1}
+.online-badge{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:#dcfce7;color:#15803d;font-size:12px;font-weight:600;cursor:pointer;border:none}
+.online-badge.offline{background:#fef3c7;color:#92400e}
+.online-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.topbar-icon-btn{background:none;border:none;color:var(--muted);padding:6px;border-radius:8px;position:relative;display:flex;align-items:center}
+.topbar-icon-btn:hover{background:var(--light);color:var(--text)}
+.badge{position:absolute;top:-2px;right:-2px;background:var(--danger);color:#fff;border-radius:50%;width:17px;height:17px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+/* ── CARDS / COMMON ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px}
+.card-sm{padding:16px}
+.section-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.section-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid-6{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.flex{display:flex}
+.flex-col{display:flex;flex-direction:column}
+.items-center{align-items:center}
+.justify-between{justify-content:space-between}
+.gap-2{gap:8px}
+.gap-3{gap:12px}
+.gap-4{gap:16px}
+.mt-4{margin-top:16px}
+.mt-6{margin-top:24px}
+.mb-4{margin-bottom:16px}
+.text-sm{font-size:13px}
+.text-xs{font-size:11px}
+.text-muted{color:var(--muted)}
+.text-success{color:var(--success)}
+.text-warning{color:var(--warning)}
+.text-danger{color:var(--danger)}
+.font-bold{font-weight:700}
+.font-semibold{font-weight:600}
+.font-medium{font-weight:500}
+.w-full{width:100%}
+
+/* ── BADGES / STATUS ── */
+.badge-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-success{background:#dcfce7;color:#15803d}
+.badge-warning{background:#fef3c7;color:#92400e}
+.badge-danger{background:#fee2e2;color:#991b1b}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-gray{background:#f1f5f9;color:#475569}
+.badge-purple{background:#f3e8ff;color:#6b21a8}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;border:none;transition:all .15s;cursor:pointer}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-warning:hover{background:#b45309}
+.btn-outline{background:#fff;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{background:var(--light)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-lg{padding:12px 24px;font-size:15px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── TABLES ── */
+.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--light);padding:10px 14px;text-align:left;font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:nth-child(even){background:#fafbfc}
+tbody tr:hover{background:#f0f7ff}
+tbody td{padding:10px 14px;vertical-align:middle}
+tfoot td{padding:10px 14px;font-weight:700;background:var(--light);border-top:2px solid var(--border)}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:16px}
+label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--text)}
+.form-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:border .15s}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+select.form-input{background:#fff}
+
+/* ── PROGRESS BAR ── */
+.progress-bar{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.progress-green{background:var(--success)}
+.progress-amber{background:var(--warning)}
+.progress-red{background:var(--danger)}
+.progress-blue{background:var(--blue)}
+
+/* ── TOAST ── */
+#toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:9999}
+.toast{padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;color:#fff;min-width:240px;box-shadow:0 4px 20px rgba(0,0,0,.2);animation:slideIn .25s ease;display:flex;align-items:center;gap:8px}
+.toast-success{background:var(--success)}
+.toast-danger{background:var(--danger)}
+.toast-info{background:var(--blue)}
+@keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+
+/* ── STAT CARD ── */
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.stat-label{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:800;color:var(--text);line-height:1}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* ── DEADLINE BANNER ── */
+.deadline-banner{background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.deadline-banner .urgent{background:var(--danger);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.06em}
+
+/* ── LOGIN ── */
+#screen-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#1e40af 100%)}
+.login-card{background:#fff;border-radius:20px;padding:40px;width:420px;box-shadow:0 25px 50px rgba(0,0,0,.35)}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.login-brand{font-size:24px;font-weight:800;color:var(--text)}
+.login-tagline{font-size:13px;color:var(--muted);margin-bottom:28px}
+.demo-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.demo-pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:#fff;cursor:pointer;transition:all .15s}
+.demo-pill:hover{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+
+/* ── GATE CHECKLIST ── */
+.gate-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:#fff;margin-bottom:10px}
+.gate-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.gate-pass{background:#dcfce7;color:var(--success)}
+.gate-fail{background:#fee2e2;color:var(--danger)}
+.gate-label{font-weight:600;font-size:14px}
+.gate-sub{font-size:12px;color:var(--muted)}
+
+/* ── VAT BOXES ── */
+.vat-boxes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.vat-box{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.vat-box-num{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.vat-box-label{font-size:12px;color:var(--muted);margin-bottom:8px}
+.vat-box-value{font-size:20px;font-weight:800;color:var(--text)}
+
+/* ── DRAG DROP ── */
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;transition:all .2s;cursor:pointer;background:#fff}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);border-style:solid;background:#eff6ff}
+.drop-zone-icon{color:var(--muted);margin-bottom:10px}
+.drop-zone-title{font-weight:600;font-size:14px;margin-bottom:4px}
+.drop-zone-sub{font-size:12px;color:var(--muted)}
+
+/* ── WIZARD ── */
+.wizard-steps{display:flex;align-items:center;gap:0;margin-bottom:28px}
+.wizard-step{display:flex;align-items:center;flex:1}
+.step-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;border:2px solid var(--border);background:#fff;color:var(--muted);transition:all .2s}
+.step-circle.done{background:var(--success);border-color:var(--success);color:#fff}
+.step-circle.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.step-label{font-size:11px;font-weight:500;margin-top:4px;color:var(--muted);white-space:nowrap}
+.step-label.active{color:var(--blue);font-weight:600}
+.step-label.done{color:var(--success)}
+.step-connector{flex:1;height:2px;background:var(--border);margin:0 4px;position:relative;top:-10px}
+.step-connector.done{background:var(--success)}
+.step-col{display:flex;flex-direction:column;align-items:center}
+
+/* ── TOGGLE ── */
+.toggle-wrap{display:flex;align-items:center;gap:12px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#cbd5e1;border-radius:12px;cursor:pointer;transition:.2s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle input:checked + .toggle-slider{background:var(--danger)}
+.toggle input:checked + .toggle-slider::before{transform:translateX(20px)}
+.toggle-label{font-size:14px;font-weight:500}
+
+/* ── FILTER TABS ── */
+.filter-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0}
+.filter-tab{padding:8px 16px;font-size:13px;font-weight:500;color:var(--muted);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.filter-tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.filter-tab:hover{color:var(--text)}
+
+/* ── PRICING ── */
+.pricing-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:12px;position:relative}
+.pricing-card.popular{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+.popular-tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;padding:3px 14px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.pricing-tier{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pricing-price{font-size:36px;font-weight:800;line-height:1}
+.pricing-price span{font-size:14px;font-weight:400;color:var(--muted)}
+.pricing-features{list-style:none;display:flex;flex-direction:column;gap:7px;font-size:13px}
+.pricing-features li{display:flex;align-items:center;gap:8px}
+.pricing-features li::before{content:'✓';color:var(--success);font-weight:700;flex-shrink:0}
+
+/* ── CONFIDENCE BAR ── */
+.conf-bar-wrap{display:flex;align-items:center;gap:8px;min-width:140px}
+.conf-bar-track{flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.conf-bar-fill{height:100%;border-radius:3px}
+.conf-pct{font-size:12px;font-weight:600;min-width:38px;text-align:right}
+
+/* ── ALERT LIST ── */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.alert-item:last-child{border-bottom:none}
+.alert-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+
+/* ── PROTECTION CARDS ── */
+.protection-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px}
+.protection-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+
+/* ── STAGING ── */
+.staging-panel{display:grid;grid-template-columns:320px 1fr;gap:20px;height:calc(100vh - 200px)}
+.staging-list{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.staging-list-header{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px}
+.staging-item{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.staging-item:hover{background:var(--light)}
+.staging-item.active{background:#eff6ff;border-left:3px solid var(--blue)}
+.staging-detail{background:#fff;border:1px solid var(--border);border-radius:12px;padding:24px}
+
+/* ── SHAKE ANIMATION ── */
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.shake{animation:shake .4s ease}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border);margin:16px 0}
+.inline-alert{border-radius:10px;padding:12px 16px;font-size:13px;display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+.inline-alert-danger{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.inline-alert-warning{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.inline-alert-success{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+.risk-banner{border-radius:12px;padding:20px;text-align:center;margin-top:16px}
+.risk-none{background:#dcfce7;border:2px solid #86efac}
+.risk-critical{background:#fee2e2;border:2px solid #fca5a5}
+.risk-label{font-size:28px;font-weight:800;margin-bottom:4px}
+.section-divider{height:1px;background:var(--border);margin:24px 0}
+.fingerprint{font-family:monospace;font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.field-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.field-row:last-child{border-bottom:none}
+.field-label{color:var(--muted);font-weight:500}
+.field-value{font-weight:600}
+.arr-result{font-size:32px;font-weight:800;color:var(--blue);margin-top:8px}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.check-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:8px;background:var(--light);margin-bottom:8px}
+.check-row-label{font-size:13px;font-weight:500}
+.check-row-result{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.map-panel{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.map-col-header{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px}
+.detected-col{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;margin-bottom:8px;font-size:13px}
+.detected-col-name{font-weight:500}
+.detected-col-sample{color:var(--muted);font-size:11px}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════ -->
+<div id="screen-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M18 3L4 9v10c0 8.3 5.9 16.1 14 18 8.1-1.9 14-9.7 14-18V9L18 3z" fill="#1e3a5f"/>
+        <path d="M18 7L8 12v8c0 6.3 4.4 12.1 10 13.5 5.6-1.4 10-7.2 10-13.5v-8L18 7z" fill="#2563eb"/>
+        <path d="M13 18l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="login-brand">FineGuard</span>
+    </div>
+    <p class="login-tagline">HMRC MTD compliant. Zero-tolerance VAT engine.</p>
+    <div class="demo-pills">
+      <span class="text-xs text-muted font-medium" style="align-self:center">Demo logins:</span>
+      <button class="demo-pill" onclick="fillDemo('partner@fineguard.co.uk','Partner2024!')">Partner</button>
+      <button class="demo-pill" onclick="fillDemo('senior@fineguard.co.uk','Senior2024!')">Senior Accountant</button>
+      <button class="demo-pill" onclick="fillDemo('accountant@fineguard.co.uk','Acct2024!')">Accountant</button>
+    </div>
+    <div class="form-group">
+      <label for="login-email">Email address</label>
+      <input class="form-input" id="login-email" type="email" placeholder="you@practice.co.uk" value="partner@fineguard.co.uk">
+    </div>
+    <div class="form-group">
+      <label for="login-pass">Password</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••" value="Partner2024!">
+    </div>
+    <button class="btn btn-primary w-full" style="padding:11px;font-size:15px;margin-top:4px" onclick="doLogin()">Sign in</button>
+    <p class="text-xs text-muted" style="margin-top:14px;text-align:center">256-bit encrypted · HMRC recognised agent · ISO 27001</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN APP SHELL
+══════════════════════════════════════════ -->
+<div id="app" style="display:none">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+        <path d="M18 3L4 9v10c0 8.3 5.9 16.1 14 18 8.1-1.9 14-9.7 14-18V9L18 3z" fill="#1e3a5f"/>
+        <path d="M18 7L8 12v8c0 6.3 4.4 12.1 10 13.5 5.6-1.4 10-7.2 10-13.5v-8L18 7z" fill="#2563eb"/>
+        <path d="M13 18l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="sidebar-logo-text">
+        <span class="brand">FineGuard</span>
+        <span class="sub">MTD Control Centre</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-group-label">Overview</div>
+      <button class="nav-item active" data-screen="dashboard" onclick="nav('dashboard',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".6"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".6"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".4"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-screen="mtd-control" onclick="nav('mtd-control',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 3.5v5c0 4 2.7 7.5 6 8.5 3.3-1 6-4.5 6-8.5v-5L8 1z" fill="currentColor" opacity=".8"/></svg>
+        <span>MTD Control Centre</span>
+      </button>
+      <button class="nav-item" data-screen="alerts" onclick="nav('alerts',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 0 0-5 5v3l-1.5 2h13L13 9V6a5 5 0 0 0-5-5z" fill="currentColor" opacity=".8"/><circle cx="8" cy="14.5" r="1.5" fill="currentColor" opacity=".6"/></svg>
+        <span>Alerts</span>
+      </button>
+      <div class="nav-group-label">Compliance</div>
+      <button class="nav-item" data-screen="companies" onclick="nav('companies',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="10" rx="1.5" fill="currentColor" opacity=".7"/><path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.5"/></svg>
+        <span>Companies</span>
+      </button>
+      <button class="nav-item" data-screen="vat-returns" onclick="nav('vat-returns',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 2h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="currentColor" opacity=".6"/><path d="M5 7h6M5 9.5h4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>VAT Returns</span>
+      </button>
+      <button class="nav-item" data-screen="ledger" onclick="nav('ledger',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 7h12M2 11h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Ledger</span>
+      </button>
+      <button class="nav-item" data-screen="staging" onclick="nav('staging',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="currentColor" opacity=".6"/><path d="M8 5v3l2 2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Staging Queue</span>
+      </button>
+      <div class="nav-group-label">Ingestion</div>
+      <button class="nav-item" data-screen="receipts" onclick="nav('receipts',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 2H4a1 1 0 0 0-1 1v10l2-1.5L7 13l2-1.5 2 1.5V3a1 1 0 0 0-1-1z" fill="currentColor" opacity=".7"/></svg>
+        <span>Receipts</span>
+      </button>
+      <button class="nav-item" data-screen="scan" onclick="nav('scan',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="5" width="12" height="6" rx="2" fill="currentColor" opacity=".6"/><path d="M5 2v2M8 2v2M11 2v2M5 12v2M8 12v2M11 12v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Scan</span>
+      </button>
+      <button class="nav-item" data-screen="data-ingestion" onclick="nav('data-ingestion',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Data Ingestion</span>
+      </button>
+      <button class="nav-item" data-screen="reconciliation" onclick="nav('reconciliation',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 8h8M4 5l3-3 3 3M12 11l-3 3-3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Reconciliation</span>
+      </button>
+      <div class="nav-group-label">Storage</div>
+      <button class="nav-item" data-screen="documents" onclick="nav('documents',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l4 4v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="currentColor" opacity=".6"/><path d="M10 2v4h4" stroke="currentColor" stroke-width="1.3" opacity=".8"/></svg>
+        <span>Documents</span>
+      </button>
+      <button class="nav-item" data-screen="companies-house" onclick="nav('companies-house',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14h12M4 14V7l4-4 4 4v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Companies House</span>
+      </button>
+      <div class="nav-group-label">Pipeline</div>
+      <button class="nav-item" data-screen="mtd-pipeline" onclick="nav('mtd-pipeline',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 5l4 3-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>MTD Submission</span>
+      </button>
+      <button class="nav-item" data-screen="audit-protection" onclick="nav('audit-protection',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.8"/><path d="M8 5v3M8 11v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Audit Protection</span>
+      </button>
+      <button class="nav-item" data-screen="pricing" onclick="nav('pricing',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v14M4 5h6a2 2 0 0 1 0 4H6a2 2 0 0 0 0 4h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Pricing</span>
+      </button>
+      <div class="nav-group-label">Admin</div>
+      <button class="nav-item" data-screen="audit-trail" onclick="nav('audit-trail',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h10M2 12h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Audit Trail</span>
+      </button>
+      <button class="nav-item" data-screen="settings" onclick="nav('settings',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M2.9 13.1l1.4-1.4M11.7 4.3l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="avatar">PA</div>
+        <div class="user-info">
+          <div class="user-name">Patrick Aldridge</div>
+          <div class="user-role">Partner</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN WRAP -->
+  <div id="main-wrap">
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <div class="company-selector" onclick="cycleCompany()">
+        <div class="company-dot"></div>
+        <span id="company-name">Acme Ltd</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="topbar-search">
+        <span class="topbar-search-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M10 10l2.5 2.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </span>
+        <input placeholder="Search clients, receipts, entries…" type="text">
+      </div>
+      <div class="topbar-spacer"></div>
+      <button class="online-badge" id="online-badge" onclick="toggleOffline()">
+        <span class="online-dot"></span>
+        <span id="online-label">Online</span>
+      </button>
+      <button class="topbar-icon-btn" onclick="nav('alerts',document.querySelector('[data-screen=alerts]'))">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1.5a6 6 0 0 0-6 6v3.5L1.5 13.5h15L15 11V7.5a6 6 0 0 0-6-6z" fill="#64748b"/><circle cx="9" cy="16" r="2" fill="#64748b"/></svg>
+        <span class="badge">3</span>
+      </button>
+      <div class="avatar" style="width:34px;height:34px;margin-left:4px">PA</div>
+    </div>
+
+    <!-- OFFLINE BANNER -->
+    <div id="offline-banner">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v5M8 11v.5" stroke="#92400e" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="8" r="6.5" stroke="#92400e" stroke-width="1.5"/></svg>
+      Offline — 2 actions queued. Changes will sync when connection is restored.
+    </div>
+
+    <!-- CONTENT AREA -->
+    <div id="content-area">
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN: DASHBOARD
+══════════════════════════════════════════ -->
+<div id="screen-dashboard" class="screen">
+  <!-- Deadline Banner -->
+  <div class="deadline-banner">
+    <div style="display:flex;align-items:center;gap:14px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#dc2626" opacity=".15"/><path d="M12 7v5M12 16v.5" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <div>
+        <div style="font-weight:700;font-size:15px;color:#7f1d1d">VAT Return Deadline — 7 Feb 2024</div>
+        <div style="font-size:13px;color:#991b1b;margin-top:2px">Acme Ltd Q4 2023 return due in <strong>3 days</strong>. Submission must be authorised by a partner.</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="urgent">URGENT</span>
+      <button class="btn btn-danger btn-sm" onclick="nav('mtd-control',document.querySelector('[data-screen=mtd-control]'))">Go to Control Centre →</button>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="grid-6" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="stat-label">VAT Due</div>
+      <div class="stat-value">£24,830</div>
+      <div class="stat-sub">Q4 2023</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Receipts</div>
+      <div class="stat-value">47</div>
+      <div class="stat-sub">41 verified</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ledger Entries</div>
+      <div class="stat-value">312</div>
+      <div class="stat-sub">All locked</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Confidence</div>
+      <div class="stat-value" style="color:var(--success)">99.2%</div>
+      <div class="stat-sub">AI extraction</div>
+    </div>
+    <div class="stat-card" style="border-color:#fca5a5">
+      <div class="stat-label">Staged Items</div>
+      <div class="stat-value" style="color:var(--warning)">1</div>
+      <div class="stat-sub text-warning">Needs approval</div>
+    </div>
+    <div class="stat-card" style="border-color:#fca5a5">
+      <div class="stat-label">Alerts</div>
+      <div class="stat-value" style="color:var(--danger)">3</div>
+      <div class="stat-sub text-danger">Action required</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px">
+    <!-- VAT Boxes -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="font-semibold" style="font-size:15px">VAT Return — Q4 2023</div>
+        <span class="badge-pill badge-warning">Draft</span>
+      </div>
+      <div class="text-xs text-muted" style="margin-bottom:12px">Period: 01 Oct 2023 – 31 Dec 2023 &nbsp;·&nbsp; Acme Ltd &nbsp;·&nbsp; VAT No. 123 456 789</div>
+      <div class="vat-boxes-grid">
+        <div class="vat-box"><div class="vat-box-num">Box 1</div><div class="vat-box-label">VAT due on sales</div><div class="vat-box-value">£24,830.00</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 2</div><div class="vat-box-label">VAT due on acquisitions</div><div class="vat-box-value">£0.00</div></div>
+        <div class="vat-box" style="background:#eff6ff;border-color:#bfdbfe"><div class="vat-box-num">Box 3</div><div class="vat-box-label">Total VAT due</div><div class="vat-box-value" style="color:var(--blue)">£24,830.00</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 4</div><div class="vat-box-label">VAT reclaimed</div><div class="vat-box-value">£8,214.40</div></div>
+        <div class="vat-box" style="background:#fefce8;border-color:#fde68a"><div class="vat-box-num">Box 5</div><div class="vat-box-label">Net VAT payable</div><div class="vat-box-value" style="color:var(--warning)">£16,615.60</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 6</div><div class="vat-box-label">Total sales excl. VAT</div><div class="vat-box-value">£124,150.00</div></div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <!-- Recent Receipts -->
+      <div class="card card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="font-semibold" style="font-size:14px">Recent Receipts</div>
+          <button class="btn btn-outline btn-sm" onclick="nav('receipts',document.querySelector('[data-screen=receipts]'))">View all →</button>
+        </div>
+        <div class="table-wrap" style="border:none">
+          <table>
+            <thead><tr><th>Supplier</th><th>Date</th><th>Net</th><th>VAT</th><th>Confidence</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="font-medium">Office Depot</td>
+                <td>14 Dec 23</td>
+                <td>£342.50</td>
+                <td>£68.50</td>
+                <td><div class="conf-bar-wrap"><div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:99.1%"></div></div><span class="conf-pct text-success">99.1%</span></div></td>
+              </tr>
+              <tr>
+                <td class="font-medium">AWS Services</td>
+                <td>01 Dec 23</td>
+                <td>£1,240.00</td>
+                <td>£248.00</td>
+                <td><div class="conf-bar-wrap"><div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:100%"></div></div><span class="conf-pct text-success">100%</span></div></td>
+              </tr>
+              <tr>
+                <td class="font-medium">BP Garage</td>
+                <td>28 Nov 23</td>
+                <td>£37.67</td>
+                <td>£7.53</td>
+                <td><div class="conf-bar-wrap"><div class="conf-bar-track"><div class="conf-bar-fill progress-amber" style="width:94%"></div></div><span class="conf-pct text-warning">94.0%</span></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Compliance Alerts -->
+      <div class="card card-sm" style="flex:1">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="font-semibold" style="font-size:14px">Compliance Alerts</div>
+          <span class="badge-pill badge-danger">3 active</span>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot" style="background:var(--danger)"></div>
+          <div>
+            <div class="font-medium text-sm">Staged item pending approval</div>
+            <div class="text-xs text-muted">BP Garage receipt (94% confidence) must be reviewed before submission</div>
+          </div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot" style="background:var(--warning)"></div>
+          <div>
+            <div class="font-medium text-sm">2 receipts flagged as potential duplicates</div>
+            <div class="text-xs text-muted">Shell Garage 03 Nov & 04 Nov — review recommended</div>
+          </div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot" style="background:var(--success)"></div>
+          <div>
+            <div class="font-medium text-sm">Ledger locked successfully</div>
+            <div class="text-xs text-muted">All 312 entries locked for Q4 2023 — 04 Jan 2024 at 09:14</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN: MTD CONTROL CENTRE
+══════════════════════════════════════════ -->
+<div id="screen-mtd-control" class="screen" style="display:none">
+  <div class="section-title">MTD Control Centre</div>
+  <div class="section-sub">Pre-submission gate checks — all gates must pass before HMRC submission is enabled</div>
+
+  <div class="inline-alert inline-alert-danger">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#dc2626" stroke-width="1.5"/><path d="M8 5v3M8 11v.3" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/></svg>
+    <div><strong>Gate 2 blocked:</strong> 1 staged item must be approved or rejected before submission can proceed. <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="nav('staging',document.querySelector('[data-screen=staging]'))">Review Staged Items →</button></div>
+  </div>
+
+  <div class="grid-2" style="gap:20px">
+    <!-- Gate Checklist -->
+    <div class="card">
+      <div class="font-semibold" style="font-size:15px;margin-bottom:16px">Pre-Submission Gate Checks</div>
+      <div class="gate-item">
+        <div class="gate-icon gate-pass">✓</div>
+        <div style="flex:1">
+          <div class="gate-label">Gate 1 — Ledger Locked</div>
+          <div class="gate-sub">All 312 ledger entries locked for Q4 2023</div>
+        </div>
+        <span class="badge-pill badge-success">PASS</span>
+      </div>
+      <div class="gate-item" style="border-color:#fca5a5;background:#fff8f8">
+        <div class="gate-icon gate-fail">✗</div>
+        <div style="flex:1">
+          <div class="gate-label" style="color:var(--danger)">Gate 2 — No Staged Items</div>
+          <div class="gate-sub">1 item in staging queue awaiting approval</div>
+        </div>
+        <span class="badge-pill badge-danger">BLOCKED</span>
+      </div>
+      <div class="gate-item">
+        <div class="gate-icon gate-pass">✓</div>
+        <div style="flex:1">
+          <div class="gate-label">Gate 3 — VAT Arithmetic Verified</div>
+          <div class="gate-sub">Box3=Box1+Box2, Box5=Box3-Box4 — all checks pass, 0p variance</div>
+        </div>
+        <span class="badge-pill badge-success">PASS</span>
+      </div>
+      <div class="gate-item">
+        <div class="gate-icon gate-pass">✓</div>
+        <div style="flex:1">
+          <div class="gate-label">Gate 4 — Partner Authorisation</div>
+          <div class="gate-sub">Signed by Patrick Aldridge (Partner) — 04 Jan 2024</div>
+        </div>
+        <span class="badge-pill badge-success">PASS</span>
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="btn btn-danger btn-lg w-full" id="submit-hmrc-btn" onclick="submitHMRC()" style="opacity:0.6;position:relative" title="Cannot submit — Gate 2 blocked">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L2 5.5v5c0 4.7 3 9 7 10.5 4-1.5 7-5.8 7-10.5v-5L9 2z" fill="rgba(255,255,255,0.3)"/><path d="M6 9l2.5 2.5L13 6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Submit to HMRC — BLOCKED
+        </button>
+        <div class="text-xs text-muted" style="text-align:center;margin-top:8px">All 4 gates must show PASS before submission is enabled</div>
+      </div>
+    </div>
+
+    <!-- VAT Boxes Summary -->
+    <div class="card">
+      <div class="font-semibold" style="font-size:15px;margin-bottom:4px">VAT Return Summary</div>
+      <div class="text-xs text-muted" style="margin-bottom:14px">Q4 2023 · Acme Ltd · VAT 123 456 789</div>
+      <div class="vat-boxes-grid">
+        <div class="vat-box"><div class="vat-box-num">Box 1</div><div class="vat-box-label">VAT due on sales</div><div class="vat-box-value">£24,830.00</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 2</div><div class="vat-box-label">VAT on acquisitions</div><div class="vat-box-value">£0.00</div></div>
+        <div class="vat-box" style="background:#eff6ff;border-color:#bfdbfe"><div class="vat-box-num">Box 3</div><div class="vat-box-label">Total VAT due</div><div class="vat-box-value" style="color:var(--blue)">£24,830.00</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 4</div><div class="vat-box-label">VAT reclaimed</div><div class="vat-box-value">£8,214.40</div></div>
+        <div class="vat-box" style="background:#fefce8;border-color:#fde68a"><div class="vat-box-num">Box 5</div><div class="vat-box-label">Net VAT payable</div><div class="vat-box-value" style="color:var(--warning)">£16,615.60</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 6</div><div class="vat-box-label">Total sales excl. VAT</div><div class="vat-box-value">£124,150.00</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 7</div><div class="vat-box-label">Total purchases excl. VAT</div><div class="vat-box-value">£41,072.00</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 8</div><div class="vat-box-label">Total goods supplied</div><div class="vat-box-value">£0.00</div></div>
+        <div class="vat-box"><div class="vat-box-num">Box 9</div><div class="vat-box-label">Total goods acquired</div><div class="vat-box-value">£0.00</div></div>
+      </div>
+      <div class="inline-alert inline-alert-warning" style="margin-top:14px;margin-bottom:0">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L1 14h14L8 2z" fill="#d97706" opacity=".2"/><path d="M8 7v3M8 12v.3" stroke="#d97706" stroke-width="2" stroke-linecap="round"/></svg>
+        Submission is <strong>disabled</strong> until all gate checks pass. Resolve Gate 2 to proceed.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: LEDGER
+══════════════════════════════════════════ -->
+<div id="screen-ledger" class="screen" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <div class="section-title">Ledger</div>
+      <div class="section-sub" style="margin-bottom:0">Q4 2023 · Acme Ltd · 312 entries</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline btn-sm">Export CSV</button>
+      <button class="btn btn-primary btn-sm">Lock All Verified</button>
+    </div>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="setLedgerFilter('all',this)">All (312)</button>
+    <button class="filter-tab" onclick="setLedgerFilter('verified',this)">Verified (298)</button>
+    <button class="filter-tab" onclick="setLedgerFilter('pending',this)">Pending (10)</button>
+    <button class="filter-tab" onclick="setLedgerFilter('locked',this)">Locked (4)</button>
+  </div>
+
+  <div class="table-wrap">
+    <table id="ledger-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Net</th>
+          <th>VAT</th>
+          <th>Gross</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="ledger-row-1">
+          <td>14 Dec 2023</td>
+          <td class="font-medium">Office Depot — Stationery</td>
+          <td>£342.50</td>
+          <td>£68.50</td>
+          <td>£411.00</td>
+          <td><span class="badge-pill badge-blue">Purchase</span></td>
+          <td><span class="badge-pill badge-success" id="ledger-status-1">Verified</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-outline btn-sm" onclick="lockLedgerRow(1)" id="lock-btn-1">Lock</button>
+          </td>
+        </tr>
+        <tr id="ledger-row-2">
+          <td>01 Dec 2023</td>
+          <td class="font-medium">AWS Services — Cloud Hosting</td>
+          <td>£1,240.00</td>
+          <td>£248.00</td>
+          <td>£1,488.00</td>
+          <td><span class="badge-pill badge-blue">Purchase</span></td>
+          <td><span class="badge-pill badge-gray" id="ledger-status-2">Pending</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-success btn-sm" onclick="verifyLedgerRow(2)" id="verify-btn-2" style="margin-right:4px">Verify</button>
+            <button class="btn btn-outline btn-sm" onclick="lockLedgerRow(2)" id="lock-btn-2">Lock</button>
+          </td>
+        </tr>
+        <tr id="ledger-row-3">
+          <td>22 Nov 2023</td>
+          <td class="font-medium">Sales Invoice — TechCorp Ltd</td>
+          <td>£8,500.00</td>
+          <td>£1,700.00</td>
+          <td>£10,200.00</td>
+          <td><span class="badge-pill badge-success">Sale</span></td>
+          <td><span class="badge-pill badge-purple" id="ledger-status-3">Locked</span></td>
+          <td style="white-space:nowrap">
+            <span class="text-xs text-muted">Locked</span>
+          </td>
+        </tr>
+        <tr id="ledger-row-4">
+          <td>10 Nov 2023</td>
+          <td class="font-medium">BT Broadband — Nov Invoice</td>
+          <td>£62.50</td>
+          <td>£12.50</td>
+          <td>£75.00</td>
+          <td><span class="badge-pill badge-blue">Purchase</span></td>
+          <td><span class="badge-pill badge-gray" id="ledger-status-4">Pending</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-success btn-sm" onclick="verifyLedgerRow(4)" id="verify-btn-4" style="margin-right:4px">Verify</button>
+            <button class="btn btn-outline btn-sm" onclick="lockLedgerRow(4)" id="lock-btn-4">Lock</button>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" style="font-weight:700">Totals (showing 4 of 312)</td>
+          <td>£10,145.00</td>
+          <td>£2,029.00</td>
+          <td>£12,174.00</td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN: RECEIPTS
+══════════════════════════════════════════ -->
+<div id="screen-receipts" class="screen" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <div class="section-title">Receipts</div>
+      <div class="section-sub" style="margin-bottom:0">AI-extracted receipts with SHA-256 fingerprinting and duplicate detection</div>
+    </div>
+    <button class="btn btn-primary btn-sm">Upload Receipt</button>
+  </div>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="drop-zone" ondragover="dropZoneHover(true)" ondragleave="dropZoneHover(false)" ondrop="dropZoneHover(false)">
+    <div class="drop-zone-icon">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="5" y="5" width="30" height="30" rx="6" fill="#f1f5f9"/><path d="M20 25V15M15 19l5-5 5 5" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 28h12" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+    <div class="drop-zone-title">Drag &amp; drop receipts here</div>
+    <div class="drop-zone-sub">Supports PDF, JPG, PNG, HEIC · Max 10MB per file · Auto-OCR with VAT extraction</div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="grid-4" style="margin-top:16px;margin-bottom:20px">
+    <div class="stat-card card-sm">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">47</div>
+    </div>
+    <div class="stat-card card-sm">
+      <div class="stat-label">Verified</div>
+      <div class="stat-value" style="color:var(--success)">41</div>
+    </div>
+    <div class="stat-card card-sm">
+      <div class="stat-label">Pending</div>
+      <div class="stat-value" style="color:var(--warning)">4</div>
+    </div>
+    <div class="stat-card card-sm" style="border-color:#fca5a5">
+      <div class="stat-label">Duplicates</div>
+      <div class="stat-value" style="color:var(--danger)">2</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Supplier</th>
+          <th>Date</th>
+          <th>Net</th>
+          <th>VAT</th>
+          <th>Gross</th>
+          <th>Confidence</th>
+          <th>SHA-256</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="font-medium">Office Depot</td>
+          <td>14 Dec 2023</td>
+          <td>£342.50</td>
+          <td>£68.50</td>
+          <td>£411.00</td>
+          <td>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:99.1%"></div></div>
+              <span class="conf-pct text-success">99.1%</span>
+            </div>
+          </td>
+          <td><div class="fingerprint" title="a3f5d8e2b1c94720a8e6f3d1b2c5e8a1d4f7e9b2c3a5d8e1f2b4c6d8e0a2b4c6">a3f5d8e2b1c94720...</div></td>
+          <td><span class="badge-pill badge-success">Verified</span></td>
+        </tr>
+        <tr>
+          <td class="font-medium">AWS Services</td>
+          <td>01 Dec 2023</td>
+          <td>£1,240.00</td>
+          <td>£248.00</td>
+          <td>£1,488.00</td>
+          <td>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:100%"></div></div>
+              <span class="conf-pct text-success">100%</span>
+            </div>
+          </td>
+          <td><div class="fingerprint" title="b7d9f2a4c6e8a0b2d4f6a8c0e2b4d6f8a0b2c4e6f8a0b2d4e6f8a0b2c4d6e8f0">b7d9f2a4c6e8a0b2...</div></td>
+          <td><span class="badge-pill badge-success">Verified</span></td>
+        </tr>
+        <tr>
+          <td class="font-medium">BP Garage</td>
+          <td>28 Nov 2023</td>
+          <td>£37.67</td>
+          <td>£7.53</td>
+          <td>£45.20</td>
+          <td>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-amber" style="width:94%"></div></div>
+              <span class="conf-pct text-warning">94.0%</span>
+            </div>
+          </td>
+          <td><div class="fingerprint" title="c1e3a5b7d9f1a3b5d7e9f1a3c5e7b9d1f3a5b7c9e1f3a5b7d9e1f3a5b7c9d1e3">c1e3a5b7d9f1a3b5...</div></td>
+          <td><span class="badge-pill badge-warning">Staged</span></td>
+        </tr>
+        <tr>
+          <td class="font-medium">Shell Garage <span class="badge-pill badge-danger" style="font-size:10px;margin-left:4px">Dup?</span></td>
+          <td>03 Nov 2023</td>
+          <td>£52.80</td>
+          <td>£10.56</td>
+          <td>£63.36</td>
+          <td>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:98.7%"></div></div>
+              <span class="conf-pct text-success">98.7%</span>
+            </div>
+          </td>
+          <td><div class="fingerprint" title="d2f4a6c8e0b2d4f6a8c0e2b4d6f8a0c2e4f6a8b0d2f4a6c8e0b2d4f6a8c0e2b4">d2f4a6c8e0b2d4f6...</div></td>
+          <td><span class="badge-pill badge-danger">Duplicate</span></td>
+        </tr>
+        <tr>
+          <td class="font-medium">BT Broadband</td>
+          <td>10 Nov 2023</td>
+          <td>£62.50</td>
+          <td>£12.50</td>
+          <td>£75.00</td>
+          <td>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:99.8%"></div></div>
+              <span class="conf-pct text-success">99.8%</span>
+            </div>
+          </td>
+          <td><div class="fingerprint" title="e3a5b7c9d1f3a5b7c9e1f3a5b7d9f1a3c5e7b9d1f3a5c7e9b1d3f5a7c9e1b3d5">e3a5b7c9d1f3a5b7...</div></td>
+          <td><span class="badge-pill badge-success">Verified</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: DATA INGESTION
+══════════════════════════════════════════ -->
+<div id="screen-data-ingestion" class="screen" style="display:none">
+  <div class="section-title">Data Ingestion</div>
+  <div class="section-sub">Import and map external data sources to FineGuard VAT fields</div>
+
+  <!-- Wizard Steps -->
+  <div class="wizard-steps" style="margin-bottom:32px">
+    <div class="step-col">
+      <div class="step-circle done">✓</div>
+      <div class="step-label done">Upload</div>
+    </div>
+    <div class="step-connector done"></div>
+    <div class="step-col">
+      <div class="step-circle done">✓</div>
+      <div class="step-label done">Detect</div>
+    </div>
+    <div class="step-connector done"></div>
+    <div class="step-col">
+      <div class="step-circle active">3</div>
+      <div class="step-label active">Map</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-col">
+      <div class="step-circle">4</div>
+      <div class="step-label">Normalise</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-col">
+      <div class="step-circle">5</div>
+      <div class="step-label">Validate</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step-col">
+      <div class="step-circle">6</div>
+      <div class="step-label">Import</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div class="font-semibold" style="font-size:15px">Step 3 — Field Mapping</div>
+        <div class="text-sm text-muted">Map detected columns from your import file to FineGuard VAT fields</div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="auto-detect-btn" onclick="autoDetectMapping()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 4v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Auto-detect
+      </button>
+    </div>
+
+    <div class="map-panel">
+      <!-- Detected Columns -->
+      <div>
+        <div class="map-col-header">Detected columns (CSV)</div>
+        <div class="detected-col">
+          <div><div class="detected-col-name">transaction_date</div><div class="detected-col-sample">e.g. 2023-12-14</div></div>
+          <span class="badge-pill badge-success" style="font-size:10px">Mapped</span>
+        </div>
+        <div class="detected-col">
+          <div><div class="detected-col-name">supplier_name</div><div class="detected-col-sample">e.g. Office Depot</div></div>
+          <span class="badge-pill badge-success" style="font-size:10px">Mapped</span>
+        </div>
+        <div class="detected-col">
+          <div><div class="detected-col-name">amount_net</div><div class="detected-col-sample">e.g. 342.50</div></div>
+          <span class="badge-pill badge-success" style="font-size:10px">Mapped</span>
+        </div>
+        <div class="detected-col">
+          <div><div class="detected-col-name">tax_amount</div><div class="detected-col-sample">e.g. 68.50</div></div>
+          <span class="badge-pill badge-warning" id="tax-col-status" style="font-size:10px">Pending</span>
+        </div>
+        <div class="detected-col">
+          <div><div class="detected-col-name">total_inc_tax</div><div class="detected-col-sample">e.g. 411.00</div></div>
+          <span class="badge-pill badge-warning" id="total-col-status" style="font-size:10px">Pending</span>
+        </div>
+        <div class="detected-col">
+          <div><div class="detected-col-name">category_code</div><div class="detected-col-sample">e.g. OPEX</div></div>
+          <span class="badge-pill badge-gray" style="font-size:10px">Optional</span>
+        </div>
+      </div>
+
+      <!-- VAT Mapping -->
+      <div>
+        <div class="map-col-header">FineGuard VAT fields</div>
+        <div class="form-group">
+          <label>Transaction Date</label>
+          <select class="form-input" id="map-date"><option selected>transaction_date</option><option>date</option><option>invoice_date</option></select>
+        </div>
+        <div class="form-group">
+          <label>Supplier / Description</label>
+          <select class="form-input" id="map-supplier"><option selected>supplier_name</option><option>description</option><option>vendor</option></select>
+        </div>
+        <div class="form-group">
+          <label>Net Amount (excl. VAT)</label>
+          <select class="form-input" id="map-net"><option selected>amount_net</option><option>net</option><option>amount</option></select>
+        </div>
+        <div class="form-group">
+          <label>VAT Amount</label>
+          <select class="form-input" id="map-vat">
+            <option value="">— select column —</option>
+            <option value="tax_amount" id="map-vat-opt">tax_amount</option>
+            <option>vat</option><option>tax</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Gross Amount (incl. VAT)</label>
+          <select class="form-input" id="map-gross">
+            <option value="">— select column —</option>
+            <option value="total_inc_tax" id="map-gross-opt">total_inc_tax</option>
+            <option>gross</option><option>total</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sample Preview -->
+  <div class="card">
+    <div class="font-semibold" style="font-size:14px;margin-bottom:12px">Sample rows preview (first 3 rows)</div>
+    <div class="table-wrap" style="border:none">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Supplier</th><th>Net</th><th>VAT</th><th>Gross</th><th>Category</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>2023-12-14</td><td>Office Depot</td><td>342.50</td><td>68.50</td><td>411.00</td><td>OPEX</td></tr>
+          <tr><td>2023-12-01</td><td>AWS Services</td><td>1240.00</td><td>248.00</td><td>1488.00</td><td>TECH</td></tr>
+          <tr><td>2023-11-28</td><td>BP Garage</td><td>37.67</td><td>7.53</td><td>45.20</td><td>TRAVEL</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+    <button class="btn btn-outline">← Back</button>
+    <button class="btn btn-primary">Next: Normalise →</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN: MTD SUBMISSION PIPELINE
+══════════════════════════════════════════ -->
+<div id="screen-mtd-pipeline" class="screen" style="display:none">
+  <div class="section-title">MTD Submission Pipeline</div>
+  <div class="section-sub">Step-by-step HMRC MTD submission with full audit trail</div>
+
+  <!-- Wizard Steps -->
+  <div class="wizard-steps" style="margin-bottom:32px" id="pipeline-steps">
+    <div class="step-col" id="pstep-col-1">
+      <div class="step-circle done" id="pstep-1">✓</div>
+      <div class="step-label done" id="pstep-lbl-1">Review</div>
+    </div>
+    <div class="step-connector done" id="pconn-1"></div>
+    <div class="step-col" id="pstep-col-2">
+      <div class="step-circle active" id="pstep-2">2</div>
+      <div class="step-label active" id="pstep-lbl-2">Validate</div>
+    </div>
+    <div class="step-connector" id="pconn-2"></div>
+    <div class="step-col" id="pstep-col-3">
+      <div class="step-circle" id="pstep-3">3</div>
+      <div class="step-label" id="pstep-lbl-3">Build Payload</div>
+    </div>
+    <div class="step-connector" id="pconn-3"></div>
+    <div class="step-col" id="pstep-col-4">
+      <div class="step-circle" id="pstep-4">4</div>
+      <div class="step-label" id="pstep-lbl-4">Confirm</div>
+    </div>
+    <div class="step-connector" id="pconn-4"></div>
+    <div class="step-col" id="pstep-col-5">
+      <div class="step-circle" id="pstep-5">5</div>
+      <div class="step-label" id="pstep-lbl-5">Submit</div>
+    </div>
+  </div>
+
+  <!-- Step 2: Validate -->
+  <div id="pipeline-step-content">
+    <div class="card">
+      <div class="font-semibold" style="font-size:15px;margin-bottom:4px">Step 2 — VAT Arithmetic Validation</div>
+      <div class="text-sm text-muted" style="margin-bottom:20px">All arithmetic checks must pass before the submission payload can be built</div>
+
+      <div class="check-row">
+        <div>
+          <div class="check-row-label">Box 3 = Box 1 + Box 2</div>
+          <div class="text-xs text-muted">£24,830.00 = £24,830.00 + £0.00</div>
+        </div>
+        <div class="check-row-result text-success">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#dcfce7"/><path d="M5 8l2.5 2.5L11 6" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          PASS
+        </div>
+      </div>
+
+      <div class="check-row">
+        <div>
+          <div class="check-row-label">Box 5 = Box 3 − Box 4</div>
+          <div class="text-xs text-muted">£16,615.60 = £24,830.00 − £8,214.40</div>
+        </div>
+        <div class="check-row-result text-success">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#dcfce7"/><path d="M5 8l2.5 2.5L11 6" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          PASS
+        </div>
+      </div>
+
+      <div class="check-row">
+        <div>
+          <div class="check-row-label">1p Audit Trigger — Variance Check</div>
+          <div class="text-xs text-muted">Box 1 variance: <strong>£0.00</strong> — no artificial rounding detected</div>
+        </div>
+        <div class="check-row-result text-success">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#dcfce7"/><path d="M5 8l2.5 2.5L11 6" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          PASS (0p variance)
+        </div>
+      </div>
+
+      <div class="check-row">
+        <div>
+          <div class="check-row-label">Box 6 / Box 7 Sanity Check</div>
+          <div class="text-xs text-muted">Sales £124,150 × 20% = £24,830 — matches Box 1</div>
+        </div>
+        <div class="check-row-result text-success">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#dcfce7"/><path d="M5 8l2.5 2.5L11 6" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          PASS
+        </div>
+      </div>
+
+      <div class="risk-banner risk-none" style="margin-top:20px">
+        <div class="risk-label text-success">NONE</div>
+        <div class="font-semibold" style="color:var(--success)">Risk Level: NONE — Clear to proceed</div>
+        <div class="text-sm text-muted" style="margin-top:4px">All 4 arithmetic checks passed. No variance detected. Submission payload may be built.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;margin-top:20px">
+    <button class="btn btn-outline" id="pipeline-back-btn" onclick="pipelineStep(-1)">← Back to Review</button>
+    <button class="btn btn-primary" id="pipeline-next-btn" onclick="pipelineStep(1)">Next: Build Payload →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: AUDIT PROTECTION
+══════════════════════════════════════════ -->
+<div id="screen-audit-protection" class="screen" style="display:none">
+  <div class="section-title">Audit Protection</div>
+  <div class="section-sub">1p variance injection testing and pre-submission risk assessment</div>
+
+  <div class="grid-2" style="gap:20px">
+    <div class="card">
+      <div class="font-semibold" style="font-size:15px;margin-bottom:16px">1p Variance Audit Trigger</div>
+
+      <div style="background:var(--light);border-radius:10px;padding:16px;margin-bottom:16px">
+        <div class="text-sm font-medium" style="margin-bottom:8px">What is the 1p audit trigger?</div>
+        <div class="text-sm text-muted">FineGuard detects when a 1p rounding variance is injected into Box 1 — a known HMRC enquiry trigger. With this toggle, you can test that your submission is free of any such variance before submitting.</div>
+      </div>
+
+      <div class="toggle-wrap" style="margin-bottom:20px">
+        <label class="toggle">
+          <input type="checkbox" id="variance-toggle" onchange="updateVarianceRisk()">
+          <span class="toggle-slider"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Inject 1p variance into Box 1</div>
+          <div class="text-xs text-muted">Default OFF — enable to test audit trigger detection</div>
+        </div>
+      </div>
+
+      <div id="risk-display">
+        <div class="risk-banner risk-none" id="risk-none-banner">
+          <div class="risk-label text-success" style="font-size:36px;font-weight:800">NONE</div>
+          <div class="font-bold" style="color:var(--success);font-size:18px">Risk Level: NONE</div>
+          <div class="text-sm" style="color:#15803d;margin-top:4px">No variance detected — clear to submit</div>
+        </div>
+        <div class="risk-banner risk-critical" id="risk-critical-banner" style="display:none">
+          <div class="risk-label text-danger" style="font-size:36px;font-weight:800">CRITICAL</div>
+          <div class="font-bold" style="color:var(--danger);font-size:18px">Risk Level: CRITICAL</div>
+          <div class="text-sm" style="color:#991b1b;margin-top:4px">Box 1 variance: <strong>£0.01 — BLOCKING</strong></div>
+          <div class="inline-alert inline-alert-danger" style="margin-top:12px;margin-bottom:0;text-align:left">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#dc2626" stroke-width="1.5"/><path d="M7 4v3M7 9.5v.3" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round"/></svg>
+            1p variance in Box 1 will be flagged by HMRC automated checks. Submission is blocked until variance is removed.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="protection-card">
+        <div class="protection-icon" style="background:#dbeafe">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L3 5.5v6c0 5 3.3 9.3 7 10.5 3.7-1.2 7-5.5 7-10.5v-6L10 2z" fill="#2563eb" opacity=".7"/></svg>
+        </div>
+        <div class="font-semibold" style="font-size:14px">Arithmetic Engine</div>
+        <div class="text-sm text-muted" style="margin-top:4px">Validates Box1+Box2=Box3 and Box3-Box4=Box5 on every submission. Penny-perfect reconciliation enforced.</div>
+        <span class="badge-pill badge-success" style="margin-top:10px">Active</span>
+      </div>
+      <div class="protection-card">
+        <div class="protection-icon" style="background:#dcfce7">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 6h16M2 10h12M2 14h8" stroke="#16a34a" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="font-semibold" style="font-size:14px">Ledger Reconciliation</div>
+        <div class="text-sm text-muted" style="margin-top:4px">Cross-checks all VAT box values against locked ledger entries. Any discrepancy blocks submission immediately.</div>
+        <span class="badge-pill badge-success" style="margin-top:10px">Active</span>
+      </div>
+      <div class="protection-card">
+        <div class="protection-icon" style="background:#f3e8ff">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="3" stroke="#7c3aed" stroke-width="2"/><path d="M7 10l3 3 5-5" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="font-semibold" style="font-size:14px">Pre-Submission Gate</div>
+        <div class="text-sm text-muted" style="margin-top:4px">4-point gate system ensures ledger is locked, staging is clear, VAT is verified, and partner has authorised.</div>
+        <span class="badge-pill badge-success" style="margin-top:10px">Active</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN: PRICING
+══════════════════════════════════════════ -->
+<div id="screen-pricing" class="screen" style="display:none">
+  <div class="section-title">Pricing Plans</div>
+  <div class="section-sub">Transparent, accountant-first pricing. All plans include unlimited VAT submissions, HMRC MTD API access, and 256-bit encryption.</div>
+
+  <!-- Tier Cards -->
+  <div class="grid-4" style="align-items:start;margin-bottom:32px">
+    <!-- Solo -->
+    <div class="pricing-card">
+      <div class="pricing-tier">Solo</div>
+      <div class="pricing-price">£29<span>/mo</span></div>
+      <div class="text-sm text-muted">For sole traders &amp; freelancers</div>
+      <div class="divider"></div>
+      <ul class="pricing-features">
+        <li>1 company</li>
+        <li>Unlimited VAT submissions</li>
+        <li>AI receipt extraction</li>
+        <li>Ledger management</li>
+        <li>HMRC MTD API</li>
+        <li>Email support</li>
+      </ul>
+      <button class="btn btn-outline w-full" style="margin-top:auto">Get started</button>
+    </div>
+
+    <!-- Professional (Most Popular) -->
+    <div class="pricing-card popular">
+      <div class="popular-tag">Most Popular</div>
+      <div class="pricing-tier" style="color:var(--blue)">Professional</div>
+      <div class="pricing-price" style="color:var(--blue)">£99<span>/mo</span></div>
+      <div class="text-sm text-muted">For growing practices</div>
+      <div class="divider"></div>
+      <ul class="pricing-features">
+        <li>Up to 10 companies</li>
+        <li>Everything in Solo</li>
+        <li>Staging queue &amp; approval</li>
+        <li>Audit protection suite</li>
+        <li>Data ingestion wizard</li>
+        <li>Duplicate detection</li>
+        <li>Priority support</li>
+      </ul>
+      <button class="btn btn-primary w-full" style="margin-top:auto">Get started</button>
+    </div>
+
+    <!-- Practice Pro -->
+    <div class="pricing-card">
+      <div class="pricing-tier">Practice Pro</div>
+      <div class="pricing-price">£299<span>/mo</span></div>
+      <div class="text-sm text-muted">For mid-size practices</div>
+      <div class="divider"></div>
+      <ul class="pricing-features">
+        <li>Up to 50 companies</li>
+        <li>Everything in Professional</li>
+        <li>White label branding</li>
+        <li>Companies House integration</li>
+        <li>Multi-partner auth</li>
+        <li>Advanced audit trail</li>
+        <li>Phone support</li>
+      </ul>
+      <button class="btn btn-outline w-full" style="margin-top:auto">Get started</button>
+    </div>
+
+    <!-- Enterprise -->
+    <div class="pricing-card">
+      <div class="pricing-tier">Enterprise</div>
+      <div class="pricing-price">£999<span>/mo</span></div>
+      <div class="text-sm text-muted">For large firms &amp; groups</div>
+      <div class="divider"></div>
+      <ul class="pricing-features">
+        <li>Unlimited companies</li>
+        <li>Everything in Practice Pro</li>
+        <li>Dedicated API access</li>
+        <li>Custom integrations</li>
+        <li>SLA guarantee (99.9%)</li>
+        <li>Dedicated account manager</li>
+        <li>On-site training</li>
+      </ul>
+      <button class="btn btn-outline w-full" style="margin-top:auto">Contact sales</button>
+    </div>
+  </div>
+
+  <!-- Add-ons -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="font-semibold" style="font-size:15px;margin-bottom:16px">Add-ons</div>
+    <div class="grid-3" style="gap:16px">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div class="font-semibold" style="font-size:14px">Companies House Sync</div>
+        <div class="text-xs text-muted" style="margin:6px 0 10px">Automated company data enrichment &amp; filing reminders</div>
+        <div style="font-size:20px;font-weight:800;color:var(--text)">£19<span style="font-size:13px;font-weight:400;color:var(--muted)">/mo</span></div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div class="font-semibold" style="font-size:14px">White Label Branding</div>
+        <div class="text-xs text-muted" style="margin:6px 0 10px">Custom logo, colours &amp; domain for client-facing portal</div>
+        <div style="font-size:20px;font-weight:800;color:var(--text)">£29<span style="font-size:13px;font-weight:400;color:var(--muted)">/mo</span></div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:16px">
+        <div class="font-semibold" style="font-size:14px">Dedicated API Access</div>
+        <div class="text-xs text-muted" style="margin:6px 0 10px">Full REST API with webhooks for custom integrations</div>
+        <div style="font-size:20px;font-weight:800;color:var(--text)">£49<span style="font-size:13px;font-weight:400;color:var(--muted)">/mo</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARR Calculator -->
+  <div class="card">
+    <div class="font-semibold" style="font-size:15px;margin-bottom:4px">ARR Calculator</div>
+    <div class="text-sm text-muted" style="margin-bottom:20px">Estimate your Annual Recurring Revenue based on firm size</div>
+    <div class="grid-2" style="gap:32px;align-items:center">
+      <div>
+        <label style="font-size:13px;font-weight:500;display:flex;justify-content:space-between;margin-bottom:8px">
+          Number of firms<span id="arr-firms-label" style="color:var(--blue);font-weight:700">50</span>
+        </label>
+        <input type="range" min="1" max="500" value="50" id="arr-slider" oninput="updateARR(this.value)">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px"><span>1</span><span>500</span></div>
+        <div class="form-group" style="margin-top:16px;margin-bottom:0">
+          <label>Average plan</label>
+          <select class="form-input" id="arr-plan" onchange="updateARR(document.getElementById('arr-slider').value)">
+            <option value="29">Solo — £29/mo</option>
+            <option value="99" selected>Professional — £99/mo</option>
+            <option value="299">Practice Pro — £299/mo</option>
+            <option value="999">Enterprise — £999/mo</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="text-sm text-muted font-medium">Estimated ARR</div>
+        <div class="arr-result" id="arr-value">£59,400</div>
+        <div class="text-xs text-muted" style="margin-top:4px" id="arr-breakdown">50 firms × £99/mo × 12 months</div>
+        <div class="divider"></div>
+        <div class="text-sm text-muted font-medium">Monthly Recurring Revenue</div>
+        <div style="font-size:22px;font-weight:800;color:var(--muted)" id="arr-mrr">£4,950</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: STAGING QUEUE
+══════════════════════════════════════════ -->
+<div id="screen-staging" class="screen" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <div class="section-title">Staging Queue</div>
+      <div class="section-sub" style="margin-bottom:0">Items below the 98% confidence threshold require manual review before they can be added to the ledger</div>
+    </div>
+    <span class="badge-pill badge-warning" style="font-size:12px">1 item pending</span>
+  </div>
+
+  <div class="staging-panel">
+    <!-- Left: List -->
+    <div class="staging-list">
+      <div class="staging-list-header">Staged Items (1)</div>
+      <div class="staging-item active" id="staging-item-1" onclick="selectStagingItem(1)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="font-medium text-sm">BP Garage</div>
+          <span class="badge-pill badge-warning" style="font-size:10px">94.0%</span>
+        </div>
+        <div class="text-xs text-muted">28 Nov 2023 · £45.20 incl. VAT</div>
+        <div style="margin-top:8px">
+          <div class="progress-bar" style="height:5px">
+            <div class="conf-bar-fill progress-amber" style="width:94%"></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:13px" id="staging-empty" style="display:none">
+        No more staged items — all clear!
+      </div>
+    </div>
+
+    <!-- Right: Detail -->
+    <div class="staging-detail" id="staging-detail-panel">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <div class="font-bold" style="font-size:18px">BP Garage</div>
+          <div class="text-sm text-muted">28 November 2023 · Staged for review</div>
+        </div>
+        <div style="text-align:right">
+          <div class="conf-bar-wrap" style="justify-content:flex-end">
+            <div class="conf-bar-track" style="width:100px"><div class="conf-bar-fill progress-amber" style="width:94%"></div></div>
+            <span class="conf-pct text-warning">94.0%</span>
+          </div>
+          <div class="text-xs text-muted" style="margin-top:4px">Below 98% threshold</div>
+        </div>
+      </div>
+
+      <div class="inline-alert inline-alert-warning" style="margin-bottom:20px">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L1 13h12L7 1z" fill="#d97706" opacity=".2"/><path d="M7 5.5v3M7 10v.3" stroke="#d97706" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Confidence 94.0% is below the 98% auto-approval threshold. Manual review required before this item can be moved to the ledger.
+      </div>
+
+      <!-- Extracted Fields -->
+      <div class="card card-sm" style="margin-bottom:16px">
+        <div class="font-semibold text-sm" style="margin-bottom:12px">Extracted Fields</div>
+        <div class="field-row"><span class="field-label">Date</span><span class="field-value">28 November 2023</span></div>
+        <div class="field-row"><span class="field-label">Supplier</span><span class="field-value">BP Garage (Petrol)</span></div>
+        <div class="field-row"><span class="field-label">Net Amount</span><span class="field-value">£37.67</span></div>
+        <div class="field-row"><span class="field-label">VAT Amount</span><span class="field-value">£7.53</span></div>
+        <div class="field-row"><span class="field-label">Gross Amount</span><span class="field-value">£45.20</span></div>
+        <div class="field-row"><span class="field-label">VAT Rate</span><span class="field-value">20%</span></div>
+        <div class="field-row"><span class="field-label">Category</span><span class="field-value">Travel / Fuel</span></div>
+        <div class="field-row" style="border-bottom:none"><span class="field-label">SHA-256</span><span class="fingerprint" style="font-size:11px;color:var(--muted)" title="c1e3a5b7d9f1a3b5d7e9f1a3c5e7b9d1">c1e3a5b7d9f1a3b5...</span></div>
+      </div>
+
+      <!-- Confidence breakdown -->
+      <div class="card card-sm" style="margin-bottom:20px">
+        <div class="font-semibold text-sm" style="margin-bottom:12px">Confidence Breakdown</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="text-sm">Supplier name extraction</span>
+            <div class="conf-bar-wrap" style="width:200px">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:99%"></div></div>
+              <span class="conf-pct text-success">99%</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="text-sm">Date extraction</span>
+            <div class="conf-bar-wrap" style="width:200px">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:100%"></div></div>
+              <span class="conf-pct text-success">100%</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="text-sm">VAT amount extraction</span>
+            <div class="conf-bar-wrap" style="width:200px">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-amber" style="width:74%"></div></div>
+              <span class="conf-pct text-warning">74%</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="text-sm">Gross total extraction</span>
+            <div class="conf-bar-wrap" style="width:200px">
+              <div class="conf-bar-track"><div class="conf-bar-fill progress-green" style="width:96%"></div></div>
+              <span class="conf-pct text-success">96%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-success" style="flex:1" onclick="approveStaged()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Approve — Move to Ledger
+        </button>
+        <button class="btn btn-danger" style="flex:1" onclick="rejectStaged()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          Reject
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SCREEN: ALERTS
+══════════════════════════════════════════ -->
+<div id="screen-alerts" class="screen" style="display:none">
+  <div class="section-title">Compliance Alerts</div>
+  <div class="section-sub">All active alerts across your portfolio — ordered by severity</div>
+  <div class="card">
+    <div class="alert-item">
+      <div class="alert-dot" style="background:var(--danger);width:12px;height:12px;margin-top:2px"></div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="font-semibold text-sm">Staged item pending approval — Acme Ltd</div>
+          <span class="badge-pill badge-danger">Critical</span>
+        </div>
+        <div class="text-xs text-muted" style="margin-top:3px">BP Garage receipt (£45.20, 94% confidence) must be reviewed before Q4 2023 VAT submission can proceed. Deadline in 3 days.</div>
+        <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="nav('staging',document.querySelector('[data-screen=staging]'))">Review now →</button>
+      </div>
+    </div>
+    <div class="alert-item">
+      <div class="alert-dot" style="background:var(--warning);width:12px;height:12px;margin-top:2px"></div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="font-semibold text-sm">Potential duplicate receipts — Acme Ltd</div>
+          <span class="badge-pill badge-warning">Warning</span>
+        </div>
+        <div class="text-xs text-muted" style="margin-top:3px">Shell Garage receipts on 03 Nov 2023 and 04 Nov 2023 have identical supplier, near-identical amounts (£63.36 vs £63.36). SHA-256 hashes differ — possible re-submission of same expense.</div>
+        <button class="btn btn-warning btn-sm" style="margin-top:8px" onclick="nav('receipts',document.querySelector('[data-screen=receipts]'))">Review duplicates →</button>
+      </div>
+    </div>
+    <div class="alert-item" style="border-bottom:none">
+      <div class="alert-dot" style="background:var(--success);width:12px;height:12px;margin-top:2px"></div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div class="font-semibold text-sm">Ledger locked — Acme Ltd Q4 2023</div>
+          <span class="badge-pill badge-success">Info</span>
+        </div>
+        <div class="text-xs text-muted" style="margin-top:3px">All 312 ledger entries for Q4 2023 have been locked by Patrick Aldridge (Partner) on 04 Jan 2024 at 09:14. Ready for VAT submission once staged items are resolved.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PLACEHOLDER SCREENS
+══════════════════════════════════════════ -->
+<div id="screen-companies" class="screen" style="display:none">
+  <div class="section-title">Companies</div>
+  <div class="section-sub">Manage your client portfolio</div>
+  <div class="grid-3" style="gap:16px">
+    <div class="card"><div class="font-semibold">Acme Ltd</div><div class="text-xs text-muted" style="margin-top:4px">VAT 123 456 789 · Q4 due in 3 days</div><div style="margin-top:10px"><span class="badge-pill badge-danger">Urgent</span></div></div>
+    <div class="card"><div class="font-semibold">TechCorp Ltd</div><div class="text-xs text-muted" style="margin-top:4px">VAT 987 654 321 · Q4 due in 18 days</div><div style="margin-top:10px"><span class="badge-pill badge-success">On track</span></div></div>
+    <div class="card"><div class="font-semibold">Bright Ideas Ltd</div><div class="text-xs text-muted" style="margin-top:4px">VAT 456 789 012 · Q3 submitted</div><div style="margin-top:10px"><span class="badge-pill badge-blue">Submitted</span></div></div>
+  </div>
+</div>
+
+<div id="screen-vat-returns" class="screen" style="display:none">
+  <div class="section-title">VAT Returns</div>
+  <div class="section-sub">Historical and pending VAT return submissions</div>
+  <div class="table-wrap"><table><thead><tr><th>Period</th><th>Company</th><th>Due Date</th><th>Box 5</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Q4 2023</td><td>Acme Ltd</td><td>07 Feb 2024</td><td>£16,615.60</td><td><span class="badge-pill badge-warning">Draft</span></td></tr>
+    <tr><td>Q3 2023</td><td>Acme Ltd</td><td>07 Nov 2023</td><td>£14,230.40</td><td><span class="badge-pill badge-success">Submitted</span></td></tr>
+    <tr><td>Q4 2023</td><td>TechCorp Ltd</td><td>07 Feb 2024</td><td>£8,450.00</td><td><span class="badge-pill badge-blue">In Progress</span></td></tr>
+  </tbody></table></div>
+</div>
+
+<div id="screen-scan" class="screen" style="display:none">
+  <div class="section-title">Scan</div>
+  <div class="section-sub">Camera or file-based receipt scanning with instant OCR</div>
+  <div class="card" style="text-align:center;padding:60px">
+    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" style="margin:0 auto 16px"><rect x="5" y="5" width="50" height="50" rx="10" fill="#f1f5f9"/><rect x="15" y="20" width="30" height="20" rx="4" stroke="#94a3b8" stroke-width="2"/><path d="M20 15v5M30 15v5M40 15v5M20 40v5M30 40v5M40 40v5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>
+    <div class="font-semibold" style="font-size:16px;margin-bottom:8px">Scan a Receipt</div>
+    <div class="text-sm text-muted" style="margin-bottom:20px">Use your device camera or upload an image to extract VAT data instantly</div>
+    <button class="btn btn-primary">Open Camera</button>
+  </div>
+</div>
+
+<div id="screen-reconciliation" class="screen" style="display:none">
+  <div class="section-title">Reconciliation</div>
+  <div class="section-sub">Match bank transactions to ledger entries</div>
+  <div class="inline-alert inline-alert-success"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" fill="#dcfce7"/><path d="M4 7l2.5 2.5L10 5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>All 312 transactions reconciled for Q4 2023. 0 unmatched items.</div>
+</div>
+
+<div id="screen-documents" class="screen" style="display:none">
+  <div class="section-title">Documents</div>
+  <div class="section-sub">Secure document storage with SHA-256 fingerprinting</div>
+  <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Uploaded</th><th>Size</th></tr></thead>
+  <tbody><tr><td>Q4-2023-Acme-VAT-Return.pdf</td><td><span class="badge-pill badge-blue">PDF</span></td><td>04 Jan 2024</td><td>124 KB</td></tr>
+  <tr><td>Acme-Ledger-Q4-2023.csv</td><td><span class="badge-pill badge-success">CSV</span></td><td>04 Jan 2024</td><td>48 KB</td></tr></tbody></table></div>
+</div>
+
+<div id="screen-companies-house" class="screen" style="display:none">
+  <div class="section-title">Companies House</div>
+  <div class="section-sub">Automated filing reminders and company data enrichment</div>
+  <div class="card"><div class="font-semibold" style="margin-bottom:12px">Connected Companies</div>
+  <div class="table-wrap" style="border:none"><table><thead><tr><th>Company</th><th>Company No.</th><th>Next Filing</th><th>Status</th></tr></thead>
+  <tbody><tr><td>Acme Ltd</td><td>12345678</td><td>31 Dec 2024</td><td><span class="badge-pill badge-success">Active</span></td></tr></tbody></table></div></div>
+</div>
+
+<div id="screen-audit-trail" class="screen" style="display:none">
+  <div class="section-title">Audit Trail</div>
+  <div class="section-sub">Immutable, tamper-proof log of all system events</div>
+  <div class="table-wrap"><table><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>IP</th></tr></thead>
+  <tbody>
+    <tr><td>2024-01-04 09:14:22</td><td>Patrick Aldridge</td><td><span class="badge-pill badge-purple">Lock</span></td><td>Ledger Q4 2023 (312 entries)</td><td>82.34.xx.xx</td></tr>
+    <tr><td>2024-01-03 16:42:11</td><td>Sarah Chen</td><td><span class="badge-pill badge-blue">Upload</span></td><td>Receipt: BP Garage</td><td>82.34.xx.xx</td></tr>
+    <tr><td>2024-01-03 14:28:05</td><td>Sarah Chen</td><td><span class="badge-pill badge-success">Verify</span></td><td>Ledger entry: AWS Services</td><td>82.34.xx.xx</td></tr>
+    <tr><td>2024-01-02 10:15:33</td><td>James Walker</td><td><span class="badge-pill badge-warning">Ingestion</span></td><td>Data import: Q4-transactions.csv</td><td>82.34.xx.xx</td></tr>
+  </tbody></table></div>
+</div>
+
+<div id="screen-settings" class="screen" style="display:none">
+  <div class="section-title">Settings</div>
+  <div class="section-sub">Practice and account configuration</div>
+  <div class="grid-2" style="gap:20px">
+    <div class="card"><div class="font-semibold" style="margin-bottom:16px">Practice Details</div>
+    <div class="form-group"><label>Practice Name</label><input class="form-input" value="FineGuard Demo Practice"></div>
+    <div class="form-group"><label>Agent Reference</label><input class="form-input" value="MTD-AGENT-12345"></div>
+    <div class="form-group" style="margin-bottom:0"><label>HMRC Credentials</label><input class="form-input" value="Connected · Last sync 04 Jan 2024"></div>
+    </div>
+    <div class="card"><div class="font-semibold" style="margin-bottom:16px">Notifications</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="toggle-wrap"><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label><span class="toggle-label text-sm">Email alerts for staged items</span></div>
+      <div class="toggle-wrap"><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label><span class="toggle-label text-sm">VAT deadline reminders (7, 3, 1 day)</span></div>
+      <div class="toggle-wrap"><label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label><span class="toggle-label text-sm">Slack webhook notifications</span></div>
+    </div></div>
+  </div>
+</div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-wrap -->
+</div><!-- /app -->
+
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+var currentScreen = 'dashboard';
+var sidebarCollapsed = false;
+var isOffline = false;
+var pipelineStep = 2; // 1-indexed, currently on step 2
+var companies = ['Acme Ltd','TechCorp Ltd','Bright Ideas Ltd'];
+var companyIdx = 0;
+
+// ══════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════
+function fillDemo(email, pass) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-pass').value = pass;
+}
+
+function doLogin() {
+  var email = document.getElementById('login-email').value;
+  var pass = document.getElementById('login-pass').value;
+  if (!email || !pass) {
+    showToast('Please enter your email and password', 'danger');
+    return;
+  }
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  // update avatar initials based on role
+  if (email.indexOf('senior') > -1) {
+    document.querySelectorAll('.avatar').forEach(function(a){ a.textContent = 'SC'; });
+    document.querySelector('.user-name').textContent = 'Sarah Chen';
+    document.querySelector('.user-role').textContent = 'Senior Accountant';
+  } else if (email.indexOf('accountant') > -1) {
+    document.querySelectorAll('.avatar').forEach(function(a){ a.textContent = 'JW'; });
+    document.querySelector('.user-name').textContent = 'James Walker';
+    document.querySelector('.user-role').textContent = 'Accountant';
+  } else {
+    document.querySelectorAll('.avatar').forEach(function(a){ a.textContent = 'PA'; });
+    document.querySelector('.user-name').textContent = 'Patrick Aldridge';
+    document.querySelector('.user-role').textContent = 'Partner';
+  }
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function nav(screenId, btn) {
+  // Hide all screens
+  var screens = document.querySelectorAll('.screen');
+  screens.forEach(function(s){ s.style.display = 'none'; });
+  // Show target
+  var target = document.getElementById('screen-' + screenId);
+  if (target) target.style.display = 'block';
+  currentScreen = screenId;
+  // Update nav active state
+  document.querySelectorAll('.nav-item').forEach(function(item){
+    item.classList.remove('active');
+  });
+  if (btn) btn.classList.add('active');
+  else {
+    var matching = document.querySelector('[data-screen="' + screenId + '"]');
+    if (matching) matching.classList.add('active');
+  }
+}
+
+// ══════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════
+function toggleSidebar() {
+  var sidebar = document.getElementById('sidebar');
+  sidebarCollapsed = !sidebarCollapsed;
+  if (sidebarCollapsed) {
+    sidebar.classList.add('collapsed');
+  } else {
+    sidebar.classList.remove('collapsed');
+  }
+}
+
+// ══════════════════════════════════════════
+// TOPBAR
+// ══════════════════════════════════════════
+function cycleCompany() {
+  companyIdx = (companyIdx + 1) % companies.length;
+  document.getElementById('company-name').textContent = companies[companyIdx];
+  showToast('Switched to ' + companies[companyIdx], 'info');
+}
+
+function toggleOffline() {
+  isOffline = !isOffline;
+  var badge = document.getElementById('online-badge');
+  var label = document.getElementById('online-label');
+  var banner = document.getElementById('offline-banner');
+  if (isOffline) {
+    badge.classList.add('offline');
+    label.textContent = 'Offline';
+    banner.style.display = 'flex';
+  } else {
+    badge.classList.remove('offline');
+    label.textContent = 'Online';
+    banner.style.display = 'none';
+    showToast('Connection restored — syncing 2 queued actions…', 'info');
+  }
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function showToast(msg, type) {
+  type = type || 'info';
+  var container = document.getElementById('toast-container');
+  var toast = document.createElement('div');
+  toast.className = 'toast toast-' + type;
+  var icon = '';
+  if (type === 'success') icon = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  else if (type === 'danger') icon = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+  else icon = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v4M8 5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  toast.innerHTML = icon + msg;
+  container.appendChild(toast);
+  setTimeout(function(){
+    toast.style.animation = 'fadeOut .3s ease forwards';
+    setTimeout(function(){ if(toast.parentNode) container.removeChild(toast); }, 300);
+  }, 3500);
+}
+
+// ══════════════════════════════════════════
+// LEDGER
+// ══════════════════════════════════════════
+function verifyLedgerRow(id) {
+  var statusEl = document.getElementById('ledger-status-' + id);
+  var verifyBtn = document.getElementById('verify-btn-' + id);
+  if (statusEl) {
+    statusEl.className = 'badge-pill badge-success';
+    statusEl.textContent = 'Verified';
+  }
+  if (verifyBtn) verifyBtn.remove();
+  showToast('Entry verified successfully', 'success');
+}
+
+function lockLedgerRow(id) {
+  var statusEl = document.getElementById('ledger-status-' + id);
+  var lockBtn = document.getElementById('lock-btn-' + id);
+  var verifyBtn = document.getElementById('verify-btn-' + id);
+  if (statusEl) {
+    statusEl.className = 'badge-pill badge-purple';
+    statusEl.textContent = 'Locked';
+  }
+  if (lockBtn) {
+    var cell = lockBtn.parentNode;
+    cell.innerHTML = '<span class="text-xs text-muted">Locked</span>';
+  }
+  if (verifyBtn) verifyBtn.remove();
+  showToast('Entry locked — cannot be edited', 'info');
+}
+
+function setLedgerFilter(filter, btn) {
+  document.querySelectorAll('.filter-tab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// STAGING QUEUE
+// ══════════════════════════════════════════
+function selectStagingItem(id) {
+  document.querySelectorAll('.staging-item').forEach(function(i){ i.classList.remove('active'); });
+  var item = document.getElementById('staging-item-' + id);
+  if (item) item.classList.add('active');
+}
+
+function approveStaged() {
+  var item = document.getElementById('staging-item-1');
+  if (item) {
+    item.style.opacity = '0.4';
+    item.style.pointerEvents = 'none';
+    setTimeout(function(){
+      item.remove();
+      var empty = document.getElementById('staging-empty');
+      if (empty) empty.style.display = 'block';
+      document.getElementById('staging-detail-panel').innerHTML =
+        '<div style="text-align:center;padding:60px;color:var(--muted)">' +
+        '<svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="margin:0 auto 16px;display:block"><circle cx="24" cy="24" r="20" fill="#dcfce7"/><path d="M14 24l8 8 12-12" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '<div class="font-semibold" style="font-size:16px;color:var(--text);margin-bottom:8px">All items approved</div>' +
+        '<div class="text-sm text-muted">Staging queue is clear — Gate 2 will now pass.</div></div>';
+    }, 400);
+  }
+  showToast('Item approved — moved to Ledger', 'success');
+}
+
+function rejectStaged() {
+  var item = document.getElementById('staging-item-1');
+  if (item) {
+    item.style.opacity = '0.4';
+    item.style.pointerEvents = 'none';
+    setTimeout(function(){
+      item.remove();
+      var empty = document.getElementById('staging-empty');
+      if (empty) empty.style.display = 'block';
+      document.getElementById('staging-detail-panel').innerHTML =
+        '<div style="text-align:center;padding:60px;color:var(--muted)">' +
+        '<div class="font-semibold" style="font-size:16px;color:var(--text);margin-bottom:8px">Queue empty</div>' +
+        '<div class="text-sm text-muted">The rejected item has been removed.</div></div>';
+    }, 400);
+  }
+  showToast('Item rejected', 'danger');
+}
+
+// ══════════════════════════════════════════
+// AUDIT PROTECTION
+// ══════════════════════════════════════════
+function updateVarianceRisk() {
+  var toggle = document.getElementById('variance-toggle');
+  var noneB = document.getElementById('risk-none-banner');
+  var critB = document.getElementById('risk-critical-banner');
+  if (toggle.checked) {
+    noneB.style.display = 'none';
+    critB.style.display = 'block';
+  } else {
+    noneB.style.display = 'block';
+    critB.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════
+// MTD CONTROL CENTRE — Submit button
+// ══════════════════════════════════════════
+function submitHMRC() {
+  var btn = document.getElementById('submit-hmrc-btn');
+  btn.classList.add('shake');
+  setTimeout(function(){ btn.classList.remove('shake'); }, 450);
+  showToast('Cannot submit — Gate 2 is blocked. Resolve the staged item first.', 'danger');
+}
+
+// ══════════════════════════════════════════
+// MTD PIPELINE WIZARD
+// ══════════════════════════════════════════
+var pStep = 2;
+var pStepLabels = ['Review','Validate','Build Payload','Confirm','Submit'];
+var pStepContent = [
+  '<div class="card"><div class="font-semibold" style="font-size:15px;margin-bottom:4px">Step 1 — Review VAT Return</div><div class="text-sm text-muted" style="margin-bottom:16px">Confirm the VAT figures before proceeding to validation</div><div class="vat-boxes-grid"><div class="vat-box"><div class="vat-box-num">Box 1</div><div class="vat-box-value">£24,830.00</div></div><div class="vat-box"><div class="vat-box-num">Box 2</div><div class="vat-box-value">£0.00</div></div><div class="vat-box" style="background:#eff6ff"><div class="vat-box-num">Box 3</div><div class="vat-box-value" style="color:var(--blue)">£24,830.00</div></div><div class="vat-box"><div class="vat-box-num">Box 4</div><div class="vat-box-value">£8,214.40</div></div><div class="vat-box" style="background:#fefce8"><div class="vat-box-num">Box 5</div><div class="vat-box-value" style="color:var(--warning)">£16,615.60</div></div><div class="vat-box"><div class="vat-box-num">Box 6</div><div class="vat-box-value">£124,150.00</div></div></div></div>',
+  null, // Step 2 is already rendered in HTML
+  '<div class="card"><div class="font-semibold" style="font-size:15px;margin-bottom:4px">Step 3 — Build JSON Payload</div><div class="text-sm text-muted" style="margin-bottom:16px">Constructing HMRC MTD API payload</div><pre style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:10px;font-size:12px;overflow-x:auto">{\n  "periodKey": "23A4",\n  "vatDueSales": 24830.00,\n  "vatDueAcquisitions": 0.00,\n  "totalVatDue": 24830.00,\n  "vatReclaimedCurrPeriod": 8214.40,\n  "netVatDue": 16615.60,\n  "totalValueSalesExVAT": 124150,\n  "totalValuePurchasesExVAT": 41072,\n  "totalValueGoodsSuppliedExVAT": 0,\n  "totalAcquisitionsExVAT": 0,\n  "finalised": true\n}</pre><div class="inline-alert inline-alert-success" style="margin-top:12px;margin-bottom:0"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="#dcfce7"/><path d="M4 7l2.5 2.5L10 5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Payload validated against HMRC MTD schema v3.1 — ready for submission</div></div>',
+  '<div class="card"><div class="font-semibold" style="font-size:15px;margin-bottom:4px">Step 4 — Partner Confirmation</div><div class="text-sm text-muted" style="margin-bottom:16px">Final authorisation before submission to HMRC</div><div class="inline-alert inline-alert-warning"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L1 13h12L7 1z" fill="#d97706" opacity=".2"/><path d="M7 5v3M7 10v.3" stroke="#d97706" stroke-width="1.8" stroke-linecap="round"/></svg>By clicking Confirm, you are digitally signing this VAT return. This action is irreversible.</div><div class="field-row"><span class="field-label">Authorised by</span><span class="field-value">Patrick Aldridge — Partner</span></div><div class="field-row"><span class="field-label">Submission method</span><span class="field-value">HMRC MTD API v3.1</span></div><div class="field-row" style="border-bottom:none"><span class="field-label">Timestamp</span><span class="field-value">' + new Date().toLocaleString('en-GB') + '</span></div></div>',
+  '<div class="card"><div class="font-semibold" style="font-size:15px;margin-bottom:4px">Step 5 — Submit to HMRC</div><div class="text-sm text-muted" style="margin-bottom:16px">Transmit the signed payload to HMRC MTD API</div><div class="inline-alert inline-alert-success"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="#dcfce7"/><path d="M4 7l2.5 2.5L10 5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Submission successful!</strong> HMRC reference: VRN-2024-0204-ABC123</div></div>'
+];
+
+function pipelineStep(delta) {
+  pStep = Math.max(1, Math.min(5, pStep + delta));
+  renderPipelineStep();
+}
+
+function renderPipelineStep() {
+  // Update circles
+  for (var i = 1; i <= 5; i++) {
+    var circle = document.getElementById('pstep-' + i);
+    var lbl = document.getElementById('pstep-lbl-' + i);
+    var conn = document.getElementById('pconn-' + i);
+    if (!circle) continue;
+    circle.className = 'step-circle' + (i < pStep ? ' done' : i === pStep ? ' active' : '');
+    circle.textContent = i < pStep ? '✓' : i;
+    lbl.className = 'step-label' + (i < pStep ? ' done' : i === pStep ? ' active' : '');
+    lbl.textContent = pStepLabels[i-1];
+    if (conn) conn.className = 'step-connector' + (i < pStep ? ' done' : '');
+  }
+  // Update back/next buttons
+  var backBtn = document.getElementById('pipeline-back-btn');
+  var nextBtn = document.getElementById('pipeline-next-btn');
+  if (backBtn) {
+    backBtn.textContent = pStep > 1 ? '← Back to ' + pStepLabels[pStep-2] : '← Back';
+    backBtn.disabled = pStep === 1;
+  }
+  if (nextBtn) {
+    if (pStep === 5) {
+      nextBtn.textContent = 'Submit to HMRC';
+      nextBtn.onclick = function(){ showToast('VAT Return submitted to HMRC successfully!', 'success'); };
+    } else {
+      nextBtn.textContent = 'Next: ' + pStepLabels[pStep] + ' →';
+      nextBtn.onclick = function(){ pipelineStep(1); };
+    }
+  }
+  // Update content
+  if (pStep === 2) {
+    // Already in HTML; skip
+    return;
+  }
+  var content = pStepContent[pStep-1];
+  if (content) {
+    document.getElementById('pipeline-step-content').innerHTML = content;
+  }
+}
+
+// ══════════════════════════════════════════
+// PRICING ARR CALCULATOR
+// ══════════════════════════════════════════
+function updateARR(firms) {
+  firms = parseInt(firms, 10);
+  document.getElementById('arr-firms-label').textContent = firms;
+  var plan = parseInt(document.getElementById('arr-plan').value, 10);
+  var mrr = firms * plan;
+  var arr = mrr * 12;
+  document.getElementById('arr-value').textContent = '£' + arr.toLocaleString('en-GB');
+  document.getElementById('arr-mrr').textContent = '£' + mrr.toLocaleString('en-GB');
+  document.getElementById('arr-breakdown').textContent = firms + ' firms × £' + plan + '/mo × 12 months';
+}
+
+// ══════════════════════════════════════════
+// DATA INGESTION — Auto-detect mapping
+// ══════════════════════════════════════════
+function autoDetectMapping() {
+  var btn = document.getElementById('auto-detect-btn');
+  btn.textContent = 'Detecting…';
+  btn.disabled = true;
+  setTimeout(function(){
+    // Set VAT dropdown
+    var vatSel = document.getElementById('map-vat');
+    if (vatSel) vatSel.value = 'tax_amount';
+    var grossSel = document.getElementById('map-gross');
+    if (grossSel) grossSel.value = 'total_inc_tax';
+    // Update status badges
+    var taxStatus = document.getElementById('tax-col-status');
+    if (taxStatus) { taxStatus.className = 'badge-pill badge-success'; taxStatus.textContent = 'Mapped'; }
+    var totalStatus = document.getElementById('total-col-status');
+    if (totalStatus) { totalStatus.className = 'badge-pill badge-success'; totalStatus.textContent = 'Mapped'; }
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Auto-detect';
+    btn.disabled = false;
+    showToast('All 5 columns mapped automatically', 'success');
+  }, 800);
+}
+
+// ══════════════════════════════════════════
+// DROP ZONE
+// ══════════════════════════════════════════
+function dropZoneHover(on) {
+  var dz = document.getElementById('drop-zone');
+  if (dz) {
+    if (on) dz.classList.add('drag-over');
+    else dz.classList.remove('drag-over');
+  }
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function(){
+  // Show dashboard on app load
+  nav('dashboard', document.querySelector('[data-screen="dashboard"]'));
+});
+</script>
+</body>
+</html>
