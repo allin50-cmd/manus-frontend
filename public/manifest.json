@@ -1,0 +1,17 @@
+{
+  "name": "FineGuard MTD Control Centre",
+  "short_name": "FineGuard",
+  "description": "UK Compliance Control System for VAT, MTD, and Companies House",
+  "theme_color": "#1e3a5f",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/index.css",
+    "src/types",
+    "src/lib",
+    "src/services",
+    "src/contexts",
+    "src/components/layout",
+    "src/components/ui",
+    "src/pages/Login.tsx",
+    "src/pages/Dashboard.tsx",
+    "src/pages/MTDControlCentre.tsx",
+    "src/pages/Companies.tsx",
+    "src/pages/VATReturns.tsx",
+    "src/pages/Ledger.tsx",
+    "src/pages/Receipts.tsx",
+    "src/pages/Scanner.tsx",
+    "src/pages/StagingQueue.tsx",
+    "src/pages/Reconciliation.tsx",
+    "src/pages/Documents.tsx",
+    "src/pages/ComplianceAlerts.tsx",
+    "src/pages/AuditTrail.tsx",
+    "src/pages/CompaniesHouseLookup.tsx",
+    "src/pages/Settings.tsx",
+    "src/pages/NotFound.tsx"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
