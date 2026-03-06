@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FileText, Building2, Receipt, CreditCard,
   FolderOpen, Scale, ScanLine, AlertTriangle, ClipboardList,
   BookOpen, Search, Settings, Shield, LogOut, ChevronLeft, ChevronRight,
-  Layers, GitMerge
+  Layers, GitMerge, Upload, Send, Eye, DollarSign
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffline } from '@/contexts/OfflineContext';
@@ -94,6 +94,7 @@ export default function Sidebar({
           badgeColor: 'bg-blue-500',
         },
         { label: 'Scan Receipt', path: '/scan', icon: ScanLine },
+        { label: 'Data Ingestion', path: '/ingestion', icon: Upload },
         { label: 'Reconciliation', path: '/reconciliation', icon: GitMerge },
       ],
     },
@@ -102,6 +103,14 @@ export default function Sidebar({
       items: [
         { label: 'Documents', path: '/documents', icon: FolderOpen },
         { label: 'Companies House', path: '/companies-house', icon: Search },
+      ],
+    },
+    {
+      title: 'Pipeline',
+      items: [
+        { label: 'MTD Submission', path: '/mtd-pipeline', icon: Send },
+        { label: 'Audit Protection', path: '/audit-protection', icon: Eye },
+        { label: 'Pricing', path: '/pricing', icon: DollarSign },
       ],
     },
     {

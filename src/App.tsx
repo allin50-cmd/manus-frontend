@@ -17,6 +17,10 @@ import ComplianceAlerts from '@/pages/ComplianceAlerts';
 import AuditTrail from '@/pages/AuditTrail';
 import CompaniesHouseLookup from '@/pages/CompaniesHouseLookup';
 import Settings from '@/pages/Settings';
+import DataIngestion from '@/pages/DataIngestion';
+import MTDSubmissionPipeline from '@/pages/MTDSubmissionPipeline';
+import AuditProtection from '@/pages/AuditProtection';
+import PricingDashboard from '@/pages/PricingDashboard';
 import NotFound from '@/pages/NotFound';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -57,6 +61,10 @@ function AppRoutes() {
         <Route path="audit" element={<AuditTrail />} />
         <Route path="companies-house" element={<CompaniesHouseLookup />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="ingestion" element={<DataIngestion />} />
+        <Route path="mtd-pipeline" element={<MTDSubmissionPipeline />} />
+        <Route path="audit-protection" element={<AuditProtection />} />
+        <Route path="pricing" element={<PricingDashboard />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

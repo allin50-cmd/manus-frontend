@@ -45,6 +45,10 @@
     "src/pages/AuditTrail.tsx",
     "src/pages/CompaniesHouseLookup.tsx",
     "src/pages/Settings.tsx",
+    "src/pages/DataIngestion.tsx",
+    "src/pages/MTDSubmissionPipeline.tsx",
+    "src/pages/AuditProtection.tsx",
+    "src/pages/PricingDashboard.tsx",
     "src/pages/NotFound.tsx"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
