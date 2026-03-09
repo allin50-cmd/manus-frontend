@@ -1,9 +1,9 @@
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Shield, ArrowRight } from 'lucide-react';
 
 export default function VaultLine() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
@@ -19,7 +19,7 @@ export default function VaultLine() {
             Enterprise-grade secure document storage and compliance management
           </p>
           <Button
-            onClick={() => setLocation('/book-demo')}
+            onClick={() => navigate('/book-demo')}
             className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-8 py-6 text-lg"
           >
             Book a Demo

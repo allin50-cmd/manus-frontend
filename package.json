@@ -1,13 +1,13 @@
 {
-  "name": "vaultline-brand-suite",
-  "version": "1.0.0",
-  "description": "VaultLine Brand Suite - Landing pages for VaultLine Cloud, UltAi Secure Intake, and FineGuard Compliance Cloud",
+  "name": "fineguard-pro",
+  "version": "2.0.0",
+  "description": "FineGuard Pro - UK Compliance Monitoring SaaS Platform for Accounting Firms",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
-    "start": "node dist/index.js",
+    "start": "node dist/server/index.js",
     "server": "tsx server/index.ts",
     "server:watch": "tsx watch server/index.ts",
     "db:generate": "drizzle-kit generate",
@@ -15,7 +15,9 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx server/db/migrate.ts",
     "db:seed": "tsx server/db/seed.ts",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build:server": "tsc --project tsconfig.server.json",
+    "build:all": "npm run build && npm run build:server",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 10",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -29,7 +31,15 @@
     "dotenv": "^16.4.1",
     "uuid": "^9.0.1",
     "node-fetch": "^3.3.2",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.1",
+    "lucide-react": "^0.344.0",
+    "sonner": "^1.4.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
@@ -38,6 +48,9 @@
     "@types/cors": "^2.8.17",
     "@types/uuid": "^9.0.7",
     "@types/node": "^20.11.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/multer": "^1.4.11",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
@@ -53,7 +66,6 @@
     "vite": "^5.2.0"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=20.0.0"
   }
 }

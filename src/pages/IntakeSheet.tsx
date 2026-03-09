@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,7 +11,7 @@ import { Loader2, CheckCircle, AlertCircle, ArrowLeft, AlertTriangle } from 'luc
 import { toast } from 'sonner';
 
 export default function IntakeSheet() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [matterRef, setMatterRef] = useState('');
@@ -129,7 +129,7 @@ export default function IntakeSheet() {
                 Submit Another
               </Button>
               <Button
-                onClick={() => setLocation('/ultai')}
+                onClick={() => navigate('/ultai')}
                 className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -306,7 +306,7 @@ export default function IntakeSheet() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setLocation('/ultai')}
+                  onClick={() => navigate('/ultai')}
                   className="flex-1 bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
                 >
                   Cancel

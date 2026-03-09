@@ -1,9 +1,9 @@
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FileText, ArrowRight } from 'lucide-react';
 
 export default function UltAi() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10]">
@@ -19,7 +19,7 @@ export default function UltAi() {
             AI-powered secure client matter intake for law firms
           </p>
           <Button
-            onClick={() => setLocation('/intake-sheet')}
+            onClick={() => navigate('/intake-sheet')}
             className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg"
           >
             Try Intake Sheet

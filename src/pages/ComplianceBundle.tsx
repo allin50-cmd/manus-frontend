@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useLocation } from 'wouter';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,7 +46,7 @@ interface ComplianceData {
 }
 
 export default function ComplianceBundle() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [bundleId, setBundleId] = useState('');
@@ -309,7 +309,7 @@ export default function ComplianceBundle() {
                   Check Another Company
                 </Button>
                 <Button
-                  onClick={() => setLocation('/fineguard')}
+                  onClick={() => navigate('/')}
                   className="flex-1 bg-[#C9A64A] hover:bg-[#B8954A] text-white"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -478,7 +478,7 @@ export default function ComplianceBundle() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setLocation('/fineguard')}
+                  onClick={() => navigate('/')}
                   className="flex-1 border-gray-300 hover:bg-gray-100"
                 >
                   Cancel
