@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Car Squad Archive</title>
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#050505;
+  color:white;
+}
+
+header{
+  padding:20px;
+  border-bottom:1px solid #222;
+  display:flex;
+  justify-content:space-between;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:20px;
+  padding:20px;
+}
+
+.card{
+  background:#111;
+  padding:20px;
+  border-radius:10px;
+  cursor:pointer;
+  border:1px solid #222;
+}
+
+.card:hover{
+  border-color:#d4af37;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:black;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+
+.modal.open{
+  display:flex;
+}
+
+.viewer{
+  background:#111;
+  padding:40px;
+  border-radius:12px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div>ACE Sovereign Archive</div>
+<input id="search" placeholder="search vehicles">
+</header>
+
+<div id="grid" class="grid"></div>
+
+<div id="modal" class="modal">
+<div class="viewer">
+<h2 id="title"></h2>
+<button onclick="closeModal()">Close</button>
+</div>
+</div>
+
+<script>
+
+const cars = [
+{ id:"HYP-001", brand:"Bugatti", model:"Mistral", spread:2100000 },
+{ id:"HYP-002", brand:"Koenigsegg", model:"Jesko", spread:1400000 },
+{ id:"HYP-003", brand:"Pagani", model:"Utopia", spread:850000 },
+{ id:"SUV-001", brand:"Range Rover", model:"SV Autobiography", spread:85000 },
+{ id:"LUX-001", brand:"Bentley", model:"Batur", spread:650000 }
+]
+
+const grid = document.getElementById("grid")
+const modal = document.getElementById("modal")
+const title = document.getElementById("title")
+
+function render(list){
+
+grid.innerHTML = ""
+
+list.forEach(car=>{
+
+const card = document.createElement("div")
+card.className="card"
+
+card.innerHTML = `
+<h3>${car.brand}</h3>
+<div>${car.model}</div>
+<div>Spread +$${car.spread.toLocaleString()}</div>
+`
+
+card.onclick=()=>{
+title.innerText = car.brand + " " + car.model
+modal.classList.add("open")
+}
+
+grid.appendChild(card)
+
+})
+
+}
+
+function closeModal(){
+modal.classList.remove("open")
+}
+
+document.getElementById("search").oninput=(e)=>{
+
+const q=e.target.value.toLowerCase()
+
+render(cars.filter(c=>
+c.brand.toLowerCase().includes(q) ||
+c.model.toLowerCase().includes(q)
+))
+
+}
+
+render(cars)
+
+</script>
+
+</body>
+</html>
