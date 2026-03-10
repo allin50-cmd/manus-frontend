@@ -104,7 +104,8 @@ export function DeploymentStatusPanel() {
 
   const getGitHubWorkflowUrl = (workflowRun: string) => {
     // Assuming GitHub repo is configured in environment
-    const repo = import.meta.env.VITE_GITHUB_REPO || 'owner/repo';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const repo = (import.meta as any).env?.VITE_GITHUB_REPO || 'owner/repo';
     return `https://github.com/${repo}/actions/runs/${workflowRun}`;
   };
 

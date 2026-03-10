@@ -9,8 +9,7 @@
  */
 
 import { db } from '../db/index';
-import { alerts, companies, deadlines, firms } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { alerts } from '../db/schema';
 
 export interface AlertPayload {
   companyId: string;

@@ -233,7 +233,6 @@ export default function IntakeSheet() {
                     <Select
                       value={formData.matterType}
                       onValueChange={(value) => setFormData({ ...formData, matterType: value })}
-                      required
                     >
                       <SelectTrigger className="bg-[#1A1D28] border-[#2A2D3A] text-white">
                         <SelectValue placeholder="Select matter type" />
@@ -259,7 +258,6 @@ export default function IntakeSheet() {
                     <Select
                       value={formData.urgency}
                       onValueChange={(value) => setFormData({ ...formData, urgency: value })}
-                      required
                     >
                       <SelectTrigger className="bg-[#1A1D28] border-[#2A2D3A] text-white">
                         <SelectValue placeholder="Select urgency" />

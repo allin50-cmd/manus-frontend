@@ -20,7 +20,7 @@ import {
   users, firms, companies, deadlines, vatCheckReports, timelineEvents,
   alerts, documents, toolTransactions, auditLog
 } from './db/schema';
-import { desc, eq, and, isNull } from 'drizzle-orm';
+import { desc, eq, and } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 import { validateVATReturn, parseVATBoxes } from './services/vatValidator';
 import { requireAuth, generateToken, type AuthUser } from './middleware/auth';
@@ -720,15 +720,14 @@ app.get('/api/documents', requireAuth, async (req: Request, res: Response) => {
     const { companyId } = req.query;
     const firmId = req.user!.firmId;
 
-    let query = db.select().from(documents).where(eq(documents.firmId, firmId));
+    const whereClause = (companyId && typeof companyId === 'string')
+      ? and(eq(documents.firmId, firmId), eq(documents.companyId, companyId))
+      : eq(documents.firmId, firmId);
 
-    if (companyId && typeof companyId === 'string') {
-      // @ts-ignore
-      query = query.where(and(eq(documents.firmId, firmId), eq(documents.companyId, companyId)));
-    }
-
-    // @ts-ignore
-    const docs = await query.orderBy(desc(documents.createdAt)).limit(200);
+    const docs = await db.select().from(documents)
+      .where(whereClause)
+      .orderBy(desc(documents.createdAt))
+      .limit(200);
 
     // Enrich with company names
     const enriched = await Promise.all(docs.map(async (doc) => {
@@ -861,6 +860,75 @@ app.get('/api/company-compliance-score/:companyNumber', requireAuth, async (req:
 });
 
 // ============================================================================
+// LEGACY ADMIN ENDPOINTS (used by Admin.tsx dashboard)
+// ============================================================================
+
+app.get('/api/admin/leads', async (_req: Request, res: Response) => {
+  try {
+    const all = await db.select().from(leads).orderBy(desc(leads.createdAt));
+    res.json({ leads: all });
+  } catch { res.status(500).json({ error: 'Failed to fetch leads' }); }
+});
+
+app.get('/api/admin/intake-forms', async (_req: Request, res: Response) => {
+  try {
+    const all = await db.select().from(intakeForms).orderBy(desc(intakeForms.createdAt));
+    res.json({ intakeForms: all });
+  } catch { res.status(500).json({ error: 'Failed to fetch intake forms' }); }
+});
+
+app.get('/api/admin/compliance-bundles', async (_req: Request, res: Response) => {
+  try {
+    const all = await db.select().from(complianceBundles).orderBy(desc(complianceBundles.createdAt));
+    res.json({ complianceBundles: all });
+  } catch { res.status(500).json({ error: 'Failed to fetch compliance bundles' }); }
+});
+
+app.get('/api/admin/contacts', async (_req: Request, res: Response) => {
+  try {
+    const all = await db.select().from(contacts).orderBy(desc(contacts.createdAt));
+    res.json({ contacts: all });
+  } catch { res.status(500).json({ error: 'Failed to fetch contacts' }); }
+});
+
+app.post('/api/intake', async (req: Request, res: Response) => {
+  try {
+    const { clientName, clientEmail, clientPhone, matterType, urgency, description, claimValue } = req.body;
+    if (!clientName || !matterType || !urgency) {
+      return res.status(400).json({ ok: false, error: 'clientName, matterType, and urgency are required' });
+    }
+    const [form] = await db.insert(intakeForms).values({
+      matterRef: `MAT-${Date.now()}`,
+      clientName, clientEmail: clientEmail || null, clientPhone: clientPhone || null,
+      matterType, urgency, description: description || null, claimValue: claimValue || null,
+    }).returning();
+    res.status(201).json({ ok: true, matterRef: form.matterRef });
+  } catch { res.status(500).json({ ok: false, error: 'Failed to save intake form' }); }
+});
+
+app.post('/api/contact', async (req: Request, res: Response) => {
+  try {
+    const { name, email, subject, message } = req.body;
+    if (!name || !email || !message) return res.status(400).json({ ok: false, error: 'name, email, and message are required' });
+    const [contact] = await db.insert(contacts).values({
+      ticketId: `TICKET-${Date.now()}`, name, email,
+      subject: subject || null, message,
+    }).returning();
+    res.status(201).json({ ok: true, ticketId: contact.ticketId });
+  } catch { res.status(500).json({ ok: false, error: 'Failed to save contact' }); }
+});
+
+app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
+  try {
+    const { status } = req.body;
+    if (!['new', 'read', 'replied'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    const [contact] = await db.update(contacts).set({ status }).where(eq(contacts.id, req.params.id)).returning();
+    if (!contact) return res.status(404).json({ error: 'Contact not found' });
+    res.json({ ok: true, contact });
+  } catch { res.status(500).json({ error: 'Failed to update contact' }); }
+});
+
+// ============================================================================
 // LEGACY ENDPOINTS (preserved from original server)
 // ============================================================================
 
@@ -975,11 +1043,24 @@ app.get('*', (_req: Request, res: Response) => {
 // ERROR HANDLING
 // ============================================================================
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: Error & { code?: string }, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
-  if (err.message.includes('Only PDF')) {
+
+  // Multer file size limit
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ ok: false, error: 'File too large. Maximum size is 50MB.' });
+  }
+
+  // Multer file type rejection
+  if (err.message.includes('Only PDF') || err.message.includes('accepted')) {
     return res.status(400).json({ ok: false, error: err.message });
   }
+
+  // JWT errors that escape middleware
+  if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+    return res.status(401).json({ error: 'Invalid or expired authentication token.' });
+  }
+
   res.status(500).json({ error: 'Internal server error' });
 });
 
