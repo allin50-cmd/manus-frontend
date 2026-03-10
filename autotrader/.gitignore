@@ -1,0 +1,9 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# SQLite database (runtime artifact)
+*.db
+*.db-wal
+*.db-shm
