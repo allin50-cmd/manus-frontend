@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoTrader Intelligence AI — Demo</title>
+<style>
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --border:   #30363d;
+    --accent:   #238636;
+    --accent2:  #1f6feb;
+    --warn:     #d29922;
+    --danger:   #da3633;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --radius:   8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  header .logo span { color: var(--accent2); }
+  header .badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 99px;
+    letter-spacing: .5px;
+  }
+  header .sub { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    display: grid;
+    gap: 24px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    display: inline-block;
+  }
+
+  /* ── CSV Input ── */
+  .csv-area {
+    width: 100%;
+    min-height: 130px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    color: var(--text);
+    font-family: "SF Mono", "Fira Mono", monospace;
+    font-size: 12px;
+    resize: vertical;
+    transition: border-color .2s;
+    outline: none;
+  }
+  .csv-area:focus { border-color: var(--accent2); }
+
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  button {
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+  }
+  button:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+  .btn-primary:hover { opacity: .88; }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+  .btn-danger:hover { background: #da363322; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+  }
+  .stat-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-box .num { font-size: 26px; font-weight: 700; color: var(--text); }
+  .stat-box .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Table ── */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #21262d;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1c2128; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-buy    { background: #1a4b2b; color: #3fb950; border: 1px solid #238636; }
+  .badge-review { background: #2b2200; color: #e3b341; border: 1px solid #9e6a03; }
+  .badge-pass   { background: #2a1519; color: #f85149; border: 1px solid #da3633; }
+  .badge-mode-exact  { background: #0c2d5e; color: #79c0ff; border: 1px solid #1f6feb; }
+  .badge-mode-brand  { background: #2b2200; color: #e3b341; border: 1px solid #9e6a03; }
+  .badge-mode-fb     { background: #2a1519; color: #ffa198; border: 1px solid #da3633; }
+
+  /* ── Score bar ── */
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    min-width: 60px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width .4s ease;
+  }
+  .score-val { font-size: 12px; font-weight: 700; width: 28px; text-align: right; }
+
+  /* ── Risk pills ── */
+  .kw-pill {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin: 1px;
+  }
+  .kw-high   { background: #3d1a1a; color: #ffa198; }
+  .kw-medium { background: #2b2200; color: #e3b341; }
+  .kw-low    { background: #1a2b1a; color: #56d364; }
+
+  /* ── Detail panel ── */
+  .detail-panel {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-top: 12px;
+    display: none;
+  }
+  .detail-panel.open { display: block; }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .detail-item .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .detail-item .val { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .detail-item .val.mono { font-family: "SF Mono", "Fira Mono", monospace; font-size: 12px; }
+
+  /* ── Scan log ── */
+  .log-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: "SF Mono", "Fira Mono", monospace;
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .log-box .log-info  { color: #79c0ff; }
+  .log-box .log-warn  { color: #e3b341; }
+  .log-box .log-err   { color: #ffa198; }
+  .log-box .log-ok    { color: #56d364; }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+  .empty .icon { font-size: 40px; margin-bottom: 10px; }
+  .empty p { font-size: 13px; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+  .tab {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color .15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent2); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── Tooltip ── */
+  [title] { cursor: help; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    main { padding: 16px; }
+    .card { padding: 14px 16px; }
+  }
+
+  .clickable-row { cursor: pointer; }
+
+  .alert-row { background: #1a1200 !important; }
+  .alert-row td:first-child { border-left: 3px solid var(--warn); padding-left: 9px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AutoTrader <span>Intelligence AI</span></div>
+  <div class="badge">ITER 4</div>
+  <div class="sub">Hardened Production Demo · stdlib only · SQLite + CSV</div>
+</header>
+
+<main>
+
+  <!-- ── Input ── -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>CSV Input</div>
+    <textarea id="csvInput" class="csv-area" placeholder="Paste CSV data here, or click 'Load Sample Data'…
+
+Required columns: title, brand, model, year, price, mileage
+Optional: fuel, transmission, color, location, url, images, id"></textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="btn-primary" onclick="runAnalysis()">⚡ Analyse Vehicles</button>
+      <button class="btn-secondary" onclick="loadSample()">📋 Load Sample Data</button>
+      <button class="btn-danger" onclick="clearAll()">✕ Clear</button>
+      <span id="parseStatus" style="margin-left:auto;color:var(--muted);font-size:12px"></span>
+    </div>
+  </div>
+
+  <!-- ── Scan Summary ── -->
+  <div class="card" id="summaryCard" style="display:none">
+    <div class="card-title"><span class="dot" style="background:var(--accent)"></span>Scan Summary</div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="log-box" id="logBox" style="margin-top:16px"></div>
+  </div>
+
+  <!-- ── Results tabs ── -->
+  <div class="card" id="resultsCard" style="display:none">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('vehicles')">Vehicles &amp; Analysis</div>
+      <div class="tab" onclick="switchTab('alerts')">Alerts</div>
+      <div class="tab" onclick="switchTab('market')">Market Stats</div>
+    </div>
+
+    <!-- Vehicles tab -->
+    <div id="tab-vehicles" class="tab-content active">
+      <div class="tbl-wrap">
+        <table id="vehicleTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Title</th>
+              <th>Brand / Model</th>
+              <th>Year</th>
+              <th>Price</th>
+              <th>Mileage</th>
+              <th>Deal Score</th>
+              <th>Risk</th>
+              <th>Mode</th>
+              <th>Rec</th>
+            </tr>
+          </thead>
+          <tbody id="vehicleTbody"></tbody>
+        </table>
+      </div>
+      <div id="detailPanel" class="detail-panel"></div>
+    </div>
+
+    <!-- Alerts tab -->
+    <div id="tab-alerts" class="tab-content">
+      <div id="alertsContent"></div>
+    </div>
+
+    <!-- Market Stats tab -->
+    <div id="tab-market" class="tab-content">
+      <div id="marketContent"></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ============================================================
+// Core engine — mirrors the Python analysis pipeline exactly
+// ============================================================
+
+const HIGH_RISK_KW = new Set([
+  "salvage","flood","fire","burned","written off","write-off","total loss",
+  "totaled","structural","frame damage","rebuilt title","cat a","cat b",
+  "cat c","cat d","cat s","cat n"
+]);
+const MEDIUM_RISK_KW = new Set([
+  "accident","collision","damaged","repaired","dent","scratch","hail",
+  "panel","bumper","fender","rear end","front end"
+]);
+const LOW_RISK_KW = new Set([
+  "scuff","mark","minor","small","light","surface","paint chip"
+]);
+
+const HIGH_W = 0.50, MEDIUM_W = 0.20, LOW_W = 0.05;
+const BASELINE_MILEAGE = 50000;
+const MILEAGE_ADJ_PER_10K = 0.02;
+const DEFAULT_MARKUP = 1.15;
+const ALERT_SCORE_THRESHOLD = 7.0;
+const ALERT_RISK_THRESHOLD = 0.5;
+const LIQUIDITY_BANDS = [[30000,1.0],[60000,0.8],[100000,0.6],[150000,0.4],[Infinity,0.2]];
+
+// In-memory "database" for this demo session
+let _db = { vehicles: [], analyses: [], alerts: [], market_stats: [] };
+let _priceCache = {};
+let _logs = [];
+
+function log(level, msg) {
+  _logs.push({ level, msg, ts: new Date().toLocaleTimeString() });
+}
+
+// ── Ingestion ──────────────────────────────────────────────
+
+const REQUIRED = ["title","brand","model","price","mileage","year"];
+
+function stableId(row, source) {
+  const key = [source,row.title,row.brand,row.model,row.year,row.price,row.url||""].join("|");
+  return cyrb53(key).toString(16).padStart(12,"0");
+}
+
+function cyrb53(str, seed=0) {
+  let h1=0xdeadbeef^seed, h2=0x41c6ce57^seed;
+  for (let i=0,ch; i<str.length; i++) {
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1^ch, 2654435761);
+    h2 = Math.imul(h2^ch, 1597334677);
+  }
+  h1 = Math.imul(h1^(h1>>>16), 2246822507) ^ Math.imul(h2^(h2>>>13), 3266489909);
+  h2 = Math.imul(h2^(h2>>>16), 2246822507) ^ Math.imul(h1^(h1>>>13), 3266489909);
+  return 4294967296*(2097151&h2)+(h1>>>0);
+}
+
+function parseCsv(raw) {
+  const lines = raw.trim().split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return { rows:[], total:0, skipped:0 };
+
+  const header = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  const missing = REQUIRED.filter(f => !header.includes(f));
+  if (missing.length) {
+    log("err", `Schema invalid — missing columns: ${missing.join(", ")}`);
+    return { rows:[], total:0, skipped:missing.length };
+  }
+
+  const idx = {};
+  header.forEach((h,i) => idx[h]=i);
+
+  let rows=[], skipped=0, total=0;
+  for (let i=1; i<lines.length; i++) {
+    total++;
+    const cols = parseCsvLine(lines[i]);
+    const get  = f => (cols[idx[f]]||"").trim();
+
+    const raw = {};
+    header.forEach((h,j) => raw[h] = (cols[j]||"").trim());
+
+    // Required field check
+    let skipReason = null;
+    for (const f of REQUIRED) {
+      if (!get(f)) { skipReason = `missing required field '${f}'`; break; }
+    }
+    if (skipReason) {
+      log("warn", `Row ${i+1} skipped: ${skipReason}`);
+      skipped++; continue;
+    }
+
+    // Parse numerics
+    const price   = parseFloat(get("price").replace(/[^0-9.\-]/g,""));
+    const mileage = parseFloat(get("mileage").replace(/[^0-9.\-]/g,""));
+    const year    = parseInt(get("year").replace(/[^0-9\-]/g,""), 10);
+
+    if (!price || price <= 0) {
+      log("warn", `Row ${i+1} skipped: invalid price '${get("price")}'`);
+      skipped++; continue;
+    }
+    if (isNaN(mileage) || mileage < 0) {
+      log("warn", `Row ${i+1} skipped: invalid mileage '${get("mileage")}'`);
+      skipped++; continue;
+    }
+    if (isNaN(year) || year < 1900 || year > new Date().getFullYear()+1) {
+      log("warn", `Row ${i+1} skipped: invalid year '${get("year")}'`);
+      skipped++; continue;
+    }
+
+    const vehicle = {
+      id:           get("id") || stableId(raw,"demo"),
+      title:        get("title"),
+      brand:        get("brand").toLowerCase(),
+      model:        get("model").toLowerCase(),
+      year, price, mileage,
+      fuel:         get("fuel").toLowerCase(),
+      transmission: get("transmission"),
+      color:        get("color"),
+      location:     get("location"),
+      url:          get("url"),
+      images:       (get("images")||"").split(";").map(s=>s.trim()).filter(Boolean).join(";"),
+    };
+    rows.push(vehicle);
+    log("info", `Row ${i+1} OK: ${vehicle.title} · £${price.toLocaleString()} · ${mileage.toLocaleString()} mi`);
+  }
+  return { rows, total, skipped };
+}
+
+function parseCsvLine(line) {
+  const result=[]; let cur="", inQ=false;
+  for (let i=0; i<line.length; i++) {
+    const c=line[i];
+    if (c==='"') { inQ=!inQ; }
+    else if (c===',' && !inQ) { result.push(cur); cur=""; }
+    else cur+=c;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── Pricing ────────────────────────────────────────────────
+
+function mileageAdj(mileage) {
+  if (mileage == null || isNaN(mileage) || mileage < 0) return 1.0;
+  const delta = (mileage - BASELINE_MILEAGE) / 10000;
+  return Math.max(0.5, Math.min(1.5, +(1.0 - delta * MILEAGE_ADJ_PER_10K).toFixed(4)));
+}
+
+function estimateValue(brand, model, mileage, comparables) {
+  const bl = brand.toLowerCase(), ml = model.toLowerCase();
+  const key = `${bl}::${ml}`;
+  const adj = mileageAdj(mileage);
+
+  if (_priceCache[key]) {
+    const c = _priceCache[key];
+    return { estimated_value: +(c.avg*adj).toFixed(2), valuation_mode:"exact_match",
+             comparables_used:c.n, avg_comparable_price:+c.avg.toFixed(2),
+             mileage_adjustment:adj,
+             basis_description:`Cache hit: ${bl} ${ml} — ${c.n} sample(s), avg £${c.avg.toFixed(2)}` };
+  }
+
+  if (comparables && comparables.length) {
+    const exact = comparables.filter(c => c.brand===bl && c.model===ml && c.price>0).map(c=>c.price);
+    if (exact.length) {
+      const avg = exact.reduce((a,b)=>a+b,0)/exact.length;
+      _priceCache[key]={avg,n:exact.length};
+      return { estimated_value:+(avg*adj).toFixed(2), valuation_mode:"exact_match",
+               comparables_used:exact.length, avg_comparable_price:+avg.toFixed(2),
+               mileage_adjustment:adj,
+               basis_description:`Exact match: ${bl} ${ml} — ${exact.length} comparable(s), avg £${avg.toFixed(2)}` };
+    }
+    const brand_p = comparables.filter(c => c.brand===bl && c.price>0).map(c=>c.price);
+    if (brand_p.length) {
+      const avg = brand_p.reduce((a,b)=>a+b,0)/brand_p.length;
+      log("info", `Pricing: brand_match used for '${bl} ${ml}' — no model-level data`);
+      return { estimated_value:+(avg*adj).toFixed(2), valuation_mode:"brand_match",
+               comparables_used:brand_p.length, avg_comparable_price:+avg.toFixed(2),
+               mileage_adjustment:adj,
+               basis_description:`Brand-level match: ${bl} — ${brand_p.length} comparable(s), avg £${avg.toFixed(2)}` };
+    }
+  }
+
+  log("warn", `Pricing: fallback_markup for '${bl} ${ml}' — no comparables`);
+  return { estimated_value:null, valuation_mode:"fallback_markup",
+           comparables_used:0, avg_comparable_price:null,
+           mileage_adjustment:adj,
+           basis_description:`No comparables for '${bl} ${ml}'; fallback markup (${(DEFAULT_MARKUP*100-100).toFixed(0)}%) applied.` };
+}
+
+// ── Analysis ───────────────────────────────────────────────
+
+function extractKeywords(title) {
+  const t = title.toLowerCase();
+  return {
+    high:   [...HIGH_RISK_KW  ].filter(kw => t.includes(kw)),
+    medium: [...MEDIUM_RISK_KW].filter(kw => t.includes(kw)),
+    low:    [...LOW_RISK_KW   ].filter(kw => t.includes(kw)),
+  };
+}
+
+function damageRisk(kw) {
+  return Math.min(+(kw.high.length*HIGH_W + kw.medium.length*MEDIUM_W + kw.low.length*LOW_W).toFixed(4), 1.0);
+}
+
+function liquidityScore(mileage) {
+  for (const [upper, score] of LIQUIDITY_BANDS) if (mileage <= upper) return score;
+  return 0.2;
+}
+
+function dealScore(listedPrice, estimatedValue, risk, liquidity) {
+  if (!listedPrice || listedPrice<=0 || !estimatedValue || estimatedValue<=0) return 0.0;
+  const base = Math.min((estimatedValue/listedPrice)*5.0, 10.0);
+  return +Math.min(base*(1-risk)*liquidity, 10.0).toFixed(4);
+}
+
+function makeRec(score, risk) {
+  if (risk >= 0.5)  return ["PASS",   `High damage risk (${risk.toFixed(2)} ≥ 0.50) — not recommended.`];
+  if (score >= 7.0) return ["BUY",    `Strong deal: score ${score.toFixed(2)} ≥ 7.0 with acceptable risk.`];
+  if (score >= 5.0) return ["REVIEW", `Moderate deal: score ${score.toFixed(2)} in [5, 7) — manual review advised.`];
+  return ["PASS", `Weak deal: score ${score.toFixed(2)} < 5.0 — does not meet threshold.`];
+}
+
+function analyzeVehicle(vehicle, comparables) {
+  const kw      = extractKeywords(vehicle.title);
+  const risk    = damageRisk(kw);
+  const pricing = estimateValue(vehicle.brand, vehicle.model, vehicle.mileage, comparables);
+  const adj     = pricing.mileage_adjustment;
+  let   estVal  = pricing.estimated_value;
+
+  if (pricing.valuation_mode === "fallback_markup") {
+    estVal = +(vehicle.price * DEFAULT_MARKUP * adj).toFixed(2);
+    pricing.estimated_value = estVal;
+  }
+
+  const liq   = liquidityScore(vehicle.mileage);
+  const score = dealScore(vehicle.price, estVal, risk, liq);
+  const [rec, reason] = makeRec(score, risk);
+
+  const explanation = {
+    vehicle_id: vehicle.id, title: vehicle.title,
+    brand: vehicle.brand, model: vehicle.model,
+    matched_damage_keywords: kw, damage_risk_score: risk,
+    listed_price: vehicle.price,
+    valuation_mode: pricing.valuation_mode,
+    comparable_pricing_basis: pricing.basis_description,
+    comparables_used: pricing.comparables_used,
+    avg_comparable_price: pricing.avg_comparable_price,
+    estimated_value: estVal,
+    mileage: vehicle.mileage, mileage_adjustment_factor: adj,
+    liquidity_score: liq,
+    deal_score_inputs: { listed_price:vehicle.price, estimated_value:estVal, damage_risk:risk, liquidity_score:liq },
+    deal_score: score, recommendation: rec, recommendation_reason: reason,
+    analyzed_at: new Date().toISOString(),
+  };
+
+  log("ok", `Analysed: ${vehicle.title} → score=${score.toFixed(2)} risk=${risk.toFixed(2)} [${rec}]`);
+
+  return { vehicle_id:vehicle.id, damage_risk:risk, deal_score:score,
+           recommendation:rec, explanation };
+}
+
+// ── Market statistics ──────────────────────────────────────
+
+function rebuildStats(vehicles) {
+  const groups = {};
+  for (const v of vehicles) {
+    const key = `${v.brand}||${v.model}`;
+    if (!groups[key]) groups[key]={brand:v.brand, model:v.model, items:[]};
+    groups[key].items.push(v);
+  }
+
+  const stats = [];
+  for (const g of Object.values(groups)) {
+    const prices   = g.items.map(v=>v.price).filter(p=>p>0);
+    const mileages = g.items.map(v=>v.mileage).filter(m=>m>=0);
+    const avgP = prices.length   ? prices.reduce((a,b)=>a+b,0)/prices.length     : 0;
+    const avgM = mileages.length ? mileages.reduce((a,b)=>a+b,0)/mileages.length : 0;
+    const n = g.items.length;
+    const sf = Math.min(n/50, 1.0);
+    const mf = LIQUIDITY_BANDS.find(([u])=>avgM<=u)?.[1] ?? 0.2;
+    stats.push({ brand:g.brand, model:g.model,
+                 avg_price:+avgP.toFixed(2), avg_mileage:+avgM.toFixed(2),
+                 sample_count:n, liquidity_score:+((sf+mf)/2).toFixed(4) });
+  }
+  return stats.sort((a,b)=>b.liquidity_score-a.liquidity_score);
+}
+
+// ── Alert generation ───────────────────────────────────────
+
+function generateAlerts(analysis, vehicle) {
+  const alerts = [];
+  const now = new Date().toISOString();
+  if (analysis.deal_score >= ALERT_SCORE_THRESHOLD) {
+    alerts.push({ vehicle_id:analysis.vehicle_id, alert_type:"high_deal_score",
+      message:`Deal score ${analysis.deal_score.toFixed(2)} ≥ ${ALERT_SCORE_THRESHOLD}. Rec: ${analysis.recommendation}.`,
+      created_at:now, vehicle });
+  }
+  if (analysis.damage_risk >= ALERT_RISK_THRESHOLD) {
+    alerts.push({ vehicle_id:analysis.vehicle_id, alert_type:"high_damage_risk",
+      message:`Damage risk ${analysis.damage_risk.toFixed(2)} ≥ ${ALERT_RISK_THRESHOLD}. Keywords: ${JSON.stringify(analysis.explanation.matched_damage_keywords)}.`,
+      created_at:now, vehicle });
+  }
+  return alerts;
+}
+
+// ============================================================
+// UI
+// ============================================================
+
+function runAnalysis() {
+  const raw = document.getElementById("csvInput").value.trim();
+  if (!raw) { setStatus("⚠ Paste CSV data first.", "var(--warn)"); return; }
+
+  // Reset
+  _db = { vehicles:[], analyses:[], alerts:[], market_stats:[] };
+  _priceCache = {};
+  _logs = [];
+
+  const start = performance.now();
+
+  log("info", "=== Scan cycle started ===");
+  const parsed = parseCsv(raw);
+  let newIns=0, dupes=0;
+
+  // Simulate insert-or-ignore
+  const seen = new Set();
+  for (const v of parsed.rows) {
+    if (seen.has(v.id)) { dupes++; log("warn", `Duplicate skipped: ${v.id}`); continue; }
+    seen.add(v.id);
+    _db.vehicles.push(v);
+    newIns++;
+
+    // Comparables = other vehicles already in db
+    const comps = _db.vehicles.filter(x => x.id !== v.id);
+    const analysis = analyzeVehicle(v, comps);
+    _db.analyses.push(analysis);
+
+    const alerts = generateAlerts(analysis, v);
+    _db.alerts.push(...alerts);
+  }
+
+  _db.market_stats = rebuildStats(_db.vehicles);
+
+  const dur = ((performance.now()-start)/1000).toFixed(3);
+  log("ok", `=== Scan cycle complete — ${dur}s ===`);
+
+  const summary = {
+    "Files checked": 1,
+    "Rows read": parsed.total,
+    "New vehicles inserted": newIns,
+    "Duplicates skipped": dupes,
+    "Invalid rows skipped": parsed.skipped,
+    "Analyses performed": _db.analyses.length,
+    "Alerts generated": _db.alerts.length,
+    "Duration (s)": dur,
+  };
+
+  renderSummary(summary);
+  renderVehicles();
+  renderAlerts();
+  renderMarket();
+
+  document.getElementById("summaryCard").style.display = "block";
+  document.getElementById("resultsCard").style.display = "block";
+  setStatus(`✓ ${newIns} vehicles analysed in ${dur}s`, "var(--accent)");
+}
+
+function setStatus(msg, color) {
+  const el = document.getElementById("parseStatus");
+  el.textContent = msg;
+  el.style.color = color || "var(--muted)";
+}
+
+// ── Summary render ─────────────────────────────────────────
+
+function renderSummary(summary) {
+  const bar = document.getElementById("statsBar");
+  bar.innerHTML = Object.entries(summary).map(([k,v])=>`
+    <div class="stat-box">
+      <div class="num">${v}</div>
+      <div class="lbl">${k}</div>
+    </div>`).join("");
+
+  const logBox = document.getElementById("logBox");
+  logBox.innerHTML = _logs.map(l=>`
+    <div class="log-${l.level}">${l.ts} [${l.level.toUpperCase()}] ${escHtml(l.msg)}</div>
+  `).join("");
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+// ── Vehicle table ──────────────────────────────────────────
+
+let _openDetailId = null;
+
+function renderVehicles() {
+  const tbody = document.getElementById("vehicleTbody");
+  if (!_db.vehicles.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="icon">🚗</div><p>No valid vehicles found.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = _db.vehicles.map((v,i) => {
+    const a   = _db.analyses.find(x => x.vehicle_id === v.id);
+    const score = a ? a.deal_score : 0;
+    const risk  = a ? a.damage_risk : 0;
+    const rec   = a ? a.recommendation : "—";
+    const mode  = a ? a.explanation.valuation_mode : "—";
+    const hasAlert = _db.alerts.some(al => al.vehicle_id === v.id);
+
+    const scoreColor = score>=7?"#3fb950":score>=5?"#e3b341":"#8b949e";
+    const riskColor  = risk>=0.5?"#ffa198":risk>0?"#e3b341":"#3fb950";
+
+    return `<tr class="clickable-row ${hasAlert?"alert-row":""}" onclick="toggleDetail('${v.id}')">
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(v.title)}">${escHtml(v.title)}</td>
+      <td><strong>${escHtml(v.brand)}</strong> <span style="color:var(--muted)">${escHtml(v.model)}</span></td>
+      <td>${v.year}</td>
+      <td>£${v.price.toLocaleString()}</td>
+      <td>${v.mileage.toLocaleString()} mi</td>
+      <td>
+        <div class="score-bar-wrap">
+          <div class="score-bar"><div class="score-bar-fill" style="width:${score*10}%;background:${scoreColor}"></div></div>
+          <div class="score-val" style="color:${scoreColor}">${score.toFixed(1)}</div>
+        </div>
+      </td>
+      <td style="color:${riskColor}">${(risk*100).toFixed(0)}%</td>
+      <td>${modeBadge(mode)}</td>
+      <td>${recBadge(rec)}</td>
+    </tr>`;
+  }).join("");
+}
+
+function toggleDetail(vid) {
+  const panel = document.getElementById("detailPanel");
+  if (_openDetailId === vid) {
+    panel.classList.remove("open");
+    _openDetailId = null;
+    return;
+  }
+  _openDetailId = vid;
+  const a = _db.analyses.find(x => x.vehicle_id === vid);
+  const v = _db.vehicles.find(x => x.id === vid);
+  if (!a || !v) return;
+  const e = a.explanation;
+  const allKw = [...e.matched_damage_keywords.high,...e.matched_damage_keywords.medium,...e.matched_damage_keywords.low];
+
+  panel.innerHTML = `
+    <div style="font-weight:700;font-size:14px;margin-bottom:12px">
+      📋 ${escHtml(v.title)}
+      <span style="color:var(--muted);font-size:12px;font-weight:400;margin-left:8px">ID: ${vid}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="lbl">Listed Price</div><div class="val">£${e.listed_price.toLocaleString()}</div></div>
+      <div class="detail-item"><div class="lbl">Estimated Value</div><div class="val" style="color:var(--accent2)">£${(e.estimated_value||0).toLocaleString()}</div></div>
+      <div class="detail-item"><div class="lbl">Valuation Mode</div><div class="val">${modeBadge(e.valuation_mode)}</div></div>
+      <div class="detail-item"><div class="lbl">Comparables Used</div><div class="val">${e.comparables_used}</div></div>
+      <div class="detail-item"><div class="lbl">Avg Comparable Price</div><div class="val">${e.avg_comparable_price!=null?"£"+e.avg_comparable_price.toLocaleString():"n/a"}</div></div>
+      <div class="detail-item"><div class="lbl">Mileage Adjustment</div><div class="val">${e.mileage_adjustment_factor}×</div></div>
+      <div class="detail-item"><div class="lbl">Liquidity Score</div><div class="val">${e.liquidity_score}</div></div>
+      <div class="detail-item"><div class="lbl">Damage Risk</div><div class="val" style="color:${e.damage_risk_score>=0.5?"var(--danger)":e.damage_risk_score>0?"var(--warn)":"var(--accent)"}">${(e.damage_risk_score*100).toFixed(0)}%</div></div>
+      <div class="detail-item"><div class="lbl">Deal Score</div><div class="val">${e.deal_score.toFixed(4)} / 10</div></div>
+      <div class="detail-item"><div class="lbl">Recommendation</div><div class="val">${recBadge(e.recommendation)}</div></div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Damage Keywords</div>
+      ${allKw.length ? renderKwPills(e.matched_damage_keywords) : '<span style="color:var(--accent);font-size:12px">✓ No damage keywords found</span>'}
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Pricing Basis</div>
+      <div style="font-size:12px;color:var(--text)">${escHtml(e.comparable_pricing_basis)}</div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Recommendation Reason</div>
+      <div style="font-size:12px;color:var(--text)">${escHtml(e.recommendation_reason)}</div>
+    </div>
+  `;
+  panel.classList.add("open");
+}
+
+function renderKwPills(kw) {
+  return [
+    ...kw.high.map(k=>`<span class="kw-pill kw-high">${k}</span>`),
+    ...kw.medium.map(k=>`<span class="kw-pill kw-medium">${k}</span>`),
+    ...kw.low.map(k=>`<span class="kw-pill kw-low">${k}</span>`),
+  ].join("");
+}
+
+// ── Alerts render ──────────────────────────────────────────
+
+function renderAlerts() {
+  const el = document.getElementById("alertsContent");
+  if (!_db.alerts.length) {
+    el.innerHTML = `<div class="empty"><div class="icon">🔕</div><p>No alerts generated.</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Type</th><th>Vehicle</th><th>Message</th><th>Time</th></tr></thead>
+      <tbody>
+        ${_db.alerts.map(al=>{
+          const v = al.vehicle;
+          const typeColor = al.alert_type==="high_deal_score"?"var(--accent2)":"var(--danger)";
+          return `<tr>
+            <td><span class="badge" style="border-color:${typeColor};color:${typeColor};background:${typeColor}22">
+              ${al.alert_type==="high_deal_score"?"🎯":"⚠"} ${al.alert_type.replace(/_/g," ")}
+            </span></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(v.title)}">${escHtml(v.title)}</td>
+            <td style="font-size:12px;color:var(--muted)">${escHtml(al.message)}</td>
+            <td style="font-size:11px;color:var(--muted);white-space:nowrap">${new Date(al.created_at).toLocaleTimeString()}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table></div>`;
+}
+
+// ── Market stats render ────────────────────────────────────
+
+function renderMarket() {
+  const el = document.getElementById("marketContent");
+  if (!_db.market_stats.length) {
+    el.innerHTML = `<div class="empty"><div class="icon">📊</div><p>No market statistics yet.</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Brand</th><th>Model</th><th>Avg Price</th><th>Avg Mileage</th><th>Samples</th><th>Liquidity</th></tr></thead>
+      <tbody>
+        ${_db.market_stats.map((s,i)=>{
+          const liqColor = s.liquidity_score>=0.7?"var(--accent)":s.liquidity_score>=0.4?"var(--warn)":"var(--muted)";
+          return `<tr>
+            <td style="color:var(--muted)">${i+1}</td>
+            <td><strong>${escHtml(s.brand)}</strong></td>
+            <td>${escHtml(s.model)}</td>
+            <td>£${s.avg_price.toLocaleString()}</td>
+            <td>${s.avg_mileage.toLocaleString()} mi</td>
+            <td>${s.sample_count}</td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar"><div class="score-bar-fill" style="width:${s.liquidity_score*100}%;background:${liqColor}"></div></div>
+                <div class="score-val" style="color:${liqColor}">${s.liquidity_score.toFixed(2)}</div>
+              </div>
+            </td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table></div>`;
+}
+
+// ── Tabs ───────────────────────────────────────────────────
+
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach((t,i)=>{
+    const names=["vehicles","alerts","market"];
+    t.classList.toggle("active", names[i]===name);
+  });
+  document.querySelectorAll(".tab-content").forEach(tc=>{
+    tc.classList.toggle("active", tc.id===`tab-${name}`);
+  });
+}
+
+// ── Helpers ────────────────────────────────────────────────
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function recBadge(rec) {
+  const cls = {BUY:"badge-buy",REVIEW:"badge-review",PASS:"badge-pass"}[rec]||"";
+  return `<span class="badge ${cls}">${rec}</span>`;
+}
+
+function modeBadge(mode) {
+  if (mode==="exact_match")     return `<span class="badge badge-mode-exact" title="Comparables found for this exact brand + model">exact</span>`;
+  if (mode==="brand_match")     return `<span class="badge badge-mode-brand" title="Only brand-level comparables available">brand</span>`;
+  if (mode==="fallback_markup") return `<span class="badge badge-mode-fb"    title="No comparables — listed price × markup">fallback</span>`;
+  return `<span class="badge">${mode}</span>`;
+}
+
+// ── Sample data ────────────────────────────────────────────
+
+function loadSample() {
+  document.getElementById("csvInput").value = `title,brand,model,year,price,mileage,fuel,transmission,color,location,url
+2021 Toyota GR Yaris 1.6T Circuit Pack,Toyota,GR Yaris,2021,32995,7800,Petrol,Manual,Champ White,Edinburgh,https://example.com/v1
+2020 BMW M2 Competition 3.0i,BMW,M2,2020,44500,18200,Petrol,Manual,Misano Blue,London,https://example.com/v2
+2019 Ford Focus ST 2.3 EcoBoost,Ford,Focus,2019,14995,42000,Petrol,Manual,Blue,Manchester,https://example.com/v3
+2019 Ford Focus ST 2.3 EcoBoost Performance,Ford,Focus,2019,13500,61000,Petrol,Manual,Red,Leeds,https://example.com/v4
+2018 Volkswagen Golf GTI Performance,Volkswagen,Golf,2018,17500,38000,Petrol,Manual,White,Birmingham,https://example.com/v5
+2020 Volkswagen Golf GTI TCR,Volkswagen,Golf,2020,24990,22000,Petrol,Manual,Blue,Bristol,https://example.com/v6
+2016 Mercedes C220d AMG Line salvage flood damage,Mercedes,C-Class,2016,7500,89000,Diesel,Automatic,Grey,Bristol,https://example.com/v7
+2018 Audi A4 2.0 TDI S Line accident repaired,Audi,A4,2018,14999,55000,Diesel,Automatic,Silver,Sheffield,https://example.com/v8
+2022 Honda Civic Type R GT,Honda,Civic,2022,36500,6200,Petrol,Manual,Boost Blue,Cardiff,https://example.com/v9
+2019 Renault Megane RS Trophy 300,Renault,Megane,2019,19750,29000,Petrol,Manual,Yellow,Newcastle,https://example.com/v10
+2021 Hyundai i30N Performance,Hyundai,i30N,2021,22500,14500,Petrol,Manual,Phantom Black,Glasgow,https://example.com/v11
+,,,,,,,,,,
+BAD_PRICE,Ford,Fiesta,2020,notaprice,30000,Petrol,Manual,Red,York,https://example.com/bad1
+2019 SEAT Leon Cupra 300,SEAT,Leon,2019,18500,33000,Petrol,Manual,Orange,Liverpool,https://example.com/v12`;
+  setStatus("Sample data loaded — click Analyse Vehicles", "var(--accent2)");
+}
+
+function clearAll() {
+  document.getElementById("csvInput").value = "";
+  document.getElementById("summaryCard").style.display = "none";
+  document.getElementById("resultsCard").style.display = "none";
+  setStatus("", "");
+  _db = { vehicles:[], analyses:[], alerts:[], market_stats:[] };
+  _priceCache = {};
+  _logs = [];
+}
+</script>
+</body>
+</html>
