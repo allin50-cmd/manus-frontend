@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -16,8 +17,9 @@ const PORT = process.env.PORT || 3001;
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
+app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
@@ -71,6 +73,7 @@ import adminRoutes from './features/admin/routes.js';
 app.use('/api/admin', adminRoutes);
 
 import { adminStore } from './features/admin/store.js';
+import { validateString, validateEmail, collect } from './lib/validate.js';
 
 // ─── Legacy routes (kept for backward compatibility) ─────────────────────────
 // These are non-critical and silently skip if DB is unavailable.
@@ -91,22 +94,47 @@ app.get('/api/deployments/status', (_req: Request, res: Response) => {
 
 app.post('/api/lead', (req: Request, res: Response) => {
   const { name, email, company, product, phone, message } = req.body;
-  if (!name || !email) return res.status(400).json({ ok: false, error: 'Name and email required' });
+  const errors = collect(
+    validateString(name, 'name', { required: true, maxLength: 255 }),
+    validateEmail(email, 'email'),
+    validateString(company, 'company', { maxLength: 255 }),
+    validateString(product, 'product', { maxLength: 50 }),
+    validateString(phone, 'phone', { maxLength: 50 }),
+    validateString(message, 'message', { maxLength: 2000 }),
+  );
+  if (errors.length) return res.status(400).json({ ok: false, errors });
   const lead = adminStore.addLead({ name, email, company, product, phone, message });
   res.status(201).json({ ok: true, message: "Thank you, we'll be in touch.", leadId: lead.leadId });
 });
 
 app.post('/api/contact', (req: Request, res: Response) => {
   const { name, email, subject, message } = req.body;
-  if (!name || !email || !message) return res.status(400).json({ ok: false, error: 'Name, email, message required' });
+  const errors = collect(
+    validateString(name, 'name', { required: true, maxLength: 255 }),
+    validateEmail(email, 'email'),
+    validateString(subject, 'subject', { maxLength: 255 }),
+    validateString(message, 'message', { required: true, maxLength: 5000 }),
+  );
+  if (errors.length) return res.status(400).json({ ok: false, errors });
   const contact = adminStore.addContact({ name, email, subject, message });
   res.status(201).json({ ok: true, ticketId: contact.ticketId });
 });
 
 app.post('/api/intake', (req: Request, res: Response) => {
   const { clientName, clientEmail, clientPhone, matterType, urgency, description, claimValue } = req.body;
-  if (!clientName || !matterType || !urgency) {
-    return res.status(400).json({ ok: false, error: 'Client name, matter type, and urgency required' });
+  const VALID_URGENCY = ['low', 'medium', 'high', 'critical'];
+  const errors = collect(
+    validateString(clientName, 'clientName', { required: true, maxLength: 255 }),
+    clientEmail ? validateEmail(clientEmail, 'clientEmail') : null,
+    validateString(clientPhone, 'clientPhone', { maxLength: 50 }),
+    validateString(matterType, 'matterType', { required: true, maxLength: 100 }),
+    validateString(urgency, 'urgency', { required: true }),
+    validateString(description, 'description', { maxLength: 5000 }),
+    validateString(claimValue, 'claimValue', { maxLength: 50 }),
+  );
+  if (errors.length) return res.status(400).json({ ok: false, errors });
+  if (!VALID_URGENCY.includes(urgency)) {
+    return res.status(400).json({ ok: false, errors: [{ field: 'urgency', message: `urgency must be one of: ${VALID_URGENCY.join(', ')}` }] });
   }
   const form = adminStore.addIntakeForm({ clientName, clientEmail, clientPhone, matterType, urgency, description, claimValue });
   res.status(201).json({ ok: true, matterRef: form.matterRef });
@@ -114,9 +142,15 @@ app.post('/api/intake', (req: Request, res: Response) => {
 
 app.post('/api/compliance-bundle', (req: Request, res: Response) => {
   const { companyName, companyNumber, requestorName, requestorEmail, bundleType, estimatedTime } = req.body;
-  if (!companyName || !companyNumber) {
-    return res.status(400).json({ ok: false, error: 'Company name and number required' });
-  }
+  const errors = collect(
+    validateString(companyName, 'companyName', { required: true, maxLength: 255 }),
+    validateString(companyNumber, 'companyNumber', { required: true, maxLength: 50 }),
+    validateString(requestorName, 'requestorName', { maxLength: 255 }),
+    requestorEmail ? validateEmail(requestorEmail, 'requestorEmail') : null,
+    validateString(bundleType, 'bundleType', { maxLength: 50 }),
+    validateString(estimatedTime, 'estimatedTime', { maxLength: 100 }),
+  );
+  if (errors.length) return res.status(400).json({ ok: false, errors });
   const bundle = adminStore.addComplianceBundle({ companyName, companyNumber, requestorName, requestorEmail, bundleType: bundleType ?? 'full', estimatedTime });
   res.status(201).json({ ok: true, bundleId: bundle.bundleId });
 });
