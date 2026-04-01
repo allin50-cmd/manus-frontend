@@ -7,12 +7,7 @@ import { Router, Request, Response } from 'express';
 import { getCHAdapter } from '../../adapters/ch/index.js';
 import { getStore } from '../../store/index.js';
 import { logAudit } from '../../lib/audit.js';
-import {
-  computeStatus,
-  computeWorstStatus,
-  alertThresholdMessage,
-  computeAlertTriggers,
-} from '../../lib/rules.js';
+import { computeWorstStatus } from '../../lib/rules.js';
 import type { AlertType } from '../../store/types.js';
 
 const router = Router();

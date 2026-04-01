@@ -1,22 +1,17 @@
-import type { Config } from 'tailwindcss';
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
-        // FineGuard brand palette
         fg: {
-          // Neutrals
           bg: '#0D0F14',
           surface: '#13161E',
           border: '#1E2230',
           muted: '#8B92A5',
-          // Accent
           gold: '#C9A64A',
           'gold-hover': '#B8954A',
-          // Status
           safe: '#22C55E',
           'safe-bg': '#052E16',
           warning: '#F59E0B',
@@ -30,15 +25,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: [
-          '-apple-system',
-          'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'Roboto',
-          '"Helvetica Neue"',
-          'Arial',
-          'sans-serif',
-        ],
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
         mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
       },
       boxShadow: {
@@ -49,5 +36,3 @@ const config: Config = {
   },
   plugins: [],
 };
-
-export default config;

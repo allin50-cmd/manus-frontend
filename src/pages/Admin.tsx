@@ -21,9 +21,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  ExternalLink,
-  GitCommit,
-  Calendar
+  GitCommit
 } from 'lucide-react';
 import { toast } from 'sonner';
 
