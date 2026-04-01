@@ -62,3 +62,6 @@ Thumbs.db
 *.key
 *.cert
 credentials.json
+
+# Admin store persistence
+.data/

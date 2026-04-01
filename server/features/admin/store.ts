@@ -1,10 +1,17 @@
 // ============================================================================
-// Admin In-Memory Store
+// Admin Store
 // Holds leads, intake forms, compliance bundles, and contacts.
-// Survives for the lifetime of the process; no DB required.
+// Persists to .data/admin.json on every write; loads on startup.
+// Falls back to empty state if the file is missing or unreadable.
 // ============================================================================
 
 import { randomUUID } from 'crypto';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DATA_FILE = join(__dirname, '../../../.data/admin.json');
 
 export interface Lead {
   id: string;
@@ -54,11 +61,57 @@ export interface Contact {
   createdAt: string;
 }
 
+interface PersistedData {
+  leads: Lead[];
+  intakeForms: IntakeForm[];
+  complianceBundles: ComplianceBundle[];
+  contacts: Contact[];
+}
+
+function load(): PersistedData {
+  try {
+    const raw = readFileSync(DATA_FILE, 'utf-8');
+    return JSON.parse(raw) as PersistedData;
+  } catch {
+    return { leads: [], intakeForms: [], complianceBundles: [], contacts: [] };
+  }
+}
+
 class AdminStore {
-  private leads: Lead[] = [];
-  private intakeForms: IntakeForm[] = [];
-  private complianceBundles: ComplianceBundle[] = [];
-  private contacts: Contact[] = [];
+  private leads: Lead[];
+  private intakeForms: IntakeForm[];
+  private complianceBundles: ComplianceBundle[];
+  private contacts: Contact[];
+
+  constructor() {
+    const data = load();
+    this.leads = data.leads;
+    this.intakeForms = data.intakeForms;
+    this.complianceBundles = data.complianceBundles;
+    this.contacts = data.contacts;
+  }
+
+  private persist(): void {
+    try {
+      mkdirSync(dirname(DATA_FILE), { recursive: true });
+      writeFileSync(
+        DATA_FILE,
+        JSON.stringify(
+          {
+            leads: this.leads,
+            intakeForms: this.intakeForms,
+            complianceBundles: this.complianceBundles,
+            contacts: this.contacts,
+          },
+          null,
+          2,
+        ),
+        'utf-8',
+      );
+    } catch (err) {
+      console.error('[admin-store] Failed to persist data:', err);
+    }
+  }
 
   // ─── Leads ───────────────────────────────────────────────────────────────
 
@@ -70,6 +123,7 @@ class AdminStore {
       createdAt: new Date().toISOString(),
     };
     this.leads.unshift(lead);
+    this.persist();
     return lead;
   }
 
@@ -87,6 +141,7 @@ class AdminStore {
       createdAt: new Date().toISOString(),
     };
     this.intakeForms.unshift(form);
+    this.persist();
     return form;
   }
 
@@ -105,6 +160,7 @@ class AdminStore {
       createdAt: new Date().toISOString(),
     };
     this.complianceBundles.unshift(bundle);
+    this.persist();
     return bundle;
   }
 
@@ -123,6 +179,7 @@ class AdminStore {
       createdAt: new Date().toISOString(),
     };
     this.contacts.unshift(contact);
+    this.persist();
     return contact;
   }
 
