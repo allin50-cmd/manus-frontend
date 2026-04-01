@@ -7,7 +7,7 @@ export default defineConfig({
     include: ['server/**/__tests__/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      include: ['server/lib/**'],
+      include: ['server/lib/**', 'server/features/**'],
     },
   },
 });

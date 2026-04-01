@@ -118,7 +118,7 @@ class AdminStore {
   addLead(data: Omit<Lead, 'id' | 'leadId' | 'createdAt'>): Lead {
     const lead: Lead = {
       id: randomUUID(),
-      leadId: `LEAD-${Date.now()}`,
+      leadId: `LEAD-${randomUUID().slice(0, 8).toUpperCase()}`,
       ...data,
       createdAt: new Date().toISOString(),
     };
@@ -136,7 +136,7 @@ class AdminStore {
   addIntakeForm(data: Omit<IntakeForm, 'id' | 'matterRef' | 'createdAt'>): IntakeForm {
     const form: IntakeForm = {
       id: randomUUID(),
-      matterRef: `MAT-${Date.now()}`,
+      matterRef: `MAT-${randomUUID().slice(0, 8).toUpperCase()}`,
       ...data,
       createdAt: new Date().toISOString(),
     };
@@ -154,9 +154,9 @@ class AdminStore {
   addComplianceBundle(data: Omit<ComplianceBundle, 'id' | 'bundleId' | 'createdAt'>): ComplianceBundle {
     const bundle: ComplianceBundle = {
       id: randomUUID(),
-      bundleId: `BUNDLE-${Date.now()}`,
-      bundleType: data.bundleType ?? 'full',
+      bundleId: `BUNDLE-${randomUUID().slice(0, 8).toUpperCase()}`,
       ...data,
+      bundleType: data.bundleType ?? 'full',
       createdAt: new Date().toISOString(),
     };
     this.complianceBundles.unshift(bundle);
@@ -173,7 +173,7 @@ class AdminStore {
   addContact(data: Omit<Contact, 'id' | 'ticketId' | 'status' | 'createdAt'>): Contact {
     const contact: Contact = {
       id: randomUUID(),
-      ticketId: `TICKET-${Date.now()}`,
+      ticketId: `TICKET-${randomUUID().slice(0, 8).toUpperCase()}`,
       status: 'new',
       ...data,
       createdAt: new Date().toISOString(),

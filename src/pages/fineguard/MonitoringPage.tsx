@@ -11,6 +11,7 @@ import {
   ChevronRight,
   RefreshCw,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Layout } from '../../components/fineguard/Layout';
 import { StatusBadge } from '../../components/fineguard/StatusBadge';
 import { DeadlineCard } from '../../components/fineguard/DeadlineCard';
@@ -83,9 +84,9 @@ export default function MonitoringPage() {
     setHandlingId(alertId);
     try {
       await api.markAlertHandled(alertId);
-      await loadData(); // Refresh
+      await loadData();
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Failed to mark alert as handled');
     } finally {
       setHandlingId(null);
     }
@@ -98,7 +99,7 @@ export default function MonitoringPage() {
       await api.stopMonitoring(companyId);
       navigate('/', { replace: true });
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Failed to stop monitoring');
     } finally {
       setStoppingMonitor(false);
     }

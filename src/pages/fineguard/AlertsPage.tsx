@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Loader2, AlertCircle, CheckCircle, RefreshCw, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Layout } from '../../components/fineguard/Layout';
 import { AlertCard } from '../../components/fineguard/AlertCard';
 import { api, type AlertItem } from '../../lib/api';
@@ -40,7 +41,7 @@ export default function AlertsPage() {
         ),
       );
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Failed to mark alert as handled');
     } finally {
       setHandlingId(null);
     }

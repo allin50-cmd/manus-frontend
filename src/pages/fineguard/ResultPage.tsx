@@ -11,6 +11,7 @@ import {
   ArrowRight,
   RefreshCw,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Layout } from '../../components/fineguard/Layout';
 import { StatusBadge } from '../../components/fineguard/StatusBadge';
 import { DeadlineCard } from '../../components/fineguard/DeadlineCard';
@@ -76,10 +77,9 @@ export default function ResultPage() {
     try {
       await api.startMonitoring(data.companyId);
       setMonitoring(true);
-      // Navigate to monitoring view
       navigate(`/monitoring/${data.companyId}`, { state: data });
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Failed to start monitoring');
     } finally {
       setMonitoringLoading(false);
     }

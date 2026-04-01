@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import CheckCompany from './pages/fineguard/CheckCompany';
 import ResultPage from './pages/fineguard/ResultPage';
 import MonitoringPage from './pages/fineguard/MonitoringPage';
@@ -8,6 +9,7 @@ import NotFound from './pages/fineguard/NotFound';
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors />
       <Routes>
         {/* FineGuard core workflow */}
         <Route path="/" element={<CheckCompany />} />

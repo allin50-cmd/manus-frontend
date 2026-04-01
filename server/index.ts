@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,6 +24,33 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
 });
+
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+
+// Strict limit for form submission endpoints (10 req / 15 min per IP)
+const formLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many requests. Please try again later.' },
+});
+
+// General API limit (100 req / 15 min per IP)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' },
+});
+
+app.use('/api/fg', apiLimiter);
+app.use('/api/admin', apiLimiter);
+app.use('/api/lead', formLimiter);
+app.use('/api/contact', formLimiter);
+app.use('/api/intake', formLimiter);
+app.use('/api/compliance-bundle', formLimiter);
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
