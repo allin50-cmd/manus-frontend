@@ -39,6 +39,11 @@ app.get('/health', (_req: Request, res: Response) => {
 import fineGuardRoutes from './features/fineguard/routes.js';
 app.use('/api/fg', fineGuardRoutes);
 
+import adminRoutes from './features/admin/routes.js';
+app.use('/api/admin', adminRoutes);
+
+import { adminStore } from './features/admin/store.js';
+
 // ─── Legacy routes (kept for backward compatibility) ─────────────────────────
 // These are non-critical and silently skip if DB is unavailable.
 
@@ -56,17 +61,36 @@ app.get('/api/deployments/status', (_req: Request, res: Response) => {
   res.json({ deployments: [] });
 });
 
-app.post('/api/lead', async (req: Request, res: Response) => {
-  const { name, email } = req.body;
+app.post('/api/lead', (req: Request, res: Response) => {
+  const { name, email, company, product, phone, message } = req.body;
   if (!name || !email) return res.status(400).json({ ok: false, error: 'Name and email required' });
-  console.log(`Lead: ${name} <${email}>`);
-  res.status(201).json({ ok: true, message: "Thank you, we'll be in touch.", leadId: `LEAD-${Date.now()}` });
+  const lead = adminStore.addLead({ name, email, company, product, phone, message });
+  res.status(201).json({ ok: true, message: "Thank you, we'll be in touch.", leadId: lead.leadId });
 });
 
-app.post('/api/contact', async (req: Request, res: Response) => {
-  const { name, email, message } = req.body;
+app.post('/api/contact', (req: Request, res: Response) => {
+  const { name, email, subject, message } = req.body;
   if (!name || !email || !message) return res.status(400).json({ ok: false, error: 'Name, email, message required' });
-  res.status(201).json({ ok: true, ticketId: `TICKET-${Date.now()}` });
+  const contact = adminStore.addContact({ name, email, subject, message });
+  res.status(201).json({ ok: true, ticketId: contact.ticketId });
+});
+
+app.post('/api/intake', (req: Request, res: Response) => {
+  const { clientName, clientEmail, clientPhone, matterType, urgency, description, claimValue } = req.body;
+  if (!clientName || !matterType || !urgency) {
+    return res.status(400).json({ ok: false, error: 'Client name, matter type, and urgency required' });
+  }
+  const form = adminStore.addIntakeForm({ clientName, clientEmail, clientPhone, matterType, urgency, description, claimValue });
+  res.status(201).json({ ok: true, matterRef: form.matterRef });
+});
+
+app.post('/api/compliance-bundle', (req: Request, res: Response) => {
+  const { companyName, companyNumber, requestorName, requestorEmail, bundleType, estimatedTime } = req.body;
+  if (!companyName || !companyNumber) {
+    return res.status(400).json({ ok: false, error: 'Company name and number required' });
+  }
+  const bundle = adminStore.addComplianceBundle({ companyName, companyNumber, requestorName, requestorEmail, bundleType: bundleType ?? 'full', estimatedTime });
+  res.status(201).json({ ok: true, bundleId: bundle.bundleId });
 });
 
 // ─── Static file serving & SPA fallback ──────────────────────────────────────
@@ -106,6 +130,14 @@ app.listen(PORT, () => {
   console.log('  PATCH /api/fg/alerts/:id/handled');
   console.log('  GET  /api/fg/history/:companyId');
   console.log('  POST /api/fg/sweep');
+  console.log('  GET  /api/admin/leads');
+  console.log('  GET  /api/admin/intake-forms');
+  console.log('  GET  /api/admin/compliance-bundles');
+  console.log('  GET  /api/admin/contacts');
+  console.log('  POST /api/lead');
+  console.log('  POST /api/contact');
+  console.log('  POST /api/intake');
+  console.log('  POST /api/compliance-bundle');
   console.log('');
 });
 
