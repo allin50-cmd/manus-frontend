@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, Loader2 } from 'lucide-react';
 
@@ -10,10 +10,13 @@ interface Props {
   setLoading: (v: boolean) => void;
 }
 
+const FETCH_TIMEOUT_MS = 10_000;
+
 export function CompanyLookupForm({ onResult, loading, setLoading }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -21,22 +24,45 @@ export function CompanyLookupForm({ onResult, loading, setLoading }: Props) {
       setQuery(q);
       doLookup(q);
     }
+    return () => {
+      // Cancel any in-flight request when the component unmounts
+      abortRef.current?.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function doLookup(q: string) {
+    // Abort any previous in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const timeoutId = setTimeout(() => controller.abort('timeout'), FETCH_TIMEOUT_MS);
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/companies-house?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/companies-house?q=${encodeURIComponent(q)}`, {
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (!res.ok) {
         onResult({ error: data.error ?? 'Company not found.' });
       } else {
         onResult(data);
       }
-    } catch {
-      onResult({ error: 'Network error. Please try again.' });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        const reason = (err as DOMException).message;
+        onResult({
+          error: reason === 'timeout'
+            ? 'Request timed out. Please try again.'
+            : 'Search cancelled.',
+        });
+      } else {
+        onResult({ error: 'Network error. Please try again.' });
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   }

@@ -84,6 +84,13 @@ export const complianceAlerts = pgTable(
   }),
 );
 
+export const stripeWebhookEvents = pgTable('stripe_webhook_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: varchar('event_id', { length: 255 }).notNull().unique(), // Stripe event ID — idempotency key
+  type: varchar('type', { length: 100 }).notNull(),
+  processedAt: timestamp('processed_at').defaultNow().notNull(),
+});
+
 export const zapierHooks = pgTable(
   'zapier_hooks',
   {
@@ -103,3 +110,4 @@ export type ComplianceAlert = typeof complianceAlerts.$inferSelect;
 export type NewComplianceAlert = typeof complianceAlerts.$inferInsert;
 export type ZapierHook = typeof zapierHooks.$inferSelect;
 export type NewZapierHook = typeof zapierHooks.$inferInsert;
+export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;

@@ -232,8 +232,11 @@ export class CompaniesHouseService {
   /**
    * Calculate compliance status with deadlines and risk assessment
    */
-  async getComplianceStatus(companyNumber: string): Promise<ComplianceStatus> {
-    const profile = await this.getCompanyProfile(companyNumber);
+  async getComplianceStatus(
+    companyNumber: string,
+    existingProfile?: CompanyProfile,
+  ): Promise<ComplianceStatus> {
+    const profile = existingProfile ?? await this.getCompanyProfile(companyNumber);
 
     if (!profile) {
       throw new Error('Company not found');

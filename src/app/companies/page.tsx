@@ -3,21 +3,11 @@ export const dynamic = 'force-dynamic';
 import { PageContainer } from '@/components/shared/PageContainer';
 import { CompaniesTable } from '@/components/companies/CompaniesTable';
 import { AddCompanyPanel } from '@/components/companies/AddCompanyPanel';
-import { getAllMonitoredCompanies } from '@/server/services/companies.service';
-import { getAlertsForCompany } from '@/server/services/alerts.service';
-import type { MonitoredCompanyRow } from '@/types/dashboard';
+import { listAllWithAlerts } from '@/server/repositories/monitoredCompanies.repo';
 
 export default async function CompaniesPage() {
-  const raw = await getAllMonitoredCompanies();
-  const companies: MonitoredCompanyRow[] = await Promise.all(
-    raw.map(async (c) => {
-      const alerts = await getAlertsForCompany(c.companyNumber);
-      return {
-        ...c,
-        activeAlerts: alerts.map((a) => a.alertType) as MonitoredCompanyRow['activeAlerts'],
-      };
-    })
-  );
+  // Single LEFT JOIN query — no N+1
+  const companies = await listAllWithAlerts();
 
   return (
     <PageContainer>

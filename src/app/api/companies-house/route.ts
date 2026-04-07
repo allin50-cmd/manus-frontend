@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       if (!profile) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
       }
-      const compliance = await companiesHouseService.getComplianceStatus(formatted);
+      const compliance = await companiesHouseService.getComplianceStatus(formatted, profile);
       const company = mapComplianceResponse({
         company: {
           number: profile.companyNumber,

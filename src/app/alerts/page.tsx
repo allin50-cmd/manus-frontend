@@ -2,28 +2,27 @@ export const dynamic = 'force-dynamic';
 
 import { PageContainer } from '@/components/shared/PageContainer';
 import { AlertsTable } from '@/components/alerts/AlertsTable';
-import { getAllMonitoredCompanies } from '@/server/services/companies.service';
-import { getAlertsForCompany } from '@/server/services/alerts.service';
+import { db } from '@/server/db';
+import { complianceAlerts } from '@/server/db/schema';
+import { eq } from 'drizzle-orm';
 import type { ComplianceAlert } from '@/types/alerts';
 
 export default async function AlertsPage() {
-  const companies = await getAllMonitoredCompanies();
-  const allAlerts: ComplianceAlert[] = [];
+  // Single query — all active alerts across all companies
+  const rows = await db
+    .select()
+    .from(complianceAlerts)
+    .where(eq(complianceAlerts.status, 'active'));
 
-  for (const company of companies) {
-    const alerts = await getAlertsForCompany(company.companyNumber);
-    allAlerts.push(
-      ...alerts.map((a) => ({
-        id: a.id,
-        companyNumber: a.companyNumber,
-        alertType: a.alertType as ComplianceAlert['alertType'],
-        stripeSubscriptionId: a.stripeSubscriptionId,
-        stripeItemId: a.stripeItemId,
-        status: a.status as ComplianceAlert['status'],
-        activatedAt: a.activatedAt,
-      }))
-    );
-  }
+  const allAlerts: ComplianceAlert[] = rows.map((a) => ({
+    id: a.id,
+    companyNumber: a.companyNumber,
+    alertType: a.alertType as ComplianceAlert['alertType'],
+    stripeSubscriptionId: a.stripeSubscriptionId,
+    stripeItemId: a.stripeItemId,
+    status: a.status as ComplianceAlert['status'],
+    activatedAt: a.activatedAt,
+  }));
 
   return (
     <PageContainer>

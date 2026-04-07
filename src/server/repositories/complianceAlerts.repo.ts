@@ -31,7 +31,10 @@ export async function insertAlerts(
   alertTypes: string[],
   stripeSubscriptionId?: string
 ) {
-  for (const alertType of alertTypes) {
-    await insertAlert({ companyNumber, alertType, stripeSubscriptionId });
-  }
+  if (alertTypes.length === 0) return;
+  // Single multi-row INSERT instead of N sequential round-trips
+  await db
+    .insert(complianceAlerts)
+    .values(alertTypes.map((alertType) => ({ companyNumber, alertType, stripeSubscriptionId, status: 'active' })))
+    .onConflictDoNothing();
 }
