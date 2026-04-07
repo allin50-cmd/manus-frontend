@@ -9,6 +9,8 @@ coverage/
 # Production
 dist/
 build/
+.next/
+out/
 
 # Environment files
 .env
