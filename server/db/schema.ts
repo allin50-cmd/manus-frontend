@@ -78,6 +78,18 @@ export const contacts = pgTable('contacts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+/**
+ * Monitored Companies Table
+ * Tracks companies that have paid and activated FineGuard protection
+ */
+export const monitoredCompanies = pgTable('monitored_companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
+  activatedAt: timestamp('activated_at').defaultNow().notNull(),
+});
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
@@ -93,3 +105,6 @@ export type NewComplianceBundle = typeof complianceBundles.$inferInsert;
 
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
+
+export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
+export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;

@@ -29,6 +29,7 @@
     "dotenv": "^16.4.1",
     "uuid": "^9.0.1",
     "node-fetch": "^3.3.2",
+    "stripe": "^14.21.0",
     "tsx": "^4.7.0"
   },
   "devDependencies": {

@@ -3,8 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import Stripe from 'stripe';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 
@@ -17,6 +18,70 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
+
+// Stripe client – only initialised when key is present
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' }) : null;
+
+// ============================================================================
+// STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
+// ============================================================================
+
+/**
+ * POST /api/stripe/webhook
+ * Receives Stripe events. On checkout.session.completed, marks the company as monitored.
+ * Requires raw body — registered before express.json().
+ */
+app.post(
+  '/api/stripe/webhook',
+  express.raw({ type: 'application/json' }),
+  async (req: Request, res: Response) => {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    const sig = req.headers['stripe-signature'] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      return res.status(500).json({ error: 'Stripe webhook secret not configured' });
+    }
+
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+      console.error('Stripe webhook signature verification failed:', err);
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const companyNumber = session.metadata?.companyNumber;
+      const companyName = session.metadata?.companyName;
+
+      if (companyNumber && companyName) {
+        try {
+          await db
+            .insert(monitoredCompanies)
+            .values({
+              companyNumber,
+              companyName,
+              stripeSessionId: session.id,
+            })
+            .onConflictDoNothing();
+
+          console.log(`✅ Company monitored: ${companyName} (${companyNumber})`);
+        } catch (err) {
+          console.error('Error persisting monitored company:', err);
+          return res.status(500).json({ error: 'Database error' });
+        }
+      }
+    }
+
+    res.json({ received: true });
+  }
+);
 
 // Middleware
 app.use(cors());
@@ -53,6 +118,75 @@ app.get('/api/health', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       database: 'disconnected',
     });
+  }
+});
+
+// ============================================================================
+// STRIPE CHECKOUT API ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/stripe/checkout
+ * Creates a Stripe Checkout session for FineGuard monitoring activation.
+ * Body: { companyNumber: string, companyName: string }
+ * Returns: { url: string }
+ */
+app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
+  if (!stripe) {
+    return res.status(500).json({ error: 'Stripe not configured' });
+  }
+
+  const { companyNumber, companyName } = req.body;
+
+  if (!companyNumber || !companyName) {
+    return res.status(400).json({ error: 'companyNumber and companyName are required' });
+  }
+
+  const priceId = process.env.STRIPE_PRICE_ID;
+  if (!priceId) {
+    return res.status(500).json({ error: 'STRIPE_PRICE_ID not configured' });
+  }
+
+  const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata: { companyNumber, companyName },
+      success_url: `${appUrl}/compliance-bundle?activated=1&company=${encodeURIComponent(companyNumber)}`,
+      cancel_url: `${appUrl}/compliance-bundle`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe checkout session error:', err);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+/**
+ * GET /api/protection-status?companyNumber=12345678
+ * Returns whether a company is currently being monitored.
+ */
+app.get('/api/protection-status', async (req: Request, res: Response) => {
+  const { companyNumber } = req.query;
+
+  if (!companyNumber || typeof companyNumber !== 'string') {
+    return res.status(400).json({ error: 'companyNumber query param is required' });
+  }
+
+  try {
+    const [row] = await db
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, companyNumber))
+      .limit(1);
+
+    res.json({ monitored: !!row, activatedAt: row?.activatedAt ?? null });
+  } catch (err) {
+    console.error('Error checking protection status:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
