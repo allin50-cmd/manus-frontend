@@ -1,12 +1,12 @@
-import { useState, FormEvent } from 'react';
-import { useLocation } from 'wouter';
+import { useState, useEffect, FormEvent } from 'react';
+import { useLocation, useSearch } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Clock } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CompanyData {
@@ -47,12 +47,15 @@ interface ComplianceData {
 
 export default function ComplianceBundle() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [bundleId, setBundleId] = useState('');
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [complianceData, setComplianceData] = useState<ComplianceData | null>(null);
   const [error, setError] = useState('');
+  const [monitored, setMonitored] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     companyName: '',
@@ -61,6 +64,64 @@ export default function ComplianceBundle() {
     requestorEmail: '',
     bundleType: 'full',
   });
+
+  // Check protection status whenever we have a company number (including on Stripe return)
+  useEffect(() => {
+    if (!companyData?.number) return;
+
+    fetch(`/api/protection-status?companyNumber=${encodeURIComponent(companyData.number)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.monitored) {
+          setMonitored(true);
+        }
+      })
+      .catch(() => {/* non-blocking */});
+  }, [companyData?.number]);
+
+  // Handle return from Stripe (?activated=1&company=...)
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get('activated') === '1') {
+      const companyNumber = params.get('company');
+      if (companyNumber) {
+        fetch(`/api/protection-status?companyNumber=${encodeURIComponent(companyNumber)}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.monitored) {
+              setMonitored(true);
+              toast.success('Protection activated — your company is now being monitored.');
+            }
+          })
+          .catch(() => {/* non-blocking */});
+      }
+    }
+  }, [search]);
+
+  const handleActivate = async () => {
+    if (!companyData) return;
+    setCheckoutLoading(true);
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyNumber: companyData.number,
+          companyName: companyData.name,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Could not start checkout. Please try again.');
+      }
+    } catch {
+      toast.error('Network error. Please check your connection.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -293,31 +354,86 @@ export default function ComplianceBundle() {
             </Card>
           )}
 
-          {/* Actions */}
-          <Card className="bg-white border-[#1A1A1A]/10">
-            <CardContent className="pt-6">
-              <div className="flex gap-3">
+          {/* Protection status / CTA */}
+          {monitored ? (
+            <Card className="bg-green-50 border-green-300">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <ShieldCheck className="w-8 h-8 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Protection active</p>
+                    <h2 className="text-xl font-bold text-green-900 mt-0.5">
+                      {companyData.name} is being monitored
+                    </h2>
+                    <p className="text-sm text-green-700 mt-1">
+                      You'll receive alerts before any compliance deadlines are missed.
+                    </p>
+                  </div>
+                </div>
                 <Button
                   onClick={() => {
                     setSuccess(false);
                     setCompanyData(null);
                     setComplianceData(null);
+                    setMonitored(false);
                   }}
                   variant="outline"
-                  className="flex-1 border-[#1A1A1A]/20 hover:bg-gray-100"
+                  className="border-green-400 text-green-800 hover:bg-green-100"
                 >
                   Check Another Company
                 </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-white border-[#1A1A1A]/10">
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1A1A1A]">Activate monitoring</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Get automatic alerts before filing deadlines for {companyData.name}. £3/month, cancel anytime.
+                  </p>
+                </div>
                 <Button
-                  onClick={() => setLocation('/fineguard')}
-                  className="flex-1 bg-[#C9A64A] hover:bg-[#B8954A] text-white"
+                  onClick={handleActivate}
+                  disabled={checkoutLoading}
+                  className="w-full bg-[#C9A64A] hover:bg-[#B8954A] text-white disabled:opacity-50"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to FineGuard
+                  {checkoutLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Redirecting to checkout…
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Activate Protection — £3/mo
+                    </>
+                  )}
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      setSuccess(false);
+                      setCompanyData(null);
+                      setComplianceData(null);
+                    }}
+                    variant="outline"
+                    className="flex-1 border-[#1A1A1A]/20 hover:bg-gray-100"
+                  >
+                    Check Another Company
+                  </Button>
+                  <Button
+                    onClick={() => setLocation('/fineguard')}
+                    variant="outline"
+                    className="flex-1 border-[#1A1A1A]/20 hover:bg-gray-100"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to FineGuard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );
