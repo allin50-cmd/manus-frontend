@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, index } from 'drizzle-orm/pg-core';
 
 export const deploymentStatus = pgTable('deployment_status', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -67,22 +67,35 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
 
-export const complianceAlerts = pgTable('compliance_alerts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  companyNumber: varchar('company_number', { length: 50 }).notNull(),
-  alertType: varchar('alert_type', { length: 50 }).notNull(), // accounts_filing | confirmation_statement | strike_off
-  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
-  stripeItemId: varchar('stripe_item_id', { length: 255 }),
-  status: varchar('status', { length: 20 }).default('active').notNull(), // active | cancelled
-  activatedAt: timestamp('activated_at').defaultNow().notNull(),
-});
+export const complianceAlerts = pgTable(
+  'compliance_alerts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyNumber: varchar('company_number', { length: 50 }).notNull(),
+    alertType: varchar('alert_type', { length: 50 }).notNull(), // accounts_filing | confirmation_statement | strike_off
+    stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+    stripeItemId: varchar('stripe_item_id', { length: 255 }),
+    status: varchar('status', { length: 20 }).default('active').notNull(), // active | cancelled
+    activatedAt: timestamp('activated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    companyNumberIdx: index('alerts_company_number_idx').on(t.companyNumber),
+    statusIdx: index('alerts_status_idx').on(t.status),
+  }),
+);
 
-export const zapierHooks = pgTable('zapier_hooks', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  url: text('url').notNull(),
-  event: varchar('event', { length: 100 }).notNull(), // company.activated | compliance.alert
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const zapierHooks = pgTable(
+  'zapier_hooks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    url: text('url').notNull(),
+    event: varchar('event', { length: 100 }).notNull(), // company.activated | compliance.alert
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    eventIdx: index('zapier_hooks_event_idx').on(t.event),
+  }),
+);
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;

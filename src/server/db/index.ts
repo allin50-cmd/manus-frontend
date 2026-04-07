@@ -6,7 +6,12 @@ const databaseUrl = process.env.DATABASE_URL ?? '';
 
 // Validation is deferred to request time; build-time import is safe
 const client = databaseUrl
-  ? postgres(databaseUrl, { max: 10, idle_timeout: 20, connect_timeout: 10 })
+  ? postgres(databaseUrl, {
+      max: 20,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      max_lifetime: 1800,    // recycle connections every 30 min
+    })
   : postgres('postgres://localhost/placeholder', { max: 1 });
 
 function assertDatabaseUrl() {

@@ -2,14 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe, assertStripeKey } from '@/lib/stripe/client';
 import { buildLineItems } from '@/lib/stripe/checkout';
 import type { AlertType } from '@/types/alerts';
+import { isRateLimited, getClientIp } from '@/lib/utils/rateLimiter';
+
+// 10 checkout attempts per minute per IP
+const CHECKOUT_RATE_LIMIT = 10;
+const CHECKOUT_RATE_WINDOW_MS = 60_000;
 
 export async function POST(req: NextRequest) {
-  const { companyNumber, companyName, selectedServices } = await req.json();
-
   assertStripeKey();
 
+  const ip = getClientIp(req);
+  if (isRateLimited(`checkout:${ip}`, CHECKOUT_RATE_LIMIT, CHECKOUT_RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: 'Too many checkout attempts — please wait before trying again' },
+      { status: 429, headers: { 'Retry-After': '60' } },
+    );
+  }
+
+  const { companyNumber, companyName, selectedServices } = await req.json();
+
   if (!companyNumber || !companyName || !selectedServices?.length) {
-    return NextResponse.json({ error: 'companyNumber, companyName, and selectedServices are required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'companyNumber, companyName, and selectedServices are required' },
+      { status: 400 },
+    );
   }
 
   const appUrl = process.env.APP_URL ?? 'http://localhost:3000';

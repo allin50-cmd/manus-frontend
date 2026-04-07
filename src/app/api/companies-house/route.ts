@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { companiesHouseService } from '@/server/services/companiesHouse';
 import { mapComplianceResponse } from '@/lib/companies-house/mapper';
+import { isRateLimited, getClientIp } from '@/lib/utils/rateLimiter';
+
+// 20 requests per minute per IP (Companies House API has its own rate limits)
+const CH_RATE_LIMIT = 20;
+const CH_RATE_WINDOW_MS = 60_000;
 
 export async function GET(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (isRateLimited(`ch:${ip}`, CH_RATE_LIMIT, CH_RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: 'Too many requests — please wait before searching again' },
+      { status: 429, headers: { 'Retry-After': '60' } },
+    );
+  }
+
   const q = req.nextUrl.searchParams.get('q');
   if (!q) {
     return NextResponse.json({ error: 'q is required' }, { status: 400 });
