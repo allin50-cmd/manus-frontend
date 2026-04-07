@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/server/db';
 import { monitoredCompanies, complianceAlerts, zapierHooks } from '@/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { cacheDelete } from '@/lib/utils/cache';
 
 const COMPANY_NUMBER_RE = /^([A-Z]{2}\d{6}|\d{8})$/i;
 
@@ -13,6 +14,7 @@ async function deliverHook(url: string, body: unknown, retries = 2): Promise<voi
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok && retries > 0) {
       await delay(500 * (3 - retries)); // 500ms, then 1000ms
@@ -68,6 +70,9 @@ export async function POST(req: NextRequest) {
         .onConflictDoNothing(),
     ),
   );
+
+  // Invalidate the recent-companies cache so the new entry is visible immediately
+  cacheDelete('zapier:companies:recent');
 
   // Notify subscribed Zapier hooks with retry
   const hooks = await db
