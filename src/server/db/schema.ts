@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const deploymentStatus = pgTable('deployment_status', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -79,6 +79,7 @@ export const complianceAlerts = pgTable(
     activatedAt: timestamp('activated_at').defaultNow().notNull(),
   },
   (t) => ({
+    companyAlertUniq: uniqueIndex('alerts_company_alert_uniq').on(t.companyNumber, t.alertType),
     companyNumberIdx: index('alerts_company_number_idx').on(t.companyNumber),
     statusIdx: index('alerts_status_idx').on(t.status),
   }),
