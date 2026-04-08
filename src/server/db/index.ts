@@ -12,7 +12,7 @@ const client = databaseUrl
       connect_timeout: 10,
       max_lifetime: 1800,    // recycle connections every 30 min
     })
-  : postgres('postgres://localhost/placeholder', { max: 1 });
+  : postgres('postgres://localhost/placeholder', { max: 1, connect_timeout: 1 }); // fail fast — no DB configured
 
 function assertDatabaseUrl() {
   if (!process.env.DATABASE_URL) {
