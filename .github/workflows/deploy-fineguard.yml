@@ -1,0 +1,72 @@
+name: Deploy FineGuard Pro → Azure App Service
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options: [production, staging]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js (standalone)
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.APP_URL }}
+
+      - name: Assemble deployment package
+        run: |
+          # standalone/ is a self-contained Node server.
+          # Static assets and public/ must be copied in manually.
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .next/standalone
+          startup-command: 'node server.js'
+
+      - name: Record deployment
+        if: always()
+        run: |
+          STATUS=$([[ "${{ job.status }}" == "success" ]] && echo "success" || echo "failed")
+          curl -sf -X POST "${{ secrets.APP_URL }}/api/deployments/record" \
+            -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"environment\":\"${{ github.event.inputs.environment || 'production' }}\",\"status\":\"$STATUS\",\"commit\":\"${{ github.sha }}\",\"workflowRun\":\"${{ github.run_id }}\"}" \
+            || echo "Deployment record skipped (non-critical)"
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## FineGuard Pro Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** ${{ secrets.APP_URL }}" >> $GITHUB_STEP_SUMMARY
