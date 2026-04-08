@@ -3,6 +3,7 @@ import { stripe, assertStripeKey } from '@/lib/stripe/client';
 import { buildLineItems } from '@/lib/stripe/checkout';
 import type { AlertType } from '@/types/alerts';
 import { isRateLimited, getClientIp } from '@/lib/utils/rateLimiter';
+import { config } from '@/config';
 
 // 10 checkout attempts per minute per IP
 const CHECKOUT_RATE_LIMIT = 10;
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+  const appUrl = config.publicAppUrl;
 
   try {
     const session = await stripe.checkout.sessions.create({
