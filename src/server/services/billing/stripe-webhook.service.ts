@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { ZodError } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../../db';
 import { stripeWebhookEvents } from '../../db/schema';
@@ -12,29 +13,45 @@ import {
 } from '../compliance/activation.service';
 import { log } from '@/lib/logger';
 
+// ── Error classification ──────────────────────────────────────────────────────
+//
+// retryable — transient failures (DB connection, network, timeout).
+//             Stripe should retry; we re-raise to return 500.
+//
+// permanent — logic/data errors (bad metadata, unknown company).
+//             Stripe retrying won't help; we mark processed and return 200.
+
+type ErrorType = 'retryable' | 'permanent';
+
+function classifyError(err: unknown): ErrorType {
+  if (err instanceof ZodError) return 'permanent';
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    if (
+      msg.includes('invalid stripe metadata') ||
+      msg.includes('not found') ||
+      msg.includes('company_number')
+    ) {
+      return 'permanent';
+    }
+  }
+  return 'retryable';
+}
+
 // ── Two-phase idempotency ─────────────────────────────────────────────────────
 //
 // State machine: (none) → processing → processed
-//                                    ↘ failed → processing (Stripe retry)
+//                                    ↘ failed → (none, Stripe retries)
 //
-// The partial unique index swe_active_event_uniq prevents two concurrent
-// requests from both processing the same event: only one INSERT will win;
-// the other will see 0 rows and skip.  A failed event (not in the partial
-// index) can be retried — the new INSERT will succeed, re-claiming it.
+// The partial unique index swe_active_event_uniq covers processing|processed.
+// Only one concurrent INSERT wins; failed rows fall outside the index so
+// Stripe's next retry re-claims them.
 
-/**
- * Attempt to claim the event for processing and store the raw payload.
- * Returns true if this instance now owns the event, false if already
- * processing/processed by another instance (deduplicate).
- *
- * Storing the payload enables failed events to be replayed without
- * hitting Stripe's API: SELECT * FROM stripe_webhook_events WHERE status='failed'
- */
 async function claimEvent(eventId: string, eventType: string, payload: unknown): Promise<boolean> {
   const rows = await db
     .insert(stripeWebhookEvents)
     .values({ eventId, type: eventType, status: 'processing', payload })
-    .onConflictDoNothing() // partial index blocks duplicates of processing|processed
+    .onConflictDoNothing()
     .returning({ id: stripeWebhookEvents.id });
   return rows.length > 0;
 }
@@ -51,40 +68,67 @@ async function markEventProcessed(eventId: string): Promise<void> {
     );
 }
 
-async function markEventFailed(eventId: string, reason: string): Promise<void> {
+async function markEventFailed(
+  eventId: string,
+  reason: string,
+  errorType: ErrorType,
+): Promise<void> {
   await db
     .update(stripeWebhookEvents)
-    .set({ status: 'failed', failureReason: reason.slice(0, 500) })
+    .set({
+      status: 'failed',
+      failureReason: reason.slice(0, 500),
+      errorType,
+    })
     .where(
       and(
         eq(stripeWebhookEvents.eventId, eventId),
         eq(stripeWebhookEvents.status, 'processing'),
       ),
     );
-  // Failed row is now excluded from the partial unique index — Stripe can retry.
+  // Failed row exits the partial unique index — Stripe can retry.
 }
 
 // ── Event handlers ────────────────────────────────────────────────────────────
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
+/**
+ * Resolve company_number from a checkout session.
+ *
+ * Trust hierarchy (most → least trustworthy):
+ * 1. client_reference_id  — set programmatically at session creation, not
+ *    editable by the customer after the fact
+ * 2. metadata.company_number — validated with Zod, but lives in metadata
+ *    which could theoretically be modified in the Stripe dashboard
+ */
+function resolveCompanyNumber(session: Stripe.Checkout.Session): string | null {
+  if (session.client_reference_id?.match(/^[A-Z0-9]{2,8}$/i)) {
+    return session.client_reference_id;
+  }
   const meta = parseFineGuardMetadata(session.metadata ?? {});
+  return isValidFineGuardMetadata(meta) ? meta.company_number : null;
+}
 
-  if (!isValidFineGuardMetadata(meta)) {
-    log.warn('checkout.session.completed: missing company_number in metadata', {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  const companyNumber = resolveCompanyNumber(session);
+  if (!companyNumber) {
+    log.warn('checkout.session.completed: cannot resolve company_number', {
       sessionId: session.id,
+      clientReferenceId: session.client_reference_id,
       metadata: session.metadata,
     });
     return;
   }
 
-  const alertTypes = meta.alert_types
+  // Parse metadata for supplementary fields (name, alertTypes, tenantId)
+  const meta = parseFineGuardMetadata(session.metadata ?? {});
+  const alertTypes = meta?.alert_types
     ? meta.alert_types.split(',').map((s) => s.trim()).filter(Boolean)
     : ['accounts_filing'];
 
   await activateComplianceMonitoring({
-    companyNumber: meta.company_number,
-    companyName: meta.company_name ?? meta.company_number,
-    tenantId: meta.tenant_id,
+    companyNumber,
+    companyName: meta?.company_name ?? companyNumber,
+    tenantId: meta?.tenant_id,
     stripeCustomerId: session.customer as string | undefined,
     stripeSubscriptionId: session.subscription as string | undefined,
     stripeSessionId: session.id,
@@ -92,7 +136,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   });
 }
 
-async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
+async function handleInvoicePaid(
+  invoice: Stripe.Invoice,
+  eventCreatedAt: Date,
+): Promise<void> {
   const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
   if (!customerId) return;
 
@@ -103,11 +150,14 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   }
 
   if (company.billingStatus !== 'active') {
-    await restoreBillingActive(company.companyNumber);
+    await restoreBillingActive(company.companyNumber, eventCreatedAt);
   }
 }
 
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
+async function handleInvoicePaymentFailed(
+  invoice: Stripe.Invoice,
+  eventCreatedAt: Date,
+): Promise<void> {
   const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
   if (!customerId) return;
 
@@ -117,10 +167,13 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
     return;
   }
 
-  await markBillingPastDue(company.companyNumber);
+  await markBillingPastDue(company.companyNumber, eventCreatedAt);
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  eventCreatedAt: Date,
+): Promise<void> {
   const customerId =
     typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
 
@@ -130,10 +183,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     return;
   }
 
-  await cancelComplianceMonitoring(company.companyNumber);
+  await cancelComplianceMonitoring(company.companyNumber, eventCreatedAt);
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
+async function handleSubscriptionUpdated(
+  subscription: Stripe.Subscription,
+  eventCreatedAt: Date,
+): Promise<void> {
   const customerId =
     typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
 
@@ -142,14 +198,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
 
   switch (subscription.status) {
     case 'active':
-      if (company.billingStatus !== 'active') await restoreBillingActive(company.companyNumber);
+      if (company.billingStatus !== 'active') {
+        await restoreBillingActive(company.companyNumber, eventCreatedAt);
+      }
       break;
     case 'past_due':
     case 'unpaid':
-      await markBillingPastDue(company.companyNumber);
+      await markBillingPastDue(company.companyNumber, eventCreatedAt);
       break;
     case 'canceled':
-      await cancelComplianceMonitoring(company.companyNumber);
+      await cancelComplianceMonitoring(company.companyNumber, eventCreatedAt);
       break;
     default:
       break;
@@ -164,9 +222,13 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
 }> {
   const claimed = await claimEvent(event.id, event.type, event);
   if (!claimed) {
+    // Already processing or processed (covers manual replay too)
     log.info('stripe webhook deduplicated', { eventId: event.id, type: event.type });
     return { processed: false, deduplicated: true };
   }
+
+  // Stripe event.created is Unix seconds
+  const eventCreatedAt = new Date(event.created * 1000);
 
   try {
     switch (event.type) {
@@ -174,16 +236,16 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
         await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
         break;
       case 'invoice.paid':
-        await handleInvoicePaid(event.data.object as Stripe.Invoice);
+        await handleInvoicePaid(event.data.object as Stripe.Invoice, eventCreatedAt);
         break;
       case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice, eventCreatedAt);
         break;
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, eventCreatedAt);
         break;
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription, eventCreatedAt);
         break;
       default:
         break;
@@ -193,11 +255,28 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
     log.info('stripe webhook processed', { eventId: event.id, type: event.type });
     return { processed: true, deduplicated: false };
   } catch (err) {
+    const errorType = classifyError(err);
     const reason = err instanceof Error ? err.message : String(err);
-    await markEventFailed(event.id, reason).catch(() => {
-      // Best-effort — don't mask the original error
+
+    await markEventFailed(event.id, reason, errorType).catch(() => {});
+
+    log.error('stripe webhook failed', {
+      eventId: event.id,
+      type: event.type,
+      errorType,
+      err: reason,
     });
-    log.error('stripe webhook failed', { eventId: event.id, type: event.type, err: reason });
-    throw err; // re-raise so the route returns 500 and Stripe retries
+
+    if (errorType === 'permanent') {
+      // Mark as processed so Stripe stops retrying — this error won't self-heal
+      await markEventProcessed(event.id).catch(() => {});
+      log.warn('permanent error: marking as processed, Stripe will not retry', {
+        eventId: event.id,
+        type: event.type,
+      });
+      return { processed: true, deduplicated: false };
+    }
+
+    throw err; // retryable: re-raise so route returns 500 and Stripe retries
   }
 }

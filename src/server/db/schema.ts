@@ -77,6 +77,7 @@ export const monitoredCompanies = pgTable(
     stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
     billingStatus: billingStatusEnum('billing_status').notNull().default('inactive'),
     billingStatusUpdatedAt: timestamp('billing_status_updated_at'),
+    lastStripeEventAt: timestamp('last_stripe_event_at'), // highest-created-at event seen; guards ordering
     lastCheckoutSessionId: varchar('last_checkout_session_id', { length: 255 }),
     activatedAt: timestamp('activated_at').defaultNow().notNull(),
   },
@@ -118,6 +119,7 @@ export const stripeWebhookEvents = pgTable(
     eventId: varchar('event_id', { length: 255 }).notNull(), // Stripe event ID — idempotency key
     type: varchar('type', { length: 100 }).notNull(),
     status: stripeEventStatusEnum('status').notNull().default('processing'),
+    errorType: varchar('error_type', { length: 20 }), // retryable | permanent
     payload: jsonb('payload'), // raw Stripe event for failure replay
     failureReason: varchar('failure_reason', { length: 500 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),

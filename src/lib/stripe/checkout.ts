@@ -45,6 +45,9 @@ export async function createCheckoutSession(input: CreateCheckoutSessionInput) {
   return stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: buildLineItems(input.selectedServices),
+    // client_reference_id is set programmatically and cannot be edited via the
+    // Stripe dashboard — more trustworthy than metadata for the company key.
+    client_reference_id: input.companyNumber,
     metadata,
     ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
     success_url: `${appUrl}/check?activated=1&session_id={CHECKOUT_SESSION_ID}&company=${encodeURIComponent(input.companyNumber)}`,

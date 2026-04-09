@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { monitoredCompanies, complianceAlerts } from '../db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, isNull, lte, or } from 'drizzle-orm';
 import type { AlertType } from '@/types/alerts';
 import type { BillingStatus } from '@/types/stripe';
 
@@ -18,22 +18,38 @@ const ALLOWED_FROM: Record<BillingStatus, BillingStatus[]> = {
 /**
  * Atomic conditional UPDATE: only transitions if billing_status is one of the
  * allowed predecessor states.  Returns true if the row was updated, false if
- * the transition was rejected (invalid state or company not found).
+ * the transition was rejected (invalid state, out-of-order event, or company not found).
+ *
+ * Pass eventCreatedAt (Stripe event.created as Date) to enable ordering guard:
+ * the update is rejected if an event with a higher timestamp was already processed.
+ * This prevents a delayed invoice.payment_failed from overwriting a later checkout.
  */
 export async function transitionBillingStatus(
   companyNumber: string,
   toStatus: BillingStatus,
+  options?: { eventCreatedAt?: Date },
 ): Promise<boolean> {
   const allowed = ALLOWED_FROM[toStatus];
   if (allowed.length === 0) return false;
 
+  const now = new Date();
+  const eventTs = options?.eventCreatedAt;
+
   const result = await db
     .update(monitoredCompanies)
-    .set({ billingStatus: toStatus, billingStatusUpdatedAt: new Date() })
+    .set({
+      billingStatus: toStatus,
+      billingStatusUpdatedAt: now,
+      ...(eventTs ? { lastStripeEventAt: eventTs } : {}),
+    })
     .where(
       and(
         eq(monitoredCompanies.companyNumber, companyNumber),
         inArray(monitoredCompanies.billingStatus, allowed),
+        // Ordering guard: skip if a newer event was already applied
+        ...(eventTs
+          ? [or(isNull(monitoredCompanies.lastStripeEventAt), lte(monitoredCompanies.lastStripeEventAt, eventTs))]
+          : []),
       ),
     )
     .returning({ id: monitoredCompanies.id });

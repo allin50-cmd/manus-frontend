@@ -1,4 +1,4 @@
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, isNull, lte, or } from 'drizzle-orm';
 import { db } from '../../db';
 import { monitoredCompanies, complianceAlerts } from '../../db/schema';
 import {
@@ -129,13 +129,17 @@ export async function activateComplianceMonitoring(
 
 /**
  * Called on invoice.payment_failed.
- * Transitions active → past_due.  No-op if already past_due or cancelled.
+ * Transitions active → past_due.  No-op if already past_due, cancelled,
+ * or if the event is out-of-order (older than last processed event).
  */
-export async function markBillingPastDue(companyNumber: string): Promise<void> {
+export async function markBillingPastDue(
+  companyNumber: string,
+  eventCreatedAt?: Date,
+): Promise<void> {
   log.info('markBillingPastDue', { companyNumber });
-  const transitioned = await transitionBillingStatus(companyNumber, 'past_due');
+  const transitioned = await transitionBillingStatus(companyNumber, 'past_due', { eventCreatedAt });
   if (!transitioned) {
-    log.warn('markBillingPastDue: transition rejected (invalid state or company not found)', {
+    log.warn('markBillingPastDue: transition rejected (invalid state, out-of-order, or not found)', {
       companyNumber,
     });
   }
@@ -146,25 +150,38 @@ export async function markBillingPastDue(companyNumber: string): Promise<void> {
 /**
  * Called on customer.subscription.deleted.
  * Atomically transitions billing status and deactivates compliance alert rows
- * in a single DB transaction (H4 fix).
- * No hard deletes — audit trail preserved.
+ * in a single DB transaction.  No hard deletes — audit trail preserved.
+ *
+ * Passes eventCreatedAt to the ordering guard so a stale deletion event
+ * doesn't overwrite a more recent re-activation.
  */
-export async function cancelComplianceMonitoring(companyNumber: string): Promise<void> {
+export async function cancelComplianceMonitoring(
+  companyNumber: string,
+  eventCreatedAt?: Date,
+): Promise<void> {
   log.info('cancelComplianceMonitoring', { companyNumber });
 
   // Inline the two updates with tx so they commit atomically.
   // Repo helpers use module-level `db` and can't be passed a tx object,
   // so we duplicate the SQL here rather than escape the transaction boundary.
   const allowedFrom: BillingStatus[] = ['active', 'past_due', 'pending'];
+  const now = new Date();
 
   await db.transaction(async (tx) => {
     await tx
       .update(monitoredCompanies)
-      .set({ billingStatus: 'cancelled', billingStatusUpdatedAt: new Date() })
+      .set({
+        billingStatus: 'cancelled',
+        billingStatusUpdatedAt: now,
+        ...(eventCreatedAt ? { lastStripeEventAt: eventCreatedAt } : {}),
+      })
       .where(
         and(
           eq(monitoredCompanies.companyNumber, companyNumber),
           inArray(monitoredCompanies.billingStatus, allowedFrom),
+          ...(eventCreatedAt
+            ? [or(isNull(monitoredCompanies.lastStripeEventAt), lte(monitoredCompanies.lastStripeEventAt, eventCreatedAt))]
+            : []),
         ),
       );
 
@@ -186,11 +203,14 @@ export async function cancelComplianceMonitoring(companyNumber: string): Promise
  * Called on invoice.paid when billing was previously past_due or cancelled.
  * Transitions to active and reactivates billing-cancelled alerts.
  */
-export async function restoreBillingActive(companyNumber: string): Promise<void> {
+export async function restoreBillingActive(
+  companyNumber: string,
+  eventCreatedAt?: Date,
+): Promise<void> {
   log.info('restoreBillingActive', { companyNumber });
-  const transitioned = await transitionBillingStatus(companyNumber, 'active');
+  const transitioned = await transitionBillingStatus(companyNumber, 'active', { eventCreatedAt });
   if (!transitioned) {
-    log.warn('restoreBillingActive: billing transition rejected (possibly already active)', {
+    log.warn('restoreBillingActive: billing transition rejected (possibly already active or out-of-order)', {
       companyNumber,
     });
   }
