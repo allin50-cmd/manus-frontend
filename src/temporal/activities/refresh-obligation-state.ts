@@ -1,16 +1,26 @@
 import { Context } from '@temporalio/activity';
-import { getObligationById, updateObligationNextActionAt } from '../../repositories/obligation.repository';
+import {
+  getObligationById,
+  updateObligationNextActionAt,
+  updateObligationStatus,
+} from '../../repositories/obligation.repository';
+import { findCompanyById } from '../../repositories/company.repository';
 import { db } from '../../db/client';
-import { externalSourceSnapshots } from '../../db/schema';
-import { daysUntil, toISODate, toTemporalDuration } from '../../lib/time';
-import type { ObligationSnapshot } from '../../domain/types/obligation';
+import { complianceObligations, externalSourceSnapshots } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import { daysUntil, toTemporalDuration } from '../../lib/time';
+import type { ObligationSnapshot, ObligationType } from '../../domain/types/obligation';
 
 /**
- * Fetches the current state of a compliance obligation from the database
- * and records an external source snapshot.
+ * Fetch the current filing deadline from Companies House and persist a snapshot.
  *
- * This is the "polling" activity — it runs on every workflow check cycle.
- * Companies House integration is a STUB; the snapshot records what we know.
+ * When COMPANIES_HOUSE_API_KEY is set: calls the live CH API to get the real
+ * due date (accounts or confirmation statement) and updates the obligation row
+ * if the date has changed.
+ *
+ * Falls back to the due date already stored in the DB if the key is absent,
+ * the company is not found, or the API call fails — so the workflow continues
+ * safely in test/staging without a live API key.
  */
 export async function refreshObligationState(input: {
   obligationId: string;
@@ -22,57 +32,110 @@ export async function refreshObligationState(input: {
     throw new Error(`Obligation not found: ${obligationId}`);
   }
 
-  if (!obligation.dueDate) {
+  const company = await findCompanyById(obligation.monitoredCompanyId);
+  if (!company) {
+    throw new Error(`Company not found for obligation: ${obligationId}`);
+  }
+
+  const checkedAt = new Date();
+  let dueDate: string | null = obligation.dueDate;
+  let resolved = obligation.status === 'resolved';
+  let rawData: Record<string, unknown> = { source: 'db_fallback', companyNumber: company.companyNumber };
+
+  // ── Live Companies House fetch ──────────────────────────────────────────────
+  if (process.env.COMPANIES_HOUSE_API_KEY) {
+    try {
+      const { companiesHouseService } = await import('../../server/services/companiesHouse');
+      const profile = await companiesHouseService.getCompanyProfile(company.companyNumber);
+
+      if (profile) {
+        const liveDueDate = extractDueDate(profile, obligation.obligationType);
+        if (liveDueDate) dueDate = liveDueDate;
+
+        const dissolvedStatuses = ['dissolved', 'converted-closed', 'removed'];
+        if (dissolvedStatuses.includes((profile.companyStatus ?? '').toLowerCase())) {
+          resolved = true;
+        }
+
+        rawData = {
+          source: 'companies_house',
+          companyStatus: profile.companyStatus,
+          accounts: profile.accounts,
+          confirmationStatement: profile.confirmationStatement,
+          fetchedAt: checkedAt.toISOString(),
+        };
+      }
+    } catch (err) {
+      console.warn('[refreshObligationState] CH API fetch failed, using DB fallback', {
+        obligationId,
+        companyNumber: company.companyNumber,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  if (!dueDate) {
     throw new Error(
-      `Obligation has no due date: ${obligationId}. Cannot compute daysRemaining.`,
+      `No due date for obligation ${obligationId} (${obligation.obligationType}) — set it manually or ensure CH API key is configured`,
     );
   }
 
-  const daysRemaining = daysUntil(obligation.dueDate);
-  const isResolved = obligation.status === 'resolved';
-  const checkedAt = new Date();
+  const daysRemaining = daysUntil(dueDate);
 
-  // Persist a snapshot record for audit / historical trending.
+  // ── Persist snapshot ────────────────────────────────────────────────────────
   const [snapshotRow] = await db
     .insert(externalSourceSnapshots)
-    .values({
-      obligationId,
-      source: 'companies_house', // STUB — real CH API integration pending
-      rawData: {
-        stub: true,
-        dueDate: obligation.dueDate,
-        status: obligation.status,
-        note: 'Snapshot populated from local DB; Companies House API not yet integrated',
-      },
-      dueDate: obligation.dueDate,
-      resolved: isResolved,
-      checkedAt,
-    })
+    .values({ obligationId, source: 'companies_house', rawData, dueDate, resolved, checkedAt })
     .returning({ id: externalSourceSnapshots.id });
 
-  // Update next_action_at on the obligation based on current daysRemaining.
-  const durationStr = toTemporalDuration(daysRemaining);
-  const durationMs = parseDurationToMs(durationStr);
-  const nextActionAt = new Date(checkedAt.getTime() + durationMs);
-  await updateObligationNextActionAt(obligationId, nextActionAt);
+  // ── Sync obligation if dueDate or resolved changed ─────────────────────────
+  if (dueDate !== obligation.dueDate) {
+    await db
+      .update(complianceObligations)
+      .set({ dueDate, updatedAt: new Date() })
+      .where(eq(complianceObligations.id, obligationId));
+  }
 
-  Context.current().heartbeat({ obligationId, daysRemaining, checkedAt });
+  if (resolved && obligation.status !== 'resolved') {
+    await updateObligationStatus(obligationId, 'resolved');
+  }
+
+  // ── Schedule next check ─────────────────────────────────────────────────────
+  const durationMs = parseDurationToMs(toTemporalDuration(daysRemaining));
+  await updateObligationNextActionAt(obligationId, new Date(checkedAt.getTime() + durationMs));
+
+  Context.current().heartbeat({ obligationId, daysRemaining, dueDate, checkedAt });
 
   return {
-    dueDate: obligation.dueDate,
+    dueDate,
     daysRemaining,
-    resolved: isResolved,
+    resolved,
     checkedAt: checkedAt.toISOString(),
     externalSnapshotId: snapshotRow?.id,
   };
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function extractDueDate(
+  profile: {
+    accounts?: { nextAccounts?: { dueOn?: string } };
+    confirmationStatement?: { nextDue?: string };
+  },
+  obligationType: ObligationType,
+): string | null {
+  if (obligationType === 'accounts_filing') {
+    return profile.accounts?.nextAccounts?.dueOn ?? null;
+  }
+  if (obligationType === 'confirmation_statement') {
+    return profile.confirmationStatement?.nextDue ?? null;
+  }
+  return null;
 }
 
 function parseDurationToMs(duration: string): number {
   const match = duration.match(/^(\d+)(d|h)$/);
   if (!match) return 0;
   const value = parseInt(match[1], 10);
-  const unit = match[2];
-  if (unit === 'd') return value * 24 * 60 * 60 * 1000;
-  if (unit === 'h') return value * 60 * 60 * 1000;
-  return 0;
+  return match[2] === 'd' ? value * 86_400_000 : value * 3_600_000;
 }
