@@ -3,6 +3,7 @@ import {
   resetStaleProcessingEvents,
   listFailedEvents,
 } from '@/server/services/billing/webhook-recovery.service';
+import { safeEqual } from '@/lib/utils/safe-equal';
 
 /**
  * Admin endpoint for webhook event recovery.
@@ -21,7 +22,7 @@ import {
 function assertAdminToken(req: NextRequest): boolean {
   const token = req.headers.get('x-admin-token');
   const expected = process.env.DEPLOY_RECORD_TOKEN;
-  return Boolean(expected && token === expected);
+  return Boolean(expected && token && safeEqual(token, expected));
 }
 
 export async function GET(req: NextRequest) {

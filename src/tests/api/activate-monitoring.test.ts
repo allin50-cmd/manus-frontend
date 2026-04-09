@@ -94,8 +94,8 @@ describe('POST /api/monitoring/activate', () => {
 
     // startObligationWorkflow returns workflow ids
     mockStartObligationWorkflow
-      .mockResolvedValueOnce({ workflowId: 'obligation:ob000001-0000-0000-0000-000000000001' })
-      .mockResolvedValueOnce({ workflowId: 'obligation:ob000002-0000-0000-0000-000000000002' });
+      .mockResolvedValueOnce({ workflowId: 'obligation:ob000001-0000-0000-0000-000000000001', alreadyRunning: false })
+      .mockResolvedValueOnce({ workflowId: 'obligation:ob000002-0000-0000-0000-000000000002', alreadyRunning: false });
   });
 
   it('creates a monitored company and two obligations', async () => {
