@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe/client';
-import { buildLineItems } from '@/lib/stripe/checkout';
+import { createCheckoutSession } from '@/lib/stripe/checkout';
 import type { AlertType } from '@/types/alerts';
 import { isRateLimited, getClientIp } from '@/lib/utils/rateLimiter';
-import { config } from '@/config';
 
 // 10 checkout attempts per minute per IP
 const CHECKOUT_RATE_LIMIT = 10;
@@ -18,7 +16,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { companyNumber, companyName, selectedServices } = await req.json();
+  const {
+    companyNumber,
+    companyName,
+    selectedServices,
+    tenantId,
+    fgRef,
+    customerEmail,
+  } = await req.json();
 
   if (!companyNumber || !companyName || !selectedServices?.length) {
     return NextResponse.json(
@@ -27,24 +32,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const appUrl = config.publicAppUrl;
-
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: buildLineItems(selectedServices as AlertType[]),
-      metadata: {
-        companyNumber,
-        companyName,
-        alertTypes: (selectedServices as AlertType[]).join(','),
-      },
-      success_url: `${appUrl}/check?activated=1&company=${encodeURIComponent(companyNumber)}`,
-      cancel_url: `${appUrl}/check?q=${encodeURIComponent(companyNumber)}`,
+    const session = await createCheckoutSession({
+      companyNumber,
+      companyName,
+      selectedServices: selectedServices as AlertType[],
+      tenantId,
+      fgRef,
+      customerEmail,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url, sessionId: session.id });
   } catch (err) {
-    console.error('Stripe checkout error:', err);
+    console.error('[checkout] Stripe session creation failed:', err);
     return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
   }
 }

@@ -1,3 +1,5 @@
+import { stripe } from './client';
+import { config } from '@/config';
 import type { AlertType } from '@/types/alerts';
 
 const PRICE_IDS: Record<AlertType, string | undefined> = {
@@ -17,4 +19,35 @@ export function buildLineItems(selectedServices: AlertType[]) {
     price: getPriceId(type),
     quantity: 1,
   }));
+}
+
+export interface CreateCheckoutSessionInput {
+  companyNumber: string;
+  companyName: string;
+  selectedServices: AlertType[];
+  tenantId?: string;
+  fgRef?: string;
+  customerEmail?: string;
+}
+
+export async function createCheckoutSession(input: CreateCheckoutSessionInput) {
+  const appUrl = config.publicAppUrl;
+
+  const metadata: Record<string, string> = {
+    company_number: input.companyNumber,
+    company_name: input.companyName,
+    alert_types: input.selectedServices.join(','),
+    source: 'check_page',
+    ...(input.tenantId ? { tenant_id: input.tenantId } : {}),
+    ...(input.fgRef ? { fg_ref: input.fgRef } : {}),
+  };
+
+  return stripe.checkout.sessions.create({
+    mode: 'subscription',
+    line_items: buildLineItems(input.selectedServices),
+    metadata,
+    ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
+    success_url: `${appUrl}/check?activated=1&session_id={CHECKOUT_SESSION_ID}&company=${encodeURIComponent(input.companyNumber)}`,
+    cancel_url: `${appUrl}/check?q=${encodeURIComponent(input.companyNumber)}`,
+  });
 }

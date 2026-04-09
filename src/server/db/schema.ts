@@ -1,4 +1,12 @@
-import { pgTable, uuid, varchar, timestamp, text, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, varchar, timestamp, text, index, uniqueIndex } from 'drizzle-orm/pg-core';
+
+export const billingStatusEnum = pgEnum('billing_status', [
+  'inactive',
+  'pending',
+  'active',
+  'past_due',
+  'cancelled',
+]);
 
 export const deploymentStatus = pgTable('deployment_status', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -64,6 +72,8 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
   stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  billingStatus: billingStatusEnum('billing_status').notNull().default('inactive'),
+  lastCheckoutSessionId: varchar('last_checkout_session_id', { length: 255 }),
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
 

@@ -2,6 +2,7 @@ import { db } from '../db';
 import { monitoredCompanies, complianceAlerts } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import type { AlertType } from '@/types/alerts';
+import type { BillingStatus } from '@/types/stripe';
 
 export interface CompanyWithAlerts {
   id: string;
@@ -29,18 +30,55 @@ export async function upsertMonitoredCompany(data: {
   stripeSessionId: string;
   stripeSubscriptionId?: string;
   stripeCustomerId?: string;
+  lastCheckoutSessionId?: string;
+  billingStatus?: BillingStatus;
 }) {
+  const billingStatus = data.billingStatus ?? 'inactive';
   await db
     .insert(monitoredCompanies)
-    .values(data)
+    .values({ ...data, billingStatus })
     .onConflictDoUpdate({
       target: monitoredCompanies.companyNumber,
       set: {
         stripeSessionId: data.stripeSessionId,
         stripeSubscriptionId: data.stripeSubscriptionId,
         stripeCustomerId: data.stripeCustomerId,
+        lastCheckoutSessionId: data.lastCheckoutSessionId ?? data.stripeSessionId,
+        billingStatus,
       },
     });
+}
+
+export async function updateBillingStatus(
+  companyNumber: string,
+  billingStatus: BillingStatus,
+): Promise<void> {
+  await db
+    .update(monitoredCompanies)
+    .set({ billingStatus })
+    .where(eq(monitoredCompanies.companyNumber, companyNumber));
+}
+
+export async function findByStripeCustomerId(
+  stripeCustomerId: string,
+) {
+  const [row] = await db
+    .select()
+    .from(monitoredCompanies)
+    .where(eq(monitoredCompanies.stripeCustomerId, stripeCustomerId))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function findByStripeSubscriptionId(
+  stripeSubscriptionId: string,
+) {
+  const [row] = await db
+    .select()
+    .from(monitoredCompanies)
+    .where(eq(monitoredCompanies.stripeSubscriptionId, stripeSubscriptionId))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function listAll() {

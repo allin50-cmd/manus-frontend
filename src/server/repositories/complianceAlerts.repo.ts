@@ -38,3 +38,22 @@ export async function insertAlerts(
     .values(alertTypes.map((alertType) => ({ companyNumber, alertType, stripeSubscriptionId, status: 'active' })))
     .onConflictDoNothing();
 }
+
+export async function deactivateAlertsForCompany(companyNumber: string): Promise<void> {
+  await db
+    .update(complianceAlerts)
+    .set({ status: 'cancelled' })
+    .where(eq(complianceAlerts.companyNumber, companyNumber));
+}
+
+export async function reactivateAlertsForCompany(companyNumber: string): Promise<void> {
+  await db
+    .update(complianceAlerts)
+    .set({ status: 'active' })
+    .where(
+      and(
+        eq(complianceAlerts.companyNumber, companyNumber),
+        eq(complianceAlerts.status, 'cancelled'),
+      ),
+    );
+}
