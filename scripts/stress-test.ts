@@ -20,18 +20,24 @@ const DURATION = Number(process.env.STRESS_DURATION ?? 10); // seconds per scena
 const ERROR_RATE_THRESHOLD = 5;  // %
 const P99_THRESHOLD_MS = 2000;
 
+// MONITORING_API_KEY — sent as x-api-key header on protected routes.
+// If absent, those scenarios are SKIPPED rather than run without auth (which
+// would produce 100% 401s and fail the error-rate threshold).
+const MONITORING_API_KEY = process.env.MONITORING_API_KEY ?? '';
+
 interface Scenario {
   title: string;
   url: string;
-  requiresDb?: boolean;       // skip gracefully when DB is unavailable
-  requiresApiKey?: string;    // skip when this env var is absent (e.g. external API key)
+  requiresDb?: boolean;          // skip gracefully when DB is unavailable
+  requiresApiKey?: string;       // skip when this env var is absent (external key)
+  requiresMonitoringKey?: boolean; // send x-api-key: MONITORING_API_KEY header
 }
 
 const SCENARIOS: Scenario[] = [
   { title: 'Health check',                   url: '/api/health',                                    requiresDb: true },
   { title: 'Protection status',              url: '/api/protection-status?companyNumber=12345678',   requiresDb: true },
-  { title: 'Zapier alerts recent',           url: '/api/zapier/alerts/recent',                       requiresDb: true },
-  { title: 'Zapier companies recent',        url: '/api/zapier/companies/recent',                    requiresDb: true },
+  { title: 'Zapier alerts recent',           url: '/api/zapier/alerts/recent',                       requiresDb: true, requiresMonitoringKey: true },
+  { title: 'Zapier companies recent',        url: '/api/zapier/companies/recent',                    requiresDb: true, requiresMonitoringKey: true },
   { title: 'Companies House (rate limiter)', url: '/api/companies-house?q=TEST',                     requiresApiKey: 'COMPANIES_HOUSE_API_KEY' },
 ];
 
@@ -51,6 +57,11 @@ async function dbAvailable(): Promise<boolean> {
 }
 
 function runScenario(scenario: Scenario): Promise<autocannon.Result> {
+  const headers: Record<string, string> = {};
+  if (scenario.requiresMonitoringKey && MONITORING_API_KEY) {
+    headers['x-api-key'] = MONITORING_API_KEY;
+  }
+
   return new Promise((resolve, reject) => {
     const instance = autocannon(
       {
@@ -60,6 +71,7 @@ function runScenario(scenario: Scenario): Promise<autocannon.Result> {
         duration: DURATION,
         pipelining: 1,
         timeout: 5,
+        ...(Object.keys(headers).length > 0 ? { headers } : {}),
       },
       (err, result) => (err ? reject(err) : resolve(result)),
     );
@@ -95,6 +107,12 @@ async function main() {
 
     if (scenario.requiresApiKey && !process.env[scenario.requiresApiKey]) {
       console.log(`\n── ${scenario.title} — SKIPPED (${scenario.requiresApiKey} not set)`);
+      skipped.push(scenario.title);
+      continue;
+    }
+
+    if (scenario.requiresMonitoringKey && !MONITORING_API_KEY) {
+      console.log(`\n── ${scenario.title} — SKIPPED (MONITORING_API_KEY not set)`);
       skipped.push(scenario.title);
       continue;
     }

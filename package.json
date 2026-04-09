@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
+    "db:studio:temporal": "drizzle-kit studio --config drizzle.config.temporal.ts",
     "db:migrate": "npx tsx src/scripts/migrate.ts",
     "test:stress": "npx tsx scripts/stress-test.ts",
     "worker": "tsx src/temporal/worker.ts",

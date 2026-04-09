@@ -2,7 +2,16 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  TEMPORAL_ADDRESS: z.string().default('localhost:7233'),
+  // In production TEMPORAL_ADDRESS must be a real endpoint (Temporal Cloud or
+  // self-hosted). The localhost default only works in local development.
+  TEMPORAL_ADDRESS: z
+    .string()
+    .min(1)
+    .refine(
+      (v) => process.env.NODE_ENV !== 'production' || !v.startsWith('localhost'),
+      'TEMPORAL_ADDRESS must not be localhost in production — set a Temporal Cloud endpoint',
+    )
+    .default('localhost:7233'),
   TEMPORAL_NAMESPACE: z.string().default('default'),
   TEMPORAL_TASK_QUEUE: z.string().default('fineguard-compliance'),
   NODE_ENV: z
