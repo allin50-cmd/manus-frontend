@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeEqual } from '../../../../lib/utils/safe-equal';
 
 const SESSION_COOKIE = 'fg_session';
 const COOKIE_MAX_AGE = 60 * 60 * 8; // 8 hours
@@ -26,16 +27,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ? (body as Record<string, unknown>).password
       : undefined;
 
-  if (typeof password !== 'string' || password !== adminPassword) {
-    // Constant-time feel: always return same error regardless of which check fails
+  // Constant-time comparison — prevents timing attacks on password length/content
+  if (typeof password !== 'string' || !safeEqual(password, adminPassword)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Set HttpOnly session cookie
-  const from =
-    typeof req.nextUrl.searchParams.get('from') === 'string'
-      ? decodeURIComponent(req.nextUrl.searchParams.get('from')!)
-      : '/dashboard';
+  // searchParams.get() returns a URL-decoded string already; no extra decode needed
+  const from = req.nextUrl.searchParams.get('from') ?? '/dashboard';
 
   const res = NextResponse.json({ ok: true, redirect: from });
   res.cookies.set(SESSION_COOKIE, sessionToken, {

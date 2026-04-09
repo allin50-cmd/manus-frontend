@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import {
   findCompanyByNumber,
+  findCompanyById,
   insertMonitoredCompany,
 } from '../../../../repositories/company.repository';
 import { insertObligation } from '../../../../repositories/obligation.repository';
@@ -49,9 +50,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       companyNumber,
       companyName,
     });
-    company = await (
-      await import('../../../../repositories/company.repository')
-    ).findCompanyById(created.id);
+    company = await findCompanyById(created.id);
   }
 
   if (!company) {
@@ -61,26 +60,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const obligations: { id: string; type: ObligationType; workflowId: string }[] =
-    [];
+  // Create obligations in parallel, then start workflows in parallel
+  const inserted = await Promise.all(
+    OBLIGATION_TYPES.map((obligationType) =>
+      insertObligation({ tenantId, monitoredCompanyId: company.id, obligationType, status: 'pending' })
+        .then(({ id }) => ({ id, type: obligationType })),
+    ),
+  );
 
-  for (const obligationType of OBLIGATION_TYPES) {
-    const { id: obligationId } = await insertObligation({
-      tenantId,
-      monitoredCompanyId: company.id,
-      obligationType,
-      status: 'pending',
-    });
-
-    const { workflowId } = await startObligationWorkflow({
-      tenantId,
-      obligationId,
-      monitoredCompanyId: company.id,
-      obligationType,
-    });
-
-    obligations.push({ id: obligationId, type: obligationType, workflowId });
-  }
+  const obligations = await Promise.all(
+    inserted.map(({ id: obligationId, type: obligationType }) =>
+      startObligationWorkflow({ tenantId, obligationId, monitoredCompanyId: company.id, obligationType })
+        .then(({ workflowId }) => ({ id: obligationId, type: obligationType, workflowId })),
+    ),
+  );
 
   return NextResponse.json(
     {

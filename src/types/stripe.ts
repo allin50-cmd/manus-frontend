@@ -18,7 +18,8 @@ export const FineGuardMetadataSchema = z.object({
     .string()
     .min(2)
     .max(8)
-    .regex(/^[A-Z0-9]+$/i, 'company_number must be alphanumeric'),
+    .regex(/^[A-Z0-9]+$/i, 'company_number must be alphanumeric')
+    .transform((s) => s.toUpperCase()), // normalise to Companies House canonical form
   company_name: z.string().min(1).max(255).optional(),
   alert_types: z.string().optional(),
   tenant_id: z.string().uuid().optional(),

@@ -112,7 +112,7 @@ async function markEventFailed(
  */
 function resolveCompanyNumber(session: Stripe.Checkout.Session): string | null {
   if (session.client_reference_id?.match(/^[A-Z0-9]{2,8}$/i)) {
-    return session.client_reference_id;
+    return session.client_reference_id.toUpperCase(); // normalise to Companies House canonical form
   }
   const meta = parseFineGuardMetadata(session.metadata ?? {});
   return isValidFineGuardMetadata(meta) ? meta.company_number : null;
@@ -304,12 +304,20 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
     const errorType = classifyError(err);
     const reason = err instanceof Error ? err.message : String(err);
 
-    await markEventFailed(event.id, reason, errorType).catch(() => {});
+    await markEventFailed(event.id, reason, errorType).catch((e) =>
+      elog.error('failed to mark event as failed — DB may be down', {
+        err: e instanceof Error ? e.message : String(e),
+      }),
+    );
 
     elog.error('stripe webhook failed', { errorType, err: reason });
 
     if (errorType === 'permanent') {
-      await markEventProcessed(event.id).catch(() => {});
+      await markEventProcessed(event.id).catch((e) =>
+        elog.error('failed to mark permanent error as processed', {
+          err: e instanceof Error ? e.message : String(e),
+        }),
+      );
       elog.warn('permanent error: marking as processed, Stripe will not retry');
       return { processed: true, deduplicated: false };
     }

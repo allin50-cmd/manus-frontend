@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '../logger';
+import { safeEqual } from './safe-equal';
 
 /**
  * Guard for internal/admin API routes.
@@ -8,9 +9,7 @@ import { log } from '../logger';
  * Set MONITORING_API_KEY in environment variables (generate with openssl rand -hex 32).
  *
  * Returns a 401 NextResponse if the key is missing or wrong, null if valid.
- * Usage:
- *   const authError = requireApiKey(req);
- *   if (authError) return authError;
+ * Comparison is constant-time (HMAC-based) to prevent timing attacks.
  */
 export function requireApiKey(req: NextRequest): NextResponse | null {
   const key = req.headers.get('x-api-key');
@@ -26,7 +25,7 @@ export function requireApiKey(req: NextRequest): NextResponse | null {
     );
   }
 
-  if (!key || key !== expected) {
+  if (!key || !safeEqual(key, expected)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

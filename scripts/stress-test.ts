@@ -23,15 +23,16 @@ const P99_THRESHOLD_MS = 2000;
 interface Scenario {
   title: string;
   url: string;
-  requiresDb?: boolean; // skip gracefully when DB is unavailable
+  requiresDb?: boolean;       // skip gracefully when DB is unavailable
+  requiresApiKey?: string;    // skip when this env var is absent (e.g. external API key)
 }
 
 const SCENARIOS: Scenario[] = [
-  { title: 'Health check',              url: '/api/health',                                         requiresDb: true },
-  { title: 'Protection status',         url: '/api/protection-status?companyNumber=12345678',        requiresDb: true },
-  { title: 'Zapier alerts recent',      url: '/api/zapier/alerts/recent',                            requiresDb: true },
-  { title: 'Zapier companies recent',   url: '/api/zapier/companies/recent',                         requiresDb: true },
-  { title: 'Companies House (rate limiter)', url: '/api/companies-house?q=TEST',                     requiresDb: false },
+  { title: 'Health check',                   url: '/api/health',                                    requiresDb: true },
+  { title: 'Protection status',              url: '/api/protection-status?companyNumber=12345678',   requiresDb: true },
+  { title: 'Zapier alerts recent',           url: '/api/zapier/alerts/recent',                       requiresDb: true },
+  { title: 'Zapier companies recent',        url: '/api/zapier/companies/recent',                    requiresDb: true },
+  { title: 'Companies House (rate limiter)', url: '/api/companies-house?q=TEST',                     requiresApiKey: 'COMPANIES_HOUSE_API_KEY' },
 ];
 
 async function probe(url: string): Promise<{ ok: boolean; status: number }> {
@@ -92,6 +93,12 @@ async function main() {
       continue;
     }
 
+    if (scenario.requiresApiKey && !process.env[scenario.requiresApiKey]) {
+      console.log(`\n── ${scenario.title} — SKIPPED (${scenario.requiresApiKey} not set)`);
+      skipped.push(scenario.title);
+      continue;
+    }
+
     console.log(`\n── ${scenario.title} ──`);
     let result: autocannon.Result;
     try {
@@ -109,7 +116,7 @@ async function main() {
 
     console.log(formatRow('req/s:', result.requests.average.toFixed(1)));
     console.log(formatRow('p50 latency:', `${result.latency.p50}ms`));
-    console.log(formatRow('p95 latency:', `${result.latency.p95}ms`));
+    console.log(formatRow('p97.5 latency:', `${result.latency.p97_5}ms`));
     console.log(formatRow('p99 latency:', `${p99}ms`));
     console.log(formatRow('2xx:', result['2xx'] ?? 0));
     console.log(formatRow('non-2xx:', result.non2xx ?? 0));
