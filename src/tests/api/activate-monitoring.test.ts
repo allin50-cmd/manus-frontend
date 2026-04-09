@@ -8,17 +8,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mock all dependencies ────────────────────────────────────────────────────
 
-vi.mock('../../../repositories/company.repository', () => ({
+vi.mock('../../repositories/company.repository', () => ({
   findCompanyByNumber: vi.fn(),
   insertMonitoredCompany: vi.fn(),
   findCompanyById: vi.fn(),
 }));
 
-vi.mock('../../../repositories/obligation.repository', () => ({
+vi.mock('../../repositories/obligation.repository', () => ({
   insertObligation: vi.fn(),
 }));
 
-vi.mock('../../../domain/services/workflow-start.service', () => ({
+vi.mock('../../domain/services/workflow-start.service', () => ({
   startObligationWorkflow: vi.fn(),
 }));
 
@@ -28,10 +28,10 @@ import {
   findCompanyByNumber,
   insertMonitoredCompany,
   findCompanyById,
-} from '../../../repositories/company.repository';
-import { insertObligation } from '../../../repositories/obligation.repository';
-import { startObligationWorkflow } from '../../../domain/services/workflow-start.service';
-import { POST } from '../../../app/api/monitoring/activate/route';
+} from '../../repositories/company.repository';
+import { insertObligation } from '../../repositories/obligation.repository';
+import { startObligationWorkflow } from '../../domain/services/workflow-start.service';
+import { POST } from '../../app/api/monitoring/activate/route';
 import { NextRequest } from 'next/server';
 
 const mockFindCompanyByNumber = vi.mocked(findCompanyByNumber);

@@ -1,4 +1,4 @@
-import { log } from '@temporalio/activity';
+import { log } from '../../lib/logger';
 import { insertAlertIfNew } from '../../repositories/alert.repository';
 import { dedupeKey as buildDedupeKey } from '../../lib/ids';
 import type { AlertUrgency, AlertChannel } from '../../domain/types/alert';

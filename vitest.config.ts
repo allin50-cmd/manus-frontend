@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     include: ['src/tests/**/*.test.ts'],
     coverage: {
+      provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/tests/**', 'src/app/**', 'src/temporal/worker.ts'],

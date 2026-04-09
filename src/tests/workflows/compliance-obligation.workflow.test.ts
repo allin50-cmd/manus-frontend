@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import { Worker, Runtime, DefaultLogger } from '@temporalio/worker';
 import type { WorkflowState } from '../../domain/types/workflow';
+import path from 'path';
 
 // ── Stub activities ─────────────────────────────────────────────────────────
 
@@ -59,8 +60,9 @@ describe('complianceObligationWorkflow', () => {
     return Worker.create({
       connection: testEnv.nativeConnection,
       taskQueue: 'test-compliance',
-      workflowsPath: require.resolve(
-        '../../temporal/workflows/compliance-obligation.workflow',
+      workflowsPath: path.resolve(
+        process.cwd(),
+        'src/temporal/workflows/compliance-obligation.workflow.ts',
       ),
       activities: { ...stubActivities, ...overrideActivities },
     });
