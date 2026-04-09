@@ -1,7 +1,56 @@
-import { eq } from 'drizzle-orm';
+import { eq, and, asc, isNotNull, not, inArray } from 'drizzle-orm';
 import { db } from '../db/client';
-import { complianceObligations } from '../db/schema';
+import { complianceObligations, monitoredCompanies } from '../db/schema';
 import type { Obligation, ObligationStatus, ObligationType } from '../domain/types/obligation';
+
+export interface ObligationDeadlineRow {
+  dueDate: string;
+  obligationType: string;
+  obligationStatus: string;
+  companyName: string;
+  companyNumber: string;
+}
+
+const TERMINAL_STATUSES: ObligationStatus[] = ['resolved', 'paused', 'failed'];
+
+/**
+ * Returns upcoming (non-terminal, due-date set) obligations for a company,
+ * joined with the monitored_companies table for display fields.
+ * Ordered by due_date ASC so the most urgent deadline comes first.
+ */
+export async function getUpcomingDeadlinesByCompanyNumber(
+  companyNumber: string,
+): Promise<ObligationDeadlineRow[]> {
+  const rows = await db
+    .select({
+      dueDate: complianceObligations.dueDate,
+      obligationType: complianceObligations.obligationType,
+      obligationStatus: complianceObligations.status,
+      companyName: monitoredCompanies.companyName,
+      companyNumber: monitoredCompanies.companyNumber,
+    })
+    .from(complianceObligations)
+    .innerJoin(
+      monitoredCompanies,
+      eq(complianceObligations.monitoredCompanyId, monitoredCompanies.id),
+    )
+    .where(
+      and(
+        eq(monitoredCompanies.companyNumber, companyNumber),
+        not(inArray(complianceObligations.status, TERMINAL_STATUSES)),
+        isNotNull(complianceObligations.dueDate),
+      ),
+    )
+    .orderBy(asc(complianceObligations.dueDate));
+
+  return rows.map((r) => ({
+    dueDate: r.dueDate!,
+    obligationType: r.obligationType,
+    obligationStatus: r.obligationStatus,
+    companyName: r.companyName,
+    companyNumber: r.companyNumber,
+  }));
+}
 
 export interface InsertObligationInput {
   tenantId: string;

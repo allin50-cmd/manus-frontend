@@ -22,7 +22,7 @@ async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
     );
   }
 
-  const { company, alerts } = await getDashboardData(companyNumber);
+  const { company, alerts, deadlines } = await getDashboardData(companyNumber);
 
   if (!company) {
     return (
@@ -34,11 +34,14 @@ async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
     );
   }
 
+  const overdueCount = deadlines.filter((d) => d.status === 'overdue').length;
+  const complianceScore = overdueCount === 0 ? 100 : Math.max(0, 100 - overdueCount * 20);
+
   const stats: DashboardStatsType = {
     companiesMonitored: alerts.length,
-    upcomingDeadlines: 0,
-    overdueCount: 0,
-    complianceScore: 100,
+    upcomingDeadlines: deadlines.length,
+    overdueCount,
+    complianceScore,
   };
 
   const mappedAlerts: ComplianceAlert[] = alerts.map((a) => ({
@@ -50,8 +53,6 @@ async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
     status: a.status as ComplianceAlert['status'],
     activatedAt: a.activatedAt,
   }));
-
-  const deadlines: UpcomingDeadline[] = [];
 
   return (
     <div className="space-y-6">
