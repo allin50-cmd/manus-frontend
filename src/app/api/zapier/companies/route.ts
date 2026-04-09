@@ -3,6 +3,7 @@ import { db } from '@/server/db';
 import { monitoredCompanies, complianceAlerts, zapierHooks } from '@/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { cacheDelete } from '@/lib/utils/cache';
+import { requireApiKey } from '@/lib/utils/require-api-key';
 
 const COMPANY_NUMBER_RE = /^([A-Z]{2}\d{6}|\d{8})$/i;
 
@@ -29,6 +30,9 @@ async function deliverHook(url: string, body: unknown, retries = 2): Promise<voi
 }
 
 export async function POST(req: NextRequest) {
+  const authError = requireApiKey(req);
+  if (authError) return authError;
+
   const { companyNumber, companyName, alertTypes } = await req.json();
 
   if (!companyNumber || !companyName) {

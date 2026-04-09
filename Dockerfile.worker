@@ -1,0 +1,30 @@
+# ── Temporal Worker — Build Stage ─────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY src/ ./src/
+
+# Compile worker + shared source to dist/
+# (Temporal's bundler resolves workflow imports at runtime via workflowsPath)
+RUN npx tsc --project tsconfig.json --outDir dist --skipLibCheck
+
+# ── Temporal Worker — Runtime Stage ───────────────────────────────────────────
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy compiled output and all node_modules (worker needs @temporalio/worker)
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+# Temporal worker connects outbound to TEMPORAL_ADDRESS — no inbound port needed.
+# Azure App Service requires a listening process; we add a minimal health server.
+# SIGTERM is forwarded by App Service; the worker handles it for graceful shutdown.
+
+USER node
+CMD ["node", "dist/temporal/worker.js"]
