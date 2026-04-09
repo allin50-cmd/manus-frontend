@@ -82,6 +82,7 @@ export async function upsertMonitoredCompany(data: {
         stripeCustomerId: data.stripeCustomerId,
         lastCheckoutSessionId: data.lastCheckoutSessionId ?? data.stripeSessionId,
         billingStatus,
+        billingStatusUpdatedAt: new Date(),
       },
     });
 }

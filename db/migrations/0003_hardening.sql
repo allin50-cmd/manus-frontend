@@ -3,7 +3,7 @@
 -- All statements are idempotent (IF NOT EXISTS / DO $$ BEGIN ... EXCEPTION).
 
 -- ── C1: Two-phase webhook idempotency ─────────────────────────────────────────
--- Add stripe_event_status enum
+-- Add stripe_event_status enum (for replay/recovery tracking)
 DO $$ BEGIN
   CREATE TYPE stripe_event_status AS ENUM ('processing', 'processed', 'failed');
 EXCEPTION WHEN duplicate_object THEN null;
@@ -13,6 +13,9 @@ END $$;
 -- with status-aware columns. The unique constraint moves to a partial index.
 ALTER TABLE stripe_webhook_events
   ADD COLUMN IF NOT EXISTS status stripe_event_status NOT NULL DEFAULT 'processing';
+
+ALTER TABLE stripe_webhook_events
+  ADD COLUMN IF NOT EXISTS payload JSONB;
 
 ALTER TABLE stripe_webhook_events
   ADD COLUMN IF NOT EXISTS failure_reason VARCHAR(500);

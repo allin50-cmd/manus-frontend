@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, varchar, timestamp, text, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, varchar, timestamp, text, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const billingStatusEnum = pgEnum('billing_status', [
@@ -118,6 +118,7 @@ export const stripeWebhookEvents = pgTable(
     eventId: varchar('event_id', { length: 255 }).notNull(), // Stripe event ID — idempotency key
     type: varchar('type', { length: 100 }).notNull(),
     status: stripeEventStatusEnum('status').notNull().default('processing'),
+    payload: jsonb('payload'), // raw Stripe event for failure replay
     failureReason: varchar('failure_reason', { length: 500 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     processedAt: timestamp('processed_at'),

@@ -23,14 +23,17 @@ import { log } from '@/lib/logger';
 // index) can be retried — the new INSERT will succeed, re-claiming it.
 
 /**
- * Attempt to claim the event for processing.
+ * Attempt to claim the event for processing and store the raw payload.
  * Returns true if this instance now owns the event, false if already
  * processing/processed by another instance (deduplicate).
+ *
+ * Storing the payload enables failed events to be replayed without
+ * hitting Stripe's API: SELECT * FROM stripe_webhook_events WHERE status='failed'
  */
-async function claimEvent(eventId: string, eventType: string): Promise<boolean> {
+async function claimEvent(eventId: string, eventType: string, payload: unknown): Promise<boolean> {
   const rows = await db
     .insert(stripeWebhookEvents)
-    .values({ eventId, type: eventType, status: 'processing' })
+    .values({ eventId, type: eventType, status: 'processing', payload })
     .onConflictDoNothing() // partial index blocks duplicates of processing|processed
     .returning({ id: stripeWebhookEvents.id });
   return rows.length > 0;
@@ -159,7 +162,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
   processed: boolean;
   deduplicated: boolean;
 }> {
-  const claimed = await claimEvent(event.id, event.type);
+  const claimed = await claimEvent(event.id, event.type, event);
   if (!claimed) {
     log.info('stripe webhook deduplicated', { eventId: event.id, type: event.type });
     return { processed: false, deduplicated: true };
