@@ -49,6 +49,12 @@ function buildCsp(nonce: string): string {
 export function middleware(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
 
+  // API routes return JSON — browsers don't enforce CSP on them.
+  // Skip nonce generation and header injection to reduce per-request overhead.
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
   // Dashboard auth guard
   if (pathname.startsWith('/dashboard')) {
     const token = req.cookies.get(SESSION_COOKIE)?.value;

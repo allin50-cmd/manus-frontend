@@ -12,7 +12,6 @@ import {
 import {
   findCompanyByNumber as findTemporalCompanyByNumber,
   insertMonitoredCompany as insertTemporalCompany,
-  findCompanyById,
 } from '../../../repositories/company.repository';
 import { insertObligation } from '../../../repositories/obligation.repository';
 import { startObligationWorkflow } from '../../../domain/services/workflow-start.service';
@@ -44,10 +43,11 @@ export interface ActivateComplianceMonitoringInput {
  * Primary business handoff from billing into monitoring.
  * Called on checkout.session.completed.
  *
- * 1. Upserts the legacy monitored_companies row (billing fields + alerts)
- * 2. Ensures a Temporal-system monitored_companies row exists
- * 3. Creates compliance_obligation rows for each supported type (idempotent)
- * 4. Starts a Temporal workflow per obligation (dedup via REJECT_DUPLICATE)
+ * Fan-out strategy:
+ * - Branch A (legacy) and Branch B (Temporal) run in parallel — different tables.
+ * - Within Branch A: upsert must precede insertAlerts (data integrity ordering).
+ * - After both branches: obligations are created in parallel, then workflows started
+ *   in parallel using Promise.allSettled so one failure doesn't abort the rest.
  */
 export async function activateComplianceMonitoring(
   input: ActivateComplianceMonitoringInput,
@@ -60,70 +60,96 @@ export async function activateComplianceMonitoring(
     tenantId,
   });
 
-  // 1. Legacy system — upsert monitored_companies + compliance_alerts
-  await upsertMonitoredCompany({
-    companyNumber: input.companyNumber,
-    companyName: input.companyName,
-    stripeSessionId: input.stripeSessionId,
-    lastCheckoutSessionId: input.stripeSessionId,
-    stripeSubscriptionId: input.stripeSubscriptionId,
-    stripeCustomerId: input.stripeCustomerId,
-    billingStatus: 'active',
-  });
-
-  await insertAlerts(input.companyNumber, input.alertTypes, input.stripeSubscriptionId);
-
-  // 2. Temporal system — find or create the company row (upsert; safe on retry)
-  let temporalCompany = await findTemporalCompanyByNumber(tenantId, input.companyNumber);
-  if (!temporalCompany) {
-    const { id } = await insertTemporalCompany({
-      tenantId,
+  // Step 1: run legacy upsert chain and Temporal company resolution in parallel.
+  // These touch independent tables and have no cross-dependency at this stage.
+  const [, temporalCompanyId] = await Promise.all([
+    // Branch A: legacy — upsert company row, then insert alert rows sequentially
+    upsertMonitoredCompany({
       companyNumber: input.companyNumber,
       companyName: input.companyName,
       stripeSessionId: input.stripeSessionId,
+      lastCheckoutSessionId: input.stripeSessionId,
       stripeSubscriptionId: input.stripeSubscriptionId,
       stripeCustomerId: input.stripeCustomerId,
-    });
-    temporalCompany = await findCompanyById(id);
-  }
+      billingStatus: 'active',
+    }).then(() =>
+      insertAlerts(input.companyNumber, input.alertTypes, input.stripeSubscriptionId),
+    ),
 
-  if (!temporalCompany) {
+    // Branch B: Temporal — resolve company ID (find or create, upsert-safe)
+    resolveTemporalCompanyId(tenantId, input),
+  ]);
+
+  if (!temporalCompanyId) {
     log.error('failed to resolve Temporal company record — skipping workflow start', {
       companyNumber: input.companyNumber,
     });
     return;
   }
 
-  // 3 & 4. Create obligations + start workflows for each supported type
   const requestedTypes = input.alertTypes.filter((t): t is ObligationType =>
     TEMPORAL_OBLIGATION_TYPES.includes(t as ObligationType),
   );
 
-  for (const obligationType of requestedTypes) {
-    try {
-      const { id: obligationId } = await insertObligation({
+  if (requestedTypes.length === 0) return;
+
+  // Step 2: create all obligations in parallel (idempotent inserts)
+  const obligations = await Promise.all(
+    requestedTypes.map((obligationType) =>
+      insertObligation({
         tenantId,
-        monitoredCompanyId: temporalCompany.id,
+        monitoredCompanyId: temporalCompanyId,
         obligationType,
         status: 'pending',
-      });
+      }),
+    ),
+  );
 
-      await startObligationWorkflow({
+  // Step 3: start all workflows in parallel; log failures without aborting siblings
+  const results = await Promise.allSettled(
+    obligations.map(({ id: obligationId }, i) =>
+      startObligationWorkflow({
         tenantId,
         obligationId,
-        monitoredCompanyId: temporalCompany.id,
-        obligationType,
+        monitoredCompanyId: temporalCompanyId,
+        obligationType: requestedTypes[i],
         companyNumber: input.companyNumber,
-      });
-    } catch (err) {
-      // Non-fatal: log and continue with remaining types
+      }),
+    ),
+  );
+
+  results.forEach((result, i) => {
+    if (result.status === 'rejected') {
       log.error('failed to start Temporal workflow', {
         companyNumber: input.companyNumber,
-        obligationType,
-        err: err instanceof Error ? err.message : String(err),
+        obligationType: requestedTypes[i],
+        err: result.reason instanceof Error ? result.reason.message : String(result.reason),
       });
     }
-  }
+  });
+}
+
+/**
+ * Find the Temporal-system company row, creating it if necessary.
+ * Returns the row ID only — callers only ever use the ID downstream.
+ * insertTemporalCompany uses onConflictDoUpdate so concurrent calls are safe.
+ */
+async function resolveTemporalCompanyId(
+  tenantId: string,
+  input: ActivateComplianceMonitoringInput,
+): Promise<string | null> {
+  const existing = await findTemporalCompanyByNumber(tenantId, input.companyNumber);
+  if (existing) return existing.id;
+
+  const { id } = await insertTemporalCompany({
+    tenantId,
+    companyNumber: input.companyNumber,
+    companyName: input.companyName,
+    stripeSessionId: input.stripeSessionId,
+    stripeSubscriptionId: input.stripeSubscriptionId,
+    stripeCustomerId: input.stripeCustomerId,
+  });
+  return id;
 }
 
 // ── markBillingPastDue ────────────────────────────────────────────────────────

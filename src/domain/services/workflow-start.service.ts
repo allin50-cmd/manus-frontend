@@ -63,14 +63,16 @@ export async function startObligationWorkflow(
     throw err;
   }
 
-  await insertWorkflowInstance({
-    tenantId: input.tenantId,
-    obligationId: input.obligationId,
-    workflowId: wfId,
-    taskQueue: env.TEMPORAL_TASK_QUEUE,
-  });
-
-  await updateObligationWorkflowId(input.obligationId, wfId);
+  // Record the new workflow in both tables in parallel — independent writes
+  await Promise.all([
+    insertWorkflowInstance({
+      tenantId: input.tenantId,
+      obligationId: input.obligationId,
+      workflowId: wfId,
+      taskQueue: env.TEMPORAL_TASK_QUEUE,
+    }),
+    updateObligationWorkflowId(input.obligationId, wfId),
+  ]);
 
   log.info('temporal workflow started', {
     workflowId: wfId,
