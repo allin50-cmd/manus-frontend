@@ -26,6 +26,11 @@ function rowToObligation(row: typeof complianceObligations.$inferSelect): Obliga
   };
 }
 
+/**
+ * Upsert: insert or return existing obligation for (company, type).
+ * The unique index co_company_type_uniq enforces at-most-one per pair.
+ * Safe under concurrent/retried activation — won't create duplicates.
+ */
 export async function insertObligation(
   data: InsertObligationInput,
 ): Promise<{ id: string }> {
@@ -38,10 +43,17 @@ export async function insertObligation(
       status: data.status ?? 'pending',
       dueDate: data.dueDate ?? null,
     })
+    .onConflictDoUpdate({
+      target: [complianceObligations.monitoredCompanyId, complianceObligations.obligationType],
+      set: {
+        // Keep existing status/dueDate unchanged — only refresh updatedAt
+        updatedAt: new Date(),
+      },
+    })
     .returning({ id: complianceObligations.id });
 
   if (!row) {
-    throw new Error('Failed to insert obligation');
+    throw new Error('Failed to upsert obligation');
   }
   return { id: row.id };
 }

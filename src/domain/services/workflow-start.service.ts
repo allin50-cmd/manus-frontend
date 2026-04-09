@@ -1,3 +1,4 @@
+import { WorkflowIdReusePolicy, WorkflowExecutionAlreadyStartedError } from '@temporalio/client';
 import { getTemporalClient } from '../../temporal/client';
 import { env } from '../../lib/env';
 import { workflowId as buildWorkflowId } from '../../lib/ids';
@@ -5,6 +6,7 @@ import { insertWorkflowInstance } from '../../repositories/workflow-instance.rep
 import { updateObligationWorkflowId } from '../../repositories/obligation.repository';
 import type { ObligationType } from '../types/obligation';
 import type { ComplianceObligationWorkflowInput } from '../../temporal/workflows/compliance-obligation.workflow';
+import { log } from '../../lib/logger';
 
 export interface StartObligationWorkflowInput {
   tenantId: string;
@@ -15,20 +17,15 @@ export interface StartObligationWorkflowInput {
 
 export interface StartObligationWorkflowResult {
   workflowId: string;
+  alreadyRunning: boolean;
 }
 
 /**
  * Start a Temporal compliance obligation workflow and record it in the database.
  *
- * Steps:
- * 1. Compute the canonical workflowId
- * 2. Start the workflow via Temporal client (using workflow function name string)
- * 3. Persist a workflow_instances record
- * 4. Update the obligation with the workflowId
- *
- * Note: We reference the workflow by its exported function name string rather
- * than importing the function itself, to avoid pulling the workflow sandbox
- * bundle into the Next.js server bundle.
+ * Uses REJECT_DUPLICATE policy: if a workflow with the same ID is already
+ * running or completed, we skip the start and return alreadyRunning=true.
+ * This makes the function safe to call on activation retry.
  */
 export async function startObligationWorkflow(
   input: StartObligationWorkflowInput,
@@ -44,11 +41,25 @@ export async function startObligationWorkflow(
 
   const client = await getTemporalClient();
 
-  await client.workflow.start('complianceObligationWorkflow', {
-    taskQueue: env.TEMPORAL_TASK_QUEUE,
-    workflowId: wfId,
-    args: [workflowArgs],
-  });
+  try {
+    await client.workflow.start('complianceObligationWorkflow', {
+      taskQueue: env.TEMPORAL_TASK_QUEUE,
+      workflowId: wfId,
+      workflowIdReusePolicy: WorkflowIdReusePolicy.REJECT_DUPLICATE,
+      args: [workflowArgs],
+    });
+  } catch (err) {
+    if (err instanceof WorkflowExecutionAlreadyStartedError) {
+      log.warn('workflow already running — skipping start', {
+        workflowId: wfId,
+        obligationId: input.obligationId,
+        obligationType: input.obligationType,
+      });
+      await updateObligationWorkflowId(input.obligationId, wfId);
+      return { workflowId: wfId, alreadyRunning: true };
+    }
+    throw err;
+  }
 
   await insertWorkflowInstance({
     tenantId: input.tenantId,
@@ -59,5 +70,11 @@ export async function startObligationWorkflow(
 
   await updateObligationWorkflowId(input.obligationId, wfId);
 
-  return { workflowId: wfId };
+  log.info('temporal workflow started', {
+    workflowId: wfId,
+    obligationId: input.obligationId,
+    obligationType: input.obligationType,
+  });
+
+  return { workflowId: wfId, alreadyRunning: false };
 }

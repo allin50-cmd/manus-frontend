@@ -12,6 +12,10 @@ export interface InsertMonitoredCompanyInput {
   stripeCustomerId?: string;
 }
 
+/**
+ * Upsert: insert or update Stripe IDs on conflict (tenant_id, company_number).
+ * Safe under concurrent activation — will not throw if called twice.
+ */
 export async function insertMonitoredCompany(
   data: InsertMonitoredCompanyInput,
 ): Promise<{ id: string }> {
@@ -25,10 +29,18 @@ export async function insertMonitoredCompany(
       stripeSubscriptionId: data.stripeSubscriptionId,
       stripeCustomerId: data.stripeCustomerId,
     })
+    .onConflictDoUpdate({
+      target: [monitoredCompanies.tenantId, monitoredCompanies.companyNumber],
+      set: {
+        stripeSessionId: data.stripeSessionId,
+        stripeSubscriptionId: data.stripeSubscriptionId,
+        stripeCustomerId: data.stripeCustomerId,
+      },
+    })
     .returning({ id: monitoredCompanies.id });
 
   if (!row) {
-    throw new Error('Failed to insert monitored company');
+    throw new Error('Failed to upsert monitored company');
   }
   return { id: row.id };
 }

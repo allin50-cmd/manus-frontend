@@ -1,20 +1,24 @@
+import { eq, and, inArray } from 'drizzle-orm';
+import { db } from '../../db';
+import { monitoredCompanies, complianceAlerts } from '../../db/schema';
 import {
   upsertMonitoredCompany,
-  updateBillingStatus,
-  findByCompanyNumber as findLegacyCompanyByNumber,
+  transitionBillingStatus,
 } from '../../repositories/monitoredCompanies.repo';
 import {
   insertAlerts,
-  deactivateAlertsForCompany,
   reactivateAlertsForCompany,
 } from '../../repositories/complianceAlerts.repo';
 import {
   findCompanyByNumber as findTemporalCompanyByNumber,
   insertMonitoredCompany as insertTemporalCompany,
+  findCompanyById,
 } from '../../../repositories/company.repository';
 import { insertObligation } from '../../../repositories/obligation.repository';
 import { startObligationWorkflow } from '../../../domain/services/workflow-start.service';
+import { log } from '@/lib/logger';
 import type { ObligationType } from '../../../domain/types/obligation';
+import type { BillingStatus } from '@/types/stripe';
 
 // Default tenant for pilot — matches 0001_temporal_core.sql seed row
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
@@ -42,15 +46,15 @@ export interface ActivateComplianceMonitoringInput {
  *
  * 1. Upserts the legacy monitored_companies row (billing fields + alerts)
  * 2. Ensures a Temporal-system monitored_companies row exists
- * 3. Creates compliance_obligation rows for each supported type
- * 4. Starts a Temporal workflow per obligation
+ * 3. Creates compliance_obligation rows for each supported type (idempotent)
+ * 4. Starts a Temporal workflow per obligation (dedup via REJECT_DUPLICATE)
  */
 export async function activateComplianceMonitoring(
   input: ActivateComplianceMonitoringInput,
 ): Promise<void> {
   const tenantId = input.tenantId ?? DEFAULT_TENANT_ID;
 
-  console.log('[activation] activateComplianceMonitoring', {
+  log.info('activateComplianceMonitoring', {
     companyNumber: input.companyNumber,
     alertTypes: input.alertTypes,
     tenantId,
@@ -69,7 +73,7 @@ export async function activateComplianceMonitoring(
 
   await insertAlerts(input.companyNumber, input.alertTypes, input.stripeSubscriptionId);
 
-  // 2. Temporal system — find or create the company row
+  // 2. Temporal system — find or create the company row (upsert; safe on retry)
   let temporalCompany = await findTemporalCompanyByNumber(tenantId, input.companyNumber);
   if (!temporalCompany) {
     const { id } = await insertTemporalCompany({
@@ -80,12 +84,11 @@ export async function activateComplianceMonitoring(
       stripeSubscriptionId: input.stripeSubscriptionId,
       stripeCustomerId: input.stripeCustomerId,
     });
-    temporalCompany = await (await import('../../../repositories/company.repository'))
-      .findCompanyById(id);
+    temporalCompany = await findCompanyById(id);
   }
 
   if (!temporalCompany) {
-    console.error('[activation] Failed to resolve Temporal company record — skipping workflow start', {
+    log.error('failed to resolve Temporal company record — skipping workflow start', {
       companyNumber: input.companyNumber,
     });
     return;
@@ -111,18 +114,12 @@ export async function activateComplianceMonitoring(
         monitoredCompanyId: temporalCompany.id,
         obligationType,
       });
-
-      console.log('[activation] Temporal workflow started', {
-        companyNumber: input.companyNumber,
-        obligationType,
-        obligationId,
-      });
     } catch (err) {
       // Non-fatal: log and continue with remaining types
-      console.error('[activation] Failed to start Temporal workflow', {
+      log.error('failed to start Temporal workflow', {
         companyNumber: input.companyNumber,
         obligationType,
-        err,
+        err: err instanceof Error ? err.message : String(err),
       });
     }
   }
@@ -132,36 +129,70 @@ export async function activateComplianceMonitoring(
 
 /**
  * Called on invoice.payment_failed.
- * Sets billing_status=past_due. Monitoring DB records remain intact.
+ * Transitions active → past_due.  No-op if already past_due or cancelled.
  */
 export async function markBillingPastDue(companyNumber: string): Promise<void> {
-  console.log('[activation] markBillingPastDue', { companyNumber });
-  await updateBillingStatus(companyNumber, 'past_due');
-  // STUB: suspend outbound delivery (SMS/email) without removing monitoring records
-  // await suspendOutboundAlerts(companyNumber);
+  log.info('markBillingPastDue', { companyNumber });
+  const transitioned = await transitionBillingStatus(companyNumber, 'past_due');
+  if (!transitioned) {
+    log.warn('markBillingPastDue: transition rejected (invalid state or company not found)', {
+      companyNumber,
+    });
+  }
 }
 
 // ── cancelComplianceMonitoring ────────────────────────────────────────────────
 
 /**
  * Called on customer.subscription.deleted.
- * Sets billing_status=cancelled and deactivates compliance alert rows.
+ * Atomically transitions billing status and deactivates compliance alert rows
+ * in a single DB transaction (H4 fix).
  * No hard deletes — audit trail preserved.
  */
 export async function cancelComplianceMonitoring(companyNumber: string): Promise<void> {
-  console.log('[activation] cancelComplianceMonitoring', { companyNumber });
-  await updateBillingStatus(companyNumber, 'cancelled');
-  await deactivateAlertsForCompany(companyNumber);
+  log.info('cancelComplianceMonitoring', { companyNumber });
+
+  // Inline the two updates with tx so they commit atomically.
+  // Repo helpers use module-level `db` and can't be passed a tx object,
+  // so we duplicate the SQL here rather than escape the transaction boundary.
+  const allowedFrom: BillingStatus[] = ['active', 'past_due', 'pending'];
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(monitoredCompanies)
+      .set({ billingStatus: 'cancelled', billingStatusUpdatedAt: new Date() })
+      .where(
+        and(
+          eq(monitoredCompanies.companyNumber, companyNumber),
+          inArray(monitoredCompanies.billingStatus, allowedFrom),
+        ),
+      );
+
+    await tx
+      .update(complianceAlerts)
+      .set({ status: 'cancelled', cancelledReason: 'billing_cancelled' })
+      .where(
+        and(
+          eq(complianceAlerts.companyNumber, companyNumber),
+          eq(complianceAlerts.status, 'active'),
+        ),
+      );
+  });
 }
 
 // ── restoreBillingActive ──────────────────────────────────────────────────────
 
 /**
- * Called on invoice.paid when billing was previously past_due.
- * Restores billing_status=active and reactivates previously cancelled alerts.
+ * Called on invoice.paid when billing was previously past_due or cancelled.
+ * Transitions to active and reactivates billing-cancelled alerts.
  */
 export async function restoreBillingActive(companyNumber: string): Promise<void> {
-  console.log('[activation] restoreBillingActive', { companyNumber });
-  await updateBillingStatus(companyNumber, 'active');
-  await reactivateAlertsForCompany(companyNumber);
+  log.info('restoreBillingActive', { companyNumber });
+  const transitioned = await transitionBillingStatus(companyNumber, 'active');
+  if (!transitioned) {
+    log.warn('restoreBillingActive: billing transition rejected (possibly already active)', {
+      companyNumber,
+    });
+  }
+  await reactivateAlertsForCompany(companyNumber, 'billing_cancelled');
 }

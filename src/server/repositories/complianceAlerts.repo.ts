@@ -39,21 +39,37 @@ export async function insertAlerts(
     .onConflictDoNothing();
 }
 
-export async function deactivateAlertsForCompany(companyNumber: string): Promise<void> {
+export async function deactivateAlertsForCompany(
+  companyNumber: string,
+  reason: 'billing_cancelled' | 'manual' = 'billing_cancelled',
+): Promise<void> {
   await db
     .update(complianceAlerts)
-    .set({ status: 'cancelled' })
-    .where(eq(complianceAlerts.companyNumber, companyNumber));
+    .set({ status: 'cancelled', cancelledReason: reason })
+    .where(
+      and(
+        eq(complianceAlerts.companyNumber, companyNumber),
+        eq(complianceAlerts.status, 'active'),
+      ),
+    );
 }
 
-export async function reactivateAlertsForCompany(companyNumber: string): Promise<void> {
+/**
+ * Only reactivates alerts cancelled with the matching reason.
+ * Prevents billing restoration from overriding manually-cancelled alerts.
+ */
+export async function reactivateAlertsForCompany(
+  companyNumber: string,
+  reason: 'billing_cancelled' | 'manual' = 'billing_cancelled',
+): Promise<void> {
   await db
     .update(complianceAlerts)
-    .set({ status: 'active' })
+    .set({ status: 'active', cancelledReason: null })
     .where(
       and(
         eq(complianceAlerts.companyNumber, companyNumber),
         eq(complianceAlerts.status, 'cancelled'),
+        eq(complianceAlerts.cancelledReason, reason),
       ),
     );
 }

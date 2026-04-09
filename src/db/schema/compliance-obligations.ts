@@ -6,6 +6,7 @@ import {
   timestamp,
   date,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 import { monitoredCompanies } from './monitored-companies';
@@ -51,6 +52,11 @@ export const complianceObligations = pgTable(
     ),
     idxDueDate: index('co_due_date_idx').on(table.dueDate),
     idxWorkflowId: index('co_workflow_id_idx').on(table.workflowId),
+    // Prevents duplicate obligations per company+type (idempotent activation)
+    companyTypeUniq: uniqueIndex('co_company_type_uniq').on(
+      table.monitoredCompanyId,
+      table.obligationType,
+    ),
   }),
 );
 

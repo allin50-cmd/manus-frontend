@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../../db';
 import { stripeWebhookEvents } from '../../db/schema';
 import { parseFineGuardMetadata, isValidFineGuardMetadata } from '@/types/stripe';
@@ -9,20 +10,55 @@ import {
   cancelComplianceMonitoring,
   restoreBillingActive,
 } from '../compliance/activation.service';
+import { log } from '@/lib/logger';
 
-// ── Idempotency gate ──────────────────────────────────────────────────────────
+// ── Two-phase idempotency ─────────────────────────────────────────────────────
+//
+// State machine: (none) → processing → processed
+//                                    ↘ failed → processing (Stripe retry)
+//
+// The partial unique index swe_active_event_uniq prevents two concurrent
+// requests from both processing the same event: only one INSERT will win;
+// the other will see 0 rows and skip.  A failed event (not in the partial
+// index) can be retried — the new INSERT will succeed, re-claiming it.
 
 /**
- * Inserts the event ID into stripeWebhookEvents.
- * Returns false if already present (duplicate delivery), true if newly recorded.
+ * Attempt to claim the event for processing.
+ * Returns true if this instance now owns the event, false if already
+ * processing/processed by another instance (deduplicate).
  */
-async function recordEvent(eventId: string, eventType: string): Promise<boolean> {
+async function claimEvent(eventId: string, eventType: string): Promise<boolean> {
   const rows = await db
     .insert(stripeWebhookEvents)
-    .values({ eventId, type: eventType })
-    .onConflictDoNothing()
+    .values({ eventId, type: eventType, status: 'processing' })
+    .onConflictDoNothing() // partial index blocks duplicates of processing|processed
     .returning({ id: stripeWebhookEvents.id });
   return rows.length > 0;
+}
+
+async function markEventProcessed(eventId: string): Promise<void> {
+  await db
+    .update(stripeWebhookEvents)
+    .set({ status: 'processed', processedAt: new Date() })
+    .where(
+      and(
+        eq(stripeWebhookEvents.eventId, eventId),
+        eq(stripeWebhookEvents.status, 'processing'),
+      ),
+    );
+}
+
+async function markEventFailed(eventId: string, reason: string): Promise<void> {
+  await db
+    .update(stripeWebhookEvents)
+    .set({ status: 'failed', failureReason: reason.slice(0, 500) })
+    .where(
+      and(
+        eq(stripeWebhookEvents.eventId, eventId),
+        eq(stripeWebhookEvents.status, 'processing'),
+      ),
+    );
+  // Failed row is now excluded from the partial unique index — Stripe can retry.
 }
 
 // ── Event handlers ────────────────────────────────────────────────────────────
@@ -31,7 +67,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   const meta = parseFineGuardMetadata(session.metadata ?? {});
 
   if (!isValidFineGuardMetadata(meta)) {
-    console.warn('[webhook] checkout.session.completed: missing company_number in metadata', {
+    log.warn('checkout.session.completed: missing company_number in metadata', {
       sessionId: session.id,
       metadata: session.metadata,
     });
@@ -59,7 +95,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
 
   const company = await findByStripeCustomerId(customerId);
   if (!company) {
-    console.warn('[webhook] invoice.paid: no company for customer', { customerId });
+    log.warn('invoice.paid: no company for customer', { customerId });
     return;
   }
 
@@ -74,7 +110,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
 
   const company = await findByStripeCustomerId(customerId);
   if (!company) {
-    console.warn('[webhook] invoice.payment_failed: no company for customer', { customerId });
+    log.warn('invoice.payment_failed: no company for customer', { customerId });
     return;
   }
 
@@ -87,7 +123,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
 
   const company = await findByStripeCustomerId(customerId);
   if (!company) {
-    console.warn('[webhook] subscription.deleted: no company for customer', { customerId });
+    log.warn('customer.subscription.deleted: no company for customer', { customerId });
     return;
   }
 
@@ -123,30 +159,42 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
   processed: boolean;
   deduplicated: boolean;
 }> {
-  const recorded = await recordEvent(event.id, event.type);
-  if (!recorded) {
+  const claimed = await claimEvent(event.id, event.type);
+  if (!claimed) {
+    log.info('stripe webhook deduplicated', { eventId: event.id, type: event.type });
     return { processed: false, deduplicated: true };
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed':
-      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-      break;
-    case 'invoice.paid':
-      await handleInvoicePaid(event.data.object as Stripe.Invoice);
-      break;
-    case 'invoice.payment_failed':
-      await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-      break;
-    case 'customer.subscription.deleted':
-      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-      break;
-    case 'customer.subscription.updated':
-      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-      break;
-    default:
-      break;
-  }
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+      case 'invoice.paid':
+        await handleInvoicePaid(event.data.object as Stripe.Invoice);
+        break;
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        break;
+      default:
+        break;
+    }
 
-  return { processed: true, deduplicated: false };
+    await markEventProcessed(event.id);
+    log.info('stripe webhook processed', { eventId: event.id, type: event.type });
+    return { processed: true, deduplicated: false };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    await markEventFailed(event.id, reason).catch(() => {
+      // Best-effort — don't mask the original error
+    });
+    log.error('stripe webhook failed', { eventId: event.id, type: event.type, err: reason });
+    throw err; // re-raise so the route returns 500 and Stripe retries
+  }
 }

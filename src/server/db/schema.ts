@@ -1,4 +1,5 @@
 import { pgTable, pgEnum, uuid, varchar, timestamp, text, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const billingStatusEnum = pgEnum('billing_status', [
   'inactive',
@@ -65,17 +66,25 @@ export const contacts = pgTable('contacts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const monitoredCompanies = pgTable('monitored_companies', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
-  companyName: varchar('company_name', { length: 255 }).notNull(),
-  stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
-  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
-  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
-  billingStatus: billingStatusEnum('billing_status').notNull().default('inactive'),
-  lastCheckoutSessionId: varchar('last_checkout_session_id', { length: 255 }),
-  activatedAt: timestamp('activated_at').defaultNow().notNull(),
-});
+export const monitoredCompanies = pgTable(
+  'monitored_companies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
+    companyName: varchar('company_name', { length: 255 }).notNull(),
+    stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
+    stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+    stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+    billingStatus: billingStatusEnum('billing_status').notNull().default('inactive'),
+    billingStatusUpdatedAt: timestamp('billing_status_updated_at'),
+    lastCheckoutSessionId: varchar('last_checkout_session_id', { length: 255 }),
+    activatedAt: timestamp('activated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    stripeCustomerIdx: index('mc_stripe_customer_idx').on(t.stripeCustomerId),
+    stripeSubscriptionIdx: index('mc_stripe_subscription_idx').on(t.stripeSubscriptionId),
+  }),
+);
 
 export const complianceAlerts = pgTable(
   'compliance_alerts',
@@ -86,6 +95,7 @@ export const complianceAlerts = pgTable(
     stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
     stripeItemId: varchar('stripe_item_id', { length: 255 }),
     status: varchar('status', { length: 20 }).default('active').notNull(), // active | cancelled
+    cancelledReason: varchar('cancelled_reason', { length: 50 }), // billing_cancelled | manual | null
     activatedAt: timestamp('activated_at').defaultNow().notNull(),
   },
   (t) => ({
@@ -95,12 +105,31 @@ export const complianceAlerts = pgTable(
   }),
 );
 
-export const stripeWebhookEvents = pgTable('stripe_webhook_events', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  eventId: varchar('event_id', { length: 255 }).notNull().unique(), // Stripe event ID — idempotency key
-  type: varchar('type', { length: 100 }).notNull(),
-  processedAt: timestamp('processed_at').defaultNow().notNull(),
-});
+export const stripeEventStatusEnum = pgEnum('stripe_event_status', [
+  'processing',
+  'processed',
+  'failed',
+]);
+
+export const stripeWebhookEvents = pgTable(
+  'stripe_webhook_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: varchar('event_id', { length: 255 }).notNull(), // Stripe event ID — idempotency key
+    type: varchar('type', { length: 100 }).notNull(),
+    status: stripeEventStatusEnum('status').notNull().default('processing'),
+    failureReason: varchar('failure_reason', { length: 500 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    processedAt: timestamp('processed_at'),
+  },
+  (t) => ({
+    // Partial unique index: only one active (processing|processed) record per event ID
+    // Failed events can be retried (their status is updated back to processing)
+    activeEventUniq: uniqueIndex('swe_active_event_uniq')
+      .on(t.eventId)
+      .where(sql`status IN ('processing', 'processed')`),
+  }),
+);
 
 export const zapierHooks = pgTable(
   'zapier_hooks',
@@ -122,3 +151,4 @@ export type NewComplianceAlert = typeof complianceAlerts.$inferInsert;
 export type ZapierHook = typeof zapierHooks.$inferSelect;
 export type NewZapierHook = typeof zapierHooks.$inferInsert;
 export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
+export type NewStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;

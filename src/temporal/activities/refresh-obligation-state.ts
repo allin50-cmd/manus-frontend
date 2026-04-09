@@ -1,4 +1,5 @@
 import { Context } from '@temporalio/activity';
+import { log } from '../../lib/logger';
 import {
   getObligationById,
   updateObligationNextActionAt,
@@ -66,7 +67,7 @@ export async function refreshObligationState(input: {
         };
       }
     } catch (err) {
-      console.warn('[refreshObligationState] CH API fetch failed, using DB fallback', {
+      log.warn('refreshObligationState: CH API fetch failed, using DB fallback', {
         obligationId,
         companyNumber: company.companyNumber,
         err: err instanceof Error ? err.message : String(err),
