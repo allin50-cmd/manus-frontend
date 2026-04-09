@@ -6,6 +6,12 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['src/tests/**/*.test.ts'],
+    // Temporal's TestWorkflowEnvironment leaves internal Node.js timers alive after
+    // teardown. Running those tests in a forked process isolates their timer state
+    // so they don't fire during another file's teardown phase.
+    poolMatchGlobs: [
+      ['**/workflows/**/*.test.ts', 'forks'],
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
