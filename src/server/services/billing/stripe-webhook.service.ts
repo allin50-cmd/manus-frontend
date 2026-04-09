@@ -267,10 +267,12 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
   // Stripe event.created is Unix seconds
   const eventCreatedAt = new Date(event.created * 1000);
 
+  // Bind correlation fields to every log line in this event's execution scope
+  const elog = log.withContext({ stripeEventId: event.id, eventType: event.type });
+
   const claimed = await claimEvent(event.id, event.type, event, eventCreatedAt);
   if (!claimed) {
-    // Already processing, processed, or dead_letter (covers manual replay and dead events)
-    log.info('stripe webhook deduplicated', { eventId: event.id, type: event.type });
+    elog.info('stripe webhook deduplicated');
     return { processed: false, deduplicated: true };
   }
 
@@ -296,7 +298,7 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
     }
 
     await markEventProcessed(event.id);
-    log.info('stripe webhook processed', { eventId: event.id, type: event.type });
+    elog.info('stripe webhook processed');
     return { processed: true, deduplicated: false };
   } catch (err) {
     const errorType = classifyError(err);
@@ -304,20 +306,11 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
 
     await markEventFailed(event.id, reason, errorType).catch(() => {});
 
-    log.error('stripe webhook failed', {
-      eventId: event.id,
-      type: event.type,
-      errorType,
-      err: reason,
-    });
+    elog.error('stripe webhook failed', { errorType, err: reason });
 
     if (errorType === 'permanent') {
-      // Mark as processed so Stripe stops retrying — this error won't self-heal
       await markEventProcessed(event.id).catch(() => {});
-      log.warn('permanent error: marking as processed, Stripe will not retry', {
-        eventId: event.id,
-        type: event.type,
-      });
+      elog.warn('permanent error: marking as processed, Stripe will not retry');
       return { processed: true, deduplicated: false };
     }
 

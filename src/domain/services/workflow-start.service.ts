@@ -32,6 +32,13 @@ export async function startObligationWorkflow(
   input: StartObligationWorkflowInput,
 ): Promise<StartObligationWorkflowResult> {
   const wfId = buildWorkflowId(input.obligationId);
+  const wlog = log.withContext({
+    workflowId: wfId,
+    obligationId: input.obligationId,
+    obligationType: input.obligationType,
+    companyNumber: input.companyNumber,
+    tenantId: input.tenantId,
+  });
 
   const workflowArgs: ComplianceObligationWorkflowInput = {
     obligationId: input.obligationId,
@@ -52,11 +59,7 @@ export async function startObligationWorkflow(
     });
   } catch (err) {
     if (err instanceof WorkflowExecutionAlreadyStartedError) {
-      log.warn('workflow already running — skipping start', {
-        workflowId: wfId,
-        obligationId: input.obligationId,
-        obligationType: input.obligationType,
-      });
+      wlog.warn('workflow already running — skipping start');
       await updateObligationWorkflowId(input.obligationId, wfId);
       return { workflowId: wfId, alreadyRunning: true };
     }
@@ -74,11 +77,7 @@ export async function startObligationWorkflow(
     updateObligationWorkflowId(input.obligationId, wfId),
   ]);
 
-  log.info('temporal workflow started', {
-    workflowId: wfId,
-    obligationId: input.obligationId,
-    obligationType: input.obligationType,
-  });
+  wlog.info('temporal workflow started');
 
   return { workflowId: wfId, alreadyRunning: false };
 }

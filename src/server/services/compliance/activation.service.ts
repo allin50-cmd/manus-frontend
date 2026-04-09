@@ -54,11 +54,10 @@ export async function activateComplianceMonitoring(
 ): Promise<void> {
   const tenantId = input.tenantId ?? DEFAULT_TENANT_ID;
 
-  log.info('activateComplianceMonitoring', {
-    companyNumber: input.companyNumber,
-    alertTypes: input.alertTypes,
-    tenantId,
-  });
+  // Bind correlation fields so every log line in this activation carries them
+  const alog = log.withContext({ companyNumber: input.companyNumber, tenantId });
+
+  alog.info('activateComplianceMonitoring: start', { alertTypes: input.alertTypes });
 
   // Step 1: run legacy upsert chain and Temporal company resolution in parallel.
   // These touch independent tables and have no cross-dependency at this stage.
@@ -81,9 +80,7 @@ export async function activateComplianceMonitoring(
   ]);
 
   if (!temporalCompanyId) {
-    log.error('failed to resolve Temporal company record — skipping workflow start', {
-      companyNumber: input.companyNumber,
-    });
+    alog.error('failed to resolve Temporal company record — skipping workflow start');
     return;
   }
 
@@ -120,8 +117,7 @@ export async function activateComplianceMonitoring(
 
   results.forEach((result, i) => {
     if (result.status === 'rejected') {
-      log.error('failed to start Temporal workflow', {
-        companyNumber: input.companyNumber,
+      alog.error('failed to start Temporal workflow', {
         obligationType: requestedTypes[i],
         err: result.reason instanceof Error ? result.reason.message : String(result.reason),
       });

@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    testTimeout: 15_000, // Temporal TestWorkflowEnvironment cold start can take ~8-10 s
     include: ['src/tests/**/*.test.ts'],
     // Temporal's TestWorkflowEnvironment leaves internal Node.js timers alive after
     // teardown. Running those tests in a forked process isolates their timer state

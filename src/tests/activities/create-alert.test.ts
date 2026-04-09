@@ -17,8 +17,16 @@ vi.mock('../../lib/ids', () => ({
   workflowId: (id: string) => `obligation:${id}`,
 }));
 
+// Mock billing gate repo
+vi.mock('../../server/repositories/monitoredCompanies.repo', () => ({
+  findByCompanyNumber: vi.fn(),
+}));
+
 import { createAlert } from '../../temporal/activities/create-alert';
 import { insertAlertIfNew } from '../../repositories/alert.repository';
+import { findByCompanyNumber } from '../../server/repositories/monitoredCompanies.repo';
+
+const mockFindByCompanyNumber = vi.mocked(findByCompanyNumber);
 
 const mockInsertAlertIfNew = vi.mocked(insertAlertIfNew);
 
@@ -29,6 +37,11 @@ const baseInput = {
   channel: 'email' as const,
   dueDate: '2026-04-30',
 };
+
+// Minimal mock company shape for billing gate tests
+function makeCompany(billingStatus: string) {
+  return { id: 'cid', companyNumber: '12345678', billingStatus } as any;
+}
 
 describe('createAlert activity', () => {
   beforeEach(() => {
@@ -81,6 +94,53 @@ describe('createAlert activity', () => {
     // Should resolve without error even when deduplicated
     await expect(createAlert(baseInput)).resolves.toBeUndefined();
   });
+
+  // ── Billing gate ─────────────────────────────────────────────────────────────
+
+  it('suppresses alert when billingStatus is past_due', async () => {
+    mockFindByCompanyNumber.mockResolvedValueOnce(makeCompany('past_due'));
+
+    await createAlert({ ...baseInput, companyNumber: '12345678' });
+
+    expect(mockInsertAlertIfNew).not.toHaveBeenCalled();
+  });
+
+  it('suppresses alert when billingStatus is cancelled', async () => {
+    mockFindByCompanyNumber.mockResolvedValueOnce(makeCompany('cancelled'));
+
+    await createAlert({ ...baseInput, companyNumber: '12345678' });
+
+    expect(mockInsertAlertIfNew).not.toHaveBeenCalled();
+  });
+
+  it('suppresses alert when company is not found (billing unknown)', async () => {
+    mockFindByCompanyNumber.mockResolvedValueOnce(null);
+
+    await createAlert({ ...baseInput, companyNumber: '12345678' });
+
+    expect(mockInsertAlertIfNew).not.toHaveBeenCalled();
+  });
+
+  it('allows alert when billingStatus is active', async () => {
+    mockFindByCompanyNumber.mockResolvedValueOnce(makeCompany('active'));
+    mockInsertAlertIfNew.mockResolvedValueOnce({ id: 'alert-id' });
+
+    await createAlert({ ...baseInput, companyNumber: '12345678' });
+
+    expect(mockInsertAlertIfNew).toHaveBeenCalledOnce();
+  });
+
+  it('skips billing check when companyNumber is absent (internal/test path)', async () => {
+    mockInsertAlertIfNew.mockResolvedValueOnce({ id: 'alert-id' });
+
+    // baseInput has no companyNumber — billing gate should not fire
+    await createAlert(baseInput);
+
+    expect(mockFindByCompanyNumber).not.toHaveBeenCalled();
+    expect(mockInsertAlertIfNew).toHaveBeenCalledOnce();
+  });
+
+  // ── Deduplication ─────────────────────────────────────────────────────────
 
   it('builds the correct dedupeKey from all parts', async () => {
     mockInsertAlertIfNew.mockResolvedValueOnce({ id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' });
