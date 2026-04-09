@@ -56,7 +56,7 @@ az postgres flexible-server db create \
 ### 3. App Service
 ```bash
 az appservice plan create \
-  --name fineguard-plan --resource-group fineguard-rg --is-linux --sku B1
+  --name fineguard-plan --resource-group fineguard-rg --is-linux --sku S1
 
 az webapp create \
   --resource-group fineguard-rg --plan fineguard-plan \

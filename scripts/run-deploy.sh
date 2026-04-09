@@ -7,6 +7,7 @@
 export LOCATION="uksouth"
 export RG="fineguard-rg"
 export APP_NAME="fineguard-pro"
+export APP_SERVICE_SKU="S1"                # S1=Standard; use S1 if Basic VM quota is 0
 export DB_SERVER="fineguard-db-001"        # lowercase, hyphens only, globally unique
 export DB_NAME="fineguard"
 export DB_ADMIN_USER="fgadmin"

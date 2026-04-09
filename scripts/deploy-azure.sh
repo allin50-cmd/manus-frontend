@@ -267,16 +267,17 @@ ok "Database '$DB_NAME' ready"
 step "4/12" && bold "App Service Plan"
 
 APP_PLAN="${APP_NAME}-plan"
+APP_SERVICE_SKU="${APP_SERVICE_SKU:-S1}"   # B1=Basic (often quota-limited); S1=Standard
 
 if az appservice plan show --name "$APP_PLAN" --resource-group "$RG" &>/dev/null 2>&1; then
   ok "App Service Plan '$APP_PLAN' already exists"
 else
-  info "Creating App Service Plan '$APP_PLAN' (Linux, B1) ..."
+  info "Creating App Service Plan '$APP_PLAN' (Linux, $APP_SERVICE_SKU) ..."
   az appservice plan create \
     --name           "$APP_PLAN" \
     --resource-group "$RG" \
     --is-linux \
-    --sku            B1 \
+    --sku            "$APP_SERVICE_SKU" \
     --output none
   ok "App Service Plan created"
 fi
