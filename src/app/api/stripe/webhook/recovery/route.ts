@@ -38,6 +38,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const reset = await resetStaleProcessingEvents();
-  return NextResponse.json({ reset: reset.length, eventIds: reset });
+  const { reset, deadLettered } = await resetStaleProcessingEvents();
+  return NextResponse.json({
+    reset: reset.length,
+    deadLettered: deadLettered.length,
+    resetIds: reset,
+    deadLetteredIds: deadLettered,
+  });
 }

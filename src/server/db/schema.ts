@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, varchar, timestamp, text, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, varchar, integer, timestamp, text, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const billingStatusEnum = pgEnum('billing_status', [
@@ -110,6 +110,7 @@ export const stripeEventStatusEnum = pgEnum('stripe_event_status', [
   'processing',
   'processed',
   'failed',
+  'dead_letter', // exhausted MAX_ATTEMPTS — in partial index, prevents further re-claims
 ]);
 
 export const stripeWebhookEvents = pgTable(
@@ -120,17 +121,21 @@ export const stripeWebhookEvents = pgTable(
     type: varchar('type', { length: 100 }).notNull(),
     status: stripeEventStatusEnum('status').notNull().default('processing'),
     errorType: varchar('error_type', { length: 20 }), // retryable | permanent
+    attemptCount: integer('attempt_count').notNull().default(0),
     payload: jsonb('payload'), // raw Stripe event for failure replay
     failureReason: varchar('failure_reason', { length: 500 }),
+    // Stripe's event.created timestamp (Unix seconds → stored as TIMESTAMP for ordering queries)
+    eventCreatedAt: timestamp('event_created_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     processedAt: timestamp('processed_at'),
   },
   (t) => ({
-    // Partial unique index: only one active (processing|processed) record per event ID
-    // Failed events can be retried (their status is updated back to processing)
+    // Partial unique index covers processing|processed|dead_letter.
+    // failed is excluded so Stripe retries can re-claim.
+    // dead_letter is included so exhausted events cannot be re-claimed.
     activeEventUniq: uniqueIndex('swe_active_event_uniq')
       .on(t.eventId)
-      .where(sql`status IN ('processing', 'processed')`),
+      .where(sql`status IN ('processing', 'processed', 'dead_letter')`),
   }),
 );
 

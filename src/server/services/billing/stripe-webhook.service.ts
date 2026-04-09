@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { ZodError } from 'zod';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { stripeWebhookEvents } from '../../db/schema';
 import { parseFineGuardMetadata, isValidFineGuardMetadata } from '@/types/stripe';
@@ -47,11 +47,16 @@ function classifyError(err: unknown): ErrorType {
 // Only one concurrent INSERT wins; failed rows fall outside the index so
 // Stripe's next retry re-claims them.
 
-async function claimEvent(eventId: string, eventType: string, payload: unknown): Promise<boolean> {
+async function claimEvent(
+  eventId: string,
+  eventType: string,
+  payload: unknown,
+  eventCreatedAt: Date,
+): Promise<boolean> {
   const rows = await db
     .insert(stripeWebhookEvents)
-    .values({ eventId, type: eventType, status: 'processing', payload })
-    .onConflictDoNothing()
+    .values({ eventId, type: eventType, status: 'processing', payload, eventCreatedAt })
+    .onConflictDoNothing() // partial index blocks processing|processed|dead_letter duplicates
     .returning({ id: stripeWebhookEvents.id });
   return rows.length > 0;
 }
@@ -73,12 +78,14 @@ async function markEventFailed(
   reason: string,
   errorType: ErrorType,
 ): Promise<void> {
+  // Increment attempt_count; recovery service will dead-letter when limit reached
   await db
     .update(stripeWebhookEvents)
     .set({
       status: 'failed',
       failureReason: reason.slice(0, 500),
       errorType,
+      attemptCount: sql`attempt_count + 1`,
     })
     .where(
       and(
@@ -220,15 +227,15 @@ export async function handleStripeWebhookEvent(event: Stripe.Event): Promise<{
   processed: boolean;
   deduplicated: boolean;
 }> {
-  const claimed = await claimEvent(event.id, event.type, event);
+  // Stripe event.created is Unix seconds
+  const eventCreatedAt = new Date(event.created * 1000);
+
+  const claimed = await claimEvent(event.id, event.type, event, eventCreatedAt);
   if (!claimed) {
-    // Already processing or processed (covers manual replay too)
+    // Already processing, processed, or dead_letter (covers manual replay and dead events)
     log.info('stripe webhook deduplicated', { eventId: event.id, type: event.type });
     return { processed: false, deduplicated: true };
   }
-
-  // Stripe event.created is Unix seconds
-  const eventCreatedAt = new Date(event.created * 1000);
 
   try {
     switch (event.type) {
