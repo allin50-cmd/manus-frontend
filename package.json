@@ -17,7 +17,8 @@
     "worker": "tsx src/temporal/worker.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "deploy:azure": "bash scripts/deploy-azure.sh"
+    "deploy:azure": "bash scripts/deploy-azure.sh",
+    "deploy": "bash scripts/run-deploy.sh"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
