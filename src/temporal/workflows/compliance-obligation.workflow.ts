@@ -81,6 +81,8 @@ export interface ComplianceObligationWorkflowInput {
   tenantId: string;
   monitoredCompanyId: string;
   obligationType: ObligationType;
+  /** Passed to createAlert for billing gate — optional for backwards compat */
+  companyNumber?: string;
 }
 
 // ── Policy helpers (inlined — no external imports allowed in workflow) ─────────
@@ -121,7 +123,7 @@ const MAX_OVERDUE_ALERTS = 14;
 export async function complianceObligationWorkflow(
   input: ComplianceObligationWorkflowInput,
 ): Promise<void> {
-  const { obligationId, tenantId, obligationType } = input;
+  const { obligationId, tenantId, obligationType, companyNumber } = input;
 
   // ── Local state (mutated synchronously by signal handlers) ──────────────────
   let paused = false;
@@ -278,6 +280,7 @@ export async function complianceObligationWorkflow(
             urgency: policy.urgency,
             channel,
             dueDate: snapshot.dueDate,
+            companyNumber,
           });
         }
 

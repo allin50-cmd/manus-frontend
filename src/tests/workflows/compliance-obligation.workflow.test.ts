@@ -4,7 +4,7 @@
  * These tests run workflows in a fully sandboxed, time-skipping environment
  * without requiring a real Temporal server.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import { Worker, Runtime, DefaultLogger } from '@temporalio/worker';
 import type { WorkflowState } from '../../domain/types/workflow';
@@ -202,6 +202,49 @@ describe('complianceObligationWorkflow', () => {
       const resumedState: WorkflowState = await handle.query('getState');
       expect(resumedState.paused).toBe(false);
       expect(resumedState.status).not.toBe('paused');
+
+      await handle.terminate();
+    });
+  });
+
+  it('paused workflow does not call createAlert', async () => {
+    const createAlertSpy = vi.fn().mockResolvedValue(undefined);
+
+    const worker = await createWorker({
+      async refreshObligationState(_input) {
+        return {
+          dueDate: '2026-04-15',
+          daysRemaining: 6, // urgent — would normally trigger createAlert
+          resolved: false,
+          checkedAt: new Date().toISOString(),
+        };
+      },
+      createAlert: createAlertSpy,
+    });
+
+    await worker.runUntil(async () => {
+      const handle = await testEnv.client.workflow.start(
+        'complianceObligationWorkflow',
+        {
+          taskQueue: 'test-compliance',
+          workflowId: `test-wf-paused-no-alert-${Date.now()}`,
+          args: [baseInput],
+        },
+      );
+
+      // Pause before any alerts fire
+      await handle.signal('pauseMonitoring');
+      await testEnv.sleep('100ms');
+
+      // Advance time well past the check interval (workflow is paused)
+      await testEnv.sleep('10d');
+
+      const state: WorkflowState = await handle.query('getState');
+      expect(state.paused).toBe(true);
+      expect(state.status).toBe('paused');
+
+      // createAlert must NOT have been called while paused
+      expect(createAlertSpy).not.toHaveBeenCalled();
 
       await handle.terminate();
     });

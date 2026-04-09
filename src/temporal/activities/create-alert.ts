@@ -1,5 +1,6 @@
 import { log } from '../../lib/logger';
 import { insertAlertIfNew } from '../../repositories/alert.repository';
+import { findByCompanyNumber } from '../../server/repositories/monitoredCompanies.repo';
 import { dedupeKey as buildDedupeKey } from '../../lib/ids';
 import type { AlertUrgency, AlertChannel } from '../../domain/types/alert';
 
@@ -9,21 +10,39 @@ export interface CreateAlertInput {
   urgency: AlertUrgency;
   channel: AlertChannel;
   dueDate: string;
+  /** When present, billing_status is checked — alert is suppressed if not 'active' */
+  companyNumber?: string;
 }
 
 /**
  * Create an alert DB record for the given obligation/channel/urgency combination.
  *
+ * Billing gate: if companyNumber is supplied and the company's billing_status
+ * is not 'active', the alert is suppressed and no record is written.
+ * This is the sole outbound-effects gate — workflows continue running.
+ *
  * Deduplication: if an alert with the same dedupeKey already exists, the
  * insert is silently skipped and this activity returns without error.
- *
- * Note: This activity only creates the DB record. Actual message delivery
- * (email/SMS) is handled by sendEmail/sendSms activities called by the workflow.
  */
 export async function createAlert(input: CreateAlertInput): Promise<void> {
-  const { obligationId, tenantId, urgency, channel, dueDate } = input;
+  const { obligationId, tenantId, urgency, channel, dueDate, companyNumber } = input;
 
-  // dedupeKey format: obligationId:urgency:channel:dueDate
+  // ── Billing gate ────────────────────────────────────────────────────────────
+  if (companyNumber) {
+    const company = await findByCompanyNumber(companyNumber);
+    if (!company || company.billingStatus !== 'active') {
+      log.warn('[createAlert] Alert suppressed — billing not active', {
+        companyNumber,
+        billingStatus: company?.billingStatus ?? 'not_found',
+        obligationId,
+        urgency,
+        channel,
+      });
+      return;
+    }
+  }
+
+  // ── Deduplication ────────────────────────────────────────────────────────────
   const key = buildDedupeKey([obligationId, urgency, channel, dueDate]);
 
   const result = await insertAlertIfNew({
@@ -47,6 +66,7 @@ export async function createAlert(input: CreateAlertInput): Promise<void> {
   log.info('[createAlert] Alert record created', {
     alertId: result.id,
     obligationId,
+    companyNumber,
     urgency,
     channel,
     dueDate,

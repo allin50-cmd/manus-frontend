@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { log } from '../logger';
 
 /**
  * Guard for internal/admin API routes.
@@ -16,7 +17,9 @@ export function requireApiKey(req: NextRequest): NextResponse | null {
   const expected = process.env.MONITORING_API_KEY;
 
   if (!expected) {
-    // Env var not set — fail closed; misconfiguration is worse than a hard stop
+    log.error('MONITORING_API_KEY env var not set — failing closed', {
+      route: req.nextUrl.pathname,
+    });
     return NextResponse.json(
       { error: 'Service not configured — MONITORING_API_KEY missing' },
       { status: 503 },

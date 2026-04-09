@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, assertStripeKey } from '@/lib/stripe/client';
 import { handleWebhookEvent } from '@/lib/stripe/webhook';
+import { log } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   assertStripeKey();
@@ -17,7 +18,9 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
-    console.error('[webhook] Signature verification failed:', err);
+    log.error('[webhook] Signature verification failed', {
+      err: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -25,7 +28,12 @@ export async function POST(req: NextRequest) {
     const result = await handleWebhookEvent(event);
     return NextResponse.json({ received: true, ...result });
   } catch (err) {
-    console.error(`[webhook] Handler error [${event.id}] [${event.type}]:`, err);
+    log.error('[webhook] Handler error', {
+      eventId: event.id,
+      eventType: event.type,
+      err: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return NextResponse.json({ error: 'Handler failed' }, { status: 500 });
   }
 }

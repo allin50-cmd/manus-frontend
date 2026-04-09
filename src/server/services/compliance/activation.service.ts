@@ -113,6 +113,7 @@ export async function activateComplianceMonitoring(
         obligationId,
         monitoredCompanyId: temporalCompany.id,
         obligationType,
+        companyNumber: input.companyNumber,
       });
     } catch (err) {
       // Non-fatal: log and continue with remaining types

@@ -13,6 +13,7 @@ export interface StartObligationWorkflowInput {
   obligationId: string;
   monitoredCompanyId: string;
   obligationType: ObligationType;
+  companyNumber?: string;
 }
 
 export interface StartObligationWorkflowResult {
@@ -37,6 +38,7 @@ export async function startObligationWorkflow(
     tenantId: input.tenantId,
     monitoredCompanyId: input.monitoredCompanyId,
     obligationType: input.obligationType,
+    ...(input.companyNumber ? { companyNumber: input.companyNumber } : {}),
   };
 
   const client = await getTemporalClient();
