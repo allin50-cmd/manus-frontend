@@ -9,6 +9,8 @@ coverage/
 # Production
 dist/
 build/
+.next/
+out/
 
 # Environment files
 .env
@@ -42,11 +44,8 @@ lerna-debug.log*
 *.sqlite3
 *.db
 
-# Bulk data imports
-data/
-
-# Drizzle (track migrations; ignore generated metadata)
-drizzle/meta/
+# Drizzle
+drizzle/
 
 # OS
 .DS_Store
@@ -59,14 +58,11 @@ Thumbs.db
 
 # Azure
 .azure/
-local.settings.json
-__pycache__/
-*.pyc
 
 # Secrets and credentials
 *.pem
 *.key
 *.cert
 credentials.json
-test-results/
-screenshots/
+.secrets
+.secrets

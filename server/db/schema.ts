@@ -78,6 +78,7 @@ export const contacts = pgTable('contacts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+<<<<<<< HEAD
 // ============================================================================
 // FINEGUARD PRO - USER APP TABLES
 // ============================================================================
@@ -204,6 +205,20 @@ export const chCompanies = pgTable('ch_companies', {
   index('ch_post_code_idx').on(table.postCode),
 ]);
 
+=======
+/**
+ * Monitored Companies Table
+ * Tracks companies that have paid and activated FineGuard protection
+ */
+export const monitoredCompanies = pgTable('monitored_companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
+  activatedAt: timestamp('activated_at').defaultNow().notNull(),
+});
+
+>>>>>>> claude/fineguard-pilot-execution-DXFpY
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
@@ -220,6 +235,7 @@ export type NewComplianceBundle = typeof complianceBundles.$inferInsert;
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
 
+<<<<<<< HEAD
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -454,3 +470,7 @@ export type NewWorkflow = typeof workflows.$inferInsert;
 
 export type WorkflowTask = typeof workflowTasks.$inferSelect;
 export type NewWorkflowTask = typeof workflowTasks.$inferInsert;
+=======
+export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
+export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+>>>>>>> claude/fineguard-pilot-execution-DXFpY
