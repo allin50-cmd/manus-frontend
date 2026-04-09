@@ -34,10 +34,20 @@ interface Scenario {
 }
 
 const SCENARIOS: Scenario[] = [
+  // ── Stateless pages (no DB, no API key) ──────────────────────────────────────
+  { title: 'Landing page (/)',               url: '/' },
+  { title: 'Check page (/check)',            url: '/check' },
+  { title: 'Pricing page (/pricing)',        url: '/pricing' },
+  { title: 'About page (/about)',            url: '/about' },
+  { title: 'Login page (/login)',            url: '/login' },
+
+  // ── DB-dependent API routes ──────────────────────────────────────────────────
   { title: 'Health check',                   url: '/api/health',                                    requiresDb: true },
   { title: 'Protection status',              url: '/api/protection-status?companyNumber=12345678',   requiresDb: true },
   { title: 'Zapier alerts recent',           url: '/api/zapier/alerts/recent',                       requiresDb: true, requiresMonitoringKey: true },
   { title: 'Zapier companies recent',        url: '/api/zapier/companies/recent',                    requiresDb: true, requiresMonitoringKey: true },
+
+  // ── External-key routes ───────────────────────────────────────────────────────
   { title: 'Companies House (rate limiter)', url: '/api/companies-house?q=TEST',                     requiresApiKey: 'COMPANIES_HOUSE_API_KEY' },
 ];
 
