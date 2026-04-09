@@ -4,11 +4,17 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   // In production TEMPORAL_ADDRESS must be a real endpoint (Temporal Cloud or
   // self-hosted). The localhost default only works in local development.
+  // NEXT_PHASE=phase-production-build is set by Next.js during `next build`;
+  // we skip the check then so CI can build without TEMPORAL_ADDRESS configured.
+  // The guard fires at runtime when the server actually starts.
   TEMPORAL_ADDRESS: z
     .string()
     .min(1)
     .refine(
-      (v) => process.env.NODE_ENV !== 'production' || !v.startsWith('localhost'),
+      (v) =>
+        process.env.NEXT_PHASE === 'phase-production-build' ||
+        process.env.NODE_ENV !== 'production' ||
+        !v.startsWith('localhost'),
       'TEMPORAL_ADDRESS must not be localhost in production — set a Temporal Cloud endpoint',
     )
     .default('localhost:7233'),
