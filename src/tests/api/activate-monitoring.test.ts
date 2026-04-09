@@ -42,10 +42,12 @@ const mockStartObligationWorkflow = vi.mocked(startObligationWorkflow);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+const TEST_API_KEY = 'test-monitoring-key';
+
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest('http://localhost/api/monitoring/activate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': TEST_API_KEY },
     body: JSON.stringify(body),
   });
 }
@@ -64,6 +66,7 @@ describe('POST /api/monitoring/activate', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.MONITORING_API_KEY = TEST_API_KEY;
 
     // Default: company doesn't exist yet
     mockFindCompanyByNumber.mockResolvedValue(null);

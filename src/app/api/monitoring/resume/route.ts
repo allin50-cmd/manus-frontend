@@ -3,12 +3,17 @@ import { z } from 'zod';
 import { getTemporalClient } from '../../../../temporal/client';
 import { resumeMonitoringSignal } from '../../../../temporal/workflows/index';
 import { workflowId as buildWorkflowId } from '../../../../lib/ids';
+import { requireApiKey } from '../../../../lib/utils/require-api-key';
+import { log } from '../../../../lib/logger';
 
 const resumeSchema = z.object({
   obligationId: z.string().uuid('obligationId must be a UUID'),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authError = requireApiKey(req);
+  if (authError) return authError;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -40,7 +45,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         { status: 404 },
       );
     }
-    console.error('[resume] Failed to send signal', err);
+    log.error('[resume] Failed to send signal', { err });
     return NextResponse.json({ error: 'Failed to send signal' }, { status: 500 });
   }
 }

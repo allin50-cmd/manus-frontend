@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getObligationById } from '../../../../../repositories/obligation.repository';
 import { getTemporalClient } from '../../../../../temporal/client';
 import { getStateQuery } from '../../../../../temporal/workflows/index';
+import { requireApiKey } from '../../../../../lib/utils/require-api-key';
+import { log } from '../../../../../lib/logger';
 import type { WorkflowState } from '../../../../../domain/types/workflow';
 
 interface RouteContext {
@@ -9,9 +11,12 @@ interface RouteContext {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> {
+  const authError = requireApiKey(req);
+  if (authError) return authError;
+
   const { id } = context.params;
 
   if (!id) {
@@ -49,7 +54,7 @@ export async function GET(
         { status: 404 },
       );
     }
-    console.error('[workflow-state] Query failed', err);
+    log.error('[workflow-state] Query failed', { err });
     return NextResponse.json(
       { error: 'Failed to query workflow state' },
       { status: 500 },

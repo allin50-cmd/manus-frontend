@@ -6,6 +6,7 @@ import {
 } from '../../../../repositories/company.repository';
 import { insertObligation } from '../../../../repositories/obligation.repository';
 import { startObligationWorkflow } from '../../../../domain/services/workflow-start.service';
+import { requireApiKey } from '../../../../lib/utils/require-api-key';
 import type { ObligationType } from '../../../../domain/types/obligation';
 
 const activateSchema = z.object({
@@ -20,6 +21,9 @@ const OBLIGATION_TYPES: ObligationType[] = [
 ];
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authError = requireApiKey(req);
+  if (authError) return authError;
+
   let body: unknown;
   try {
     body = await req.json();

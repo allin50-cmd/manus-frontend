@@ -187,6 +187,10 @@ export async function complianceObligationWorkflow(
   while (!resolved) {
     // ── 1. Handle paused state ─────────────────────────────────────────────────
     if (paused) {
+      // Re-assert 'paused' status: a signal received mid-activity may have had
+      // step 5 overwrite it before we looped back here.
+      state.paused = true;
+      state.status = 'paused';
       log.info('[workflow] Monitoring paused — waiting for resumeMonitoring signal');
       // Wait up to 30 days for resume; loop back to re-evaluate
       await condition(() => !paused, '30d');
