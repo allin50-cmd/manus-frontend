@@ -40,6 +40,7 @@ interface ComplianceActivities {
     urgency: AlertUrgency;
     channel: AlertChannel;
     dueDate: string;
+    companyNumber?: string;
   }): Promise<void>;
 
   writeAudit(input: WriteAuditInput): Promise<void>;

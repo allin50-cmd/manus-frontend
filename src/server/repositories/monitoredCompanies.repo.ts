@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { monitoredCompanies, complianceAlerts } from '../db/schema';
-import { eq, and, inArray, isNull, lte, or } from 'drizzle-orm';
+import { eq, and, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import type { AlertType } from '@/types/alerts';
 import type { BillingStatus } from '@/types/stripe';
 
@@ -122,6 +122,26 @@ export async function findByStripeCustomerId(
     .where(eq(monitoredCompanies.stripeCustomerId, stripeCustomerId))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * Update stripeSubscriptionId when a plan upgrade replaces the subscription object.
+ * No-op if the stored value already matches.
+ */
+export async function updateSubscriptionId(
+  companyNumber: string,
+  stripeSubscriptionId: string,
+): Promise<void> {
+  await db
+    .update(monitoredCompanies)
+    .set({ stripeSubscriptionId })
+    .where(
+      and(
+        eq(monitoredCompanies.companyNumber, companyNumber),
+        // Only write if different — avoids unnecessary WAL churn
+        sql`stripe_subscription_id IS DISTINCT FROM ${stripeSubscriptionId}`,
+      ),
+    );
 }
 
 export async function findByStripeSubscriptionId(

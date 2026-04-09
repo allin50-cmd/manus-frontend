@@ -4,7 +4,10 @@ import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { stripeWebhookEvents } from '../../db/schema';
 import { parseFineGuardMetadata, isValidFineGuardMetadata } from '@/types/stripe';
-import { findByStripeCustomerId } from '../../repositories/monitoredCompanies.repo';
+import {
+  findByStripeCustomerId,
+  updateSubscriptionId,
+} from '../../repositories/monitoredCompanies.repo';
 import {
   activateComplianceMonitoring,
   markBillingPastDue,
@@ -203,6 +206,36 @@ async function handleSubscriptionUpdated(
   const company = await findByStripeCustomerId(customerId);
   if (!company) return;
 
+  // Sync subscription ID — plan upgrades can replace the subscription object
+  if (
+    subscription.id &&
+    company.stripeSubscriptionId !== subscription.id
+  ) {
+    log.info('subscription.updated: syncing subscription ID', {
+      companyNumber: company.companyNumber,
+      oldSubscriptionId: company.stripeSubscriptionId,
+      newSubscriptionId: subscription.id,
+    });
+    await updateSubscriptionId(company.companyNumber, subscription.id);
+  }
+
+  // Log plan items to aid billing debugging
+  const planItems = subscription.items?.data?.map((item) => ({
+    priceId: item.price?.id,
+    productId: typeof item.price?.product === 'string' ? item.price.product : item.price?.product?.id,
+    quantity: item.quantity,
+    interval: item.price?.recurring?.interval,
+  })) ?? [];
+
+  log.info('subscription.updated: status transition', {
+    companyNumber: company.companyNumber,
+    subscriptionId: subscription.id,
+    subscriptionStatus: subscription.status,
+    currentBillingStatus: company.billingStatus,
+    planItems,
+    eventCreatedAt: eventCreatedAt.toISOString(),
+  });
+
   switch (subscription.status) {
     case 'active':
       if (company.billingStatus !== 'active') {
@@ -217,6 +250,10 @@ async function handleSubscriptionUpdated(
       await cancelComplianceMonitoring(company.companyNumber, eventCreatedAt);
       break;
     default:
+      log.warn('subscription.updated: unhandled subscription status', {
+        companyNumber: company.companyNumber,
+        subscriptionStatus: subscription.status,
+      });
       break;
   }
 }
