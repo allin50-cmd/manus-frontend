@@ -1,28 +1,12 @@
 /**
  * Stripe Connect client
  *
- * A single StripeClient instance used for ALL Stripe operations in the
- * Connect integration.  Using a single client (rather than the legacy
- * `Stripe` class directly) is required for the V2 API surface
- * (stripeClient.v2.core.*).
- *
- * PLACEHOLDER: Replace the env var name if you store the key differently.
- * If STRIPE_SECRET_KEY is missing the module throws at import time so the
- * missing config surfaces immediately, not on the first request.
+ * A single Stripe instance used for ALL Connect operations — both V1 and V2
+ * API surfaces.  V2 routes (v2.core.accounts, v2.core.events, etc.) are only
+ * available on this client, not on the main `stripe` export in client.ts.
  */
 
 import Stripe from 'stripe';
-
-// ---------------------------------------------------------------------------
-// Validate that the secret key is present at startup.
-// ---------------------------------------------------------------------------
-const apiKey = process.env.STRIPE_SECRET_KEY;
-if (!apiKey) {
-  throw new Error(
-    '[connect-client] STRIPE_SECRET_KEY is not set. ' +
-    'Add it in your environment variables before starting the server.',
-  );
-}
 
 /**
  * The platform Stripe client.
@@ -34,7 +18,9 @@ if (!apiKey) {
  * V2 example (create a connected account):
  *   stripeClient.v2.core.accounts.create({ ... })
  */
-export const stripeClient = new Stripe(apiKey);
+export const stripeClient = new Stripe(
+  process.env.STRIPE_SECRET_KEY ?? 'placeholder',
+);
 
 /**
  * The webhook secret used to verify incoming events from Stripe.
@@ -46,10 +32,11 @@ export const connectWebhookSecret =
 
 /**
  * The webhook secret for standard (V1) subscription events.
- * PLACEHOLDER: Set STRIPE_WEBHOOK_SECRET in your environment.
+ * PLACEHOLDER: Set STRIPE_SUBSCRIPTION_WEBHOOK_SECRET in your environment.
+ * (Uses a separate secret so it can be registered as its own endpoint.)
  */
 export const subscriptionWebhookSecret =
-  process.env.STRIPE_WEBHOOK_SECRET ?? '';
+  process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET ?? '';
 
 /**
  * The Stripe price ID used for the platform subscription sold to
