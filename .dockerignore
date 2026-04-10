@@ -29,6 +29,9 @@ LICENSE
 .DS_Store
 Thumbs.db
 
+# Nested project copy (from accidental git clone inside project dir)
+manus-frontend/
+
 # Deployment scripts (not needed inside container)
 deploy-azure.sh
 check-azure-prereqs.sh
