@@ -21,8 +21,8 @@ function CheckPageInner() {
 
   // Handle Stripe return ?activated=1&company=X
   useEffect(() => {
-    const isActivated = searchParams.get('activated') === '1';
-    const companyParam = searchParams.get('company');
+    const isActivated = searchParams?.get('activated') === '1';
+    const companyParam = searchParams?.get('company');
     if (isActivated && companyParam) {
       setActivated(true);
       toast.success('Protection activated — your company is now being monitored.');
