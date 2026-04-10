@@ -4,7 +4,11 @@ import { handleWebhookEvent } from '@/lib/stripe/webhook';
 import { log } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
-  assertStripeKey();
+  try {
+    assertStripeKey();
+  } catch {
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 });
+  }
 
   const body = await req.text();
   const sig = req.headers.get('stripe-signature');
