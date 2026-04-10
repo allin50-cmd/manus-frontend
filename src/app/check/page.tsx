@@ -61,7 +61,7 @@ function CheckPageInner() {
               <ShieldCheck className="w-7 h-7 text-green-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-green-700 uppercase tracking-wide">Protection active</p>
-                <h2 className="text-lg font-bold text-slate-900 mt-0.5">Your company is now being monitored</h2>
+                <h2 className="text-lg font-bold text-slate-900 mt-0.5">Your deadlines are now being monitored.</h2>
                 <p className="text-sm text-green-700 mt-1">You'll receive alerts before any compliance deadlines are missed.</p>
                 <Link href="/dashboard" className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-blue-600 hover:underline">
                   Go to Dashboard <ArrowRight className="w-4 h-4" />
