@@ -15,11 +15,11 @@ const FETCH_TIMEOUT_MS = 10_000;
 export function CompanyLookupForm({ onResult, loading, setLoading }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get('q') ?? '');
+  const [query, setQuery] = useState(searchParams?.get('q') ?? '');
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    const q = searchParams.get('q');
+    const q = searchParams?.get('q');
     if (q) {
       setQuery(q);
       doLookup(q);
