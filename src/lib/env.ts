@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Skip DATABASE_URL validation at build time — not available in the Docker
+  // builder stage. Validated at runtime when the server actually starts.
+  DATABASE_URL: isBuildPhase
+    ? z.string().optional().default('')
+    : z.string().min(1, 'DATABASE_URL is required'),
   // In production TEMPORAL_ADDRESS must be a real endpoint (Temporal Cloud or
   // self-hosted). The localhost default only works in local development.
   // NEXT_PHASE=phase-production-build is set by Next.js during `next build`;

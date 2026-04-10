@@ -3,7 +3,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+# NEXT_PHASE tells env.ts (and Next.js internals) this is a build — not runtime.
+# DATABASE_URL is intentionally absent here; it is injected at runtime via App Service env vars.
+RUN NEXT_PHASE=phase-production-build npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
