@@ -43,7 +43,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="mx-auto max-w-4xl px-4 pt-20 pb-16 text-center">
         <h1 className="text-5xl font-bold tracking-tight text-slate-900 mb-4">
-          Stay Compliant. Avoid Penalties.
+          Most UK companies have deadlines they&apos;re about to miss.
         </h1>
         <p className="text-xl text-slate-600 mb-8">
           Automated deadline monitoring for UK businesses.

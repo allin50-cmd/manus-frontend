@@ -76,7 +76,10 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <p className="text-center text-sm text-slate-400 mt-8">
+      <p className="text-center text-sm text-slate-500 mt-8">
+        One avoided penalty can outweigh the cost of monitoring.
+      </p>
+      <p className="text-center text-sm text-slate-400 mt-2">
         Secure payments powered by Stripe. Cancel anytime.
       </p>
     </PageContainer>

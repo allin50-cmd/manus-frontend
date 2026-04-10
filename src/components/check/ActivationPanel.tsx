@@ -48,12 +48,15 @@ export function ActivationPanel() {
             <p className="text-sm text-slate-600">Monthly total</p>
             <p className="text-xl font-bold text-slate-900">{formatPence(totalMonthly())}/mo</p>
           </div>
-          <Link
-            href="/checkout"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-          >
-            Continue to Checkout
-          </Link>
+          <div className="text-right">
+            <Link
+              href="/checkout"
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
+              Start monitoring
+            </Link>
+            <p className="text-xs text-slate-400 mt-1.5">Takes around 30 seconds</p>
+          </div>
         </div>
       )}
     </div>
