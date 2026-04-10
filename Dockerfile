@@ -18,6 +18,11 @@ RUN NEXT_PHASE=phase-production-build \
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# HOSTNAME=0.0.0.0 is required: Next.js standalone server.js defaults to
+# localhost which is unreachable from outside the container. Without this
+# all external HTTP connections are rejected with TCP RST (ECONNRESET).
+ENV HOSTNAME=0.0.0.0
+ENV PORT=8080
 
 # Copy standalone server + its bundled node_modules
 COPY --from=builder /app/.next/standalone ./
@@ -28,5 +33,4 @@ COPY --from=builder /app/public ./public
 
 USER node
 EXPOSE 8080
-ENV PORT=8080
 CMD ["node", "server.js"]
