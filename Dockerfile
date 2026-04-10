@@ -3,9 +3,17 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-# NEXT_PHASE tells env.ts (and Next.js internals) this is a build — not runtime.
-# DATABASE_URL is intentionally absent here; it is injected at runtime via App Service env vars.
-RUN NEXT_PHASE=phase-production-build npm run build
+# Build-time placeholder env vars — real values are injected at runtime via App Service settings.
+# Values are chosen to pass the assertPrefix checks in src/config.ts (sk_/whsec_/price_).
+RUN NEXT_PHASE=phase-production-build \
+    DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" \
+    STRIPE_SECRET_KEY="sk_test_buildplaceholder" \
+    STRIPE_WEBHOOK_SECRET="whsec_buildplaceholder" \
+    STRIPE_PRICE_ACCOUNTS_FILING="price_buildplaceholder" \
+    STRIPE_PRICE_CONFIRMATION_STATEMENT="price_buildplaceholder" \
+    STRIPE_PRICE_STRIKE_OFF="price_buildplaceholder" \
+    COMPANIES_HOUSE_API_KEY="placeholder" \
+    npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
