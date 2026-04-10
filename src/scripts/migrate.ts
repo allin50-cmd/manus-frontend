@@ -55,11 +55,24 @@ async function main(): Promise<void> {
 
       const content = await readFile(join(MIGRATIONS_DIR, file), 'utf8');
 
-      // Run migration + record in a single transaction
-      await sql.begin(async (tx) => {
-        await tx.unsafe(content);
-        await tx`INSERT INTO _migrations (filename) VALUES (${file})`;
-      });
+      // PostgreSQL restriction: a newly added enum value cannot be used in the
+      // same transaction as its addition (ALTER TYPE ... ADD VALUE).  Detect
+      // this case and run the file outside a transaction (each statement gets
+      // its own implicit auto-commit), then record the migration separately.
+      const hasEnumAddValue = /ALTER\s+TYPE\s+\S+\s+ADD\s+VALUE/i.test(content);
+
+      if (hasEnumAddValue) {
+        // Run statements auto-committed (simple query protocol, no BEGIN/COMMIT).
+        // All DDL in the file uses IF NOT EXISTS so it is safe to re-run.
+        await sql.unsafe(content);
+        await sql`INSERT INTO _migrations (filename) VALUES (${file})`;
+      } else {
+        // Run migration + record in a single atomic transaction
+        await sql.begin(async (tx) => {
+          await tx.unsafe(content);
+          await tx`INSERT INTO _migrations (filename) VALUES (${file})`;
+        });
+      }
 
       console.log(`  applied ${file}`);
     }
