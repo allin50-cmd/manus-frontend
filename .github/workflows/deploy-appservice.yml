@@ -17,8 +17,8 @@ env:
   NEXT_TELEMETRY_DISABLED: '1'
 
 # ── Job 1: Test ───────────────────────────────────────────────────────────────
-# Runs TypeScript check + full test suite on every push.
-# All downstream jobs are blocked until this passes.
+# Runs TypeScript check + full test suite on every push/PR.
+# No secrets required — runs on any branch, any trigger.
 jobs:
   test:
     name: Test
@@ -35,6 +35,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Cache the Temporal test-server binary (~80 MB).
+      # Without this, the binary is re-downloaded on every CI run.
+      # Keyed on package-lock.json so it refreshes when @temporalio/testing
+      # is upgraded.
+      - name: Cache Temporal test server binary
+        uses: actions/cache@v4
+        with:
+          path: /tmp/temporal-test-server-sdk-typescript-*
+          key: temporal-test-server-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            temporal-test-server-${{ runner.os }}-
+
       - name: TypeScript check
         run: npx tsc --noEmit
 
@@ -44,11 +56,11 @@ jobs:
 # ── Job 2: Build ──────────────────────────────────────────────────────────────
 # Produces the Next.js standalone package and uploads it as a workflow artifact.
 # The artifact is reused by deploy-web — no double-build.
+# No environment context here — secrets are only needed at deploy time.
   build:
     name: Build
     runs-on: ubuntu-latest
     needs: test
-    environment: ${{ github.event.inputs.environment || 'production' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -61,40 +73,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify build secrets
-        run: |
-          if [ -z "${{ secrets.APP_URL }}" ]; then
-            echo "ERROR: APP_URL secret is not set"
-            exit 1
-          fi
-
       - name: Build Next.js (standalone)
         run: npm run build
         env:
           NODE_ENV: production
           NEXT_TELEMETRY_DISABLED: '1'
-          # Set automatically by `next build`; explicit here as belt-and-suspenders
-          # for the TEMPORAL_ADDRESS localhost guard in src/lib/env.ts.
+          # NEXT_PHASE tells src/lib/env.ts to skip DATABASE_URL validation
+          # during the build (it is not available in the build environment).
           NEXT_PHASE: phase-production-build
-          # Baked into client bundles at build time — must match the live hostname.
+          # NEXT_PUBLIC_BASE_URL is baked into client bundles.
+          # Falls back to empty string when the secret is not set — the actual
+          # URL is set as an App Service env var at runtime, which overrides it.
           NEXT_PUBLIC_BASE_URL: ${{ secrets.APP_URL }}
 
       - name: Assemble standalone package
         run: |
-          # Static assets and public/ are not included in standalone output automatically.
+          # Static assets and public/ are not included in standalone automatically.
           cp -r .next/static  .next/standalone/.next/static
           cp -r public        .next/standalone/public
 
-          # Write a startup wrapper that sets HOSTNAME and PORT before delegating
-          # to the Next.js standalone server. Azure App Service forwards traffic
-          # to WEBSITES_PORT (default 8080); server.js must listen on 0.0.0.0.
-          cat > .next/standalone/startup.sh << 'EOF'
-          #!/bin/sh
-          set -eu
-          export HOSTNAME=0.0.0.0
-          export PORT=${PORT:-8080}
-          node server.js
-          EOF
+          # Startup wrapper: sets HOSTNAME=0.0.0.0 so Next.js listens on all
+          # interfaces (required for Azure App Service — the default is localhost
+          # which causes TCP RST on all incoming connections).
+          # Using printf instead of heredoc to avoid YAML indentation issues
+          # (a heredoc's closing delimiter must be at column 0; YAML indentation
+          # adds leading spaces that prevent the shell from recognising EOF).
+          printf '#!/bin/sh\nset -eu\nexport HOSTNAME=0.0.0.0\nexport PORT=${PORT:-8080}\nnode server.js\n' \
+            > .next/standalone/startup.sh
           chmod +x .next/standalone/startup.sh
 
       - name: Upload deployment artifact
@@ -105,8 +110,8 @@ jobs:
           retention-days: 1
 
 # ── Job 3: Migrate ────────────────────────────────────────────────────────────
-# Runs SQL migrations before any code is deployed.
-# Schema is always ahead of the running code.
+# Runs SQL migrations before code is deployed.
+# Requires the production/staging environment (has DATABASE_URL secret).
   migrate:
     name: Migrate database
     runs-on: ubuntu-latest
@@ -127,7 +132,8 @@ jobs:
       - name: Verify DATABASE_URL
         run: |
           if [ -z "${{ secrets.DATABASE_URL }}" ]; then
-            echo "ERROR: DATABASE_URL secret is not set"
+            echo "ERROR: DATABASE_URL secret is not set in the '${{ github.event.inputs.environment || 'production' }}' environment."
+            echo "Add it in: Settings → Environments → ${{ github.event.inputs.environment || 'production' }} → Secrets"
             exit 1
           fi
 
@@ -138,7 +144,7 @@ jobs:
 
 # ── Job 4: Deploy web ─────────────────────────────────────────────────────────
 # Downloads the pre-built artifact and deploys to Azure App Service.
-# Runs a health check after deploy — fails the job if the app does not return 200.
+# Runs a health check after deploy.
   deploy-web:
     name: Deploy web
     runs-on: ubuntu-latest
@@ -149,11 +155,12 @@ jobs:
       - name: Verify deploy secrets
         run: |
           MISSING=""
-          [ -z "${{ secrets.AZURE_WEBAPP_NAME }}"           ] && MISSING="$MISSING AZURE_WEBAPP_NAME"
+          [ -z "${{ secrets.AZURE_WEBAPP_NAME }}"            ] && MISSING="$MISSING AZURE_WEBAPP_NAME"
           [ -z "${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}" ] && MISSING="$MISSING AZURE_WEBAPP_PUBLISH_PROFILE"
-          [ -z "${{ secrets.APP_URL }}"                     ] && MISSING="$MISSING APP_URL"
+          [ -z "${{ secrets.APP_URL }}"                      ] && MISSING="$MISSING APP_URL"
           if [ -n "$MISSING" ]; then
             echo "ERROR: Missing required secrets:$MISSING"
+            echo "Add them in: Settings → Environments → ${{ github.event.inputs.environment || 'production' }} → Secrets"
             exit 1
           fi
 
@@ -172,8 +179,7 @@ jobs:
           startup-command: 'sh startup.sh'
 
       - name: Health check
-        # Uses curl built-in retry: 10 attempts, 8s between retries (max ~80s wait).
-        # Returns non-zero if the app never responds with 2xx, failing this job.
+        # 10 attempts, 8 s apart → waits up to ~80 s for the app to come up.
         run: |
           curl -fsS \
             --retry 10 \
@@ -203,16 +209,14 @@ jobs:
           echo "| **URL** | ${{ secrets.APP_URL }} |" >> $GITHUB_STEP_SUMMARY
 
 # ── Job 5: Deploy worker (optional) ──────────────────────────────────────────
-# Deploys the Temporal compliance worker to a separate App Service.
-# continue-on-error: true — a missing AZURE_WORKER_APP_NAME secret does not
-# fail the workflow run or block the web deployment.
+# continue-on-error so a missing AZURE_WORKER_APP_NAME doesn't block web deploy.
 # Remove continue-on-error once the worker App Service is provisioned.
   deploy-worker:
     name: Deploy worker (optional)
     runs-on: ubuntu-latest
     needs: [build, migrate, deploy-web]
     environment: ${{ github.event.inputs.environment || 'production' }}
-    continue-on-error: true   # ← remove once AZURE_WORKER_APP_NAME is provisioned
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
