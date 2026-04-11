@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * /api/connect/accounts
  *
@@ -7,7 +9,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { stripeClient } from '@/lib/stripe/connect-client';
-import { checkDatabaseConnection } from '@/server/db';
 import postgres from 'postgres';
 
 // ---------------------------------------------------------------------------

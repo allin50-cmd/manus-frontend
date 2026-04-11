@@ -20,7 +20,7 @@
  *   2. URL: https://yourdomain.com/api/connect/subscription-webhook
  *   3. Events from: Your account (not Connected accounts)
  *   4. Payload style: Standard (not thin)
- *   5. Copy the signing secret → set STRIPE_WEBHOOK_SECRET env var
+ *   5. Copy the signing secret → set STRIPE_SUBSCRIPTION_WEBHOOK_SECRET env var
  *
  * NOTE: For V2 accounts, subscription.customer_account contains the
  *       acct_*** ID (not a cus_*** ID).  Use this to look up the account.
@@ -34,7 +34,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   if (!subscriptionWebhookSecret) {
-    console.error('[subscription-webhook] STRIPE_WEBHOOK_SECRET is not set.');
+    console.error('[subscription-webhook] STRIPE_SUBSCRIPTION_WEBHOOK_SECRET is not set.');
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 503 },
