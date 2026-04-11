@@ -95,6 +95,9 @@ jobs:
           # Startup wrapper: sets HOSTNAME=0.0.0.0 so Next.js listens on all
           # interfaces (required for Azure App Service — the default is localhost
           # which causes TCP RST on all incoming connections).
+          # Using printf instead of heredoc to avoid YAML indentation issues
+          # (a heredoc's closing delimiter must be at column 0; YAML indentation
+          # adds leading spaces that prevent the shell from recognising EOF).
           printf '#!/bin/sh\nset -eu\nexport HOSTNAME=0.0.0.0\nexport PORT=${PORT:-8080}\nnode server.js\n' \
             > .next/standalone/startup.sh
           chmod +x .next/standalone/startup.sh
