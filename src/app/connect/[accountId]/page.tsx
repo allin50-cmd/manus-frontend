@@ -21,6 +21,11 @@ interface AccountStatus {
   readyToProcessPayments: boolean;
   onboardingComplete: boolean;
   requirementsStatus: string;
+  // Persisted by webhook handlers (null until first webhook fires)
+  subscriptionStatus: string | null;
+  subscriptionPriceId: string | null;
+  lastPaymentAt: string | null;
+  cardPaymentsStatus: string | null;
 }
 
 interface Product {
@@ -252,17 +257,59 @@ export default function AccountPage() {
         <h2 className="text-base font-semibold text-slate-900 mb-3">
           Platform Subscription
         </h2>
-        <p className="text-sm text-slate-500 mb-4">
-          Subscribe to the platform plan to unlock advanced features.
-        </p>
+
+        {/* Live subscription status badge */}
+        {status?.subscriptionStatus && (
+          <div className="mb-4">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                status.subscriptionStatus === 'active'
+                  ? 'bg-green-100 text-green-700'
+                  : status.subscriptionStatus === 'past_due'
+                  ? 'bg-red-100 text-red-700'
+                  : status.subscriptionStatus === 'paused'
+                  ? 'bg-amber-100 text-amber-700'
+                  : status.subscriptionStatus === 'cancelled'
+                  ? 'bg-slate-100 text-slate-600'
+                  : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                status.subscriptionStatus === 'active'
+                  ? 'bg-green-500'
+                  : status.subscriptionStatus === 'past_due'
+                  ? 'bg-red-500'
+                  : status.subscriptionStatus === 'paused'
+                  ? 'bg-amber-400'
+                  : 'bg-slate-400'
+              }`} />
+              {status.subscriptionStatus.replace('_', ' ')}
+            </span>
+            {status.lastPaymentAt && (
+              <span className="ml-3 text-xs text-slate-400">
+                Last paid {new Date(status.lastPaymentAt).toLocaleDateString('en-GB')}
+              </span>
+            )}
+          </div>
+        )}
+
+        {!status?.subscriptionStatus && (
+          <p className="text-sm text-slate-500 mb-4">
+            Subscribe to the platform plan to unlock advanced features.
+          </p>
+        )}
+
         <div className="flex gap-3">
-          <button
-            onClick={handleSubscribe}
-            disabled={subscribing}
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
-          >
-            {subscribing ? 'Redirecting…' : 'Subscribe'}
-          </button>
+          {status?.subscriptionStatus !== 'active' &&
+           status?.subscriptionStatus !== 'paused' && (
+            <button
+              onClick={handleSubscribe}
+              disabled={subscribing}
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            >
+              {subscribing ? 'Redirecting…' : 'Subscribe'}
+            </button>
+          )}
           <button
             onClick={handlePortal}
             disabled={portalLoading}

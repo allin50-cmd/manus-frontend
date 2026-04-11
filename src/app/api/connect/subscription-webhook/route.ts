@@ -11,7 +11,7 @@
  *   invoice.payment_failed         — failed payment
  *   payment_method.attached        — customer added a payment method
  *   payment_method.detached        — customer removed a payment method
- *   customer.updated                — customer billing details changed
+ *   customer.updated               — customer billing details changed
  *   customer.tax_id.created/deleted/updated
  *   billing_portal.session.created
  *
@@ -29,8 +29,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripeClient, subscriptionWebhookSecret } from '@/lib/stripe/connect-client';
 import type Stripe from 'stripe';
+import postgres from 'postgres';
 
 export const dynamic = 'force-dynamic';
+
+// ---------------------------------------------------------------------------
+// DB helper — one connection per request, closed in finally
+// ---------------------------------------------------------------------------
+function getDb() {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+  return postgres(url, { max: 1 });
+}
 
 export async function POST(req: NextRequest) {
   if (!subscriptionWebhookSecret) {
@@ -81,31 +91,18 @@ export async function POST(req: NextRequest) {
         await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
         break;
 
-      // ── Payment method events ───────────────────────────────────────────
+      // ── Payment method / customer / tax ID / portal events ──────────────
+      // These don't require DB writes in the current schema — logged for ops.
       case 'payment_method.attached':
-        await handlePaymentMethodAttached(event.data.object as Stripe.PaymentMethod);
-        break;
-
       case 'payment_method.detached':
-        await handlePaymentMethodDetached(event.data.object as Stripe.PaymentMethod);
-        break;
-
-      // ── Customer events ─────────────────────────────────────────────────
       case 'customer.updated':
-        await handleCustomerUpdated(event.data.object as Stripe.Customer);
-        break;
-
       case 'customer.tax_id.created':
       case 'customer.tax_id.deleted':
       case 'customer.tax_id.updated':
-        handleTaxIdEvent(event);
-        break;
-
-      // ── Billing portal events ───────────────────────────────────────────
       case 'billing_portal.configuration.created':
       case 'billing_portal.configuration.updated':
       case 'billing_portal.session.created':
-        console.log(`[subscription-webhook] Billing portal event: ${event.type}`);
+        console.log(`[subscription-webhook] Acknowledged: ${event.type}`);
         break;
 
       default:
@@ -126,59 +123,51 @@ export async function POST(req: NextRequest) {
 /**
  * customer.subscription.updated
  *
- * Handles:
- *   - Upgrades/downgrades (new price in items[0].price)
- *   - Quantity changes (new quantity in items[0].quantity)
- *   - Pause/resume (pause_collection field)
- *   - Pending cancellation (cancel_at_period_end = true)
- *   - Reactivation (cancel_at_period_end = false)
+ * Handles upgrades, downgrades, pauses, pending cancellation and reactivation.
+ * Persists the current status, subscription ID, and price ID to the DB so the
+ * dashboard can show the account's subscription state without a Stripe API call.
  */
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  // V2 accounts: use customer_account (acct_***) to identify the subscriber.
-  // For V1 customers this would be subscription.customer (cus_***).
+  // V2 accounts expose customer_account (acct_***) rather than customer (cus_***).
   const accountId = (subscription as any).customer_account ?? subscription.customer;
-  const subscriptionId = subscription.id;
-  const status = subscription.status;
 
-  // Current price and quantity
   const currentItem = subscription.items.data[0];
-  const priceId = currentItem?.price?.id;
-  const quantity = currentItem?.quantity;
+  const priceId = currentItem?.price?.id ?? null;
+
+  // Paused subscriptions: treat as 'paused' rather than Stripe's 'active'
+  // so the dashboard can show the correct state.
+  const effectiveStatus = subscription.pause_collection
+    ? 'paused'
+    : subscription.status;
 
   console.log('[subscription-webhook] Subscription updated:', {
     accountId,
-    subscriptionId,
-    status,
+    subscriptionId: subscription.id,
+    status: effectiveStatus,
     priceId,
-    quantity,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 
-  // Pause/resume detection
-  if (subscription.pause_collection) {
-    const resumesAt = subscription.pause_collection.resumes_at;
-    console.log('[subscription-webhook] Subscription paused. Resumes at:', resumesAt);
-    // TODO: update DB to mark subscription as paused
-    //   await db.query('UPDATE connected_accounts SET subscription_status = $1 WHERE stripe_account_id = $2', ['paused', accountId]);
+  const sql = getDb();
+  try {
+    await sql`
+      UPDATE connected_accounts
+      SET
+        subscription_id       = ${subscription.id},
+        subscription_status   = ${effectiveStatus},
+        subscription_price_id = ${priceId}
+      WHERE stripe_account_id = ${String(accountId)}
+    `;
+  } finally {
+    await sql.end();
   }
-
-  // Pending cancellation
-  if (subscription.cancel_at_period_end) {
-    console.log('[subscription-webhook] Subscription will cancel at period end');
-    // TODO: update DB to show cancellation pending
-  }
-
-  // TODO: update connected_accounts table with new subscription status/price
-  //   await db.query(
-  //     'UPDATE connected_accounts SET subscription_status = $1, price_id = $2 WHERE stripe_account_id = $3',
-  //     [status, priceId, accountId]
-  //   );
 }
 
 /**
  * customer.subscription.deleted
  *
- * The subscription has been cancelled and is now inactive.
- * Revoke access to any paid features for this account.
+ * The subscription is now cancelled. Nulls out the price ID so that queries
+ * for "accounts with an active plan" correctly exclude this account.
  */
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const accountId = (subscription as any).customer_account ?? subscription.customer;
@@ -188,18 +177,25 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     subscriptionId: subscription.id,
   });
 
-  // TODO: revoke access to premium features for this connected account
-  //   await db.query(
-  //     'UPDATE connected_accounts SET subscription_status = $1, price_id = NULL WHERE stripe_account_id = $2',
-  //     ['cancelled', accountId]
-  //   );
+  const sql = getDb();
+  try {
+    await sql`
+      UPDATE connected_accounts
+      SET
+        subscription_status   = 'cancelled',
+        subscription_price_id = NULL
+      WHERE stripe_account_id = ${String(accountId)}
+    `;
+  } finally {
+    await sql.end();
+  }
 }
 
 /**
  * invoice.payment_succeeded
  *
- * A subscription invoice was paid successfully.
- * Use this to confirm that the account's subscription remains active.
+ * A subscription invoice was paid. Records the timestamp so the dashboard
+ * can show "last paid" and so ops can query for overdue accounts.
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   const accountId = (invoice as any).customer_account ?? invoice.customer;
@@ -207,21 +203,28 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('[subscription-webhook] Invoice paid:', {
     accountId,
     invoiceId: invoice.id,
-    amount: invoice.amount_paid,
+    amountPaid: invoice.amount_paid,
   });
 
-  // TODO: update last_payment_at in your DB, send receipt email, etc.
-  //   await db.query(
-  //     'UPDATE connected_accounts SET last_payment_at = NOW() WHERE stripe_account_id = $1',
-  //     [accountId]
-  //   );
+  const sql = getDb();
+  try {
+    await sql`
+      UPDATE connected_accounts
+      SET last_payment_at = NOW()
+      WHERE stripe_account_id = ${String(accountId)}
+    `;
+  } finally {
+    await sql.end();
+  }
 }
 
 /**
  * invoice.payment_failed
  *
- * A subscription invoice payment failed.
- * Notify the account owner to update their payment method.
+ * A subscription invoice payment failed. Marks the account past_due so
+ * the dashboard can prompt the owner to update their payment method.
+ * Stripe will retry automatically — if all retries fail it fires
+ * customer.subscription.deleted.
  */
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   const accountId = (invoice as any).customer_account ?? invoice.customer;
@@ -232,67 +235,14 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     nextAttempt: invoice.next_payment_attempt,
   });
 
-  // TODO: notify the account owner and update subscription_status to 'past_due'
-  //   await db.query(
-  //     'UPDATE connected_accounts SET subscription_status = $1 WHERE stripe_account_id = $2',
-  //     ['past_due', accountId]
-  //   );
-}
-
-/**
- * payment_method.attached
- * A payment method was added to a customer.
- */
-async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) {
-  console.log('[subscription-webhook] Payment method attached:', {
-    paymentMethodId: paymentMethod.id,
-    customer: paymentMethod.customer,
-    type: paymentMethod.type,
-  });
-  // TODO: update DB if you track payment methods locally
-}
-
-/**
- * payment_method.detached
- * A payment method was removed from a customer.
- */
-async function handlePaymentMethodDetached(paymentMethod: Stripe.PaymentMethod) {
-  console.log('[subscription-webhook] Payment method detached:', {
-    paymentMethodId: paymentMethod.id,
-    type: paymentMethod.type,
-  });
-  // TODO: update DB if you track payment methods locally
-}
-
-/**
- * customer.updated
- *
- * Customer billing details changed — e.g. new default payment method.
- * IMPORTANT: Do not use customer.email as a login credential.
- */
-async function handleCustomerUpdated(customer: Stripe.Customer) {
-  const defaultPaymentMethod =
-    (customer.invoice_settings as any)?.default_payment_method;
-
-  console.log('[subscription-webhook] Customer updated:', {
-    customerId: customer.id,
-    defaultPaymentMethod,
-  });
-
-  // TODO: update billing info in DB (not login credentials)
-}
-
-/**
- * customer.tax_id.* events
- * Tax ID management — log and validate as needed.
- */
-function handleTaxIdEvent(event: Stripe.Event) {
-  const taxId = event.data.object as any;
-  console.log(`[subscription-webhook] Tax ID event (${event.type}):`, {
-    taxIdId: taxId.id,
-    type: taxId.type,
-    value: taxId.value,
-    verificationStatus: taxId.verification?.status,
-  });
-  // TODO: update tax ID validation status in your DB if needed
+  const sql = getDb();
+  try {
+    await sql`
+      UPDATE connected_accounts
+      SET subscription_status = 'past_due'
+      WHERE stripe_account_id = ${String(accountId)}
+    `;
+  } finally {
+    await sql.end();
+  }
 }
