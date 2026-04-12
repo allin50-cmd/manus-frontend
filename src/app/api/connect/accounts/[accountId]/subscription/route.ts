@@ -13,12 +13,15 @@ export const dynamic = 'force-dynamic';
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireSession } from '@/lib/auth/session';
 import { stripeClient, platformSubscriptionPriceId } from '@/lib/stripe/connect-client';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { accountId: string } },
 ) {
+  const unauth = requireSession(req);
+  if (unauth) return unauth;
   const { accountId } = params;
 
   // PLACEHOLDER: verify that the caller is authorised to subscribe this

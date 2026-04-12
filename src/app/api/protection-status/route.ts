@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { findByCompanyNumber } from '@/server/repositories/monitoredCompanies.repo';
 import { findByCompany } from '@/server/repositories/complianceAlerts.repo';
 import { cacheGet, cacheSet } from '@/lib/utils/cache';
+import { requireSession } from '@/lib/auth/session';
 
 const COMPANY_NUMBER_RE = /^([A-Z]{2}\d{6}|\d{8})$/i;
 const CACHE_TTL_MS = 60_000; // 60 seconds
 
 export async function GET(req: NextRequest) {
+  const unauth = requireSession(req);
+  if (unauth) return unauth;
+
   const companyNumber = req.nextUrl.searchParams.get('companyNumber');
   if (!companyNumber) {
     return NextResponse.json({ error: 'companyNumber is required' }, { status: 400 });

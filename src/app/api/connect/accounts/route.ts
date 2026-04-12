@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { stripeClient } from '@/lib/stripe/connect-client';
+import { requireSession } from '@/lib/auth/session';
 import postgres from 'postgres';
 
 // ---------------------------------------------------------------------------
@@ -25,7 +26,9 @@ function getDb() {
 // GET /api/connect/accounts
 // Returns all connected accounts stored in the connected_accounts table.
 // ---------------------------------------------------------------------------
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const unauth = requireSession(req);
+  if (unauth) return unauth;
   const sql = getDb();
   try {
     const rows = await sql<{
@@ -58,6 +61,8 @@ export async function GET() {
 // 2. Stores the mapping in the database.
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
+  const unauth = requireSession(req);
+  if (unauth) return unauth;
   let body: { displayName?: string; email?: string };
   try {
     body = await req.json();

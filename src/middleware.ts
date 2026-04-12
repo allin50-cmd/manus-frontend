@@ -17,6 +17,22 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SESSION_COOKIE = 'fg_session';
 
+// ── Timing-safe string comparison (Edge Runtime compatible) ───────────────────
+// Cannot use Node.js crypto in middleware (Edge Runtime). Uses XOR loop so
+// comparison time is O(max length) regardless of where values diverge.
+
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const bufA = enc.encode(a);
+  const bufB = enc.encode(b);
+  const len = Math.max(bufA.length, bufB.length);
+  let diff = a.length ^ b.length; // non-zero if lengths differ
+  for (let i = 0; i < len; i++) {
+    diff |= (bufA[i] ?? 0) ^ (bufB[i] ?? 0);
+  }
+  return diff === 0;
+}
+
 // ── Nonce helpers ─────────────────────────────────────────────────────────────
 
 function generateNonce(): string {
@@ -60,7 +76,7 @@ export function middleware(req: NextRequest): NextResponse {
     const token = req.cookies.get(SESSION_COOKIE)?.value;
     const expected = process.env.ADMIN_SESSION_TOKEN;
 
-    if (!expected || token !== expected) {
+    if (!expected || !token || !timingSafeStringEqual(token, expected)) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('from', encodeURIComponent(pathname));
       return NextResponse.redirect(loginUrl);

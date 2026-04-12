@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireSession } from '@/lib/auth/session';
 import { stripeClient } from '@/lib/stripe/connect-client';
 import postgres from 'postgres';
 
@@ -21,9 +22,11 @@ function getDb() {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { accountId: string } },
 ) {
+  const unauth = requireSession(req);
+  if (unauth) return unauth;
   const { accountId } = params;
 
   // ── Fetch live Stripe account status ───────────────────────────────────────

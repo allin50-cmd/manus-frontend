@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { safeEqual } from '../../../../lib/utils/safe-equal';
+import { isRateLimited, getClientIp } from '../../../../lib/utils/rateLimiter';
 
 const SESSION_COOKIE = 'fg_session';
 const COOKIE_MAX_AGE = 60 * 60 * 8; // 8 hours
@@ -12,6 +13,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       { error: 'Auth not configured' },
       { status: 503 },
+    );
+  }
+
+  // Brute-force protection — 5 attempts per IP per 5 minutes
+  const ip = getClientIp(req);
+  if (isRateLimited(`login:${ip}`, 5, 5 * 60 * 1_000)) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again later.' },
+      { status: 429 },
     );
   }
 

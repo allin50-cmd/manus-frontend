@@ -6,11 +6,13 @@ COPY package*.json ./
 RUN npm ci
 
 COPY tsconfig.json ./
+COPY tsconfig.worker.json ./
 COPY src/ ./src/
 
 # Compile worker + shared source to dist/
+# Uses tsconfig.worker.json which overrides noEmit:true and sets module:commonjs.
 # (Temporal's bundler resolves workflow imports at runtime via workflowsPath)
-RUN npx tsc --project tsconfig.json --outDir dist --skipLibCheck
+RUN npx tsc --project tsconfig.worker.json --skipLibCheck
 
 # ── Temporal Worker — Runtime Stage ───────────────────────────────────────────
 FROM node:20-alpine AS runner
