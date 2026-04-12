@@ -57,6 +57,8 @@ const _pa  = readEnv('STRIPE_PRICE_ACCOUNTS_FILING');
 const _pc  = readEnv('STRIPE_PRICE_CONFIRMATION_STATEMENT');
 const _ps  = readEnv('STRIPE_PRICE_STRIKE_OFF');
 const _ch  = readEnv('COMPANIES_HOUSE_API_KEY');
+const _aiKey   = readEnv('ANTHROPIC_API_KEY');
+const _aiModel = readEnv('ANTHROPIC_MODEL') || 'claude-opus-4-6';
 
 // ── Warn once at startup ────────────────────────────────────────────────────
 warnIfMissing('DATABASE_URL',                      _db);
@@ -66,6 +68,7 @@ warnIfMissing('STRIPE_PRICE_ACCOUNTS_FILING',      _pa,  'price_');
 warnIfMissing('STRIPE_PRICE_CONFIRMATION_STATEMENT', _pc, 'price_');
 warnIfMissing('STRIPE_PRICE_STRIKE_OFF',           _ps,  'price_');
 warnIfMissing('COMPANIES_HOUSE_API_KEY',           _ch);
+warnIfMissing('ANTHROPIC_API_KEY',                 _aiKey);
 
 // ── NODE_ENV — throw immediately if invalid (Next.js always sets this) ──────
 const nodeEnvRaw = readEnv('NODE_ENV') || 'development';
@@ -101,6 +104,13 @@ export const config = {
     get apiKey(): string { return demand('COMPANIES_HOUSE_API_KEY', _ch); },
     baseUrl: readEnv('COMPANIES_HOUSE_BASE_URL') ||
              'https://api.company-information.service.gov.uk',
+  },
+
+  ai: {
+    /** Returns API key or null — never throws. Callers must check null for graceful degradation. */
+    get apiKey(): string | null { return _aiKey || null; },
+    /** Model ID — accepts any string (Mythos or otherwise). */
+    model: _aiModel,
   },
 };
 

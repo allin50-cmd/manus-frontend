@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { companiesHouseService } from '@/server/services/companiesHouse';
 import { mapComplianceResponse } from '@/lib/companies-house/mapper';
 import { isRateLimited, getClientIp } from '@/lib/utils/rateLimiter';
+import { analyseCompany } from '@/lib/ai/compliance-analysis';
 
 // 20 requests per minute per IP (Companies House API has its own rate limits)
 const CH_RATE_LIMIT = 20;
@@ -55,7 +56,14 @@ export async function GET(req: NextRequest) {
           penalties: compliance.penalties,
         },
       });
-      return NextResponse.json({ company });
+      const aiResult = await analyseCompany(company);
+      return NextResponse.json({
+        company: {
+          ...company,
+          analysis: aiResult?.analysis ?? null,
+          recommendations: aiResult?.recommendations ?? null,
+        },
+      });
     }
 
     // Name search

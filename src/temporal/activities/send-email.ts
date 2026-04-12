@@ -3,12 +3,20 @@ import { log } from '@temporalio/activity';
 import { updateAlertStatus } from '../../repositories/alert.repository';
 import { db } from '../../db/client';
 import { alertAttempts } from '../../db/schema';
+import { generateEmailContent } from '@/lib/ai/compliance-analysis';
 
 export interface SendEmailInput {
   to: string;
   subject: string;
   body: string;
   alertId?: string;
+  aiContext?: {
+    companyName: string;
+    obligationType: string;
+    daysRemaining: number;
+    urgency: string;
+    dueDate: string;
+  };
 }
 
 /**
@@ -21,12 +29,24 @@ export interface SendEmailInput {
  * and an alert_attempt record is inserted.
  */
 export async function sendEmail(input: SendEmailInput): Promise<void> {
-  const { to, subject, alertId } = input;
+  const { to, alertId } = input;
+
+  // Attempt AI-generated content when context is provided; fall back to input values.
+  let subject = input.subject;
+  let body = input.body;
+  if (input.aiContext) {
+    const aiContent = await generateEmailContent(input.aiContext);
+    if (aiContent) {
+      subject = aiContent.subject;
+      body = aiContent.body;
+    }
+  }
 
   // STUB: log instead of sending
   log.warn('[sendEmail] STUB: email not sent in production', {
     to,
     subject,
+    bodyLength: body.length,
     alertId,
     note: 'Integrate Resend or AWS SES before going live',
   });
