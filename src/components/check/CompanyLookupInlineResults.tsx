@@ -4,6 +4,7 @@ import type { Company } from '@/types/company';
 import { CompanyResultCard } from './CompanyResultCard';
 import { DeadlineStatusCard } from './DeadlineStatusCard';
 import { ActivationPanel } from './ActivationPanel';
+import { AgentDiscoveryPanel } from '@/components/discovery/AgentDiscoveryPanel';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface Props {
@@ -38,6 +39,7 @@ export function CompanyLookupInlineResults({ loading, error, company }: Props) {
       <h2 className="text-lg font-bold text-slate-900">You have upcoming compliance deadlines</h2>
 
       <CompanyResultCard company={company} />
+      <AgentDiscoveryPanel companyNumber={company.number} />
       <DeadlineStatusCard company={company} />
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-1">

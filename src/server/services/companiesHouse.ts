@@ -402,6 +402,103 @@ export class CompaniesHouseService {
   }
 
   /**
+   * Fetch active and resigned officers (directors, secretaries, etc.)
+   * Returns empty array on 404 or error — non-critical enrichment.
+   */
+  async getOfficers(companyNumber: string): Promise<{
+    name: string;
+    role: string;
+    appointedOn: string;
+    resignedOn?: string;
+    nationality?: string;
+  }[]> {
+    try {
+      const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
+      const response = await fetch(
+        `${CH_API_BASE}/company/${cleanNumber}/officers?items_per_page=50`,
+        { headers: this.getAuthHeaders() },
+      );
+      if (!response.ok) return [];
+      const data = await response.json() as { items?: Record<string, unknown>[] };
+      return (data.items ?? []).map((item) => ({
+        name:        String(item['name'] ?? ''),
+        role:        String(item['officer_role'] ?? ''),
+        appointedOn: String(item['appointed_on'] ?? ''),
+        resignedOn:  item['resigned_on'] ? String(item['resigned_on']) : undefined,
+        nationality: item['nationality'] ? String(item['nationality']) : undefined,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Fetch persons with significant control (PSC / beneficial owners).
+   * Returns empty array on 404 or error.
+   */
+  async getPersonsWithSignificantControl(companyNumber: string): Promise<{
+    name: string;
+    nationality?: string;
+    notifiedOn: string;
+    ceasedOn?: string;
+    naturesOfControl: string[];
+  }[]> {
+    try {
+      const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
+      const response = await fetch(
+        `${CH_API_BASE}/company/${cleanNumber}/persons-with-significant-control`,
+        { headers: this.getAuthHeaders() },
+      );
+      if (!response.ok) return [];
+      const data = await response.json() as { items?: Record<string, unknown>[] };
+      return (data.items ?? []).map((item) => ({
+        name:             String(item['name'] ?? ''),
+        nationality:      item['nationality'] ? String(item['nationality']) : undefined,
+        notifiedOn:       String(item['notified_on'] ?? ''),
+        ceasedOn:         item['ceased_on'] ? String(item['ceased_on']) : undefined,
+        naturesOfControl: Array.isArray(item['natures_of_control'])
+          ? (item['natures_of_control'] as unknown[]).map(String)
+          : [],
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Fetch registered charges (mortgages, debentures, fixed/floating charges).
+   * Returns empty array on 404 or error.
+   */
+  async getCharges(companyNumber: string): Promise<{
+    chargeCode: string;
+    status: string;
+    createdOn: string;
+    satisfiedOn?: string;
+    description?: string;
+  }[]> {
+    try {
+      const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
+      const response = await fetch(
+        `${CH_API_BASE}/company/${cleanNumber}/charges`,
+        { headers: this.getAuthHeaders() },
+      );
+      if (!response.ok) return [];
+      const data = await response.json() as { items?: Record<string, unknown>[] };
+      return (data.items ?? []).map((item) => ({
+        chargeCode:  String(item['charge_code'] ?? item['id'] ?? ''),
+        status:      String(item['status'] ?? ''),
+        createdOn:   String(item['created_on'] ?? ''),
+        satisfiedOn: item['satisfied_on'] ? String(item['satisfied_on']) : undefined,
+        description: item['particulars']
+          ? String((item['particulars'] as Record<string, unknown>)['description'] ?? '')
+          : undefined,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Subscribe to Companies House streaming API for real-time updates
    * Returns event stream for company changes
    */
