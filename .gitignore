@@ -9,6 +9,11 @@ coverage/
 # Production
 dist/
 build/
+.next/
+out/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
 
 # Environment files
 .env
@@ -62,3 +67,5 @@ Thumbs.db
 *.key
 *.cert
 credentials.json
+.secrets
+.secrets

@@ -1,0 +1,39 @@
+# Dependencies (rebuilt in Docker)
+node_modules
+
+# Build output (rebuilt in Docker)
+dist
+
+# Development files
+.git
+.github
+.vscode
+.idea
+
+# Test artifacts
+test-results
+e2e
+playwright.config.ts
+screenshots
+
+# Documentation (not needed at runtime)
+*.md
+!README.md
+LICENSE
+
+# Environment files (secrets injected via Azure App Settings)
+.env
+.env.*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Nested project copy (from accidental git clone inside project dir)
+manus-frontend/
+
+# Deployment scripts (not needed inside container)
+deploy-azure.sh
+check-azure-prereqs.sh
+integrate-azure.sh
+test-deployment-tracking.sh

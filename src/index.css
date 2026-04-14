@@ -2,36 +2,458 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+/* ═══════════════════════════════════════ */
+/* THEME CSS VARIABLES                     */
+/* ═══════════════════════════════════════ */
+
+:root,
+[data-theme="dark"] {
+  --bg-primary: #0A0B14;
+  --bg-secondary: #111327;
+  --bg-surface: #13151C;
+  --bg-surface-hover: #1A1D28;
+  --bg-elevated: #1A1D28;
+  --bg-card: #13151C;
+  --bg-input: #1A1D28;
+
+  --header-bg: rgba(10, 11, 20, 0.80);
+  --footer-bg: #0A0B14;
+  --mobile-nav-bg: rgba(10, 11, 20, 0.95);
+
+  --border-primary: rgba(255, 255, 255, 0.10);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-input: rgba(255, 255, 255, 0.15);
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #a0aec0;
+  --text-muted: #718096;
+  --text-inverse: #0A0B14;
+  --text-heading: #ffffff;
+  --text-link: #5A4BFF;
+
+  --accent: #5A4BFF;
+  --accent-hover: #6B5BFF;
+  --accent-muted: rgba(90, 75, 255, 0.15);
+
+  --gradient-from: #0A0B14;
+  --gradient-via: #111327;
+  --gradient-to: #0A0B14;
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-dropdown: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  --badge-bg: rgba(90, 75, 255, 0.15);
+  --badge-text: #5A4BFF;
+
+  --stat-card-bg: rgba(255, 255, 255, 0.03);
+  --stat-card-border: rgba(255, 255, 255, 0.06);
+
+  --hero-glow: rgba(90, 75, 255, 0.08);
+  --section-bg: rgba(255, 255, 255, 0.02);
+  --section-bg-alt: rgba(90, 75, 255, 0.03);
+
+  --toggle-bg: #1A1D28;
+  --toggle-knob: #e2e8f0;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8f9fc;
+  --bg-secondary: #eef1f6;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f1f3f8;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f7f8fa;
+
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --footer-bg: #0f1117;
+  --mobile-nav-bg: rgba(255, 255, 255, 0.95);
+
+  --border-primary: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-input: rgba(0, 0, 0, 0.12);
+
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #a0aec0;
+  --text-inverse: #ffffff;
+  --text-heading: #111827;
+  --text-link: #4338ca;
+
+  --accent: #5A4BFF;
+  --accent-hover: #4338ca;
+  --accent-muted: rgba(90, 75, 255, 0.08);
+
+  --gradient-from: #f8f9fc;
+  --gradient-via: #eef1f6;
+  --gradient-to: #f8f9fc;
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.12);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-dropdown: 0 4px 24px rgba(0, 0, 0, 0.12);
+
+  --badge-bg: rgba(90, 75, 255, 0.08);
+  --badge-text: #4338ca;
+
+  --stat-card-bg: #ffffff;
+  --stat-card-border: rgba(0, 0, 0, 0.06);
+
+  --hero-glow: rgba(90, 75, 255, 0.04);
+  --section-bg: rgba(0, 0, 0, 0.01);
+  --section-bg-alt: rgba(90, 75, 255, 0.02);
+
+  --toggle-bg: #e2e8f0;
+  --toggle-knob: #ffffff;
+}
+
+/* ═══════════════════════════════════════ */
+/* THEME OVERRIDES                         */
+/* ═══════════════════════════════════════ */
+
+/* Global background + text driven by theme */
+body {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Gradient wrapper used in Layout */
+[data-theme="light"] .theme-gradient {
+  background: linear-gradient(135deg, var(--gradient-from), var(--gradient-via), var(--gradient-to)) !important;
+}
+
+/* Header */
+[data-theme="light"] header.theme-header {
+  background: var(--header-bg) !important;
+  border-bottom-color: var(--border-primary) !important;
+}
+[data-theme="light"] header.theme-header a,
+[data-theme="light"] header.theme-header span,
+[data-theme="light"] header.theme-header button {
+  color: var(--text-secondary);
+}
+[data-theme="light"] header.theme-header a:hover,
+[data-theme="light"] header.theme-header button:hover {
+  color: var(--text-primary);
+}
+[data-theme="light"] header.theme-header .logo-text {
+  color: var(--text-heading) !important;
+}
+
+/* Footer stays dark in both modes (common pattern) — keep it as is */
+
+/* Mobile nav */
+[data-theme="light"] nav.theme-mobile-nav {
+  background: var(--mobile-nav-bg) !important;
+  border-top-color: var(--border-primary) !important;
+}
+
+/* Cards & surfaces */
+[data-theme="light"] .theme-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-primary) !important;
+  box-shadow: var(--shadow-card);
+}
+
+/* Dropdowns & overlays */
+[data-theme="light"] .theme-dropdown {
+  background: var(--bg-elevated) !important;
+  border-color: var(--border-primary) !important;
+  box-shadow: var(--shadow-dropdown);
+}
+
+/* Landing sections */
+[data-theme="light"] .theme-section {
+  background: var(--section-bg) !important;
+}
+[data-theme="light"] .theme-section-alt {
+  background: var(--section-bg-alt) !important;
+}
+
+/* Text color overrides for light mode */
+[data-theme="light"] .text-white {
+  color: var(--text-heading) !important;
+}
+[data-theme="light"] .text-slate-300 {
+  color: var(--text-secondary) !important;
+}
+[data-theme="light"] .text-slate-400 {
+  color: var(--text-muted) !important;
+}
+[data-theme="light"] .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+/* Background overrides for light mode */
+[data-theme="light"] .bg-\[\#0A0B14\],
+[data-theme="light"] .bg-\[\#0A0B14\]\/80,
+[data-theme="light"] .bg-\[\#0A0B14\]\/95 {
+  background-color: var(--bg-primary) !important;
+}
+[data-theme="light"] .bg-\[\#13151C\] {
+  background-color: var(--bg-surface) !important;
+}
+[data-theme="light"] .bg-\[\#1A1D28\] {
+  background-color: var(--bg-elevated) !important;
+}
+
+/* Gradient backgrounds */
+[data-theme="light"] .bg-gradient-to-br.from-\[\#0A0B14\] {
+  --tw-gradient-from: var(--gradient-from) !important;
+  --tw-gradient-to: var(--gradient-to) !important;
+}
+[data-theme="light"] .from-\[\#0A0B14\] {
+  --tw-gradient-from: var(--gradient-from) !important;
+}
+[data-theme="light"] .via-\[\#111327\] {
+  --tw-gradient-via: var(--gradient-via) !important;
+}
+[data-theme="light"] .to-\[\#0A0B14\] {
+  --tw-gradient-to: var(--gradient-to) !important;
+}
+
+[data-theme="light"] .bg-gradient-to-br.from-\[\#0F1014\] {
+  --tw-gradient-from: var(--gradient-from) !important;
+}
+[data-theme="light"] .from-\[\#0F1014\] {
+  --tw-gradient-from: var(--gradient-from) !important;
+}
+[data-theme="light"] .via-\[\#1A1D28\] {
+  --tw-gradient-via: var(--gradient-via) !important;
+}
+[data-theme="light"] .to-\[\#0F1014\] {
+  --tw-gradient-to: var(--gradient-to) !important;
+}
+
+/* Border overrides */
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/5 {
+  border-color: var(--border-primary) !important;
+}
+[data-theme="light"] .border-\[\#2A2D3A\] {
+  border-color: var(--border-primary) !important;
+}
+
+/* hover:bg-white/5 → hover:bg-black/5 in light mode */
+[data-theme="light"] .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Specific component backgrounds used in pages */
+[data-theme="light"] .bg-white\/3,
+[data-theme="light"] .bg-white\/\[0\.03\] {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Input fields */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-input) !important;
+  color: var(--text-primary) !important;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Mobile menu in light mode */
+[data-theme="light"] .bg-\[\#0A0B14\]\/95 {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+}
+
+/* Accent button kept consistent */
+.bg-\[\#5A4BFF\] {
+  background-color: var(--accent) !important;
+}
+[data-theme="light"] .hover\:bg-\[\#6B5BFF\]:hover {
+  background-color: var(--accent-hover) !important;
+}
+
+/* Accent text */
+[data-theme="light"] .text-\[\#5A4BFF\] {
+  color: var(--text-link) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ═══════════════════════════════════════ */
+/* BASE RESET                              */
+/* ═══════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ═══════════════════════════════════════ */
+/* ANIMATIONS                              */
+/* ═══════════════════════════════════════ */
+
+.animate-in {
+  animation: animateIn 0.3s ease-out;
+}
+
+@keyframes animateIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(90, 75, 255, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(90, 75, 255, 0.4); }
+}
+
+.pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════ */
+/* THEME TOGGLE                            */
+/* ═══════════════════════════════════════ */
+
+.theme-toggle {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--toggle-bg);
+  border: 1px solid var(--border-primary);
+  cursor: pointer;
+  transition: background 0.3s ease, border-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+  flex-shrink: 0;
+}
+
+.theme-toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--toggle-knob);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="light"] .theme-toggle-knob {
+  transform: translateX(22px);
+  background: var(--accent);
+}
+
+.theme-toggle-knob svg {
+  width: 12px;
+  height: 12px;
+}
+
+[data-theme="dark"] .theme-toggle-knob svg {
+  color: #f5a623;
+}
+[data-theme="light"] .theme-toggle-knob svg {
+  color: #ffffff;
+}
+
+/* ═══════════════════════════════════════ */
+/* UTILITIES                               */
+/* ═══════════════════════════════════════ */
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+:focus-visible {
+  outline: 2px solid #5A4BFF;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(90, 75, 255, 0.3);
+  color: white;
+}
+
+@media (pointer: coarse) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media print {
+  .no-print, nav, footer {
+    display: none !important;
   }
   body {
-    @apply bg-background text-foreground;
+    background: white;
+    color: black;
   }
 }

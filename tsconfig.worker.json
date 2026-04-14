@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "target": "ES2020",
+    "incremental": false
+  },
+  "include": [
+    "src/temporal/**/*",
+    "src/db/**/*",
+    "src/repositories/**/*",
+    "src/config.ts",
+    "src/lib/**/*"
+  ],
+  "exclude": ["node_modules", "server"]
+}

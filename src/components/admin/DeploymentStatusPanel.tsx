@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatRelativeTime } from '@/utils/formatting';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,10 +35,9 @@ export function DeploymentStatusPanel() {
         setDeployments(data.deployments || []);
         setLastRefresh(new Date());
       } else {
-        console.error('Failed to fetch deployment status');
+        toast.error('Failed to fetch deployment status');
       }
     } catch (error) {
-      console.error('Error fetching deployment status:', error);
       toast.error('Failed to load deployment status');
     } finally {
       setLoading(false);
@@ -91,20 +91,11 @@ export function DeploymentStatusPanel() {
     }
   };
 
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  };
 
   const getGitHubWorkflowUrl = (workflowRun: string) => {
     // Assuming GitHub repo is configured in environment
-    const repo = import.meta.env.VITE_GITHUB_REPO || 'owner/repo';
+    const repo = process.env.NEXT_PUBLIC_GITHUB_REPO || 'owner/repo';
     return `https://github.com/${repo}/actions/runs/${workflowRun}`;
   };
 

@@ -1,89 +1,63 @@
-# FineGuard - Azure Deployment
+# FineGuard Pro
 
-A React/Vite application deployed to Azure Static Web Apps.
-
-## Current Deployments
-
-- **Production:** https://zhoqgoan.manus.space/
-- **Compliance:** https://compliance-t2rtvc.manus.space/
-
-This repository includes automated Azure deployment to run alongside or migrate from existing Manus deployments.
-
-## Quick Start
-
-### 1. Check Prerequisites
-
-```bash
-./check-azure-prereqs.sh
-```
-
-### 2. Deploy to Azure
-
-```bash
-./deploy-azure.sh
-```
-
-### 3. Monitor Deployment
-
-```bash
-gh run watch
-```
-
-## Documentation
-
-**[AZURE-DEPLOYMENT-GUIDE.md](./AZURE-DEPLOYMENT-GUIDE.md)** - Complete deployment guide
-**[MIGRATION-GUIDE.md](./MIGRATION-GUIDE.md)** - Migration from Manus to Azure
-
-## Prerequisites
-
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
-- [GitHub CLI](https://cli.github.com/)
-- [Node.js](https://nodejs.org/) (v16+)
-- [Git](https://git-scm.com/)
-- Azure account
-- GitHub account
-
-## What's Included
-
-- **deploy-azure.sh** - Automated deployment script
-- **check-azure-prereqs.sh** - Prerequisites verification
-- **.github/workflows/azure-static-web-apps-ci-cd.yml** - GitHub Actions CI/CD
-- **staticwebapp.config.json** - Azure Static Web Apps configuration
-- **AZURE-DEPLOYMENT-GUIDE.md** - Comprehensive deployment guide
-- **MIGRATION-GUIDE.md** - Migration from Manus to Azure
-
-## Features
-
-- Automatic deployments on push to main branch
-- Preview environments for pull requests
-- Free SSL certificate
-- Global CDN
-- Custom domain support (Standard tier)
-- Staging environments
+Full-stack compliance monitoring platform. Next.js 14 App Router with PostgreSQL, Stripe billing, and optional Temporal workflow engine.
 
 ## Architecture
 
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────────┐
-│   GitHub    │─────▶│ GitHub       │─────▶│ Azure Static    │
-│ Repository  │      │ Actions      │      │ Web Apps        │
-└─────────────┘      └──────────────┘      └─────────────────┘
-                            │                        │
-                            │                        ▼
-                            ▼                 ┌─────────────┐
-                     ┌──────────────┐         │   Global    │
-                     │ npm build    │         │     CDN     │
-                     └──────────────┘         └─────────────┘
+GitHub → GitHub Actions → Azure App Service (Node 20, Linux)
+                       → Azure PostgreSQL Flexible Server
 ```
 
-## Support
+This is a server-side application. It is **not** a static frontend. It requires a persistent Node.js process and a PostgreSQL database.
 
-See [AZURE-DEPLOYMENT-GUIDE.md](./AZURE-DEPLOYMENT-GUIDE.md) for:
-- Detailed setup instructions
-- Troubleshooting common issues
-- Post-deployment tasks
-- FAQ
+## Health endpoint
 
-## License
+```
+GET /api/health
+→ 200 { "status": "ok", "database": "connected" }
+→ 503 { "status": "unhealthy", "database": "disconnected" }
+```
 
-[Your License Here]
+## First deploy
+
+See [AZURE-DEPLOYMENT-GUIDE.md](./AZURE-DEPLOYMENT-GUIDE.md).
+
+## Local development
+
+```bash
+cp .env.example .env.local
+# fill in DATABASE_URL and other required vars
+npm install
+npm run db:migrate
+npm run dev
+```
+
+## Tests
+
+```bash
+npm test          # 56 unit/integration/workflow tests
+npx tsc --noEmit  # TypeScript check
+```
+
+## Deploy via CLI
+
+```bash
+# Edit values in scripts/run-deploy.sh, then:
+bash scripts/run-deploy.sh
+```
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/deploy-azure.sh` | Full Azure provisioner + deployer (idempotent) |
+| `scripts/run-deploy.sh` | Config wrapper for deploy-azure.sh |
+| `scripts/stress-test.ts` | Autocannon load test against running server |
+| `scripts/smoke-test.ts` | Quick endpoint probe |
+
+## Deprecated
+
+- **Azure Static Web Apps** — not used, not compatible with this app
+- `staticwebapp.config.json` — deleted
+- Legacy SPA/Vite workflows — deleted
