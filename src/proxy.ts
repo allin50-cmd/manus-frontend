@@ -1,5 +1,5 @@
 /**
- * Next.js middleware.
+ * Next.js proxy (formerly middleware).
  *
  * Responsibilities:
  * 1. Dashboard session auth — redirects to /login when cookie is absent/invalid.
@@ -60,9 +60,9 @@ function buildCsp(nonce: string): string {
   ].join('; ');
 }
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+// ── Proxy ─────────────────────────────────────────────────────────────────────
 
-export function middleware(req: NextRequest): NextResponse {
+export function proxy(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
 
   // API routes return JSON — browsers don't enforce CSP on them.

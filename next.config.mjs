@@ -3,9 +3,7 @@
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ['postgres'],
-  },
+  serverExternalPackages: ['postgres'],
   async headers() {
     return [
       {
