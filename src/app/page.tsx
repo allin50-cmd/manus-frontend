@@ -41,19 +41,38 @@ export default function HomePage() {
   return (
     <div className="bg-gradient-to-b from-slate-50 to-white">
       {/* Hero */}
-      <section className="mx-auto max-w-4xl px-4 pt-20 pb-16 text-center">
-        <h1 className="text-5xl font-bold tracking-tight text-slate-900 mb-4">
-          Most UK companies have deadlines they&apos;re about to miss.
-        </h1>
-        <p className="text-xl text-slate-600 mb-8">
-          Automated deadline monitoring for UK businesses.
-        </p>
-        <HeroSearch />
-        <TrustStrip />
+      <section className="relative overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-blue-50/80 via-slate-50/60 to-transparent"
+        />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-blue-100/30 blur-3xl" />
+        </div>
+
+        <div className="mx-auto max-w-4xl px-4 pt-24 pb-20 text-center">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-semibold text-blue-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            Live monitoring · Official Companies House data
+          </div>
+
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-5 leading-[1.1]">
+            Never miss a{' '}
+            <span className="text-blue-600">Companies House</span>{' '}
+            deadline again.
+          </h1>
+
+          <p className="text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Automated compliance monitoring for UK businesses. Get alerts before every filing deadline and avoid costly fines.
+          </p>
+
+          <HeroSearch />
+          <TrustStrip />
+        </div>
       </section>
 
       {/* Problems */}
-      <section id="features" className="mx-auto max-w-6xl px-4 py-16">
+      <section id="features" className="mx-auto max-w-6xl px-4 py-20">
         <SectionHeading
           title="Stop Problems Before They Cost You."
           subtitle="FineGuard Pro monitors your Companies House obligations so you never miss a deadline."
@@ -62,15 +81,15 @@ export default function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="bg-slate-50 py-16">
+      <section className="bg-slate-50 py-20">
         <div className="mx-auto max-w-6xl px-4">
-          <SectionHeading title="How It Works." />
+          <SectionHeading title="How It Works." subtitle="Three simple steps from search to protection." />
           <HowItWorks />
         </div>
       </section>
 
-      {/* Testimonial */}
-      <section className="mx-auto max-w-4xl px-4 py-16">
+      {/* Testimonials */}
+      <section className="mx-auto max-w-6xl px-4 py-20">
         <TestimonialBlock />
       </section>
 
@@ -80,14 +99,16 @@ export default function HomePage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-3xl px-4 py-16">
+      <section id="faq" className="mx-auto max-w-3xl px-4 py-20">
         <SectionHeading title="Frequently Asked Questions" />
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 space-y-4">
           {FAQ_ITEMS.map(({ q, a }) => (
             <details key={q} className="group rounded-xl border bg-white p-5 open:shadow-sm">
               <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-slate-900 marker:content-none">
                 {q}
-                <span className="ml-4 flex-shrink-0 text-slate-400 group-open:rotate-180 transition-transform">▾</span>
+                <span className="ml-4 flex-shrink-0 text-slate-400 group-open:rotate-180 transition-transform duration-200">
+                  ▾
+                </span>
               </summary>
               <p className="mt-3 text-sm text-slate-600 leading-relaxed">{a}</p>
             </details>

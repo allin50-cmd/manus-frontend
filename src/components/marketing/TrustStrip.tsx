@@ -1,21 +1,24 @@
-import { CheckCircle } from 'lucide-react';
+import { Building2, TrendingDown, Users, Clock } from 'lucide-react';
 
-const items = [
-  'UK Compliance Aligned',
-  'Official Companies House Data',
-  '7-Year Record Ready',
-  'Built for SMEs & Accountants',
+const stats = [
+  { icon: Building2, value: '12,400+', label: 'Companies Protected' },
+  { icon: TrendingDown, value: '£2.1M+', label: 'Penalties Avoided' },
+  { icon: Users, value: '4,800+', label: 'UK Business Owners' },
+  { icon: Clock, value: '60 days', label: 'Earliest Alert' },
 ];
 
 export function TrustStrip() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-sm text-slate-600 mt-6">
-      {items.map((item) => (
-        <span key={item} className="flex items-center gap-1.5">
-          <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-          {item}
-        </span>
-      ))}
+    <div className="mt-12 border-t border-slate-200 pt-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        {stats.map(({ icon: Icon, value, label }) => (
+          <div key={label} className="flex flex-col items-center gap-1.5">
+            <Icon className="w-5 h-5 text-blue-500 mb-0.5" />
+            <p className="text-2xl font-bold text-slate-900">{value}</p>
+            <p className="text-xs text-slate-500 text-center">{label}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { getDashboardData } from '@/server/services/dashboard.service';
 import type { DashboardStats as DashboardStatsType, UpcomingDeadline } from '@/types/dashboard';
 import type { ComplianceAlert } from '@/types/alerts';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
 async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
   if (!companyNumber) {
@@ -17,7 +18,11 @@ async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
       <EmptyState
         title="No company selected"
         description="Search for a company to start monitoring."
-        action={<Link href="/check" className="text-sm text-blue-600 hover:underline">Check a Company →</Link>}
+        action={
+          <Link href="/check" className="text-sm text-blue-600 hover:underline">
+            Check a Company →
+          </Link>
+        }
       />
     );
   }
@@ -29,7 +34,11 @@ async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
       <EmptyState
         title="Company not monitored"
         description="This company isn't yet activated. Check it and activate protection."
-        action={<Link href={`/check?q=${companyNumber}`} className="text-sm text-blue-600 hover:underline">Activate protection →</Link>}
+        action={
+          <Link href={`/check?q=${companyNumber}`} className="text-sm text-blue-600 hover:underline">
+            Activate protection →
+          </Link>
+        }
       />
     );
   }
@@ -61,7 +70,7 @@ async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
       <div className="grid lg:grid-cols-[1.5fr_1fr] gap-6">
         <div>
           <h3 className="text-sm font-semibold text-slate-700 mb-3">Upcoming Deadlines</h3>
-          <UpcomingDeadlinesTable deadlines={deadlines} />
+          <UpcomingDeadlinesTable deadlines={deadlines as UpcomingDeadline[]} />
         </div>
         <div className="space-y-4">
           <div>
@@ -78,15 +87,28 @@ async function DashboardContent({ companyNumber }: { companyNumber?: string }) {
   );
 }
 
-export default function DashboardPage({ searchParams }: { searchParams: { company?: string } }) {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ company?: string }>;
+}) {
+  const { company } = await searchParams;
+
   return (
     <PageContainer>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
         <p className="text-slate-500 text-sm mt-1">Your compliance monitoring overview.</p>
       </div>
-      <Suspense fallback={<div className="text-slate-500 text-sm">Loading…</div>}>
-        <DashboardContent companyNumber={searchParams.company} />
+      <Suspense
+        fallback={
+          <div className="flex items-center gap-2 py-16 text-slate-500 text-sm justify-center">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading dashboard…
+          </div>
+        }
+      >
+        <DashboardContent companyNumber={company} />
       </Suspense>
     </PageContainer>
   );
