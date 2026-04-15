@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -86,8 +86,32 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   id: uuid('id').primaryKey().defaultRandom(),
   companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
   companyName: varchar('company_name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }), // contact email for alerts
   stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+  status: varchar('status', { length: 20 }).default('active').notNull(), // active, cancelled, past_due
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
+});
+
+/**
+ * Processed Webhook Events Table
+ * Tracks Stripe webhook event IDs to prevent duplicate processing
+ */
+export const processedWebhookEvents = pgTable('processed_webhook_events', {
+  eventId: varchar('event_id', { length: 255 }).primaryKey(),
+  processedAt: timestamp('processed_at').defaultNow().notNull(),
+});
+
+/**
+ * Alerts Log Table
+ * Tracks sent compliance alerts to prevent duplicate notifications
+ */
+export const alertsLog = pgTable('alerts_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  alertType: varchar('alert_type', { length: 100 }).notNull(), // e.g. 'accounts_overdue', 'cs_due_soon'
+  eventHash: varchar('event_hash', { length: 64 }).notNull().unique(), // sha256(companyNumber:alertType:dueDate)
+  sentAt: timestamp('sent_at').defaultNow().notNull(),
 });
 
 // Export types for use in the application
@@ -108,3 +132,6 @@ export type NewContact = typeof contacts.$inferInsert;
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+export type ProcessedWebhookEvent = typeof processedWebhookEvents.$inferSelect;
+export type AlertsLogEntry = typeof alertsLog.$inferSelect;

@@ -5,8 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, processedWebhookEvents, alertsLog } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
+import { runAlertWorker } from './workers/alert-worker';
 import { companiesHouseService } from './services/companiesHouse';
 
 // Load environment variables
@@ -55,10 +56,31 @@ app.post(
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
+    // Deduplicate: skip if we've already processed this event
+    try {
+      await db.insert(processedWebhookEvents).values({ eventId: event.id }).onConflictDoNothing();
+      const [existing] = await db
+        .select()
+        .from(processedWebhookEvents)
+        .where(eq(processedWebhookEvents.eventId, event.id))
+        .limit(1);
+      if (!existing) {
+        // Already processed – inserted nothing means the row existed
+        return res.json({ received: true, duplicate: true });
+      }
+    } catch (err) {
+      console.error('Webhook dedup check failed:', err);
+    }
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const companyNumber = session.metadata?.companyNumber;
       const companyName = session.metadata?.companyName;
+      const email = session.customer_details?.email ?? null;
+
+      // Extract subscription ID if present
+      const stripeSubscriptionId =
+        typeof session.subscription === 'string' ? session.subscription : null;
 
       if (companyNumber && companyName) {
         try {
@@ -67,15 +89,40 @@ app.post(
             .values({
               companyNumber,
               companyName,
+              email,
               stripeSessionId: session.id,
+              stripeSubscriptionId,
+              status: 'active',
             })
-            .onConflictDoNothing();
+            .onConflictDoUpdate({
+              target: monitoredCompanies.companyNumber,
+              set: {
+                email,
+                stripeSessionId: session.id,
+                stripeSubscriptionId,
+                status: 'active',
+              },
+            });
 
-          console.log(`✅ Company monitored: ${companyName} (${companyNumber})`);
+          console.log(`✅ Company monitored: ${companyName} (${companyNumber}) – ${email ?? 'no email'}`);
         } catch (err) {
           console.error('Error persisting monitored company:', err);
           return res.status(500).json({ error: 'Database error' });
         }
+      }
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+      const sub = event.data.object as Stripe.Subscription;
+      // Mark subscription as cancelled
+      try {
+        await db
+          .update(monitoredCompanies)
+          .set({ status: 'cancelled' })
+          .where(eq(monitoredCompanies.stripeSubscriptionId, sub.id));
+        console.log(`❌ Subscription cancelled: ${sub.id}`);
+      } catch (err) {
+        console.error('Error updating cancelled subscription:', err);
       }
     }
 
@@ -136,7 +183,7 @@ app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Stripe not configured' });
   }
 
-  const { companyNumber, companyName } = req.body;
+  const { companyNumber, companyName, email } = req.body;
 
   if (!companyNumber || !companyName) {
     return res.status(400).json({ error: 'companyNumber and companyName are required' });
@@ -149,14 +196,22 @@ app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
 
   const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
 
+  // Idempotency key: same company + same email = same session (prevents double-charges)
+  const idempotencyKey = `checkout-${companyNumber}-${email ?? 'noemail'}`;
+
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { companyNumber, companyName },
-      success_url: `${appUrl}/compliance-bundle?activated=1&company=${encodeURIComponent(companyNumber)}`,
-      cancel_url: `${appUrl}/compliance-bundle`,
-    });
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        metadata: { companyNumber, companyName },
+        // Pre-fill email if provided so user doesn't have to type it again
+        ...(email ? { customer_email: email } : {}),
+        success_url: `${appUrl}/compliance-bundle?activated=1&company=${encodeURIComponent(companyNumber)}`,
+        cancel_url: `${appUrl}/compliance-bundle`,
+      },
+      { idempotencyKey }
+    );
 
     res.json({ url: session.url });
   } catch (err) {
@@ -187,6 +242,33 @@ app.get('/api/protection-status', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('Error checking protection status:', err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// INTERNAL ALERT RUNNER ENDPOINT
+// ============================================================================
+
+/**
+ * POST /api/internal/run-alerts
+ * Triggers the daily compliance alert worker.
+ * Called by GitHub Actions cron – secured with ALERTS_RUNNER_TOKEN.
+ */
+app.post('/api/internal/run-alerts', async (req: Request, res: Response) => {
+  const token = req.headers['x-alerts-token'];
+  const expectedToken = process.env.ALERTS_RUNNER_TOKEN;
+
+  if (!expectedToken || token !== expectedToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  console.log('🔔 Alert worker triggered via API');
+  try {
+    const result = await runAlertWorker();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('Alert worker failed:', err);
+    res.status(500).json({ ok: false, error: 'Alert worker failed' });
   }
 });
 

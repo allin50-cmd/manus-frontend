@@ -1,0 +1,46 @@
+name: FineGuard Daily Compliance Alerts
+
+on:
+  schedule:
+    # Every day at 09:00 UTC (10am BST / 9am GMT)
+    - cron: '0 9 * * *'
+
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  run-alerts:
+    name: Run compliance alert worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Wake up App Service
+        # F1 free tier sleeps – ping health endpoint first
+        run: |
+          echo "Waking up App Service..."
+          curl --retry 5 --retry-delay 10 --retry-connrefused \
+               --max-time 60 --silent --fail \
+               "${{ secrets.APP_URL }}/api/health" || true
+          echo "App Service ready"
+
+      - name: Trigger alert worker
+        run: |
+          RESPONSE=$(curl --silent --fail --show-error \
+            --max-time 120 \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --header "x-alerts-token: ${{ secrets.ALERTS_RUNNER_TOKEN }}" \
+            "${{ secrets.APP_URL }}/api/internal/run-alerts")
+
+          echo "Worker response: $RESPONSE"
+
+          # Fail the workflow if the worker reported errors
+          OK=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('ok','false'))")
+          if [ "$OK" != "True" ] && [ "$OK" != "true" ]; then
+            echo "Alert worker reported failure"
+            exit 1
+          fi
+
+          ALERTS=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('alertsSent',0))")
+          echo "✅ Alerts sent: $ALERTS"
