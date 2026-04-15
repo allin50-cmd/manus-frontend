@@ -8,7 +8,7 @@ const COMPANY_NUMBER_RE = /^([A-Z]{2}\d{6}|\d{8})$/i;
 const CACHE_TTL_MS = 60_000; // 60 seconds
 
 export async function GET(req: NextRequest) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
 
   const companyNumber = req.nextUrl.searchParams.get('companyNumber');

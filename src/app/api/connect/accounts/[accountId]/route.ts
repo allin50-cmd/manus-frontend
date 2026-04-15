@@ -23,11 +23,11 @@ function getDb() {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { accountId: string } },
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
-  const { accountId } = params;
+  const { accountId } = await params;
 
   // ── Fetch live Stripe account status ───────────────────────────────────────
   let account;

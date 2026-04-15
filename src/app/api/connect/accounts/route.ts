@@ -27,7 +27,7 @@ function getDb() {
 // Returns all connected accounts stored in the connected_accounts table.
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
   const sql = getDb();
   try {
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
 // 2. Stores the mapping in the database.
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
   let body: { displayName?: string; email?: string };
   try {

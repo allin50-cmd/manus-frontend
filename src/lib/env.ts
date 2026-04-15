@@ -8,11 +8,6 @@ const envSchema = z.object({
   DATABASE_URL: isBuildPhase
     ? z.string().optional().default('')
     : z.string().min(1, 'DATABASE_URL is required'),
-  // Temporal worker is deferred — app boots fine without a live Temporal cluster.
-  // localhost:7233 is acceptable until the worker App Service is provisioned.
-  TEMPORAL_ADDRESS: z.string().min(1).default('localhost:7233'),
-  TEMPORAL_NAMESPACE: z.string().default('default'),
-  TEMPORAL_TASK_QUEUE: z.string().default('fineguard-compliance'),
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),

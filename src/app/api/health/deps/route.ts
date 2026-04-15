@@ -19,7 +19,6 @@ export async function GET() {
     database:       dbOk ? 'connected' : 'disconnected',
     stripe:         stripeConfigured ? 'configured' : 'not-configured',
     companiesHouse: chConfigured ? 'configured' : 'not-configured',
-    temporal:       process.env.TEMPORAL_ADDRESS ?? 'not-set',
     timestamp:      new Date().toISOString(),
   }, { status: dbOk ? 200 : 503 });
 }

@@ -19,11 +19,11 @@ import { stripeClient, APPLICATION_FEE_AMOUNT } from '@/lib/stripe/connect-clien
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { accountId: string } },
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
-  const { accountId } = params;
+  const { accountId } = await params;
 
   let body: { priceId?: string; quantity?: number };
   try {

@@ -16,11 +16,11 @@ import { stripeClient } from '@/lib/stripe/connect-client';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { accountId: string } },
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
-  const { accountId } = params;
+  const { accountId } = await params;
 
   // Determine the base URL for return/refresh redirects.
   // PLACEHOLDER: in production, use your real domain from env.

@@ -20,20 +20,3 @@ export function daysUntil(date: Date | string): number {
 export function toISODate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
-
-/**
- * Map a remaining-day count to a Temporal duration string for workflow waits.
- *
- * > 30 days  → '14d'
- * 14–30 days → '7d'
- *  7–14 days → '3d'
- *  0–7 days  → '24h'
- * overdue    → '6h'
- */
-export function toTemporalDuration(daysRemaining: number): string {
-  if (daysRemaining > 30) return '14d';
-  if (daysRemaining > 14) return '7d';
-  if (daysRemaining > 7) return '3d';
-  if (daysRemaining > 0) return '24h';
-  return '6h';
-}

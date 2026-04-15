@@ -14,7 +14,6 @@ vi.mock('../../repositories/alert.repository', () => ({
 vi.mock('../../lib/ids', () => ({
   dedupeKey: (parts: string[]) => parts.join(':'),
   newId: () => '00000000-0000-0000-0000-000000000000',
-  workflowId: (id: string) => `obligation:${id}`,
 }));
 
 // Mock billing gate repo
@@ -22,7 +21,7 @@ vi.mock('../../server/repositories/monitoredCompanies.repo', () => ({
   findByCompanyNumber: vi.fn(),
 }));
 
-import { createAlert } from '../../temporal/activities/create-alert';
+import { createAlert } from '../../services/create-alert';
 import { insertAlertIfNew } from '../../repositories/alert.repository';
 import { findByCompanyNumber } from '../../server/repositories/monitoredCompanies.repo';
 

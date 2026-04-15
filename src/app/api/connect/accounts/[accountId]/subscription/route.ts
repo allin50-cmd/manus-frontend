@@ -18,11 +18,11 @@ import { stripeClient, platformSubscriptionPriceId } from '@/lib/stripe/connect-
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { accountId: string } },
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
-  const { accountId } = params;
+  const { accountId } = await params;
 
   // PLACEHOLDER: verify that the caller is authorised to subscribe this
   // account (e.g. check session cookie matches the account owner).

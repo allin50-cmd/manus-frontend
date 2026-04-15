@@ -8,10 +8,10 @@ const SESSION_COOKIE = 'fg_session';
  * Returns true when the request carries a valid admin session cookie.
  * Reads from the Next.js cookies() API (server components / route handlers).
  */
-export function hasValidSession(): boolean {
+export async function hasValidSession(): Promise<boolean> {
   const expected = process.env.ADMIN_SESSION_TOKEN;
   if (!expected) return false;
-  const store = cookies();
+  const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return false;
   return safeEqual(token, expected);
@@ -22,11 +22,11 @@ export function hasValidSession(): boolean {
  * Returns a 401 NextResponse when the session is invalid, null when valid.
  *
  * Usage:
- *   const unauth = requireSession(req);
+ *   const unauth = await requireSession(req);
  *   if (unauth) return unauth;
  */
-export function requireSession(_req: NextRequest): NextResponse | null {
-  if (!hasValidSession()) {
+export async function requireSession(_req: NextRequest): Promise<NextResponse | null> {
+  if (!(await hasValidSession())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   return null;

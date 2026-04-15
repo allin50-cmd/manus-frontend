@@ -35,18 +35,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Cache the Temporal test-server binary (~80 MB).
-      # Without this, the binary is re-downloaded on every CI run.
-      # Keyed on package-lock.json so it refreshes when @temporalio/testing
-      # is upgraded.
-      - name: Cache Temporal test server binary
-        uses: actions/cache@v4
-        with:
-          path: /tmp/temporal-test-server-sdk-typescript-*
-          key: temporal-test-server-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            temporal-test-server-${{ runner.os }}-
-
       - name: TypeScript check
         run: npx tsc --noEmit
 
@@ -208,39 +196,3 @@ jobs:
           echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **URL** | ${{ secrets.APP_URL }} |" >> $GITHUB_STEP_SUMMARY
 
-# ── Job 5: Deploy worker (optional) ──────────────────────────────────────────
-# continue-on-error so a missing AZURE_WORKER_APP_NAME doesn't block web deploy.
-# Remove continue-on-error once the worker App Service is provisioned.
-  deploy-worker:
-    name: Deploy worker (optional)
-    runs-on: ubuntu-latest
-    needs: [build, migrate, deploy-web]
-    environment: ${{ github.event.inputs.environment || 'production' }}
-    continue-on-error: true
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build worker Docker image
-        run: |
-          docker build \
-            -f Dockerfile.worker \
-            -t fineguard-worker:${{ github.sha }} \
-            .
-
-      - name: Deploy worker to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_WORKER_APP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WORKER_PUBLISH_PROFILE }}
-          images: fineguard-worker:${{ github.sha }}
-          startup-command: 'node dist/temporal/worker.js'
-
-      - name: Job summary
-        if: always()
-        run: |
-          echo "## FineGuard Pro — Worker" >> $GITHUB_STEP_SUMMARY
-          echo "| | |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Status** | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY

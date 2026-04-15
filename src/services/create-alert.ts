@@ -1,8 +1,8 @@
-import { log } from '../../lib/logger';
-import { insertAlertIfNew } from '../../repositories/alert.repository';
-import { findByCompanyNumber } from '../../server/repositories/monitoredCompanies.repo';
-import { dedupeKey as buildDedupeKey } from '../../lib/ids';
-import type { AlertUrgency, AlertChannel } from '../../domain/types/alert';
+import { log } from '../lib/logger';
+import { insertAlertIfNew } from '../repositories/alert.repository';
+import { findByCompanyNumber } from '../server/repositories/monitoredCompanies.repo';
+import { dedupeKey as buildDedupeKey } from '../lib/ids';
+import type { AlertUrgency, AlertChannel } from '../domain/types/alert';
 
 export interface CreateAlertInput {
   obligationId: string;
@@ -19,10 +19,9 @@ export interface CreateAlertInput {
  *
  * Billing gate: if companyNumber is supplied and the company's billing_status
  * is not 'active', the alert is suppressed and no record is written.
- * This is the sole outbound-effects gate — workflows continue running.
  *
  * Deduplication: if an alert with the same dedupeKey already exists, the
- * insert is silently skipped and this activity returns without error.
+ * insert is silently skipped and this function returns without error.
  */
 export async function createAlert(input: CreateAlertInput): Promise<void> {
   const { obligationId, tenantId, urgency, channel, dueDate, companyNumber } = input;

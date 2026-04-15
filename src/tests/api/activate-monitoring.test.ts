@@ -2,7 +2,7 @@
  * Tests for POST /api/monitoring/activate
  *
  * Verifies that the route creates a monitored company and two obligations,
- * starts workflows for each, and returns the expected response shape.
+ * and returns the expected response shape.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -18,10 +18,6 @@ vi.mock('../../repositories/obligation.repository', () => ({
   insertObligation: vi.fn(),
 }));
 
-vi.mock('../../domain/services/workflow-start.service', () => ({
-  startObligationWorkflow: vi.fn(),
-}));
-
 // ── Import mocks and route handler ───────────────────────────────────────────
 
 import {
@@ -30,7 +26,6 @@ import {
   findCompanyById,
 } from '../../repositories/company.repository';
 import { insertObligation } from '../../repositories/obligation.repository';
-import { startObligationWorkflow } from '../../domain/services/workflow-start.service';
 import { POST } from '../../app/api/monitoring/activate/route';
 import { NextRequest } from 'next/server';
 
@@ -38,7 +33,6 @@ const mockFindCompanyByNumber = vi.mocked(findCompanyByNumber);
 const mockInsertMonitoredCompany = vi.mocked(insertMonitoredCompany);
 const mockFindCompanyById = vi.mocked(findCompanyById);
 const mockInsertObligation = vi.mocked(insertObligation);
-const mockStartObligationWorkflow = vi.mocked(startObligationWorkflow);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -91,11 +85,6 @@ describe('POST /api/monitoring/activate', () => {
     mockInsertObligation
       .mockResolvedValueOnce({ id: 'ob000001-0000-0000-0000-000000000001' })
       .mockResolvedValueOnce({ id: 'ob000002-0000-0000-0000-000000000002' });
-
-    // startObligationWorkflow returns workflow ids
-    mockStartObligationWorkflow
-      .mockResolvedValueOnce({ workflowId: 'obligation:ob000001-0000-0000-0000-000000000001', alreadyRunning: false })
-      .mockResolvedValueOnce({ workflowId: 'obligation:ob000002-0000-0000-0000-000000000002', alreadyRunning: false });
   });
 
   it('creates a monitored company and two obligations', async () => {
@@ -119,12 +108,10 @@ describe('POST /api/monitoring/activate', () => {
     const res = await POST(req);
     const json = await res.json();
 
-    // Each obligation must have id, type, workflowId
+    // Each obligation must have id and type
     for (const obligation of json.obligations) {
       expect(obligation).toHaveProperty('id');
       expect(obligation).toHaveProperty('type');
-      expect(obligation).toHaveProperty('workflowId');
-      expect(obligation.workflowId).toMatch(/^obligation:/);
     }
   });
 
@@ -164,13 +151,13 @@ describe('POST /api/monitoring/activate', () => {
     expect(mockInsertMonitoredCompany).not.toHaveBeenCalled();
   });
 
-  it('starts exactly two workflows (one per obligation type)', async () => {
+  it('creates exactly two obligations (one per obligation type)', async () => {
     const req = makeRequest(validBody);
     await POST(req);
 
-    expect(mockStartObligationWorkflow).toHaveBeenCalledTimes(2);
+    expect(mockInsertObligation).toHaveBeenCalledTimes(2);
 
-    const calls = mockStartObligationWorkflow.mock.calls;
+    const calls = mockInsertObligation.mock.calls;
     const calledTypes = calls.map((c) => c[0].obligationType);
     expect(calledTypes).toContain('accounts_filing');
     expect(calledTypes).toContain('confirmation_statement');

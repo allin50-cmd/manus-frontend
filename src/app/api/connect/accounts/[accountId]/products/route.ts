@@ -19,11 +19,11 @@ import { stripeClient } from '@/lib/stripe/connect-client';
 // ---------------------------------------------------------------------------
 export async function GET(
   req: NextRequest,
-  { params }: { params: { accountId: string } },
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
-  const { accountId } = params;
+  const { accountId } = await params;
 
   try {
     // List up to 20 active products, expanding the default_price so the
@@ -56,11 +56,11 @@ export async function GET(
 // ---------------------------------------------------------------------------
 export async function POST(
   req: NextRequest,
-  { params }: { params: { accountId: string } },
+  { params }: { params: Promise<{ accountId: string }> },
 ) {
-  const unauth = requireSession(req);
+  const unauth = await requireSession(req);
   if (unauth) return unauth;
-  const { accountId } = params;
+  const { accountId } = await params;
 
   let body: { name?: string; description?: string; amount?: number; currency?: string };
   try {

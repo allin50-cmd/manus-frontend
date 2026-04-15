@@ -2,17 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { listObligationsByCompany } from '../../../../../repositories/obligation.repository';
 import { requireApiKey } from '../../../../../lib/utils/require-api-key';
 
-interface RouteContext {
-  params: { id: string };
-}
-
 export async function GET(
   req: NextRequest,
-  context: RouteContext,
+  { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const authError = requireApiKey(req);
   if (authError) return authError;
-  const { id } = context.params;
+  const { id } = await params;
 
   if (!id) {
     return NextResponse.json(
