@@ -4,10 +4,10 @@ import { companyActivatedTrigger } from './triggers/companyActivated';
 import { complianceAlertTrigger } from './triggers/complianceAlert';
 import { monitorCompanyCreate } from './creates/monitorCompany';
 
-const { version } = require('../../../package.json');
+import packageJson from '../../../package.json';
 
 const App = {
-  version,
+  version: packageJson.version,
   platformVersion,
 
   authentication: {

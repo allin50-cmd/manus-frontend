@@ -113,7 +113,7 @@ describe('createAlert activity', () => {
   });
 
   it('suppresses alert when company is not found (billing unknown)', async () => {
-    mockFindByCompanyNumber.mockResolvedValueOnce(null);
+    mockFindByCompanyNumber.mockResolvedValueOnce(null as any);
 
     await createAlert({ ...baseInput, companyNumber: '12345678' });
 
