@@ -152,6 +152,33 @@ export const zapierHooks = pgTable(
   }),
 );
 
+/**
+ * Tracks which deadline×window notifications have already been dispatched.
+ * Primary deduplication guard for the /api/cron/dispatch-alerts endpoint:
+ * ensures each (companyNumber, alertType, dueDate, windowDays) combination
+ * fires at most once, even if the cron runs multiple times in the same window.
+ *
+ * Requires: `npm run db:push` to create this table in a new environment.
+ */
+export const dispatchedNotifications = pgTable(
+  'dispatched_notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Composite key: `{companyNumber}:{alertType}:{dueDate}:w{windowDays}` */
+    dedupeKey: varchar('dedupe_key', { length: 500 }).notNull(),
+    companyNumber: varchar('company_number', { length: 50 }).notNull(),
+    alertType: varchar('alert_type', { length: 50 }).notNull(),
+    dueDate: varchar('due_date', { length: 20 }).notNull(),
+    /** The alert window that triggered this dispatch: 60 | 30 | 14 | 7 */
+    windowDays: integer('window_days').notNull(),
+    dispatchedAt: timestamp('dispatched_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    dedupeUniq: uniqueIndex('dn_dedupe_key_uniq').on(t.dedupeKey),
+    companyIdx: index('dn_company_idx').on(t.companyNumber),
+  }),
+);
+
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
 export type ComplianceAlert = typeof complianceAlerts.$inferSelect;
@@ -160,3 +187,4 @@ export type ZapierHook = typeof zapierHooks.$inferSelect;
 export type NewZapierHook = typeof zapierHooks.$inferInsert;
 export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
 export type NewStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
+export type DispatchedNotification = typeof dispatchedNotifications.$inferSelect;

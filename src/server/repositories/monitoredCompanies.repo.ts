@@ -61,6 +61,7 @@ export interface CompanyWithAlerts {
   id: string;
   companyNumber: string;
   companyName: string;
+  billingStatus: BillingStatus;
   stripeSessionId: string;
   stripeSubscriptionId: string | null;
   stripeCustomerId: string | null;
@@ -157,6 +158,37 @@ export async function findByStripeSubscriptionId(
 
 export async function listAll() {
   return db.select().from(monitoredCompanies);
+}
+
+/**
+ * Returns only companies with billingStatus = 'active', together with their
+ * active alert types.  Used by the cron dispatcher to know which companies
+ * and which alert types to process.
+ */
+export async function listActiveWithAlerts(): Promise<CompanyWithAlerts[]> {
+  const rows = await db
+    .select({
+      company: monitoredCompanies,
+      alertType: complianceAlerts.alertType,
+      alertStatus: complianceAlerts.status,
+    })
+    .from(monitoredCompanies)
+    .leftJoin(
+      complianceAlerts,
+      eq(complianceAlerts.companyNumber, monitoredCompanies.companyNumber),
+    )
+    .where(eq(monitoredCompanies.billingStatus, 'active'));
+
+  const map = new Map<string, CompanyWithAlerts>();
+  for (const row of rows) {
+    if (!map.has(row.company.id)) {
+      map.set(row.company.id, { ...row.company, activeAlerts: [] });
+    }
+    if (row.alertType && row.alertStatus === 'active') {
+      map.get(row.company.id)!.activeAlerts.push(row.alertType as AlertType);
+    }
+  }
+  return Array.from(map.values());
 }
 
 /**
