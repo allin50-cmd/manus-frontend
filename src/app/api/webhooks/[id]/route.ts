@@ -10,8 +10,8 @@ export async function DELETE(
 ) {
   const authError = requireApiKey(req);
   if (authError) return authError;
-  const { id } = await params;
 
+  const { id } = await params;
   await db.delete(webhookSubscriptions).where(eq(webhookSubscriptions.id, id));
   return NextResponse.json({ success: true });
 }

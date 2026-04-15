@@ -8,8 +8,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mocks (must be hoisted before imports) ────────────────────────────────────
 
-vi.mock('@/lib/zapier/fire-hook', () => ({
-  fireZapierHooks: vi.fn(),
+vi.mock('@/lib/webhooks/fire-hook', () => ({
+  fireWebhooks: vi.fn(),
 }));
 
 vi.mock('@/server/repositories/dispatchedNotifications.repo', () => ({
@@ -28,10 +28,10 @@ import {
   ALERT_WINDOWS,
   type DeadlineInfo,
 } from '../../services/deadline-dispatcher';
-import { fireZapierHooks } from '../../lib/zapier/fire-hook';
+import { fireWebhooks } from '../../lib/webhooks/fire-hook';
 import { insertDispatchIfNew } from '../../server/repositories/dispatchedNotifications.repo';
 
-const mockFireZapierHooks = vi.mocked(fireZapierHooks);
+const mockFireZapierHooks = vi.mocked(fireWebhooks);
 const mockInsertDispatchIfNew = vi.mocked(insertDispatchIfNew);
 
 const COMPANY = '12345678';

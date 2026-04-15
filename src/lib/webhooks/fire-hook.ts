@@ -1,5 +1,5 @@
 import { db } from '@/server/db';
-import { zapierHooks } from '@/server/db/schema';
+import { webhookSubscriptions } from '@/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 
@@ -10,14 +10,17 @@ export interface FireResult {
 }
 
 /**
- * POSTs `payload` to every registered Zapier hook for the given `event`.
+ * POSTs `payload` to every registered outbound webhook for the given `event`.
  * Failures on individual hooks are logged but do not throw — the caller
  * receives a summary so it can decide whether to surface errors.
  *
  * Timeout per hook: 10 seconds.
  */
-export async function fireZapierHooks(event: string, payload: object): Promise<FireResult> {
-  const hooks = await db.select().from(zapierHooks).where(eq(zapierHooks.event, event));
+export async function fireWebhooks(event: string, payload: object): Promise<FireResult> {
+  const hooks = await db
+    .select()
+    .from(webhookSubscriptions)
+    .where(eq(webhookSubscriptions.event, event));
 
   if (hooks.length === 0) {
     return { total: 0, delivered: 0, failed: 0 };
@@ -32,7 +35,7 @@ export async function fireZapierHooks(event: string, payload: object): Promise<F
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) {
-        log.warn('[fireZapierHooks] Non-2xx response', {
+        log.warn('[fireWebhooks] Non-2xx response', {
           hookId: hook.id,
           event,
           status: res.status,
@@ -46,7 +49,7 @@ export async function fireZapierHooks(event: string, payload: object): Promise<F
   const failed = results.filter((r) => r.status === 'rejected').length;
 
   if (failed > 0) {
-    log.warn('[fireZapierHooks] Some deliveries failed', { event, delivered, failed });
+    log.warn('[fireWebhooks] Some deliveries failed', { event, delivered, failed });
   }
 
   return { total: hooks.length, delivered, failed };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/server/db';
-import { monitoredCompanies, complianceAlerts, zapierHooks } from '@/server/db/schema';
+import { monitoredCompanies, complianceAlerts, webhookSubscriptions } from '@/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { cacheDelete } from '@/lib/utils/cache';
 import { requireApiKey } from '@/lib/utils/require-api-key';
@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
   // Notify subscribed Zapier hooks with retry
   const hooks = await db
     .select()
-    .from(zapierHooks)
-    .where(eq(zapierHooks.event, 'company.activated'));
+    .from(webhookSubscriptions)
+    .where(eq(webhookSubscriptions.event, 'company.activated'));
 
   // Fire deliveries in parallel, don't block the response
   Promise.all(hooks.map((hook) => deliverHook(hook.url, company))).catch(() => null);

@@ -1,5 +1,5 @@
 import { daysUntil } from '@/lib/time';
-import { fireZapierHooks } from '@/lib/zapier/fire-hook';
+import { fireWebhooks } from '@/lib/webhooks/fire-hook';
 import { insertDispatchIfNew } from '@/server/repositories/dispatchedNotifications.repo';
 import { log } from '@/lib/logger';
 import { ALERT_LABELS } from '@/types/alerts';
@@ -160,7 +160,7 @@ export async function dispatchAlertsForCompany(
           firedAt: new Date().toISOString(),
         };
 
-        const hookResult = await fireZapierHooks('compliance.alert', payload);
+        const hookResult = await fireWebhooks('compliance.alert', payload);
 
         record.fired = true;
         record.hooksDelivered = hookResult.delivered;

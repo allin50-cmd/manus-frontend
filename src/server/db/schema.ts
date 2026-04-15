@@ -139,8 +139,8 @@ export const stripeWebhookEvents = pgTable(
   }),
 );
 
-export const zapierHooks = pgTable(
-  'zapier_hooks',
+export const webhookSubscriptions = pgTable(
+  'webhook_subscriptions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     url: text('url').notNull(),
@@ -148,7 +148,7 @@ export const zapierHooks = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (t) => ({
-    eventIdx: index('zapier_hooks_event_idx').on(t.event),
+    eventIdx: index('webhook_subscriptions_event_idx').on(t.event),
   }),
 );
 
@@ -183,8 +183,8 @@ export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
 export type ComplianceAlert = typeof complianceAlerts.$inferSelect;
 export type NewComplianceAlert = typeof complianceAlerts.$inferInsert;
-export type ZapierHook = typeof zapierHooks.$inferSelect;
-export type NewZapierHook = typeof zapierHooks.$inferInsert;
+export type WebhookSubscription = typeof webhookSubscriptions.$inferSelect;
+export type NewWebhookSubscription = typeof webhookSubscriptions.$inferInsert;
 export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
 export type NewStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
 export type DispatchedNotification = typeof dispatchedNotifications.$inferSelect;
