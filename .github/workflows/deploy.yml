@@ -138,6 +138,15 @@ jobs:
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/$IMAGE_NAME:latest
           echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
+      - name: Resolve optional secrets
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          echo "OPENAI_KEY=${{ secrets.OPENAI_API_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "RESEND_KEY=${{ secrets.RESEND_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "STRIPE_KEY=${{ secrets.STRIPE_SECRET_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "CH_KEY=${{ secrets.COMPANIES_HOUSE_API_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "CRM_URL=${{ secrets.CRM_WEBHOOK_URL || 'https://example.invalid' }}" >> $GITHUB_ENV
+
       - name: Deploy Bicep
         if: steps.check.outputs.skip == 'false'
         uses: azure/arm-deploy@v2
@@ -150,12 +159,12 @@ jobs:
             acrLoginServer=${{ secrets.ACR_LOGIN_SERVER }}
             osImageTag=${{ env.IMAGE_TAG }}
             dbPassword=${{ secrets.DB_PASSWORD }}
-            openaiKey=${{ secrets.OPENAI_API_KEY }}
-            resendKey=${{ secrets.RESEND_KEY }}
-            stripeSecretKey=${{ secrets.STRIPE_SECRET_KEY }}
-            companiesHouseApiKey=${{ secrets.COMPANIES_HOUSE_API_KEY }}
+            openaiKey=${{ env.OPENAI_KEY }}
+            resendKey=${{ env.RESEND_KEY }}
+            stripeSecretKey=${{ env.STRIPE_KEY }}
+            companiesHouseApiKey=${{ env.CH_KEY }}
             webhookSigningSecret=${{ secrets.WEBHOOK_SIGNING_SECRET }}
-            crmWebhookUrl=${{ secrets.CRM_WEBHOOK_URL }}
+            crmWebhookUrl=${{ env.CRM_URL }}
 
       - name: Run Prisma migrations
         if: steps.check.outputs.skip == 'false'
