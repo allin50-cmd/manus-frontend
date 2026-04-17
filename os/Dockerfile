@@ -17,6 +17,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 RUN npm run build
+RUN mkdir -p /app/public
 
 # ---- Runtime ----
 FROM node:20-alpine AS runtime
