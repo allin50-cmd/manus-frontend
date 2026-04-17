@@ -5,11 +5,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
 import { runSalesAgent } from './services/salesAgent';
 import { sendAuditReady, sendAgentMessage } from './services/emailService';
+import { subscribe, unsubscribe, fire, listByEvent, type ZapierEvent } from './services/zapierWebhook';
 
 // Load environment variables
 dotenv.config();
@@ -346,6 +347,18 @@ app.post('/api/lead', async (req: Request, res: Response) => {
       .returning();
 
     console.log(`📧 New lead captured: ${name} - ${product || 'N/A'}`);
+
+    // Fire Zapier trigger (non-blocking)
+    fire('new_lead', {
+      id: lead.id,
+      leadId: lead.leadId,
+      name,
+      email,
+      company: company ?? null,
+      product: product ?? null,
+      phone: phone ?? null,
+      createdAt: lead.createdAt,
+    }).catch((err) => console.error('[zapier] fire new_lead error:', err));
 
     res.status(201).json({
       ok: true,
@@ -742,6 +755,121 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// ZAPIER REST-HOOK ENDPOINTS
+// ============================================================================
+
+const ZAPIER_API_KEY = process.env.ZAPIER_API_KEY;
+
+function requireZapierAuth(req: Request, res: Response): boolean {
+  if (!ZAPIER_API_KEY) return true; // auth disabled if no key configured
+  const key = req.headers['x-api-key'] ?? req.query.api_key;
+  if (key !== ZAPIER_API_KEY) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return false;
+  }
+  return true;
+}
+
+const VALID_EVENTS: ZapierEvent[] = ['new_audit_lead', 'new_lead', 'deal_escalated', 'deal_closed'];
+
+/**
+ * POST /api/zapier/subscribe
+ * Zapier calls this when a user turns on a Zap.
+ * Body: { hookUrl, event }
+ */
+app.post('/api/zapier/subscribe', async (req: Request, res: Response) => {
+  if (!requireZapierAuth(req, res)) return;
+  const { hookUrl, event } = req.body;
+  if (!hookUrl || !event) return res.status(400).json({ error: 'hookUrl and event are required' });
+  if (!VALID_EVENTS.includes(event)) return res.status(400).json({ error: `event must be one of: ${VALID_EVENTS.join(', ')}` });
+  try {
+    const sub = await subscribe(hookUrl, event as ZapierEvent, ZAPIER_API_KEY ?? 'none');
+    res.status(201).json({ id: sub.id, hookUrl, event });
+  } catch (err) {
+    console.error('[zapier] subscribe error:', err);
+    res.status(500).json({ error: 'Failed to subscribe' });
+  }
+});
+
+/**
+ * DELETE /api/zapier/subscribe
+ * Zapier calls this when a user turns off a Zap.
+ * Body: { hookUrl, event }
+ */
+app.delete('/api/zapier/subscribe', async (req: Request, res: Response) => {
+  if (!requireZapierAuth(req, res)) return;
+  const { hookUrl, event } = req.body;
+  if (!hookUrl || !event) return res.status(400).json({ error: 'hookUrl and event are required' });
+  try {
+    await unsubscribe(hookUrl, event as ZapierEvent);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[zapier] unsubscribe error:', err);
+    res.status(500).json({ error: 'Failed to unsubscribe' });
+  }
+});
+
+/**
+ * GET /api/zapier/sample/:event
+ * Returns sample payload Zapier shows when building a Zap.
+ */
+app.get('/api/zapier/sample/:event', (req: Request, res: Response) => {
+  if (!requireZapierAuth(req, res)) return;
+  const samples: Record<string, object> = {
+    new_audit_lead: {
+      id: 'a62fe1f7-225e-4288-b2bc-8853cb9c2f4b',
+      tenantId: '3ed1ef2d-2d56-45f1-98ae-1c76548c2beb',
+      email: 'sample@chambers.co.uk',
+      name: 'Jane Barrister',
+      chamberSize: '11-30',
+      painPoints: ['Unbilled emails & calls', 'Prep time not captured'],
+      stage: 'signed_up',
+      createdAt: new Date().toISOString(),
+    },
+    new_lead: {
+      id: '8856a199-f568-4d03-ac36-cab598c78a41',
+      leadId: 'LEAD-1776413871087',
+      name: 'Alice Smith',
+      email: 'alice@chambers.co.uk',
+      company: 'Gray Inn',
+      product: 'vaultline',
+      createdAt: new Date().toISOString(),
+    },
+    deal_escalated: {
+      leadId: 'LEAD-1776413871087',
+      email: 'alice@chambers.co.uk',
+      reason: 'High-value close £6000 requires human approval',
+      agentAction: 'escalate',
+      priceMonthly: 6000,
+      escalatedAt: new Date().toISOString(),
+    },
+    deal_closed: {
+      leadId: 'LEAD-1776413871087',
+      email: 'alice@chambers.co.uk',
+      priceMonthly: 2500,
+      closedAt: new Date().toISOString(),
+    },
+  };
+  const sample = samples[req.params.event];
+  if (!sample) return res.status(404).json({ error: 'Unknown event' });
+  res.json([sample]);
+});
+
+/**
+ * GET /api/zapier/subscriptions
+ * Admin view of all active subscriptions.
+ */
+app.get('/api/zapier/subscriptions', async (req: Request, res: Response) => {
+  if (!requireZapierAuth(req, res)) return;
+  try {
+    const rows = await db.select().from(zapierSubscriptions);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch subscriptions' });
+  }
+});
+
+// ============================================================================
 // AUDIT FUNNEL ENDPOINTS
 // ============================================================================
 
@@ -777,6 +905,18 @@ app.post('/api/audit-signup', async (req: Request, res: Response) => {
     // Send audit-ready email immediately
     await sendAuditReady(email, name ?? '', tenantId, appUrl);
 
+    // Fire Zapier trigger (non-blocking)
+    fire('new_audit_lead', {
+      id: auditLead.id,
+      tenantId,
+      email,
+      name: name ?? null,
+      chamberSize: chamberSize ?? null,
+      painPoints: painPoints ?? [],
+      stage: 'signed_up',
+      createdAt: auditLead.createdAt,
+    }).catch((err) => console.error('[zapier] fire new_audit_lead error:', err));
+
     // Run sales agent (shadow mode: log only; live mode: act on decision)
     const agentMode = process.env.AGENT_MODE ?? 'shadow';
 
@@ -795,8 +935,19 @@ app.post('/api/audit-signup', async (req: Request, res: Response) => {
         console.log('[salesAgent] shadow decision:', decision);
       } else if (decision.action === 'negotiate' || decision.action === 'close') {
         await sendAgentMessage(email, 'Your chambers recovery plan', decision.message);
+        if (decision.action === 'close') {
+          fire('deal_closed', { email, priceMonthly: decision.priceMonthly, closedAt: new Date().toISOString() })
+            .catch((err) => console.error('[zapier] fire deal_closed error:', err));
+        }
       } else if (decision.action === 'escalate') {
         console.warn('[salesAgent] escalation needed for', email, ':', decision.reasoning);
+        fire('deal_escalated', {
+          email,
+          reason: decision.reasoning,
+          agentAction: 'escalate',
+          priceMonthly: decision.priceMonthly,
+          escalatedAt: new Date().toISOString(),
+        }).catch((err) => console.error('[zapier] fire deal_escalated error:', err));
       }
     }
 

@@ -110,6 +110,21 @@ export const auditLeads = pgTable('audit_leads', {
 export type AuditLead = typeof auditLeads.$inferSelect;
 export type NewAuditLead = typeof auditLeads.$inferInsert;
 
+/**
+ * Zapier REST-hook Subscriptions Table
+ * Stores active Zapier webhook subscriptions per event type.
+ */
+export const zapierSubscriptions = pgTable('zapier_subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  hookUrl: text('hook_url').notNull(),
+  event: varchar('event', { length: 100 }).notNull(), // new_audit_lead | new_lead | deal_escalated | deal_closed
+  apiKey: varchar('api_key', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type ZapierSubscription = typeof zapierSubscriptions.$inferSelect;
+export type NewZapierSubscription = typeof zapierSubscriptions.$inferInsert;
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
