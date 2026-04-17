@@ -86,5 +86,26 @@ curl -X POST http://localhost:3001/api/revenue/submit \
 
 - [x] **Foundation** — Prisma schema, API-key auth, tenant isolation, `/api/gateway`, event bus
 - [x] **Revenue Engine** — deterministic scoring, idempotent lead capture, CRM webhook, AI narrative
-- [ ] **Law Clerks AI** — document processing, task extraction, billing entries
+- [x] **Law Clerks AI** — PDF/DOCX/text ingestion, AI task + party + deadline extraction, compliance flags (GDPR / court / privilege), billing narrative generation, deterministic fallback when OpenAI is absent
 - [ ] **FineGuard Pro** — Companies House monitoring, penalty prediction (reuses `server/services/companiesHouse.ts`)
+
+## Law endpoints
+
+```bash
+curl -X POST http://localhost:3001/api/law/process-document \
+  -H "x-api-key: uios_..." -H "content-type: application/json" \
+  -d '{
+    "documentUrl": "https://storage.example.com/brief.pdf",
+    "documentType": "brief",
+    "ratePerHour": 300
+  }'
+
+curl -X POST http://localhost:3001/api/law/generate-billing \
+  -H "x-api-key: uios_..." -H "content-type: application/json" \
+  -d '{
+    "text": "Reviewed disclosure bundle. Drafted witness statement. 2h call with client.",
+    "ratePerHour": 300
+  }'
+```
+
+Supported document MIME types: `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX), `text/*`, `text/html`, `message/rfc822`. Max 10 MB.
