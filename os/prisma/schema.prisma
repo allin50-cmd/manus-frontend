@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id                String         @id @default(cuid())
+  name              String
+  subdomain         String         @unique
+  customDomain      String?        @unique
+  branding          Json           @default("{}")
+  enabledVerticals  String[]       @default(["revenue"])
+  defaultVertical   String         @default("revenue")
+  stripeCustomerId  String?        @unique
+  createdAt         DateTime       @default(now())
+
+  apiKeys           ApiKey[]
+  leads             Lead[]
+  events            Event[]
+  configs           Config[]
+  subscriptions     Subscription[]
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  tenantId   String
+  vertical   String
+  keyHash    String   @unique
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model Lead {
+  id                   String        @id @default(cuid())
+  tenantId             String
+  vertical             String
+  idempotencyKey       String        @unique
+  name                 String
+  email                String
+  phone                String?
+  system               String?
+  sizeTier             String?
+  painPoints           String[]      @default([])
+  riskLevel            String?
+  estimatedLeakLow     Int?
+  estimatedLeakHigh    Int?
+  companyNumber        String?
+  complianceRiskScore  Int?
+  stage                String        @default("new")
+  score                Int?
+  createdAt            DateTime      @default(now())
+
+  tenant               Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  outcome              LeadOutcome?
+  events               Event[]
+
+  @@index([tenantId, vertical])
+  @@index([tenantId, createdAt])
+}
+
+model LeadOutcome {
+  id         String   @id @default(cuid())
+  leadId     String   @unique
+  status     String
+  dealValue  Int?
+  vertical   String
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  tenantId  String
+  type      String
+  leadId    String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lead      Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, type, createdAt])
+}
+
+model Config {
+  key      String  @id
+  value    String
+  tenantId String?
+
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id                    String   @id @default(cuid())
+  tenantId              String
+  vertical              String
+  stripeSubscriptionId  String   @unique
+  status                String
+  currentPeriodEnd      DateTime
+  createdAt             DateTime @default(now())
+
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, vertical])
+}
