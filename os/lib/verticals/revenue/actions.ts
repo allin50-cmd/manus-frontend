@@ -1,6 +1,7 @@
 import type { TenantContext } from '@/lib/auth';
 import { submitRevenueAudit, submitSchema } from './submit';
 import { generateRevenueNarrative } from './narrative';
+import { recordOutcome, outcomeSchema } from './outcome';
 
 export async function handleRevenueAction(
   ctx: TenantContext,
@@ -19,6 +20,10 @@ export async function handleRevenueAction(
       };
       const narrative = await generateRevenueNarrative({ lead, result });
       return { narrative };
+    }
+    case 'outcome': {
+      const parsed = outcomeSchema.parse(payload);
+      return recordOutcome(ctx, parsed);
     }
     default:
       throw new Error(`Unknown revenue action: ${action}`);

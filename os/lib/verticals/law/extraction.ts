@@ -136,8 +136,11 @@ function deterministicExtract(text: string, ratePerHour: number): ExtractionResu
     date: m[0],
   }));
 
-  const partyRegex = /\b(Claimant|Defendant|Respondent|Appellant|Applicant|Plaintiff)[:\s]+([A-Z][A-Za-z&.\s]{2,80})/g;
-  const parties = Array.from(new Set(Array.from(text.matchAll(partyRegex)).map((m) => m[2].trim()))).slice(0, 10);
+  const partyRegex =
+    /\b(Claimant|Defendant|Respondent|Appellant|Applicant|Plaintiff)[:\s]+([A-Z][A-Za-z&. ]{2,80}?)(?=[\r\n.]|\s{2,}|$)/g;
+  const parties = Array.from(
+    new Set(Array.from(text.matchAll(partyRegex)).map((m) => m[2].trim().replace(/\.+$/, '.'))),
+  ).slice(0, 10);
 
   const flags: ComplianceFlag[] = [];
   if (/personal data|GDPR|data protection/i.test(text))
@@ -147,17 +150,19 @@ function deterministicExtract(text: string, ratePerHour: number): ExtractionResu
   if (/without prejudice|privileged/i.test(text))
     flags.push({ type: 'privilege', severity: 'Low', detail: 'Privileged/without-prejudice material' });
 
-  const wordCount = text.split(/\s+/).length;
+  const trimmed = text.trim();
+  const wordCount = trimmed.length === 0 ? 0 : trimmed.split(/\s+/).filter(Boolean).length;
   const hours = Math.max(0.25, Math.round((wordCount / 600) * 4) / 4);
-  const billingEntries: ExtractedBillingEntry[] = wordCount
-    ? [
-        {
-          description: 'Review and annotate document',
-          hours,
-          value: Math.round(hours * ratePerHour),
-        },
-      ]
-    : [];
+  const billingEntries: ExtractedBillingEntry[] =
+    wordCount > 0
+      ? [
+          {
+            description: 'Review and annotate document',
+            hours,
+            value: Math.round(hours * ratePerHour),
+          },
+        ]
+      : [];
 
   return {
     tasks,

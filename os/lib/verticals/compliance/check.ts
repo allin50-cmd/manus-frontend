@@ -10,6 +10,7 @@ import {
   normaliseCompanyNumber,
 } from './companiesHouse';
 import { scoreCompliance, type ComplianceScore } from './scoring';
+import { deliverComplianceAlerts } from './deliver';
 
 export const checkCompanySchema = z.object({
   companyNumber: z.string().min(1),
@@ -47,6 +48,12 @@ export async function checkCompany(
     },
     ctx.tenant.id,
   );
+
+  if (score.riskLevel !== 'Low') {
+    void deliverComplianceAlerts(ctx.tenant.id, score).catch((err) => {
+      console.error('[compliance.deliver] webhook fan-out failed', err);
+    });
+  }
 
   return score;
 }
