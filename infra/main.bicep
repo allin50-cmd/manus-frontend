@@ -198,6 +198,99 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
 // Outputs
 // ============================================================================
 
+// ============================================================================
+// OS (Unified Intelligence OS) Container App — Next.js 14 app in /os
+// ============================================================================
+
+@description('Image tag for the OS container (commit SHA or "latest")')
+param osImageTag string = 'latest'
+
+@description('Companies House API key for FineGuard compliance')
+@secure()
+param companiesHouseApiKey string = ''
+
+@description('HMAC secret used to sign outbound compliance webhooks')
+@secure()
+param webhookSigningSecret string = ''
+
+@description('CRM webhook URL (Zapier/Make) for revenue lead forwarding')
+param crmWebhookUrl string = ''
+
+resource osApp 'Microsoft.App/containerApps@2023-05-01' = {
+  name: 'os-${environmentName}'
+  location: location
+  properties: {
+    environmentId: containerEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 3001
+        transport: 'http'
+      }
+      secrets: [
+        { name: 'database-url', value: databaseUrl }
+        { name: 'redis-url', value: redisUrl }
+        { name: 'openai-key', value: openaiKey }
+        { name: 'ch-key', value: companiesHouseApiKey }
+        { name: 'webhook-secret', value: webhookSigningSecret }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'os'
+          image: '${acrLoginServer}/unified-intelligence-os:${osImageTag}'
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: [
+            { name: 'DATABASE_URL', secretRef: 'database-url' }
+            { name: 'REDIS_URL', secretRef: 'redis-url' }
+            { name: 'OPENAI_API_KEY', secretRef: 'openai-key' }
+            { name: 'COMPANIES_HOUSE_API_KEY', secretRef: 'ch-key' }
+            { name: 'WEBHOOK_SIGNING_SECRET', secretRef: 'webhook-secret' }
+            { name: 'CRM_WEBHOOK_URL', value: crmWebhookUrl }
+            { name: 'NODE_ENV', value: 'production' }
+            { name: 'PORT', value: '3001' }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/'
+                port: 3001
+              }
+              initialDelaySeconds: 20
+              periodSeconds: 30
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 5
+        rules: [
+          {
+            name: 'http-scaling'
+            http: {
+              metadata: {
+                concurrentRequests: '50'
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+output osUrl string = 'https://${osApp.properties.configuration.ingress.fqdn}'
+
+// ============================================================================
+// Original outputs
+// ============================================================================
+
 output apiUrl string = 'https://${apiApp.properties.configuration.ingress.fqdn}'
 output postgresHost string = postgres.properties.fullyQualifiedDomainName
 output redisHost string = redis.properties.hostName

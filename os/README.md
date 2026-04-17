@@ -82,6 +82,50 @@ curl -X POST http://localhost:3001/api/revenue/submit \
   -d '{ "name": "...", "email": "...", "sizeTier": "10-30", "painPoints": [] }'
 ```
 
+## UI
+
+Three working pages under `app/`, backed by the same API routes:
+
+| Route | Module |
+|---|---|
+| `/audit` | Revenue Engine form + result + narrative generator |
+| `/law` | Document processor (URL/PDF/DOCX) + free-form billing generator |
+| `/compliance` | Company lookup + alert webhook registration |
+
+API keys are entered in the top-bar input and persisted in `localStorage` under `uios.apiKey`.
+
+## Deploy to Azure
+
+### Prerequisites
+
+- Azure subscription, resource group `rg-unified-os`, Azure Container Registry, Postgres Flexible Server (created by the Bicep on first run)
+- GitHub repo secrets: `AZURE_CREDENTIALS` (service principal JSON), `ACR_NAME`, `ACR_LOGIN_SERVER`, `DB_PASSWORD`, `DATABASE_URL`, `OPENAI_API_KEY`, `COMPANIES_HOUSE_API_KEY`, `WEBHOOK_SIGNING_SECRET`, `CRM_WEBHOOK_URL`, `RESEND_KEY`, `STRIPE_SECRET_KEY`
+
+### Pipeline
+
+`.github/workflows/deploy-os.yml` triggers on any push to `main` that touches `os/**` or the Bicep, or via manual dispatch. The job:
+
+1. Installs deps, type-checks, runs vitest
+2. Builds the Docker image from `os/Dockerfile` (Next.js `output: 'standalone'`), tags with short SHA + `latest`, pushes to ACR
+3. Runs `az deployment group create` against `infra/main.bicep` with the new image tag
+4. Runs `prisma migrate deploy` against the production database
+5. Prints the public FQDN
+
+### Manual deploy
+
+```bash
+# From repo root
+az group create -n rg-unified-os -l uksouth
+az acr create -n <acrName> -g rg-unified-os --sku Basic --admin-enabled true
+az acr build --registry <acrName> --image unified-intelligence-os:latest os/
+az deployment group create \
+  --resource-group rg-unified-os \
+  --template-file infra/main.bicep \
+  --parameters environmentName=aios acrLoginServer=<acrName>.azurecr.io \
+               dbPassword=<...> openaiKey=<...> resendKey=<...> stripeSecretKey=<...> \
+               companiesHouseApiKey=<...> webhookSigningSecret=<...> crmWebhookUrl=<...>
+```
+
 ## Module status
 
 - [x] **Foundation** — Prisma schema, API-key auth, tenant isolation, `/api/gateway`, event bus
