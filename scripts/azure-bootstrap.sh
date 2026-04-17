@@ -111,22 +111,33 @@ AZURE_STATIC_WEB_APPS_API_TOKEN="$(az staticwebapp secrets list -n "$SWA_NAME" -
 [ -n "$AZURE_STATIC_WEB_APPS_API_TOKEN" ] && ok "SWA ready" || warn "SWA token empty"
 
 # ----------------------------------------------------------------------------
-# 5. App Service (VaultLine)
+# 5. App Service (VaultLine) — non-fatal, skip if quota unavailable
 # ----------------------------------------------------------------------------
 log "Creating App Service plan: $WEBAPP_PLAN"
+WEBAPP_OK=true
 if ! az appservice plan show -n "$WEBAPP_PLAN" -g "$RESOURCE_GROUP" >/dev/null 2>&1; then
   az appservice plan create -n "$WEBAPP_PLAN" -g "$RESOURCE_GROUP" \
-    --sku B1 --is-linux -o none
+    --sku F1 --is-linux -o none 2>&1 || {
+    warn "App Service plan creation failed (quota issue) — skipping VaultLine deploy"
+    WEBAPP_OK=false
+  }
 fi
 
-log "Creating Web App: $WEBAPP_NAME"
-if ! az webapp show -n "$WEBAPP_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1; then
-  az webapp create -n "$WEBAPP_NAME" -g "$RESOURCE_GROUP" \
-    --plan "$WEBAPP_PLAN" --runtime "NODE:20-lts" -o none
+AZURE_WEBAPP_PUBLISH_PROFILE=""
+if [ "$WEBAPP_OK" = "true" ]; then
+  log "Creating Web App: $WEBAPP_NAME"
+  if ! az webapp show -n "$WEBAPP_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1; then
+    az webapp create -n "$WEBAPP_NAME" -g "$RESOURCE_GROUP" \
+      --plan "$WEBAPP_PLAN" --runtime "NODE:20-lts" -o none 2>&1 || WEBAPP_OK=false
+  fi
+  if [ "$WEBAPP_OK" = "true" ]; then
+    AZURE_WEBAPP_PUBLISH_PROFILE="$(az webapp deployment list-publishing-profiles \
+      -n "$WEBAPP_NAME" -g "$RESOURCE_GROUP" --xml 2>/dev/null || echo "")"
+    ok "Web App ready: $WEBAPP_NAME"
+  fi
+else
+  warn "Skipping Web App — App Service plan unavailable"
 fi
-AZURE_WEBAPP_PUBLISH_PROFILE="$(az webapp deployment list-publishing-profiles \
-  -n "$WEBAPP_NAME" -g "$RESOURCE_GROUP" --xml 2>/dev/null || echo "")"
-ok "Web App ready: $WEBAPP_NAME"
 
 # ----------------------------------------------------------------------------
 # 6. Deploy Bicep (Postgres + Container App + env)
