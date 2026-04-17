@@ -231,6 +231,34 @@ param webhookSigningSecret string = ''
 @description('CRM webhook URL (Zapier/Make) for revenue lead forwarding')
 param crmWebhookUrl string = ''
 
+@description('Stripe Price ID for Pro plan')
+param stripePriceId string = ''
+
+@description('Stripe webhook signing secret (whsec_...)')
+@secure()
+param stripeWebhookSecret string = ''
+
+@description('Session JWT signing secret')
+@secure()
+param sessionSecret string = ''
+
+// ============================================================================
+// Application Insights (OS observability)
+// ============================================================================
+
+resource osAppInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'appi-os-${environmentName}'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+    IngestionMode: 'LogAnalytics'
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
 resource osApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: 'os-${environmentName}'
   location: location
@@ -255,6 +283,10 @@ resource osApp 'Microsoft.App/containerApps@2023-05-01' = {
         { name: 'openai-key', value: openaiKey }
         { name: 'ch-key', value: companiesHouseApiKey }
         { name: 'webhook-secret', value: webhookSigningSecret }
+        { name: 'stripe-key', value: stripeSecretKey }
+        { name: 'stripe-webhook-secret', value: stripeWebhookSecret }
+        { name: 'session-secret', value: sessionSecret }
+        { name: 'appinsights-conn', value: osAppInsights.properties.ConnectionString }
         ...(acrUsername != '' ? [{ name: 'acr-password', value: acrPassword }] : [])
       ]
     }
@@ -273,6 +305,11 @@ resource osApp 'Microsoft.App/containerApps@2023-05-01' = {
             { name: 'OPENAI_API_KEY', secretRef: 'openai-key' }
             { name: 'COMPANIES_HOUSE_API_KEY', secretRef: 'ch-key' }
             { name: 'WEBHOOK_SIGNING_SECRET', secretRef: 'webhook-secret' }
+            { name: 'STRIPE_SECRET_KEY', secretRef: 'stripe-key' }
+            { name: 'STRIPE_WEBHOOK_SECRET', secretRef: 'stripe-webhook-secret' }
+            { name: 'STRIPE_PRICE_ID', value: stripePriceId }
+            { name: 'SESSION_SECRET', secretRef: 'session-secret' }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-conn' }
             { name: 'CRM_WEBHOOK_URL', value: crmWebhookUrl }
             { name: 'NODE_ENV', value: 'production' }
             { name: 'PORT', value: '3001' }

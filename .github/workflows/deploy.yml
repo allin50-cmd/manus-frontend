@@ -144,6 +144,9 @@ jobs:
           echo "OPENAI_KEY=${{ secrets.OPENAI_API_KEY || 'placeholder' }}" >> $GITHUB_ENV
           echo "RESEND_KEY=${{ secrets.RESEND_KEY || 'placeholder' }}" >> $GITHUB_ENV
           echo "STRIPE_KEY=${{ secrets.STRIPE_SECRET_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "STRIPE_WEBHOOK=${{ secrets.STRIPE_WEBHOOK_SECRET || 'placeholder' }}" >> $GITHUB_ENV
+          echo "STRIPE_PRICE=${{ secrets.STRIPE_PRICE_ID || '' }}" >> $GITHUB_ENV
+          echo "SESSION_SECRET=${{ secrets.SESSION_SECRET || secrets.WEBHOOK_SIGNING_SECRET || 'placeholder' }}" >> $GITHUB_ENV
           echo "CH_KEY=${{ secrets.COMPANIES_HOUSE_API_KEY || 'placeholder' }}" >> $GITHUB_ENV
           echo "CRM_URL=${{ secrets.CRM_WEBHOOK_URL || 'https://example.invalid' }}" >> $GITHUB_ENV
 
@@ -164,6 +167,9 @@ jobs:
             openaiKey=${{ env.OPENAI_KEY }}
             resendKey=${{ env.RESEND_KEY }}
             stripeSecretKey=${{ env.STRIPE_KEY }}
+            stripeWebhookSecret=${{ env.STRIPE_WEBHOOK }}
+            stripePriceId=${{ env.STRIPE_PRICE }}
+            sessionSecret=${{ env.SESSION_SECRET }}
             companiesHouseApiKey=${{ env.CH_KEY }}
             webhookSigningSecret=${{ secrets.WEBHOOK_SIGNING_SECRET }}
             crmWebhookUrl=${{ env.CRM_URL }}
@@ -175,7 +181,11 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           npm ci
-          npx prisma migrate deploy
+          if [ -d prisma/migrations ] && [ "$(ls -A prisma/migrations 2>/dev/null)" ]; then
+            npx prisma migrate deploy
+          else
+            npx prisma db push --skip-generate --accept-data-loss
+          fi
 
       - name: Output URL
         if: steps.check.outputs.skip == 'false'

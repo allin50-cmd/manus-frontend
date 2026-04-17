@@ -33,11 +33,14 @@ GH_REPO="${GH_REPO:-allin50-cmd/manus-frontend}"
 # Secrets the app needs (generated or prompted)
 DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-20)Aa1!}"
 WEBHOOK_SIGNING_SECRET="${WEBHOOK_SIGNING_SECRET:-$(openssl rand -hex 32)}"
+SESSION_SECRET="${SESSION_SECRET:-$(openssl rand -hex 32)}"
 
 # App-owned secrets — user must supply these
 OPENAI_API_KEY="${OPENAI_API_KEY:-}"
 RESEND_KEY="${RESEND_KEY:-}"
 STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-}"
+STRIPE_WEBHOOK_SECRET="${STRIPE_WEBHOOK_SECRET:-}"
+STRIPE_PRICE_ID="${STRIPE_PRICE_ID:-}"
 COMPANIES_HOUSE_API_KEY="${COMPANIES_HOUSE_API_KEY:-}"
 CRM_WEBHOOK_URL="${CRM_WEBHOOK_URL:-}"
 
@@ -154,6 +157,9 @@ az deployment group create \
     openaiKey="${OPENAI_API_KEY:-placeholder}" \
     resendKey="${RESEND_KEY:-placeholder}" \
     stripeSecretKey="${STRIPE_SECRET_KEY:-placeholder}" \
+    stripeWebhookSecret="${STRIPE_WEBHOOK_SECRET:-placeholder}" \
+    stripePriceId="${STRIPE_PRICE_ID:-}" \
+    sessionSecret="$SESSION_SECRET" \
     companiesHouseApiKey="${COMPANIES_HOUSE_API_KEY:-placeholder}" \
     webhookSigningSecret="$WEBHOOK_SIGNING_SECRET" \
     crmWebhookUrl="${CRM_WEBHOOK_URL:-https://example.invalid}" \
@@ -177,6 +183,7 @@ OUT_FILE=".azure-secrets.env"
   echo "DB_PASSWORD=$DB_PASSWORD"
   echo "DATABASE_URL=$DATABASE_URL"
   echo "WEBHOOK_SIGNING_SECRET=$WEBHOOK_SIGNING_SECRET"
+  echo "SESSION_SECRET=$SESSION_SECRET"
   echo "AZURE_STATIC_WEB_APPS_API_TOKEN=$AZURE_STATIC_WEB_APPS_API_TOKEN"
   echo "AZURE_WEBAPP_NAME=$WEBAPP_NAME"
   echo ""
@@ -191,6 +198,8 @@ OUT_FILE=".azure-secrets.env"
   echo "OPENAI_API_KEY=${OPENAI_API_KEY:-<set from platform.openai.com>}"
   echo "RESEND_KEY=${RESEND_KEY:-<set from resend.com>}"
   echo "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-<set from dashboard.stripe.com>}"
+  echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-<whsec_... from Stripe webhook endpoint>}"
+  echo "STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-<price_... from Stripe Products>}"
   echo "COMPANIES_HOUSE_API_KEY=${COMPANIES_HOUSE_API_KEY:-<set from developer.company-information.service.gov.uk>}"
   echo "CRM_WEBHOOK_URL=${CRM_WEBHOOK_URL:-<your CRM webhook>}"
 } > "$OUT_FILE"
@@ -214,12 +223,15 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
     gh secret set DB_PASSWORD                      -R "$GH_REPO" -b "$DB_PASSWORD"
     gh secret set DATABASE_URL                     -R "$GH_REPO" -b "$DATABASE_URL"
     gh secret set WEBHOOK_SIGNING_SECRET           -R "$GH_REPO" -b "$WEBHOOK_SIGNING_SECRET"
+    gh secret set SESSION_SECRET                   -R "$GH_REPO" -b "$SESSION_SECRET"
     gh secret set AZURE_STATIC_WEB_APPS_API_TOKEN  -R "$GH_REPO" -b "$AZURE_STATIC_WEB_APPS_API_TOKEN"
     gh secret set AZURE_WEBAPP_NAME                -R "$GH_REPO" -b "$WEBAPP_NAME"
     gh secret set AZURE_WEBAPP_PUBLISH_PROFILE     -R "$GH_REPO" -b "$AZURE_WEBAPP_PUBLISH_PROFILE"
     [ -n "$OPENAI_API_KEY" ]          && gh secret set OPENAI_API_KEY          -R "$GH_REPO" -b "$OPENAI_API_KEY"
     [ -n "$RESEND_KEY" ]              && gh secret set RESEND_KEY              -R "$GH_REPO" -b "$RESEND_KEY"
     [ -n "$STRIPE_SECRET_KEY" ]       && gh secret set STRIPE_SECRET_KEY       -R "$GH_REPO" -b "$STRIPE_SECRET_KEY"
+    [ -n "$STRIPE_WEBHOOK_SECRET" ]   && gh secret set STRIPE_WEBHOOK_SECRET   -R "$GH_REPO" -b "$STRIPE_WEBHOOK_SECRET"
+    [ -n "$STRIPE_PRICE_ID" ]         && gh secret set STRIPE_PRICE_ID         -R "$GH_REPO" -b "$STRIPE_PRICE_ID"
     [ -n "$COMPANIES_HOUSE_API_KEY" ] && gh secret set COMPANIES_HOUSE_API_KEY -R "$GH_REPO" -b "$COMPANIES_HOUSE_API_KEY"
     [ -n "$CRM_WEBHOOK_URL" ]         && gh secret set CRM_WEBHOOK_URL         -R "$GH_REPO" -b "$CRM_WEBHOOK_URL"
     ok "Secrets pushed to GitHub."

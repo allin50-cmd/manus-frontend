@@ -3,7 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma', 'pdf-parse', 'mammoth'],
+    instrumentationHook: true,
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma', 'pdf-parse', 'mammoth', 'applicationinsights'],
   },
 };
 
