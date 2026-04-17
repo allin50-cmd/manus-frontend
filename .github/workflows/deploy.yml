@@ -158,7 +158,7 @@ jobs:
             crmWebhookUrl=${{ secrets.CRM_WEBHOOK_URL }}
 
       - name: Run Prisma migrations
-        if: steps.check.outputs.skip == 'false' && secrets.DATABASE_URL != ''
+        if: steps.check.outputs.skip == 'false'
         working-directory: os
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
