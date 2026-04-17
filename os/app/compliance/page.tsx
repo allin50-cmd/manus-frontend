@@ -51,20 +51,25 @@ export default function CompliancePage() {
   };
 
   return (
-    <div className="space-y-10">
-      <section className="grid gap-8 lg:grid-cols-2">
-        <form onSubmit={check} className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
+    <div className="space-y-8 md:space-y-10">
+      <section className="grid gap-6 md:gap-8 lg:grid-cols-2">
+        <form onSubmit={check} className="space-y-5 rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
           <h1 className="text-xl font-semibold">Check company</h1>
           <Field label="UK company number">
             <input
               required
+              autoCapitalize="characters"
+              autoComplete="off"
               value={companyNumber}
               onChange={(e) => setCompanyNumber(e.target.value)}
               placeholder="12345678 or SC123456"
               className={inputCls}
             />
           </Field>
-          <button disabled={checking} className="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-50">
+          <button
+            disabled={checking}
+            className="inline-flex h-11 w-full items-center justify-center rounded bg-gray-900 px-4 text-sm font-medium text-white hover:bg-black disabled:opacity-50 sm:w-auto"
+          >
             {checking ? 'Checking…' : 'Check'}
           </button>
           <p className="text-xs text-gray-500">
@@ -77,23 +82,23 @@ export default function CompliancePage() {
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{checkResult.error}</div>
           )}
           {checkResult?.companyNumber && (
-            <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-6">
+            <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
               <div>
-                <h2 className="text-lg font-semibold">{checkResult.companyName}</h2>
+                <h2 className="break-words text-lg font-semibold">{checkResult.companyName}</h2>
                 <p className="text-xs text-gray-500">Company {checkResult.companyNumber}</p>
               </div>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <Stat label="Risk level" value={checkResult.riskLevel ?? '–'} />
+              <div className="grid grid-cols-3 gap-2 text-sm sm:gap-3">
+                <Stat label="Risk" value={checkResult.riskLevel ?? '–'} />
                 <Stat label="Score / 100" value={String(checkResult.riskScore ?? 0)} />
-                <Stat label="Predicted penalty" value={`£${(checkResult.predictedPenalty ?? 0).toLocaleString()}`} />
+                <Stat label="Penalty" value={`£${(checkResult.predictedPenalty ?? 0).toLocaleString()}`} />
               </div>
               {checkResult.upcomingDeadlines && checkResult.upcomingDeadlines.length > 0 && (
                 <div>
                   <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Upcoming deadlines</h3>
                   <ul className="space-y-1 text-sm">
                     {checkResult.upcomingDeadlines.map((d, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <span className={d.overdue ? 'text-red-700' : d.daysLeft < 7 ? 'text-amber-700' : 'text-gray-700'}>
+                      <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className={'font-medium ' + (d.overdue ? 'text-red-700' : d.daysLeft < 7 ? 'text-amber-700' : 'text-gray-700')}>
                           {d.overdue ? 'OVERDUE' : `${d.daysLeft}d`}
                         </span>
                         <span className="text-gray-600">{d.type.replace(/_/g, ' ')} — due {d.dueDate}</span>
@@ -106,7 +111,7 @@ export default function CompliancePage() {
                 <div>
                   <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Drivers</h3>
                   <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700">
-                    {checkResult.drivers.map((d) => (<li key={d}>{d}</li>))}
+                    {checkResult.drivers.map((d) => (<li key={d} className="break-words">{d}</li>))}
                   </ul>
                 </div>
               )}
@@ -115,16 +120,35 @@ export default function CompliancePage() {
         </div>
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-2">
-        <form onSubmit={register} className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
+      <section className="grid gap-6 md:gap-8 lg:grid-cols-2">
+        <form onSubmit={register} className="space-y-5 rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
           <h1 className="text-xl font-semibold">Register alert webhook</h1>
           <Field label="Company number">
-            <input required value={webhookCompany} onChange={(e) => setWebhookCompany(e.target.value)} className={inputCls} />
+            <input
+              required
+              autoCapitalize="characters"
+              autoComplete="off"
+              value={webhookCompany}
+              onChange={(e) => setWebhookCompany(e.target.value)}
+              className={inputCls}
+            />
           </Field>
           <Field label="Webhook URL">
-            <input required type="url" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://tenant.example.com/hooks/ch" className={inputCls} />
+            <input
+              required
+              type="url"
+              inputMode="url"
+              autoComplete="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://tenant.example.com/hooks/ch"
+              className={inputCls}
+            />
           </Field>
-          <button disabled={registering} className="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-50">
+          <button
+            disabled={registering}
+            className="inline-flex h-11 w-full items-center justify-center rounded bg-gray-900 px-4 text-sm font-medium text-white hover:bg-black disabled:opacity-50 sm:w-auto"
+          >
             {registering ? 'Registering…' : 'Register'}
           </button>
           <p className="text-xs text-gray-500">
@@ -137,11 +161,11 @@ export default function CompliancePage() {
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{webhookResult.error}</div>
           )}
           {webhookResult?.subscriptionId && (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-sm text-green-900">
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5 text-sm text-green-900 sm:p-6">
               <p className="font-medium">Registered.</p>
-              <p className="mt-1">
-                Subscription <code>{webhookResult.subscriptionId}</code> will deliver alerts for company{' '}
-                <strong>{webhookResult.companyNumber}</strong> to <code>{webhookResult.webhookUrl}</code>.
+              <p className="mt-1 break-words">
+                Subscription <code className="break-all">{webhookResult.subscriptionId}</code> will deliver alerts for company{' '}
+                <strong>{webhookResult.companyNumber}</strong> to <code className="break-all">{webhookResult.webhookUrl}</code>.
               </p>
             </div>
           )}
@@ -151,7 +175,7 @@ export default function CompliancePage() {
   );
 }
 
-const inputCls = 'block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none';
+const inputCls = 'block h-11 w-full rounded border border-gray-300 bg-white px-3 text-base focus:border-gray-500 focus:outline-none sm:h-10 sm:text-sm';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

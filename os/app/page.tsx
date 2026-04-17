@@ -20,15 +20,15 @@ const cards = [
 
 export default function Home() {
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 md:space-y-10">
       <section className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight">Unified Intelligence OS</h1>
-        <p className="max-w-3xl text-gray-600">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Unified Intelligence OS</h1>
+        <p className="max-w-3xl text-sm text-gray-600 sm:text-base">
           Multi-tenant revenue, legal ops, and compliance intelligence. Set your API key in the top
           bar, then run any of the three modules.
         </p>
       </section>
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <Link
             key={c.href}
