@@ -1,0 +1,1 @@
+self.__BUILD_MANIFEST={__rewrites:{afterFiles:[],beforeFiles:[],fallback:[]},"/FineGuardM365":["static/chunks/pages/FineGuardM365-d54a34cea0c21bd9.js"],"/_error":["static/chunks/pages/_error-7ba65e1336b92748.js"],sortedPages:["/FineGuardM365","/_app","/_error"]},self.__BUILD_MANIFEST_CB&&self.__BUILD_MANIFEST_CB();
