@@ -222,7 +222,6 @@ jobs:
           app_location: "/"
           api_location: ""
           output_location: "dist"
-          skip_deploy_on_missing_secrets: true
 
       - name: Upload build artifacts
         if: always()
