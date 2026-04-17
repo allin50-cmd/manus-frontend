@@ -1,9 +1,20 @@
 import type { TenantContext } from '@/lib/auth';
+import { checkCompany, checkCompanySchema } from './check';
+import { registerWebhook, registerWebhookSchema } from './webhook';
 
 export async function handleComplianceAction(
-  _ctx: TenantContext,
+  ctx: TenantContext,
   action: string,
-  _payload: Record<string, unknown>,
+  payload: Record<string, unknown>,
 ): Promise<unknown> {
-  throw new Error(`Compliance vertical not implemented yet (action: ${action})`);
+  switch (action) {
+    case 'check-company':
+      return checkCompany(ctx, checkCompanySchema.parse(payload));
+    case 'register-webhook':
+      return registerWebhook(ctx, registerWebhookSchema.parse(payload));
+    default:
+      throw new Error(`Unknown compliance action: ${action}`);
+  }
 }
+
+export { checkCompanySchema, registerWebhookSchema };

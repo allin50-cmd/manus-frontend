@@ -87,7 +87,7 @@ curl -X POST http://localhost:3001/api/revenue/submit \
 - [x] **Foundation** — Prisma schema, API-key auth, tenant isolation, `/api/gateway`, event bus
 - [x] **Revenue Engine** — deterministic scoring, idempotent lead capture, CRM webhook, AI narrative
 - [x] **Law Clerks AI** — PDF/DOCX/text ingestion, AI task + party + deadline extraction, compliance flags (GDPR / court / privilege), billing narrative generation, deterministic fallback when OpenAI is absent
-- [ ] **FineGuard Pro** — Companies House monitoring, penalty prediction (reuses `server/services/companiesHouse.ts`)
+- [x] **FineGuard Pro** — live Companies House profile + filing history, spec-exact scoring (overdue / <7d / late-history / event-type increments × penalty multiplier 50), persists a compliance `Lead` per company, `Event`-backed webhook subscriptions
 
 ## Law endpoints
 
@@ -109,3 +109,22 @@ curl -X POST http://localhost:3001/api/law/generate-billing \
 ```
 
 Supported document MIME types: `application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX), `text/*`, `text/html`, `message/rfc822`. Max 10 MB.
+
+## Compliance endpoints (FineGuard Pro)
+
+Requires `COMPANIES_HOUSE_API_KEY` in env.
+
+```bash
+curl -X POST http://localhost:3001/api/compliance/check-company \
+  -H "x-api-key: uios_..." -H "content-type: application/json" \
+  -d '{ "companyNumber": "12345678" }'
+
+curl -X POST http://localhost:3001/api/compliance/register-webhook \
+  -H "x-api-key: uios_..." -H "content-type: application/json" \
+  -d '{
+    "companyNumber": "12345678",
+    "webhookUrl": "https://tenant.example.com/hooks/companies-house"
+  }'
+```
+
+Scoring (from spec): `overdue +50`, `days-to-deadline <7 +20`, `late filing history +30`, accounts event `+25`, confirmation statement event `+15`, capped at 100. Predicted penalty = `riskScore × 50` (GBP).
