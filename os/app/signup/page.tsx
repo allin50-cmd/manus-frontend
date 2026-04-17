@@ -26,7 +26,11 @@ export default function SignupPage() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || `Signup failed (${res.status})`);
       }
-      router.push('/pricing');
+      const data = await res.json();
+      if (data.apiKey) {
+        window.localStorage.setItem('uios.apiKey', data.apiKey);
+      }
+      router.push('/dashboard');
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Signup failed');

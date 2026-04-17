@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/password';
+import { generateApiKey } from '@/lib/auth';
 import { signSession } from '@/lib/session';
 import { setSessionCookie } from '@/lib/session-cookies';
 
@@ -55,6 +56,15 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  const keyPair = generateApiKey();
+  await prisma.apiKey.create({
+    data: {
+      tenantId: tenant.id,
+      vertical: tenant.defaultVertical,
+      keyHash: keyPair.hash,
+    },
+  });
+
   const token = await signSession({
     userId: user.id,
     tenantId: tenant.id,
@@ -67,5 +77,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     user: { id: user.id, email: user.email, role: user.role },
     tenant: { id: tenant.id, name: tenant.name, plan: tenant.plan },
+    apiKey: keyPair.raw,
   });
 }
