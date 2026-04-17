@@ -2,11 +2,12 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { emit } from '@/lib/events';
 import type { TenantContext } from '@/lib/auth';
+import { safeString, safeWebhookUrl } from '@/lib/validators';
 import { isValidCompanyNumber, normaliseCompanyNumber } from './companiesHouse';
 
 export const registerWebhookSchema = z.object({
-  companyNumber: z.string().min(1),
-  webhookUrl: z.string().url(),
+  companyNumber: safeString({ min: 1, max: 20 }),
+  webhookUrl: safeWebhookUrl,
 });
 
 export type RegisterWebhookInput = z.infer<typeof registerWebhookSchema>;

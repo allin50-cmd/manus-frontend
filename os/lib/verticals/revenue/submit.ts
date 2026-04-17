@@ -3,16 +3,17 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { emit } from '@/lib/events';
 import type { TenantContext } from '@/lib/auth';
+import { safeString } from '@/lib/validators';
 import { scoreRevenueAudit, type SizeTier } from './scoring';
 
 export const submitSchema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().optional(),
+  name: safeString({ min: 1, max: 200 }),
+  email: safeString({ max: 320 }).pipe(z.string().email()),
+  phone: safeString({ max: 40 }).optional(),
   system: z.enum(['MLC', 'Opus2', 'BarBooks', 'Other']).optional(),
   sizeTier: z.enum(['1-10', '10-30', '30-70', '70+']),
-  painPoints: z.array(z.string()).default([]),
-  idempotencyKey: z.string().optional(),
+  painPoints: z.array(safeString({ max: 100 })).default([]),
+  idempotencyKey: safeString({ max: 200 }).optional(),
 });
 
 export type SubmitInput = z.infer<typeof submitSchema>;

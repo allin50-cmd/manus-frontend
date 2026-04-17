@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { TenantContext } from '@/lib/auth';
 import { emit } from '@/lib/events';
+import { safeString } from '@/lib/validators';
 import { fetchDocument, type DocumentType } from './documents';
 import { extractFromDocument } from './extraction';
 import { generateBilling } from './billing';
@@ -12,7 +13,7 @@ const processDocumentSchema = z.object({
 });
 
 const generateBillingSchema = z.object({
-  text: z.string().min(1),
+  text: safeString({ min: 1, max: 50000 }),
   ratePerHour: z.number().positive(),
 });
 

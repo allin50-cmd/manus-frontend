@@ -2,12 +2,13 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { emit } from '@/lib/events';
 import type { TenantContext } from '@/lib/auth';
+import { safeString } from '@/lib/validators';
 
 export const outcomeSchema = z.object({
-  leadId: z.string().min(1),
+  leadId: safeString({ min: 1, max: 30 }),
   status: z.enum(['won', 'lost', 'no_response', 'disqualified']),
   dealValue: z.number().int().nonnegative().optional(),
-  notes: z.string().optional(),
+  notes: safeString({ max: 5000 }).optional(),
 });
 
 export type OutcomeInput = z.infer<typeof outcomeSchema>;

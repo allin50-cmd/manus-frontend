@@ -63,7 +63,7 @@ export function scoreRevenueAudit(input: ScoringInput): ScoringResult {
     drivers.push('Manual admin overhead inflating WIP');
   if (input.painPoints.includes('slow_billing'))
     drivers.push('Billing lag compounding cashflow risk');
-  if (systemMult > 1.2) drivers.push(`Non-specialist system amplifies leakage (${input.system})`);
+  if (systemMult > 1.2) drivers.push(`Non-specialist system amplifies leakage (${input.system || 'unspecified'})`);
   if (drivers.length === 0) drivers.push('Structural leakage from baseline benchmarks');
 
   const confidence = Math.min(0.95, 0.6 + input.painPoints.length * 0.08);

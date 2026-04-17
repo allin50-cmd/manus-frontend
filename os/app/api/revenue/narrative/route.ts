@@ -2,14 +2,15 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { resolveTenantFromRequest, assertVerticalEnabled } from '@/lib/auth';
 import { fail, ok, unauthorized } from '@/lib/http';
+import { safeString } from '@/lib/validators';
 import { generateRevenueNarrative } from '@/lib/verticals/revenue/narrative';
 
 const bodySchema = z.object({
   lead: z.object({
-    name: z.string(),
-    system: z.string().optional(),
-    sizeTier: z.string().optional(),
-    painPoints: z.array(z.string()).optional(),
+    name: safeString(),
+    system: safeString().optional(),
+    sizeTier: safeString().optional(),
+    painPoints: z.array(safeString()).optional(),
   }),
   result: z.object({
     estimatedLeak: z.object({ low: z.number(), high: z.number() }),

@@ -11,12 +11,13 @@ import {
 } from './companiesHouse';
 import { scoreCompliance, type ComplianceScore } from './scoring';
 import { deliverComplianceAlerts } from './deliver';
+import { safeString } from '@/lib/validators';
 
 export const checkCompanySchema = z.object({
-  companyNumber: z.string().min(1),
-  name: z.string().optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
+  companyNumber: safeString({ min: 1, max: 20 }),
+  name: safeString({ max: 200 }).optional(),
+  email: safeString({ max: 320 }).pipe(z.string().email()).optional(),
+  phone: safeString({ max: 40 }).optional(),
 });
 
 export type CheckCompanyInput = z.infer<typeof checkCompanySchema>;
