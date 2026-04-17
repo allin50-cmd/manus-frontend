@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
+import { generateApiKey } from '@/lib/auth';
 import { getStripe } from '@/lib/stripe';
 
 export const runtime = 'nodejs';
@@ -23,13 +24,30 @@ async function upsertSubscription(sub: Stripe.Subscription, tenantId: string) {
       currentPeriodEnd: new Date(sub.current_period_end * 1000),
     },
   });
+  const nextVerticals = isActive ? ['revenue', 'law', 'compliance'] : ['revenue'];
   await prisma.tenant.update({
     where: { id: tenantId },
     data: {
       plan: isActive ? 'pro' : 'free',
-      enabledVerticals: isActive ? ['revenue', 'law', 'compliance'] : ['revenue'],
+      enabledVerticals: nextVerticals,
     },
   });
+
+  if (isActive) {
+    const existing = await prisma.apiKey.findMany({
+      where: { tenantId, active: true },
+      select: { vertical: true },
+    });
+    const have = new Set(existing.map((k) => k.vertical));
+    for (const v of nextVerticals) {
+      if (!have.has(v)) {
+        const kp = generateApiKey();
+        await prisma.apiKey.create({
+          data: { tenantId, vertical: v, keyHash: kp.hash },
+        });
+      }
+    }
+  }
 }
 
 export async function POST(req: NextRequest) {
