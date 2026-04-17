@@ -72,8 +72,9 @@ jobs:
     name: OS · Tests
     needs: changes
     if: |
-      (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'os') &&
-      (needs.changes.outputs.os == 'true' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'os')) ||
+      (github.event_name == 'pull_request' && needs.changes.outputs.os == 'true')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -96,7 +97,8 @@ jobs:
     if: |
       github.event_name != 'pull_request' &&
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
-      (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'os')
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'os')))
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: unified-intelligence-os
@@ -177,9 +179,9 @@ jobs:
     name: Marketing · Build & Deploy SWA
     needs: changes
     if: |
-      (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'marketing') &&
-      (needs.changes.outputs.marketing == 'true' || github.event_name == 'workflow_dispatch') &&
-      (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed'))
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'marketing')) ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed' && needs.changes.outputs.marketing == 'true')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -241,8 +243,8 @@ jobs:
     if: |
       github.event_name != 'pull_request' &&
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
-      (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'vaultline') &&
-      (needs.changes.outputs.vaultline == 'true' || github.event_name == 'workflow_dispatch')
+      ((github.event_name == 'push' && needs.changes.outputs.vaultline == 'true') ||
+       (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'vaultline') && needs.changes.outputs.vaultline == 'true'))
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'dev' }}
     steps:
