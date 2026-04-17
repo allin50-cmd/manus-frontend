@@ -90,6 +90,26 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
 
+/**
+ * Audit Leads Table
+ * Tracks prospects who signed up for the free AI revenue audit
+ */
+export const auditLeads = pgTable('audit_leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }),
+  chamberSize: varchar('chamber_size', { length: 50 }),
+  painPoints: text('pain_points'), // JSON array stored as text
+  stage: varchar('stage', { length: 50 }).default('signed_up').notNull(), // signed_up, audit_viewed, negotiating, closed_won, escalated
+  agentDecision: text('agent_decision'), // Last JSON decision from sales agent
+  auditViewedAt: timestamp('audit_viewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type AuditLead = typeof auditLeads.$inferSelect;
+export type NewAuditLead = typeof auditLeads.$inferInsert;
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;

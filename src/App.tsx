@@ -10,6 +10,7 @@ import Team from './pages/Team';
 import BookDemo from './pages/BookDemo';
 import IntakeSheet from './pages/IntakeSheet';
 import Admin from './pages/Admin';
+import AuditLanding from './pages/AuditLanding';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/book-demo" component={BookDemo} />
         <Route path="/intake" component={IntakeSheet} />
         <Route path="/admin" component={Admin} />
+        <Route path="/audit" component={AuditLanding} />
         <Route component={NotFound} />
       </Switch>
       <Toaster richColors position="top-right" />

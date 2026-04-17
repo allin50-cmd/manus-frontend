@@ -5,9 +5,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
+import { runSalesAgent } from './services/salesAgent';
+import { sendAuditReady, sendAgentMessage } from './services/emailService';
 
 // Load environment variables
 dotenv.config();
@@ -736,6 +738,90 @@ app.get('/health', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       database: 'disconnected',
     });
+  }
+});
+
+// ============================================================================
+// AUDIT FUNNEL ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/audit-signup
+ * Creates an audit lead tenant, sends audit-ready email, and (in non-shadow
+ * mode) runs the sales agent to determine the next best action.
+ */
+app.post('/api/audit-signup', async (req: Request, res: Response) => {
+  try {
+    const { email, name, chamberSize, painPoints } = req.body;
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ ok: false, error: 'email is required' });
+    }
+
+    const tenantId = crypto.randomUUID();
+    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+
+    const [auditLead] = await db
+      .insert(auditLeads)
+      .values({
+        tenantId,
+        email,
+        name: name ?? null,
+        chamberSize: chamberSize ?? null,
+        painPoints: painPoints ? JSON.stringify(painPoints) : null,
+      })
+      .returning();
+
+    console.log(`📊 Audit signup: ${email} (tenant ${tenantId})`);
+
+    // Send audit-ready email immediately
+    await sendAuditReady(email, name ?? '', tenantId, appUrl);
+
+    // Run sales agent (shadow mode: log only; live mode: act on decision)
+    const agentMode = process.env.AGENT_MODE ?? 'shadow';
+
+    const decision = await runSalesAgent(auditLead).catch((err) => {
+      console.error('[salesAgent] error:', err);
+      return null;
+    });
+
+    if (decision) {
+      await db
+        .update(auditLeads)
+        .set({ agentDecision: JSON.stringify(decision) })
+        .where(eq(auditLeads.id, auditLead.id));
+
+      if (agentMode === 'shadow') {
+        console.log('[salesAgent] shadow decision:', decision);
+      } else if (decision.action === 'negotiate' || decision.action === 'close') {
+        await sendAgentMessage(email, 'Your chambers recovery plan', decision.message);
+      } else if (decision.action === 'escalate') {
+        console.warn('[salesAgent] escalation needed for', email, ':', decision.reasoning);
+      }
+    }
+
+    res.status(201).json({ ok: true, tenantId });
+  } catch (error) {
+    console.error('Error in audit-signup:', error);
+    res.status(500).json({ ok: false, error: 'Failed to process signup' });
+  }
+});
+
+/**
+ * GET /api/admin/audit-leads
+ * Returns all audit leads for the admin dashboard.
+ */
+app.get('/api/admin/audit-leads', async (req: Request, res: Response) => {
+  try {
+    const all = await db
+      .select()
+      .from(auditLeads)
+      .orderBy(desc(auditLeads.createdAt));
+
+    res.json(all);
+  } catch (error) {
+    console.error('Error fetching audit leads:', error);
+    res.status(500).json({ error: 'Failed to fetch audit leads' });
   }
 });
 
