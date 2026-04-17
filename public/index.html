@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultLine Brand Suite — AI Revenue Recovery for Legal Chambers</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: { DEFAULT: '#C9A64A', light: '#E2C06B', dark: '#A88430' },
+            navy: { DEFAULT: '#0F172A', light: '#1E293B', mid: '#334155' },
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          animation: {
+            'fade-up': 'fadeUp 0.6s ease both',
+            'fade-in': 'fadeIn 0.4s ease both',
+            'pulse-slow': 'pulse 3s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeUp:  { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            fadeIn:  { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    .gradient-text { background: linear-gradient(135deg, #C9A64A 0%, #E2C06B 50%, #C9A64A 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+    .glass-gold { background: rgba(201,166,74,0.08); border: 1px solid rgba(201,166,74,0.25); }
+    .btn-gold { background: linear-gradient(135deg, #C9A64A, #E2C06B); color: #0F172A; font-weight: 700; transition: all .2s; }
+    .btn-gold:hover { background: linear-gradient(135deg, #E2C06B, #C9A64A); transform: translateY(-1px); box-shadow: 0 8px 25px rgba(201,166,74,0.35); }
+    .tab-active { background: rgba(201,166,74,0.15); color: #E2C06B; border-color: rgba(201,166,74,0.4); }
+    .tab-inactive { color: #94a3b8; border-color: transparent; }
+    .tab-inactive:hover { color: #cbd5e1; }
+    .card-hover { transition: transform .2s, box-shadow .2s; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    input, select, textarea { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.12) !important; color: white !important; }
+    input::placeholder, textarea::placeholder { color: #64748b !important; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(201,166,74,0.5) !important; outline: none; box-shadow: 0 0 0 3px rgba(201,166,74,0.1); }
+    select option { background: #1e293b; color: white; }
+    .tag-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .15s; }
+    .tag-active { background: rgba(201,166,74,0.2); border-color: rgba(201,166,74,0.5); color: #E2C06B; }
+    .tag-inactive { background: transparent; border-color: rgba(255,255,255,0.15); color: #94a3b8; }
+    .tag-inactive:hover { border-color: rgba(255,255,255,0.3); color: #cbd5e1; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.8s linear infinite; }
+    .nav-link { color: #94a3b8; font-size: 14px; font-weight: 500; transition: color .15s; }
+    .nav-link:hover { color: #e2e8f0; }
+    .section-tag { display: inline-block; padding: 4px 14px; border-radius: 9999px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .stat-num { font-size: 2.5rem; font-weight: 900; line-height: 1; }
+    /* Toast */
+    #toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; min-width: 260px; transform: translateY(80px); opacity: 0; transition: all .3s; pointer-events: none; }
+    #toast.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+  </style>
+</head>
+<body class="bg-navy text-white font-sans antialiased">
+
+<!-- ═══════════════════════════════════════════════
+     NAVIGATION
+═══════════════════════════════════════════════ -->
+<nav id="navbar" class="fixed top-0 inset-x-0 z-50 transition-all duration-300" style="background:transparent">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="#hero" class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg btn-gold flex items-center justify-center text-xs font-black">VL</div>
+      <span class="font-bold text-white tracking-tight">VaultLine</span>
+    </a>
+
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#products" class="nav-link">Products</a>
+      <a href="#audit"    class="nav-link">Free Audit</a>
+      <a href="#how"      class="nav-link">How It Works</a>
+      <a href="#pricing"  class="nav-link">Pricing</a>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a href="#audit" class="btn-gold px-5 py-2 rounded-lg text-sm">Start Free Audit →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════ -->
+<section id="hero" class="relative min-h-screen flex items-center overflow-hidden">
+  <!-- Background glow -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full opacity-10" style="background:radial-gradient(circle,#C9A64A,transparent 70%);filter:blur(80px);"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-8" style="background:radial-gradient(circle,#3b82f6,transparent 70%);filter:blur(80px);"></div>
+  </div>
+
+  <div class="relative max-w-7xl mx-auto px-6 pt-24 pb-16 grid lg:grid-cols-2 gap-12 items-center">
+    <!-- Left copy -->
+    <div class="animate-fade-up">
+      <div class="section-tag glass-gold text-gold mb-6">AI Revenue Recovery · Legal Chambers</div>
+      <h1 class="text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-6">
+        Recover the revenue<br/>your chambers<br/><span class="gradient-text">doesn't know it's losing</span>
+      </h1>
+      <p class="text-lg text-slate-400 mb-8 max-w-lg leading-relaxed">
+        VaultLine's AI analyses your billing patterns, time entries, and matter activity — then automatically recovers unbilled work your team never had time to chase.
+      </p>
+      <div class="flex flex-wrap gap-3 mb-10">
+        <a href="#audit" class="btn-gold px-7 py-3.5 rounded-xl text-base">Get Free Audit →</a>
+        <a href="#products" class="glass px-7 py-3.5 rounded-xl text-base text-white hover:bg-white/10 transition-colors">See Products</a>
+      </div>
+      <!-- Micro stats -->
+      <div class="flex flex-wrap gap-6 text-sm">
+        <div><span class="font-bold text-gold">£6,400</span><span class="text-slate-400 ml-1">avg monthly recovery</span></div>
+        <div><span class="font-bold text-gold">&lt; 1 day</span><span class="text-slate-400 ml-1">setup time</span></div>
+        <div><span class="font-bold text-gold">0</span><span class="text-slate-400 ml-1">workflow changes needed</span></div>
+      </div>
+    </div>
+
+    <!-- Right — live stats card -->
+    <div class="animate-fade-up lg:pl-8" style="animation-delay:.15s">
+      <div class="glass rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-5">
+          <span class="text-sm font-semibold text-slate-300">Live Recovery Dashboard</span>
+          <span class="flex items-center gap-1.5 text-xs text-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow"></span>Active
+          </span>
+        </div>
+        <!-- Metric rows -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-white/4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-sm" style="background:rgba(201,166,74,0.15)">💸</div>
+              <div>
+                <div class="text-xs text-slate-400">Unbilled this month</div>
+                <div class="font-bold text-white" id="counter-unbilled">£0</div>
+              </div>
+            </div>
+            <span class="text-xs text-emerald-400 font-medium">+12% MoM</span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-white/4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-sm" style="background:rgba(59,130,246,0.15)">⚡</div>
+              <div>
+                <div class="text-xs text-slate-400">Matters recovered</div>
+                <div class="font-bold text-white" id="counter-matters">0</div>
+              </div>
+            </div>
+            <span class="text-xs text-blue-400 font-medium">This week</span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-white/4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-sm" style="background:rgba(168,131,48,0.15)">📋</div>
+              <div>
+                <div class="text-xs text-slate-400">Compliance alerts</div>
+                <div class="font-bold text-white" id="counter-alerts">0</div>
+              </div>
+            </div>
+            <span class="text-xs text-gold font-medium">2 urgent</span>
+          </div>
+        </div>
+        <!-- Sparkline bar -->
+        <div class="mt-5 pt-4 border-t border-white/8">
+          <div class="text-xs text-slate-400 mb-2">Recovery trend (last 6 months)</div>
+          <div class="flex items-end gap-1 h-12" id="sparkline"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     PRODUCTS
+═══════════════════════════════════════════════ -->
+<section id="products" class="py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-14">
+      <div class="section-tag glass-gold text-gold mb-4">Product Suite</div>
+      <h2 class="text-4xl font-extrabold mb-4">Three products. One platform.</h2>
+      <p class="text-slate-400 max-w-xl mx-auto">Each product solves a specific revenue or compliance problem — they work better together.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- FineGuard -->
+      <div class="glass rounded-2xl p-7 card-hover flex flex-col">
+        <div class="w-12 h-12 rounded-xl mb-5 flex items-center justify-center text-2xl" style="background:rgba(201,166,74,0.12)">🛡️</div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-gold mb-2">FineGuard</div>
+        <h3 class="text-xl font-bold mb-3">Compliance Cloud</h3>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-1">Real-time Companies House monitoring with automated filing deadline alerts. Never miss a deadline or face an unexpected fine.</p>
+        <div class="space-y-2 mb-6">
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-gold">✓</span> Live CH filing deadlines</div>
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-gold">✓</span> Overdue penalty alerts</div>
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-gold">✓</span> One-click compliance bundles</div>
+        </div>
+        <a href="/compliance-bundle" class="btn-gold w-full text-center py-2.5 rounded-lg text-sm">Get Compliance Bundle →</a>
+      </div>
+
+      <!-- VaultLine Cloud -->
+      <div class="glass rounded-2xl p-7 card-hover flex flex-col relative overflow-hidden">
+        <div class="absolute top-3 right-3 text-xs bg-gold text-navy px-2.5 py-0.5 rounded-full font-semibold">Popular</div>
+        <div class="w-12 h-12 rounded-xl mb-5 flex items-center justify-center text-2xl" style="background:rgba(59,130,246,0.12)">☁️</div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-2">VaultLine Cloud</div>
+        <h3 class="text-xl font-bold mb-3">Revenue Recovery</h3>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-1">AI-powered billing gap analysis that finds unbilled work, missed disbursements, and preparation time that slipped through the cracks.</p>
+        <div class="space-y-2 mb-6">
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-blue-400">✓</span> Billing pattern AI analysis</div>
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-blue-400">✓</span> Automated recovery workflows</div>
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-blue-400">✓</span> Integration with MLC / Opus2</div>
+        </div>
+        <a href="#audit" class="btn-gold w-full text-center py-2.5 rounded-lg text-sm">Start Free Audit →</a>
+      </div>
+
+      <!-- UltAi -->
+      <div class="glass rounded-2xl p-7 card-hover flex flex-col">
+        <div class="w-12 h-12 rounded-xl mb-5 flex items-center justify-center text-2xl" style="background:rgba(168,85,247,0.12)">🤖</div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-2">UltAi</div>
+        <h3 class="text-xl font-bold mb-3">Secure Intake</h3>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-1">AI-guided client matter intake that captures complete information first time, reducing back-and-forth and accelerating matter opening.</p>
+        <div class="space-y-2 mb-6">
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-purple-400">✓</span> Smart intake questionnaires</div>
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-purple-400">✓</span> Conflict-of-interest check</div>
+          <div class="flex items-center gap-2 text-sm text-slate-300"><span class="text-purple-400">✓</span> GDPR-compliant data handling</div>
+        </div>
+        <a href="/intake" class="btn-gold w-full text-center py-2.5 rounded-lg text-sm">Open Intake Form →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     STATS STRIP
+═══════════════════════════════════════════════ -->
+<div class="border-y border-white/5 py-12" style="background:rgba(201,166,74,0.04)">
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+    <div>
+      <div class="stat-num gradient-text">£6.4k</div>
+      <div class="text-sm text-slate-400 mt-1">avg monthly recovery</div>
+    </div>
+    <div>
+      <div class="stat-num gradient-text">94%</div>
+      <div class="text-sm text-slate-400 mt-1">chambers see ROI in 30 days</div>
+    </div>
+    <div>
+      <div class="stat-num gradient-text">&lt; 1</div>
+      <div class="text-sm text-slate-400 mt-1">day to go live</div>
+    </div>
+    <div>
+      <div class="stat-num gradient-text">0</div>
+      <div class="text-sm text-slate-400 mt-1">workflow changes needed</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     AUDIT FUNNEL
+═══════════════════════════════════════════════ -->
+<section id="audit" class="py-24">
+  <div class="max-w-2xl mx-auto px-6">
+    <div class="text-center mb-10">
+      <div class="section-tag glass-gold text-gold mb-4">Free · No Commitment</div>
+      <h2 class="text-4xl font-extrabold mb-4">
+        How much is your chambers<br/><span class="gradient-text">leaving on the table?</span>
+      </h2>
+      <p class="text-slate-400">Enter your details — your personalised AI audit report is ready in under 2 minutes.</p>
+    </div>
+
+    <!-- Form card -->
+    <div id="audit-form-wrap" class="glass rounded-2xl p-8">
+      <form id="audit-form">
+        <div class="grid sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Your name</label>
+            <input type="text" id="f-name" placeholder="Jane Smith" class="w-full rounded-xl border px-4 py-3 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Work email <span class="text-red-400">*</span></label>
+            <input type="email" id="f-email" placeholder="you@chambers.co.uk" required class="w-full rounded-xl border px-4 py-3 text-sm" />
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Chamber size</label>
+          <select id="f-size" class="w-full rounded-xl border px-4 py-3 text-sm">
+            <option value="">Select size…</option>
+            <option value="1-10">1–10 barristers</option>
+            <option value="11-30">11–30 barristers</option>
+            <option value="31-60">31–60 barristers</option>
+            <option value="60+">60+ barristers</option>
+          </select>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Where do you think you're losing revenue? <span class="text-slate-500">(optional)</span></label>
+          <div class="flex flex-wrap gap-2" id="pain-tags">
+            <span class="tag-pill tag-inactive" data-pain="Unbilled emails &amp; calls">Unbilled emails &amp; calls</span>
+            <span class="tag-pill tag-inactive" data-pain="Prep time not captured">Prep time not captured</span>
+            <span class="tag-pill tag-inactive" data-pain="Disbursements not recharged">Disbursements not recharged</span>
+            <span class="tag-pill tag-inactive" data-pain="Late billing write-offs">Late billing write-offs</span>
+          </div>
+        </div>
+
+        <button type="submit" id="audit-submit" class="btn-gold w-full py-4 rounded-xl text-base flex items-center justify-center gap-2">
+          <span id="submit-label">Start Free Audit →</span>
+          <svg id="submit-spinner" class="hidden w-5 h-5 spinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+          </svg>
+        </button>
+        <p class="text-center text-xs text-slate-500 mt-3">No credit card. No commitment. GDPR-compliant.</p>
+      </form>
+    </div>
+
+    <!-- Success state (hidden) -->
+    <div id="audit-success" class="hidden glass rounded-2xl p-10 text-center">
+      <div class="text-5xl mb-4">✅</div>
+      <h3 class="text-2xl font-bold text-emerald-400 mb-2">Check your inbox</h3>
+      <p class="text-slate-400 mb-1">Your personalised audit report is on its way to</p>
+      <p class="font-semibold text-white mb-6" id="success-email">–</p>
+      <p class="text-sm text-slate-400">Takes about 2 minutes to review. We'll also follow up with a recovery plan.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════════════ -->
+<section id="how" class="py-24 border-t border-white/5">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-14">
+      <div class="section-tag glass-gold text-gold mb-4">Process</div>
+      <h2 class="text-4xl font-extrabold mb-4">From signup to revenue in 30 days</h2>
+    </div>
+
+    <div class="relative">
+      <!-- Connector line (desktop) -->
+      <div class="hidden lg:block absolute top-10 left-[calc(16.66%-1px)] right-[calc(16.66%-1px)] h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent"></div>
+
+      <div class="grid lg:grid-cols-5 gap-6">
+        <!-- Steps -->
+        <div id="steps-container" class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-5 gap-6"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     PRICING
+═══════════════════════════════════════════════ -->
+<section id="pricing" class="py-24 border-t border-white/5">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="text-center mb-14">
+      <div class="section-tag glass-gold text-gold mb-4">Pricing</div>
+      <h2 class="text-4xl font-extrabold mb-4">Simple, transparent pricing</h2>
+      <p class="text-slate-400">Always recover more than you pay. Or we refund you.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- Starter -->
+      <div class="glass rounded-2xl p-7 card-hover flex flex-col">
+        <div class="text-sm font-semibold text-slate-400 mb-2">Starter</div>
+        <div class="text-4xl font-extrabold mb-1">£1,800<span class="text-lg font-normal text-slate-400">/mo</span></div>
+        <div class="text-xs text-slate-500 mb-6">Up to 10 barristers</div>
+        <ul class="space-y-2.5 text-sm text-slate-300 mb-8 flex-1">
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>VaultLine Revenue Recovery</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>FineGuard Compliance</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Email support</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Monthly recovery report</li>
+        </ul>
+        <a href="#audit" class="btn-gold text-center py-3 rounded-xl text-sm">Get Started</a>
+      </div>
+
+      <!-- Pro (highlighted) -->
+      <div class="relative rounded-2xl p-7 card-hover flex flex-col" style="background:linear-gradient(145deg,rgba(201,166,74,0.15),rgba(201,166,74,0.05));border:1px solid rgba(201,166,74,0.35)">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-navy text-xs font-bold px-4 py-1 rounded-full">Best Value</div>
+        <div class="text-sm font-semibold text-gold mb-2">Professional</div>
+        <div class="text-4xl font-extrabold mb-1">£2,500<span class="text-lg font-normal text-slate-400">/mo</span></div>
+        <div class="text-xs text-slate-500 mb-6">Up to 40 barristers</div>
+        <ul class="space-y-2.5 text-sm text-slate-300 mb-8 flex-1">
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Everything in Starter</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>UltAi Secure Intake</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>AI sales agent outreach</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Priority support (4h SLA)</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Custom integrations</li>
+        </ul>
+        <a href="#audit" class="btn-gold text-center py-3 rounded-xl text-sm">Get Started</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="glass rounded-2xl p-7 card-hover flex flex-col">
+        <div class="text-sm font-semibold text-slate-400 mb-2">Enterprise</div>
+        <div class="text-4xl font-extrabold mb-1">Custom</div>
+        <div class="text-xs text-slate-500 mb-6">60+ barristers / multi-site</div>
+        <ul class="space-y-2.5 text-sm text-slate-300 mb-8 flex-1">
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Everything in Professional</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Dedicated account manager</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>On-premise deployment option</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>SLA guarantees</li>
+          <li class="flex gap-2"><span class="text-gold mt-0.5">✓</span>Volume discounts</li>
+        </ul>
+        <a href="/book-demo" class="glass text-center py-3 rounded-xl text-sm text-white hover:bg-white/10 transition-colors">Book a Call</a>
+      </div>
+    </div>
+
+    <p class="text-center text-sm text-slate-500 mt-8">✦ Guaranteed ROI: if we don't recover more than our fee in month 1, you pay nothing.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════ -->
+<footer class="border-t border-white/8 py-12">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid md:grid-cols-4 gap-8 mb-10">
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg btn-gold flex items-center justify-center text-xs font-black">VL</div>
+          <span class="font-bold">VaultLine</span>
+        </div>
+        <p class="text-sm text-slate-500 leading-relaxed">AI Revenue Recovery for UK Legal Chambers. Find it, recover it, keep it.</p>
+      </div>
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Products</div>
+        <ul class="space-y-2 text-sm text-slate-500">
+          <li><a href="/fineguard" class="hover:text-white transition-colors">FineGuard</a></li>
+          <li><a href="/vaultline" class="hover:text-white transition-colors">VaultLine Cloud</a></li>
+          <li><a href="/ultai"     class="hover:text-white transition-colors">UltAi Intake</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Company</div>
+        <ul class="space-y-2 text-sm text-slate-500">
+          <li><a href="/about"     class="hover:text-white transition-colors">About</a></li>
+          <li><a href="/team"      class="hover:text-white transition-colors">Team</a></li>
+          <li><a href="/pricing"   class="hover:text-white transition-colors">Pricing</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Get Started</div>
+        <ul class="space-y-2 text-sm text-slate-500">
+          <li><a href="#audit"     class="hover:text-white transition-colors">Free Audit</a></li>
+          <li><a href="/book-demo" class="hover:text-white transition-colors">Book Demo</a></li>
+          <li><a href="/intake"    class="hover:text-white transition-colors">Client Intake</a></li>
+          <li><a href="/admin"     class="hover:text-white transition-colors">Admin</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      <span>© 2025 VaultLine. All rights reserved.</span>
+      <span>Registered in England &amp; Wales · GDPR Compliant · ISO 27001</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div id="toast" class="glass rounded-xl px-5 py-4 flex items-start gap-3">
+  <span id="toast-icon" class="text-lg mt-0.5">ℹ️</span>
+  <div>
+    <div id="toast-title" class="text-sm font-semibold text-white"></div>
+    <div id="toast-msg"   class="text-xs text-slate-400 mt-0.5"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════ -->
+<script>
+// ── Navbar scroll effect ──────────────────────────────────────────────────
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.style.background = window.scrollY > 40
+    ? 'rgba(15,23,42,0.9)'
+    : 'transparent';
+  navbar.style.backdropFilter = window.scrollY > 40 ? 'blur(16px)' : 'none';
+  navbar.style.borderBottom   = window.scrollY > 40 ? '1px solid rgba(255,255,255,0.06)' : 'none';
+});
+
+// ── Animated counters ─────────────────────────────────────────────────────
+function animateCount(el, target, prefix, suffix, duration) {
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const val = Math.round(eased * target);
+    el.textContent = prefix + val.toLocaleString() + suffix;
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+const obsCounter = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    animateCount(document.getElementById('counter-unbilled'), 8400, '£', '', 1600);
+    animateCount(document.getElementById('counter-matters'),  34, '', '', 1400);
+    animateCount(document.getElementById('counter-alerts'),   7, '', '', 1200);
+    obsCounter.disconnect();
+  });
+}, { threshold: 0.3 });
+obsCounter.observe(document.getElementById('counter-unbilled'));
+
+// ── Sparkline ─────────────────────────────────────────────────────────────
+(function buildSparkline() {
+  const bars  = [42, 55, 38, 70, 65, 88];
+  const max   = Math.max(...bars);
+  const wrap  = document.getElementById('sparkline');
+  const cols  = ['#C9A64A44','#C9A64A55','#C9A64A66','#C9A64A88','#C9A64AAA','#C9A64A'];
+  bars.forEach((v, i) => {
+    const bar = document.createElement('div');
+    bar.style.cssText = `flex:1;border-radius:3px 3px 0 0;background:${cols[i]};height:${(v/max)*100}%;transition:height .8s cubic-bezier(0.34,1.56,0.64,1);`;
+    bar.dataset.h = (v / max) * 100;
+    bar.style.height = '0%';
+    wrap.appendChild(bar);
+    setTimeout(() => { bar.style.height = bar.dataset.h + '%'; }, 400 + i * 80);
+  });
+})();
+
+// ── How-it-works steps ────────────────────────────────────────────────────
+const steps = [
+  { icon: '📧', num: '01', title: 'Submit email', body: 'Enter your work email and chamber details in 30 seconds.' },
+  { icon: '🔍', num: '02', title: 'AI analysis', body: 'Our AI benchmarks your chamber against similar organisations.' },
+  { icon: '📊', num: '03', title: 'Audit report', body: 'Receive a personalised leakage breakdown by email.' },
+  { icon: '💬', num: '04', title: 'Recovery plan', body: 'We share a specific plan to recover your identified revenue.' },
+  { icon: '💰', num: '05', title: 'Revenue in', body: 'VaultLine runs the recovery automatically — your team does nothing extra.' },
+];
+const stepsContainer = document.getElementById('steps-container');
+steps.forEach((s, i) => {
+  const div = document.createElement('div');
+  div.className = 'text-center';
+  div.style.animationDelay = (i * 0.1) + 's';
+  div.innerHTML = `
+    <div class="w-14 h-14 rounded-2xl mx-auto mb-4 flex flex-col items-center justify-center text-2xl relative" style="background:rgba(201,166,74,0.1);border:1px solid rgba(201,166,74,0.2)">
+      ${s.icon}
+      <span class="absolute -top-2 -right-2 w-5 h-5 rounded-full btn-gold text-[10px] font-black flex items-center justify-center">${i+1}</span>
+    </div>
+    <h4 class="font-bold mb-1 text-sm">${s.title}</h4>
+    <p class="text-xs text-slate-400 leading-relaxed">${s.body}</p>`;
+  stepsContainer.appendChild(div);
+});
+
+// ── Pain-point tags ───────────────────────────────────────────────────────
+const activePains = new Set();
+document.querySelectorAll('[data-pain]').forEach(tag => {
+  tag.addEventListener('click', () => {
+    const p = tag.dataset.pain;
+    if (activePains.has(p)) { activePains.delete(p); tag.className = 'tag-pill tag-inactive'; }
+    else                    { activePains.add(p);    tag.className = 'tag-pill tag-active';   }
+  });
+});
+
+// ── Toast helper ──────────────────────────────────────────────────────────
+function showToast(title, msg, icon) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-msg').textContent   = msg;
+  document.getElementById('toast-icon').textContent  = icon || 'ℹ️';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// ── Audit form submit ─────────────────────────────────────────────────────
+document.getElementById('audit-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const email = document.getElementById('f-email').value.trim();
+  const name  = document.getElementById('f-name').value.trim();
+  const size  = document.getElementById('f-size').value;
+
+  if (!email) { showToast('Email required', 'Please enter your work email.', '⚠️'); return; }
+
+  const btn     = document.getElementById('audit-submit');
+  const label   = document.getElementById('submit-label');
+  const spinner = document.getElementById('submit-spinner');
+
+  btn.disabled = true;
+  label.textContent = 'Generating audit…';
+  spinner.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/audit-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        name: name || undefined,
+        chamberSize: size || undefined,
+        painPoints: activePains.size > 0 ? [...activePains] : undefined,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Server error');
+
+    document.getElementById('audit-form-wrap').classList.add('hidden');
+    const success = document.getElementById('audit-success');
+    success.classList.remove('hidden');
+    document.getElementById('success-email').textContent = email;
+    showToast('Audit on its way!', 'Check your inbox — report arriving shortly.', '✅');
+  } catch (err) {
+    showToast('Something went wrong', err.message || 'Please try again.', '❌');
+    btn.disabled = false;
+    label.textContent = 'Start Free Audit →';
+    spinner.classList.add('hidden');
+  }
+});
+
+// ── Intersection Observer fade-up animations ──────────────────────────────
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.card-hover, [class*="glass"]').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(16px)';
+  el.style.transition = 'opacity .5s ease, transform .5s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
