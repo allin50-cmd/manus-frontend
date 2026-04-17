@@ -157,6 +157,8 @@ jobs:
             environmentName=${{ env.ENVIRONMENT_NAME }}
             location=${{ env.LOCATION }}
             acrLoginServer=${{ secrets.ACR_LOGIN_SERVER }}
+            acrUsername=${{ secrets.ACR_USERNAME }}
+            acrPassword=${{ secrets.ACR_PASSWORD }}
             osImageTag=${{ env.IMAGE_TAG }}
             dbPassword=${{ secrets.DB_PASSWORD }}
             openaiKey=${{ env.OPENAI_KEY }}

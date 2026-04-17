@@ -23,6 +23,13 @@ param stripeSecretKey string
 @description('Container Registry login server (e.g. myacr.azurecr.io)')
 param acrLoginServer string
 
+@description('ACR admin username')
+param acrUsername string = ''
+
+@description('ACR admin password')
+@secure()
+param acrPassword string = ''
+
 // ============================================================================
 // PostgreSQL Flexible Server
 // ============================================================================
@@ -136,19 +143,27 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 3000
         transport: 'http'
       }
+      registries: acrUsername != '' ? [
+        {
+          server: acrLoginServer
+          username: acrUsername
+          passwordSecretRef: 'acr-password'
+        }
+      ] : []
       secrets: [
         { name: 'database-url', value: databaseUrl }
         { name: 'redis-url', value: redisUrl }
         { name: 'openai-key', value: openaiKey }
         { name: 'resend-key', value: resendKey }
         { name: 'stripe-key', value: stripeSecretKey }
+        ...(acrUsername != '' ? [{ name: 'acr-password', value: acrPassword }] : [])
       ]
     }
     template: {
       containers: [
         {
           name: 'api'
-          image: '${acrLoginServer}/vaultline-api:latest'
+          image: '${acrLoginServer}/unified-intelligence-os:${osImageTag}'
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -227,12 +242,20 @@ resource osApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 3001
         transport: 'http'
       }
+      registries: acrUsername != '' ? [
+        {
+          server: acrLoginServer
+          username: acrUsername
+          passwordSecretRef: 'acr-password'
+        }
+      ] : []
       secrets: [
         { name: 'database-url', value: databaseUrl }
         { name: 'redis-url', value: redisUrl }
         { name: 'openai-key', value: openaiKey }
         { name: 'ch-key', value: companiesHouseApiKey }
         { name: 'webhook-secret', value: webhookSigningSecret }
+        ...(acrUsername != '' ? [{ name: 'acr-password', value: acrPassword }] : [])
       ]
     }
     template: {
