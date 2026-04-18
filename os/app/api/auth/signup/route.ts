@@ -23,6 +23,16 @@ function slugify(s: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    return await _post(req);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[signup]', msg);
+    return NextResponse.json({ error: 'Internal error', detail: msg }, { status: 500 });
+  }
+}
+
+async function _post(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
