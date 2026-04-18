@@ -6,7 +6,7 @@ const PUBLIC_PATHS = [
   '/robots.txt', '/sitemap.xml',
 ];
 const PUBLIC_PREFIXES = [
-  '/api/auth/', '/api/webhooks/', '/api/gateway/',
+  '/api/auth/', '/api/webhooks/', '/api/gateway/', '/api/demo/',
   '/api/revenue/', '/api/law/', '/api/compliance/',
   '/sitemap/', '/_next/', '/favicon', '/assets/',
 ];
