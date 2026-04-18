@@ -152,7 +152,7 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-        <div className="mt-3 overflow-hidden rounded border border-gray-200 bg-white">
+        <div className="mt-3 overflow-x-auto rounded border border-gray-200 bg-white">
           {keys.length === 0 ? (
             <p className="p-4 text-sm text-gray-600">No keys yet. Create one above.</p>
           ) : (
@@ -206,7 +206,7 @@ export default function DashboardPage() {
 
       <section>
         <h2 className="text-lg font-semibold">Recent leads</h2>
-        <div className="mt-3 overflow-hidden rounded border border-gray-200 bg-white">
+        <div className="mt-3 overflow-x-auto rounded border border-gray-200 bg-white">
           {leads.length === 0 ? (
             <p className="p-4 text-sm text-gray-600">
               No leads yet. Try <Link href="/audit" className="underline">running an audit</Link>.
