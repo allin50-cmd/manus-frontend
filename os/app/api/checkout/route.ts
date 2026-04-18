@@ -6,6 +6,16 @@ import { getStripe, getStripePriceId } from '@/lib/stripe';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
+  try {
+    return await _post(req);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[checkout]', msg);
+    return NextResponse.json({ error: 'Internal error', detail: msg }, { status: 500 });
+  }
+}
+
+async function _post(req: NextRequest) {
   const session = await getSessionFromRequest(req);
   if (!session) {
     return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
