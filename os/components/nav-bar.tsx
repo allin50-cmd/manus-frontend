@@ -10,6 +10,7 @@ const links = [
   { href: '/audit', label: 'Revenue' },
   { href: '/law', label: 'Law Clerks' },
   { href: '/compliance', label: 'FineGuard' },
+  { href: '/companies', label: 'Companies' },
 ];
 
 export function NavBar() {

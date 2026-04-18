@@ -25,6 +25,7 @@ model Tenant {
   events            Event[]
   configs           Config[]
   subscriptions     Subscription[]
+  companies         Company[]
 }
 
 model User {
@@ -113,6 +114,21 @@ model Config {
   tenantId String?
 
   tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  tenantId       String
+  name           String
+  companyNumber  String?
+  fineStatus     String   @default("green")
+  nextDeadlineAt DateTime?
+  createdAt      DateTime @default(now())
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, companyNumber])
+  @@index([tenantId])
 }
 
 model Subscription {
