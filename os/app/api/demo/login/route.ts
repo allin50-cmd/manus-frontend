@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/password';
 import { signSession } from '@/lib/session';
-import { setSessionCookie } from '@/lib/session-cookies';
+import { SESSION_COOKIE_NAME, SESSION_MAX_AGE } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -46,10 +46,16 @@ async function handle(req: NextRequest) {
     role: user.role,
     plan: tenant.plan,
   });
-  setSessionCookie(token);
-
-  const origin = req.headers.get('origin') || `https://${req.headers.get('host')}`;
-  return NextResponse.redirect(`${origin}/companies`, 302);
+  const origin = `https://${req.headers.get('host')}`;
+  const res = NextResponse.redirect(`${origin}/companies`, 302);
+  res.cookies.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_MAX_AGE,
+  });
+  return res;
 }
 
 export async function GET(req: NextRequest) {
