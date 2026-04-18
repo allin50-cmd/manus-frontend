@@ -26,7 +26,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 
-RUN addgroup --system --gid 1001 nodejs \
+RUN apk add --no-cache openssl \
+ && addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
 
 RUN mkdir -p ./public
