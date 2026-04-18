@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { callApi, useApiKey } from '@/components/api-key-provider';
+import { callApi } from '@/components/api-key-provider';
 
 type SubmitResponse = {
   success: boolean;
@@ -24,7 +24,6 @@ const PAIN_OPTIONS = [
 ];
 
 export default function AuditPage() {
-  const { apiKey } = useApiKey();
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -48,24 +47,19 @@ export default function AuditPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKey) {
-      setResult({ success: false, error: 'Set an API key in the top bar first.' });
-      return;
-    }
     setLoading(true);
     setNarrative('');
-    const res = await callApi<SubmitResponse>('/api/revenue/submit', form, apiKey);
+    const res = await callApi<SubmitResponse>('/api/revenue/submit', form);
     setResult(res.data as SubmitResponse);
     setLoading(false);
   };
 
   const runNarrative = async () => {
-    if (!result?.result || !apiKey) return;
+    if (!result?.result) return;
     setLoading(true);
     const res = await callApi<{ narrative: string; error?: string }>(
       '/api/revenue/narrative',
       { lead: { name: form.name, system: form.system, sizeTier: form.sizeTier, painPoints: form.painPoints }, result: result.result },
-      apiKey,
     );
     const data = res.data as { narrative?: string; error?: string };
     setNarrative(data.narrative ?? data.error ?? '');

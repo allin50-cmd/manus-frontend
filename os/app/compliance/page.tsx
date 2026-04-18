@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { callApi, useApiKey } from '@/components/api-key-provider';
+import { callApi } from '@/components/api-key-provider';
 
 type CheckResult = {
   success: boolean;
@@ -18,7 +18,6 @@ type CheckResult = {
 type WebhookResult = { success: boolean; subscriptionId?: string; companyNumber?: string; webhookUrl?: string; error?: string };
 
 export default function CompliancePage() {
-  const { apiKey } = useApiKey();
   const [companyNumber, setCompanyNumber] = useState('');
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null);
@@ -30,21 +29,18 @@ export default function CompliancePage() {
 
   const check = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKey) return setCheckResult({ success: false, error: 'Set an API key in the top bar first.' });
     setChecking(true);
-    const res = await callApi<CheckResult>('/api/compliance/check-company', { companyNumber }, apiKey);
+    const res = await callApi<CheckResult>('/api/compliance/check-company', { companyNumber });
     setCheckResult(res.data as CheckResult);
     setChecking(false);
   };
 
   const register = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKey) return setWebhookResult({ success: false, error: 'Set an API key in the top bar first.' });
     setRegistering(true);
     const res = await callApi<WebhookResult>(
       '/api/compliance/register-webhook',
       { companyNumber: webhookCompany, webhookUrl },
-      apiKey,
     );
     setWebhookResult(res.data as WebhookResult);
     setRegistering(false);

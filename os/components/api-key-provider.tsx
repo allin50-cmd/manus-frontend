@@ -42,15 +42,15 @@ export function useApiKey(): ApiKeyContextValue {
 export async function callApi<T = unknown>(
   path: string,
   body: unknown,
-  apiKey: string,
+  apiKey?: string,
 ): Promise<{ ok: boolean; status: number; data: T | { error: string } }> {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (apiKey) headers['x-api-key'] = apiKey;
   const res = await fetch(path, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-    },
+    headers,
     body: JSON.stringify(body),
+    credentials: 'include',
   });
   const data = (await res.json().catch(() => ({}))) as T | { error: string };
   return { ok: res.ok, status: res.status, data };

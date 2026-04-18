@@ -18,12 +18,20 @@ async function handle(req: NextRequest) {
   let tenant = await prisma.tenant.findUnique({ where: { subdomain: DEMO_SUBDOMAIN } });
   if (!tenant) {
     tenant = await prisma.tenant.create({
-      data: { name: DEMO_TENANT_NAME, subdomain: DEMO_SUBDOMAIN, plan: 'pro' },
+      data: {
+        name: DEMO_TENANT_NAME,
+        subdomain: DEMO_SUBDOMAIN,
+        plan: 'pro',
+        enabledVerticals: ['revenue', 'law', 'compliance'],
+      },
     });
-  } else if (tenant.plan !== 'pro') {
+  } else {
     tenant = await prisma.tenant.update({
       where: { id: tenant.id },
-      data: { plan: 'pro' },
+      data: {
+        plan: 'pro',
+        enabledVerticals: ['revenue', 'law', 'compliance'],
+      },
     });
   }
 

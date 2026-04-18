@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { callApi, useApiKey } from '@/components/api-key-provider';
+import { callApi } from '@/components/api-key-provider';
 
 type ProcessResult = {
   success: boolean;
@@ -25,7 +25,6 @@ type BillingResult = {
 };
 
 export default function LawPage() {
-  const { apiKey } = useApiKey();
   const [docUrl, setDocUrl] = useState('');
   const [docType, setDocType] = useState<'brief' | 'email' | 'transcript' | 'pleading'>('brief');
   const [rate, setRate] = useState(300);
@@ -39,12 +38,10 @@ export default function LawPage() {
 
   const process = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKey) return setProcessResult({ success: false, error: 'Set an API key in the top bar first.' });
     setProcessing(true);
     const res = await callApi<ProcessResult>(
       '/api/law/process-document',
       { documentUrl: docUrl, documentType: docType, ratePerHour: rate },
-      apiKey,
     );
     setProcessResult(res.data as ProcessResult);
     setProcessing(false);
@@ -52,12 +49,10 @@ export default function LawPage() {
 
   const genBilling = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKey) return setBillingResult({ success: false, error: 'Set an API key in the top bar first.' });
     setBilling(true);
     const res = await callApi<BillingResult>(
       '/api/law/generate-billing',
       { text: notes, ratePerHour: billRate },
-      apiKey,
     );
     setBillingResult(res.data as BillingResult);
     setBilling(false);

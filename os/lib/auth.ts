@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { NextRequest } from 'next/server';
 import { prisma } from './prisma';
+import { getSessionFromRequest } from './session';
 
 export interface TenantContext {
   tenant: {
@@ -29,24 +30,39 @@ export async function resolveTenantFromRequest(
   req: NextRequest,
 ): Promise<TenantContext | null> {
   const raw = req.headers.get('x-api-key');
-  if (!raw) return null;
+  if (raw) {
+    const apiKey = await prisma.apiKey.findUnique({
+      where: { keyHash: hashKey(raw) },
+      include: { tenant: true },
+    });
+    if (!apiKey || !apiKey.active) return null;
+    return {
+      tenant: {
+        id: apiKey.tenant.id,
+        name: apiKey.tenant.name,
+        subdomain: apiKey.tenant.subdomain,
+        enabledVerticals: apiKey.tenant.enabledVerticals,
+        defaultVertical: apiKey.tenant.defaultVertical,
+      },
+      apiKey: { id: apiKey.id, vertical: apiKey.vertical },
+    };
+  }
 
-  const apiKey = await prisma.apiKey.findUnique({
-    where: { keyHash: hashKey(raw) },
-    include: { tenant: true },
-  });
+  const session = await getSessionFromRequest(req);
+  if (!session) return null;
 
-  if (!apiKey || !apiKey.active) return null;
+  const tenant = await prisma.tenant.findUnique({ where: { id: session.tenantId } });
+  if (!tenant) return null;
 
   return {
     tenant: {
-      id: apiKey.tenant.id,
-      name: apiKey.tenant.name,
-      subdomain: apiKey.tenant.subdomain,
-      enabledVerticals: apiKey.tenant.enabledVerticals,
-      defaultVertical: apiKey.tenant.defaultVertical,
+      id: tenant.id,
+      name: tenant.name,
+      subdomain: tenant.subdomain,
+      enabledVerticals: tenant.enabledVerticals,
+      defaultVertical: tenant.defaultVertical,
     },
-    apiKey: { id: apiKey.id, vertical: apiKey.vertical },
+    apiKey: { id: 'session', vertical: tenant.defaultVertical },
   };
 }
 
