@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accuracy PIE — Planning Opportunities</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+    --blue:   #0071E3;
+    --blue-h: #0077ED;
+    --blue-bg:#EBF3FE;
+    --green:  #1D8348;
+    --green-bg:#EAF6EE;
+    --amber:  #92400E;
+    --amber-bg:#FEF3C7;
+    --red:    #C0392B;
+    --red-bg: #FEF0EE;
+    --purple: #6D28D9;
+    --g50:    #F5F5F7;
+    --g100:   #E8E8ED;
+    --g200:   #D2D2D7;
+    --g400:   #86868B;
+    --g600:   #515154;
+    --g900:   #1D1D1F;
+    --border: #D2D2D7;
+    --white:  #FFFFFF;
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+    font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+    background:var(--g50);color:var(--g900);
+    -webkit-font-smoothing:antialiased;
+    min-height:100%;
+}
+
+/* ── Page shell ── */
+.shell{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── Top bar ── */
+.topbar{
+    background:var(--white);
+    border-bottom:1px solid var(--border);
+    padding:0 24px;
+    display:flex;align-items:center;justify-content:space-between;
+    height:56px;flex-shrink:0;
+    position:sticky;top:0;z-index:100;
+}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.logo{font-size:16px;font-weight:700;color:var(--g900);letter-spacing:-.02em;}
+.logo span{color:var(--blue);}
+.status-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12px;font-weight:500;color:var(--g600);
+    background:var(--g50);border:1px solid var(--border);
+    border-radius:980px;padding:4px 10px;
+}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--g200);}
+.status-dot.green{background:#30D158;}
+.status-dot.blue{background:var(--blue);animation:pulse .9s ease-in-out infinite;}
+.status-dot.red{background:#FF3B30;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.search-btn{
+    background:var(--blue);color:#fff;border:none;border-radius:10px;
+    padding:9px 20px;font-size:14px;font-weight:600;
+    cursor:pointer;display:flex;align-items:center;gap:7px;
+    font-family:inherit;transition:background .15s;
+    -webkit-font-smoothing:antialiased;
+}
+.search-btn:hover:not(:disabled){background:var(--blue-h);}
+.search-btn:disabled{opacity:.4;cursor:not-allowed;}
+.demo-btn{
+    background:var(--white);color:var(--g600);border:1px solid var(--border);
+    border-radius:10px;padding:9px 16px;font-size:14px;font-weight:500;
+    cursor:pointer;font-family:inherit;transition:background .15s;
+    -webkit-font-smoothing:antialiased;
+}
+.demo-btn:hover:not(:disabled){background:var(--g50);}
+.demo-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── Tab nav ── */
+.tabnav{
+    display:flex;gap:0;
+    border-bottom:1px solid var(--border);
+    background:var(--white);
+    padding:0 24px;
+    flex-shrink:0;
+}
+.tab{
+    padding:14px 18px;font-size:14px;font-weight:500;
+    color:var(--g400);cursor:pointer;border-bottom:2px solid transparent;
+    transition:color .15s,border-color .15s;user-select:none;
+    display:flex;align-items:center;gap:7px;
+    font-family:inherit;background:none;border-top:none;border-left:none;border-right:none;
+}
+.tab:hover{color:var(--g900);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.tab-badge{
+    background:var(--blue);color:#fff;
+    font-size:10px;font-weight:700;
+    padding:1px 6px;border-radius:980px;
+    display:none;
+}
+
+/* ── Main content ── */
+.content{flex:1;padding:24px;max-width:1200px;margin:0 auto;width:100%;}
+.pane{display:none;}
+.pane.active{display:block;}
+
+/* ── Progress bar ── */
+.spinner-inline{
+    width:16px;height:16px;
+    border:2px solid rgba(255,255,255,.3);
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:spin .7s linear infinite;
+    flex-shrink:0;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Summary bar ── */
+.summary-bar{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:12px;margin-bottom:24px;
+}
+.stat-card{
+    background:var(--white);border:1px solid var(--border);border-radius:12px;
+    padding:16px;
+}
+.stat-card .num{
+    font-size:30px;font-weight:700;letter-spacing:-.03em;
+    line-height:1;font-variant-numeric:tabular-nums;margin-bottom:4px;
+}
+.stat-card .label{font-size:12px;color:var(--g400);font-weight:500;}
+
+/* ── Filter bar ── */
+.filter-bar{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    margin-bottom:16px;
+}
+.filter-group{display:flex;background:var(--g100);border-radius:8px;padding:3px;gap:2px;}
+.filter-btn{
+    font-family:inherit;font-size:12px;font-weight:500;
+    padding:5px 12px;border-radius:6px;border:none;
+    background:transparent;color:var(--g600);cursor:pointer;
+    transition:all .12s;white-space:nowrap;
+}
+.filter-btn:hover{color:var(--g900);}
+.filter-btn.on{background:var(--white);color:var(--g900);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.sort-select{
+    font-family:inherit;font-size:12px;font-weight:500;
+    padding:6px 28px 6px 10px;border-radius:8px;
+    border:1px solid var(--border);background:var(--white);color:var(--g600);
+    cursor:pointer;-webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2386868B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;
+}
+.result-count{font-size:12px;color:var(--g400);margin-left:auto;}
+
+/* ── Site cards ── */
+.sites-list{display:flex;flex-direction:column;gap:12px;}
+
+.site-card{
+    background:var(--white);border:1px solid var(--border);border-radius:14px;
+    padding:18px 20px;cursor:default;
+    transition:box-shadow .15s;
+    border-left:4px solid var(--border);
+}
+.site-card:hover{box-shadow:0 2px 16px rgba(0,0,0,.08);}
+.site-card.approved{border-left-color:#30D158;}
+.site-card.review  {border-left-color:#FF9F0A;}
+.site-card.refused {border-left-color:#FF3B30;}
+.site-card.site    {border-left-color:var(--blue);}
+
+.site-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;}
+.site-address{font-size:15px;font-weight:600;color:var(--g900);line-height:1.3;}
+.site-borough{font-size:12px;color:var(--g400);margin-top:2px;}
+
+.status-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 10px;border-radius:980px;
+    font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;
+}
+.status-badge.approved{background:var(--green-bg);color:var(--green);}
+.status-badge.review  {background:var(--amber-bg);color:var(--amber);}
+.status-badge.refused {background:var(--red-bg);color:var(--red);}
+.status-badge.site    {background:var(--blue-bg);color:var(--blue);}
+
+.site-description{font-size:13px;color:var(--g600);line-height:1.5;margin-bottom:12px;}
+
+.site-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.chip{
+    font-size:12px;font-weight:500;padding:3px 10px;border-radius:980px;
+    border:1px solid var(--border);color:var(--g600);background:var(--g50);white-space:nowrap;
+}
+.chip.homes{background:var(--green-bg);color:var(--green);border-color:#A9DFB4;}
+.chip.area {background:var(--blue-bg); color:var(--blue); border-color:#AED4F9;}
+.chip.date {background:var(--g50);     color:var(--g600);}
+.chip.yes  {background:var(--green-bg);color:var(--green);border-color:#A9DFB4;}
+.chip.no   {background:var(--red-bg);  color:var(--red);  border-color:#F5AEA8;}
+
+/* Opportunity strength bar */
+.strength-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.strength-label{font-size:11px;color:var(--g400);white-space:nowrap;font-weight:500;}
+.strength-track{flex:1;height:5px;background:var(--g100);border-radius:3px;overflow:hidden;}
+.strength-fill{height:100%;border-radius:3px;background:var(--blue);transition:width .4s ease;}
+.strength-fill.high{background:#30D158;}
+.strength-fill.med {background:#FF9F0A;}
+.strength-fill.low {background:var(--g200);}
+
+/* AI insight */
+.insight{
+    background:var(--blue-bg);border:1px solid #AED4F9;border-radius:10px;
+    padding:12px 14px;
+}
+.insight-label{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.insight p{font-size:13px;color:#1A4A8A;line-height:1.5;margin:0;}
+
+.site-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.action-btn{
+    font-family:inherit;font-size:12px;font-weight:500;
+    padding:6px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--white);color:var(--g600);cursor:pointer;
+    transition:background .12s;display:inline-flex;align-items:center;gap:5px;
+}
+.action-btn:hover{background:var(--g50);}
+.action-btn.primary{background:var(--blue-bg);color:var(--blue);border-color:#AED4F9;}
+.action-btn.primary:hover{background:#dbeafe;}
+
+/* ── Empty state ── */
+.empty-state{
+    text-align:center;padding:80px 20px;
+}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.3;}
+.empty-title{font-size:17px;font-weight:600;color:var(--g600);margin-bottom:8px;}
+.empty-body{font-size:14px;color:var(--g400);line-height:1.5;}
+
+/* ── Progress panel (while searching) ── */
+.progress-panel{
+    background:var(--white);border:1px solid var(--border);border-radius:14px;
+    padding:20px;margin-bottom:20px;
+}
+.progress-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.progress-log{font-size:12px;color:var(--g600);line-height:1.8;max-height:120px;overflow-y:auto;}
+.progress-log .ok  {color:var(--green);}
+.progress-log .err {color:var(--red);}
+.progress-log .info{color:var(--g400);}
+
+/* ── My Leads ── */
+.leads-empty{text-align:center;padding:80px 20px;}
+.leads-pipeline{
+    display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;
+}
+.pipeline-chip{
+    font-size:12px;font-weight:600;padding:4px 12px;border-radius:980px;
+    border:1px solid var(--border);color:var(--g600);background:var(--g50);
+}
+.pipeline-chip.active{background:var(--blue-bg);color:var(--blue);border-color:#AED4F9;}
+
+.lead-card{
+    background:var(--white);border:1px solid var(--border);border-radius:14px;
+    padding:18px 20px;margin-bottom:12px;
+}
+.lead-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.lead-address{font-size:14px;font-weight:600;color:var(--g900);}
+.lead-ref{font-size:11px;color:var(--g400);margin-top:2px;}
+.stage-select{
+    font-family:inherit;font-size:12px;font-weight:600;
+    padding:5px 10px;border-radius:8px;
+    border:1px solid var(--border);background:var(--g50);color:var(--g600);
+    cursor:pointer;-webkit-appearance:none;appearance:none;
+}
+.lead-note{
+    font-family:inherit;font-size:13px;width:100%;
+    padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+    resize:none;background:var(--white);color:var(--g900);line-height:1.4;
+    transition:border-color .15s;
+}
+.lead-note:focus{outline:none;border-color:var(--blue);}
+.email-draft{
+    background:#F0F7FF;border:1px solid #AED4F9;border-radius:10px;
+    padding:14px;margin-top:10px;font-size:13px;line-height:1.6;
+    color:var(--g900);white-space:pre-wrap;
+}
+.generating{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--blue);}
+
+/* ── Reports ── */
+.reports-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:32px;}
+.report-card{
+    background:var(--white);border:1px solid var(--border);border-radius:14px;
+    padding:20px;
+}
+.report-card h3{font-size:14px;font-weight:600;margin:0 0 6px;}
+.report-card p{font-size:13px;color:var(--g400);margin:0 0 16px;line-height:1.4;}
+.dl-btn{
+    font-family:inherit;font-size:13px;font-weight:500;
+    padding:8px 16px;border-radius:8px;border:1px solid var(--border);
+    cursor:pointer;transition:background .12s;display:inline-flex;align-items:center;gap:6px;
+    width:100%;justify-content:center;background:var(--g50);color:var(--g600);
+}
+.dl-btn:hover{background:var(--g100);}
+.dl-btn.csv {background:var(--green-bg);color:var(--green);border-color:#A9DFB4;}
+.dl-btn.xlsx{background:var(--blue-bg); color:var(--blue); border-color:#AED4F9;}
+.dl-btn.pdf {background:var(--red-bg);  color:var(--red);  border-color:#F5AEA8;}
+
+.ai-summary-card{
+    background:var(--white);border:1px solid var(--border);border-radius:14px;
+    padding:20px;
+}
+.ai-summary-card h2{font-size:16px;font-weight:600;margin:0 0 14px;}
+.summary-text{
+    font-size:14px;line-height:1.7;color:var(--g900);
+    background:var(--g50);border-radius:10px;padding:16px;min-height:80px;
+    white-space:pre-wrap;
+}
+.summary-text.placeholder{color:var(--g400);font-style:italic;}
+
+/* ── Toast ── */
+#toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--g900);color:#fff;padding:10px 20px;border-radius:10px;
+    font-size:13px;font-weight:500;pointer-events:none;
+    opacity:0;transition:opacity .25s;z-index:9999;white-space:nowrap;
+}
+
+/* ── Print ── */
+#printDoc{display:none;}
+@media print{
+    .shell,#printDoc~*{display:none!important;}
+    #printDoc{display:block!important;}
+    .ptable{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:24px;}
+    .ptable th{background:#f5f5f7;padding:6px 8px;text-align:left;border:1px solid #d2d2d7;font-weight:600;}
+    .ptable td{padding:6px 8px;border:1px solid #d2d2d7;vertical-align:top;}
+}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--g200);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- FILE:// WARNING BANNER -->
+<div id="fileBanner" style="display:none;background:#FEF3C7;border-bottom:1px solid #F59E0B;padding:12px 24px;font-size:13px;color:#92400E;">
+    <strong>One quick setup step:</strong>
+    This app needs to run over <code>http://</code> to load live data.
+    Open <strong>Terminal</strong> on your Mac and run:<br>
+    <code style="background:#FDE68A;padding:3px 8px;border-radius:4px;display:inline-block;margin:6px 0;">
+        cd ~/Downloads && python3 -m http.server 8080
+    </code><br>
+    Then open <a href="http://localhost:8080/pie-os-command.html" style="color:#92400E;font-weight:600;">http://localhost:8080/pie-os-command.html</a>
+    &nbsp;—&nbsp;or drag the file into the terminal window after <code>cd </code>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <div class="logo">Accuracy <span>PIE</span></div>
+        <div class="status-pill">
+            <span id="statusDot" class="status-dot"></span>
+            <span id="statusText">Ready</span>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+        <button class="demo-btn" id="demoBtn" onclick="run(true)">Try Demo</button>
+        <button class="search-btn" id="searchBtn" onclick="run(false)">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M13.5 7A6.5 6.5 0 1 1 7 .5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M13.5 .5V5H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Search Now
+        </button>
+    </div>
+</div>
+
+<!-- TABS -->
+<div class="tabnav">
+    <button class="tab active" id="tab-sites"   onclick="showTab('sites')">🏗 Find Sites</button>
+    <button class="tab"        id="tab-leads"   onclick="showTab('leads')">
+        👥 My Leads
+        <span class="tab-badge" id="leadsBadge"></span>
+    </button>
+    <button class="tab"        id="tab-reports" onclick="showTab('reports')">📊 Reports</button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+    <!-- FIND SITES -->
+    <div class="pane active" id="pane-sites">
+
+        <!-- Progress panel -->
+        <div class="progress-panel" id="progressPanel" style="display:none;">
+            <div class="progress-title">
+                <div class="spinner-inline" style="border:2px solid rgba(0,113,227,.2);border-top-color:var(--blue);width:16px;height:16px;border-radius:50%;animation:spin .7s linear infinite;"></div>
+                <span id="progressTitle">Searching…</span>
+            </div>
+            <div class="progress-log" id="progressLog"></div>
+        </div>
+
+        <!-- Summary numbers -->
+        <div class="summary-bar" id="summaryBar" style="display:none;">
+            <div class="stat-card">
+                <div class="num" id="numTotal" style="color:var(--blue);">0</div>
+                <div class="label">Sites found</div>
+            </div>
+            <div class="stat-card">
+                <div class="num" id="numApproved" style="color:var(--green);">0</div>
+                <div class="label">Approved</div>
+            </div>
+            <div class="stat-card">
+                <div class="num" id="numReview" style="color:var(--amber);">0</div>
+                <div class="label">Under review</div>
+            </div>
+            <div class="stat-card">
+                <div class="num" id="numHomes" style="color:var(--g900);">0</div>
+                <div class="label">Potential homes</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar" id="filterBar" style="display:none;">
+            <div class="filter-group" id="fStatus">
+                <button class="filter-btn on" data-v="all"      onclick="setFilter('status',this)">All</button>
+                <button class="filter-btn"    data-v="approved" onclick="setFilter('status',this)">Approved</button>
+                <button class="filter-btn"    data-v="review"   onclick="setFilter('status',this)">Under review</button>
+                <button class="filter-btn"    data-v="site"     onclick="setFilter('status',this)">Strategic sites</button>
+            </div>
+            <div class="filter-group" id="fBorough">
+                <button class="filter-btn on" data-v="all"      onclick="setFilter('borough',this)">Both boroughs</button>
+                <button class="filter-btn"    data-v="Bromley"  onclick="setFilter('borough',this)">Bromley</button>
+                <button class="filter-btn"    data-v="Lewisham" onclick="setFilter('borough',this)">Lewisham</button>
+            </div>
+            <select class="sort-select" id="sortSel" onchange="applyFilters()">
+                <option value="strength">Strongest first</option>
+                <option value="homes">Most homes first</option>
+                <option value="date">Newest first</option>
+            </select>
+            <span class="result-count" id="resultCount"></span>
+        </div>
+
+        <!-- Cards -->
+        <div class="sites-list" id="sitesList"></div>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">No sites loaded yet</div>
+            <div class="empty-body">Press <strong>Search Now</strong> to find the latest planning applications<br>and approved sites in Bromley and Lewisham.</div>
+        </div>
+    </div>
+
+    <!-- MY LEADS -->
+    <div class="pane" id="pane-leads">
+        <div id="leadsEmpty" class="leads-empty">
+            <div class="empty-icon">👥</div>
+            <div class="empty-title">No leads yet</div>
+            <div class="empty-body">Find a site you're interested in, then press<br><strong>Save as Lead</strong> to track it here.</div>
+        </div>
+        <div id="pipelineBar" class="leads-pipeline" style="display:none;"></div>
+        <div id="leadsList"></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="pane" id="pane-reports">
+        <div class="reports-grid">
+            <div class="report-card">
+                <h3>Spreadsheet</h3>
+                <p>All sites in a structured spreadsheet with three sheets — Applications, Strategic Sites, and My Leads.</p>
+                <button class="dl-btn xlsx" onclick="exportXLSX()">⬇ Download Spreadsheet</button>
+            </div>
+            <div class="report-card">
+                <h3>CSV File</h3>
+                <p>A simple flat file you can open in Excel, Google Sheets, or Numbers.</p>
+                <button class="dl-btn csv" onclick="exportCSV()">⬇ Download CSV</button>
+            </div>
+            <div class="report-card">
+                <h3>PDF Report</h3>
+                <p>A clean printable report of all sites and leads. Save as PDF from your print dialog.</p>
+                <button class="dl-btn pdf" onclick="exportPDF()">🖨 Print / Save PDF</button>
+            </div>
+        </div>
+
+        <div class="ai-summary-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <h2 style="margin:0;">AI Summary</h2>
+                <button class="action-btn primary" onclick="generateSummary()">Generate Summary</button>
+            </div>
+            <div class="summary-text placeholder" id="summaryText">
+                Click Generate Summary to get an AI-written overview of everything found this session — top sites, key numbers, and recommended next steps.
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Print doc (hidden) -->
+<div id="printDoc">
+    <div style="padding:32px;font-family:-apple-system,Arial,sans-serif;">
+        <h1 style="font-size:20px;margin:0 0 4px;">Accuracy PIE — Planning Report</h1>
+        <p id="printDate" style="font-size:13px;color:#86868B;margin:0 0 32px;"></p>
+        <div id="printSummary"></div>
+        <div id="printSites"></div>
+        <div id="printLeads"></div>
+    </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────
+const BOROUGHS = [
+    { name:'Bromley',  code:'BRY', entityId:65  },
+    { name:'Lewisham', code:'LEW', entityId:198 },
+];
+const API_BASE = 'https://www.planning.data.gov.uk';
+const IDOX = {
+    BRY: { weeklyUrl:'https://searchapplications.bromley.gov.uk/online-applications/search.do?action=weeklyList&searchType=Application', baseUrl:'https://searchapplications.bromley.gov.uk/online-applications' },
+    LEW: { weeklyUrl:'https://planning.lewisham.gov.uk/online-applications/search.do?action=weeklyList&searchType=Application',         baseUrl:'https://planning.lewisham.gov.uk/online-applications' },
+};
+
+let allSites  = [];  // all loaded records
+let leads     = [];  // saved leads
+let fStatus   = 'all';
+let fBorough  = 'all';
+let sortMode  = 'strength';
+
+// Counters
+let totals = { total:0, approved:0, review:0, homes:0 };
+
+// ─── HELPERS ──────────────────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc   = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.style.opacity = '1';
+    clearTimeout(el._t); el._t = setTimeout(() => el.style.opacity = '0', 2200);
+}
+
+function setStatus(text, state) {
+    document.getElementById('statusDot').className = 'status-dot' + (state ? ' '+state : '');
+    document.getElementById('statusText').textContent = text;
+}
+
+function setButtons(disabled) {
+    document.getElementById('searchBtn').disabled = disabled;
+    document.getElementById('demoBtn').disabled   = disabled;
+}
+
+function log(msg, type='info') {
+    const el = document.getElementById('progressLog');
+    const line = document.createElement('div');
+    line.className = type;
+    line.textContent = msg;
+    el.prepend(line);
+}
+
+function showTab(name) {
+    ['sites','leads','reports'].forEach(t => {
+        document.getElementById('tab-' +t).classList.toggle('active', t===name);
+        document.getElementById('pane-'+t).classList.toggle('active', t===name);
+    });
+}
+
+// ─── DEMO DATA ────────────────────────────────────────────────────────
+const DEMO_SITES = [
+    { id:'d1', borough:'Bromley', ref:'25/00412/FULL', address:'14 Widmore Road, Bromley BR1 1RY',
+      description:'Erection of 6-storey residential building comprising 28 self-contained flats',
+      statusKey:'review', statusLabel:'Under Review', type:'Full Application',
+      homes:28, hectares:'', date:'28 Feb 2025', source:'Planning Application',
+      score:62, tier:'MED',
+      insight:'Minor scheme validated Feb 2025 — 28 flats on town centre site. Decision expected within 8 weeks. Watch for approval.' },
+    { id:'d2', borough:'Bromley', ref:'24/03891/FULL', address:'Former B&Q Site, Hayes Lane, Bromley BR2 9EF',
+      description:'Demolition of retail unit and erection of mixed-use development — 142 residential units and commercial ground floor',
+      statusKey:'approved', statusLabel:'Approved ✓', type:'Full Application',
+      homes:142, hectares:'', date:'14 Jan 2025', source:'Planning Application',
+      score:89, tier:'HIGH',
+      insight:'Full permission granted January 2025 — 142 homes on former retail site. Major redevelopment opportunity, developer not yet confirmed on site.' },
+    { id:'d3', borough:'Bromley', ref:'BRY-BL-001', address:'Bromley North Station Yard, Station Road, BR1 1LG',
+      description:'Mixed-use redevelopment — residential above ground-floor commercial',
+      statusKey:'site', statusLabel:'Strategic Site', type:'Brownfield Land',
+      homes:142, hectares:'1.8', date:'1 Feb 2025', source:'Strategic Sites Register',
+      score:85, tier:'HIGH',
+      insight:'1.8 hectare brownfield site adjacent to Bromley North station. Full planning permission in place, deliverable status confirmed. Prime regeneration opportunity.' },
+    { id:'d4', borough:'Lewisham', ref:'DC/25/114872', address:'Lewisham Shopping Centre, High Street SE13 6JZ',
+      description:'Mixed use development — 340 residential units, retail, community space',
+      statusKey:'review', statusLabel:'Under Review', type:'Full Application',
+      homes:340, hectares:'', date:'10 Feb 2025', source:'Planning Application',
+      score:87, tier:'HIGH',
+      insight:'Major town centre scheme — 340 homes with retail and community space. Application validated Feb 2025. High-value opportunity, monitor closely for decision.' },
+    { id:'d5', borough:'Lewisham', ref:'DC/24/125647', address:'Land at Loampit Vale, Lewisham SE13 7FT',
+      description:'Erection of 9-storey mixed use building — 68 residential units and ground floor commercial',
+      statusKey:'approved', statusLabel:'Approved ✓', type:'Full Application',
+      homes:68, hectares:'', date:'22 Jan 2025', source:'Planning Application',
+      score:78, tier:'HIGH',
+      insight:'Approved January 2025 — 68 homes in a 9-storey mixed-use building. Monitor for commencement notice.' },
+    { id:'d6', borough:'Lewisham', ref:'LEW-BL-002', address:'Catford Town Centre, Rushey Green SE6 4AS',
+      description:'Town centre regeneration masterplan — outline consent for up to 800 homes',
+      statusKey:'approved', statusLabel:'Approved ✓', type:'Brownfield Land',
+      homes:800, hectares:'4.2', date:'9 Jan 2024', source:'Strategic Sites Register',
+      score:91, tier:'HIGH',
+      insight:'Largest site in the dataset — 800 homes across 4.2 hectares in Catford town centre. Outline permission in place. Strategic regeneration with significant commercial potential.' },
+];
+const DEMO_INSIGHTS = {
+    'd1': { score:62, tier:'MED', insight:'Minor scheme validated Feb 2025 — 28 flats on town centre site. Decision expected within 8 weeks. Watch for approval.' },
+    'd2': { score:89, tier:'HIGH', insight:'Full permission granted January 2025 — 142 homes on former retail site. Major redevelopment opportunity, developer not yet confirmed on site.' },
+    'd3': { score:85, tier:'HIGH', insight:'1.8 hectare brownfield site adjacent to Bromley North station. Full planning permission in place, deliverable status confirmed. Prime regeneration opportunity.' },
+    'd4': { score:87, tier:'HIGH', insight:'Major town centre scheme — 340 homes with retail and community space. Application validated Feb 2025. High-value opportunity, monitor closely for decision.' },
+    'd5': { score:78, tier:'HIGH', insight:'Approved January 2025 — 68 homes in a 9-storey mixed-use building. Monitor for commencement notice.' },
+    'd6': { score:91, tier:'HIGH', insight:'Largest site in the dataset — 800 homes across 4.2 hectares in Catford town centre. Outline permission in place. Strategic regeneration with significant commercial potential.' },
+};
+
+// ─── PORTAL CONFIG ───────────────────────────────────────────────────
+// weeklyList.do = plain GET, returns HTML, no auth needed.
+// CORS proxy required — Idox doesn't send Access-Control-Allow-Origin headers.
+const PROXY = 'https://corsproxy.io/?url=';
+const PORTALS = {
+    BRY: {
+        name:       'Bromley',
+        weeklyUrl:  'https://searchapplications.bromley.gov.uk/online-applications/weeklyList.do',
+        detailBase: 'https://searchapplications.bromley.gov.uk/online-applications/',
+    },
+    LEW: {
+        name:       'Lewisham',
+        weeklyUrl:  'https://planning.lewisham.gov.uk/online-applications/weeklyList.do',
+        detailBase: 'https://planning.lewisham.gov.uk/online-applications/',
+    },
+};
+
+// ─── SCRAPE WEEKLY LIST ───────────────────────────────────────────────
+// 1. Fetch weeklyList.do via CORS proxy — parse the week <select> options
+// 2. Fetch weeklyListResults.do with most recent week — parse the results table
+// 3. Normalise each row into our standard site object
+async function fetchWeeklyList(boroughCode) {
+    const portal = PORTALS[boroughCode];
+    log('Fetching ' + portal.name + ' weekly list…');
+
+    // Step 1 — load the weekly list page to extract week option values
+    const pageRes = await fetch(PROXY + encodeURIComponent(portal.weeklyUrl));
+    if (!pageRes.ok) throw new Error(portal.name + ' page HTTP ' + pageRes.status);
+    const pageDoc = new DOMParser().parseFromString(await pageRes.text(), 'text/html');
+
+    // Idox week selector: <select name="searchCriteria.week">
+    const weekSel = pageDoc.querySelector('select[name="searchCriteria.week"]');
+    const weekVal = weekSel
+        ? Array.from(weekSel.options).find(o => o.value && o.value.trim())?.value
+        : null;
+
+    if (!weekVal) {
+        log(portal.name + ': week selector not found — trying direct results page', 'warn');
+        // fallback: try direct fetch without week param (returns current week)
+    }
+
+    // Step 2 — fetch results for that week
+    const baseUrl   = portal.weeklyUrl.replace('weeklyList.do', 'weeklyListResults.do');
+    const params    = weekVal
+        ? '?searchCriteria.week=' + encodeURIComponent(weekVal) + '&searchCriteria.action=validate&action=firstPage'
+        : '?searchCriteria.action=validate&action=firstPage';
+    const resRes = await fetch(PROXY + encodeURIComponent(baseUrl + params));
+    if (!resRes.ok) throw new Error(portal.name + ' results HTTP ' + resRes.status);
+    const resDoc = new DOMParser().parseFromString(await resRes.text(), 'text/html');
+
+    // Step 3 — parse results
+    // Modern Idox: <ul class="searchresults"><li class="searchresult">
+    // Older Idox:  <table class="searchresults"><tr>
+    const apps = [];
+    const items = resDoc.querySelectorAll('li.searchresult');
+    if (items.length > 0) {
+        items.forEach(item => {
+            const linkEl = item.querySelector('a[href*="applicationDetails"]');
+            const cells  = item.querySelectorAll('span, p');
+            const getText = sel => (item.querySelector(sel)?.textContent || '').trim();
+            const ref  = getText('.caseNumber, .reference') || (linkEl?.textContent || '').trim();
+            const addr = getText('.address, .siteAddress');
+            const prop = getText('.proposal, .description');
+            const stat = getText('.status, .caseStatus');
+            const date = getText('.date, .receivedDate, .validatedDate');
+            const href = linkEl?.getAttribute('href') || '';
+            if (!ref && !addr) return;
+            apps.push({ ref, addr, prop, stat: stat || 'Validated', date, href });
+        });
+    } else {
+        // Table fallback
+        resDoc.querySelectorAll('table.searchresults tr, #searchresults tr').forEach((row, i) => {
+            if (i === 0) return;
+            const tds  = row.querySelectorAll('td');
+            if (tds.length < 2) return;
+            const linkEl = row.querySelector('a[href*="applicationDetails"]');
+            const href   = linkEl?.getAttribute('href') || '';
+            apps.push({
+                ref:  tds[0]?.textContent.trim() || '',
+                addr: tds[1]?.textContent.trim() || '',
+                prop: tds[2]?.textContent.trim() || '',
+                stat: tds[4]?.textContent.trim() || 'Validated',
+                date: tds[3]?.textContent.trim() || '',
+                href,
+            });
+        });
+    }
+
+    log(portal.name + ': ' + apps.length + ' applications.', apps.length > 0 ? 'ok' : 'warn');
+
+    return apps
+        .filter(a => a.ref || a.addr)
+        .map(a => normaliseApp({
+            reference:      a.ref,
+            address:        a.addr,
+            description:    a.prop,
+            status:         a.stat,
+            app_type:       '',
+            validated_date: a.date,
+            decided_date:   '',
+            decision:       '',
+            link:           a.href ? (a.href.startsWith('http') ? a.href : portal.detailBase + a.href.replace(/^\//, '')) : '',
+        }, portal.name));
+}
+
+// ─── STRATEGIC SITES (planning.data.gov.uk — CORS-open, no proxy needed) ─
+async function fetchStrategicSites() {
+    let sites = [];
+    for (const b of BOROUGHS) {
+        log('Loading strategic sites for ' + b.name + '…');
+        try {
+            let offset = 0;
+            while (true) {
+                const url = API_BASE + '/entity.json?dataset=brownfield-land&organisation_entity='
+                    + b.entityId + '&limit=100&offset=' + offset;
+                const res = await fetch(url);
+                if (!res.ok) break;
+                const json = await res.json();
+                const page = Array.isArray(json.entities) ? json.entities
+                           : Array.isArray(json.results)  ? json.results : [];
+                sites = sites.concat(page.map(e => normaliseSite(e, b.name)));
+                if (page.length < 100) break;
+                offset += 100;
+            }
+            log(b.name + ' strategic sites: ' + sites.filter(s=>s.borough===b.name).length, 'ok');
+        } catch (e) {
+            log('Strategic sites error [' + b.name + ']: ' + e.message.substring(0,40), 'err');
+        }
+    }
+    return sites;
+}
+
+// ─── AI AUDIT ─────────────────────────────────────────────────────────
+async function auditSite(site) {
+    const prompt =
+        'You are a UK planning analyst. Score this development site 1-100 for opportunity ' +
+        'and classify HIGH, MED, or LOW. Return ONLY JSON: ' +
+        '{"score":number,"tier":"HIGH"|"MED"|"LOW","insight":"one plain English sentence max 120 chars"}\n\n' +
+        'Address: ' + site.address + '\n' +
+        'Description: ' + (site.description||'n/a') + '\n' +
+        'Status: ' + site.statusLabel + '\n' +
+        'Homes: ' + (site.homes||'unknown') + '\n' +
+        'Borough: ' + site.borough;
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 200,
+            messages: [{ role: 'user', content: prompt }]
+        })
+    });
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    const raw  = (data.content?.[0]?.text || '{}')
+        .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    return JSON.parse(raw);
+}
+
+async function fetchStrategicSites() {
+    let sites = [];
+    for(const b of BOROUGHS) {
+        log('Loading strategic sites for ' + b.name + '…');
+        try {
+            let offset = 0;
+            while(true) {
+                const url = API_BASE + '/entity.json?dataset=brownfield-land&organisation_entity=' + b.entityId + '&limit=100&offset=' + offset;
+                const res = await fetch(url);
+                if(!res.ok) break;
+                const json = await res.json();
+                const page = Array.isArray(json.entities)?json.entities:Array.isArray(json.results)?json.results:[];
+                sites = sites.concat(page.map(e => normaliseSite(e, b.name)));
+                if(page.length < 100) break;
+                offset += 100;
+            }
+            log('Loaded strategic sites for ' + b.name, 'ok');
+        } catch(e) {
+            log('Could not load strategic sites for ' + b.name, 'err');
+        }
+    }
+    return sites;
+}
+
+// ─── NORMALISE ────────────────────────────────────────────────────────
+function normaliseApp(a, boroughName) {
+    const statusKey = /approv|grant/i.test((a.status||'')+(a.decision||'')) ? 'approved'
+                    : /refus/i.test((a.status||'')+(a.decision||''))        ? 'refused'
+                    : 'review';
+    return {
+        id:          'app_' + (a.reference||Math.random().toString(36).slice(2)).replace(/\W/g,'_'),
+        borough:     boroughName,
+        ref:         a.reference  || '',
+        address:     a.address    || '',
+        description: a.description|| '',
+        statusKey,
+        statusLabel: statusKey==='approved'?'Approved ✓':statusKey==='refused'?'Refused':'Under Review',
+        type:        a.app_type   || 'Application',
+        homes:       0,
+        hectares:    '',
+        date:        formatDate(a.validated_date || a.decided_date || ''),
+        source:      'Planning Application',
+        score:       0, tier:'', insight:'',
+        link:        a.link || IDOX[boroughName==='Bromley'?'BRY':'LEW'].baseUrl,
+    };
+}
+
+function normaliseSite(e, boroughName) {
+    const pStatus = (e['planning-permission-status']||'').toLowerCase().replace(/-/g,' ');
+    const statusKey = /^permissioned$|approved|granted/.test(pStatus) ? 'approved'
+                    : /not.permissioned/.test(pStatus)                ? 'review' : 'site';
+    const homes = parseInt(e['maximum-net-dwellings']||e['minimum-net-dwellings']||'0',10)||0;
+    return {
+        id:          'bf_' + (e.reference||e.entity||Math.random().toString(36).slice(2)),
+        borough:     boroughName,
+        ref:         e.reference || String(e.entity||''),
+        address:     e['site-address'] || e.name || '',
+        description: e.notes || '',
+        statusKey,
+        statusLabel: statusKey==='approved'?'Approved ✓':statusKey==='review'?'Permission Lapsed':'Strategic Site',
+        type:        (e['planning-permission-type']||'Brownfield Land').replace(/-/g,' '),
+        homes,
+        hectares:    e['hectares']||'',
+        date:        formatDate(e['planning-permission-date']||e['entry-date']||''),
+        source:      'Strategic Sites Register',
+        score:       0, tier:'', insight:'',
+        link:        e['site-plan-url']||'',
+    };
+}
+
+function formatDate(d) {
+    if(!d) return '';
+    try { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+    catch{ return d; }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+function rebuildTotals() {
+    totals = {total:0,approved:0,review:0,homes:0};
+    allSites.forEach(s => {
+        totals.total++;
+        if(s.statusKey==='approved') totals.approved++;
+        if(s.statusKey==='review')   totals.review++;
+        totals.homes += (s.homes||0);
+    });
+    document.getElementById('numTotal').textContent    = totals.total;
+    document.getElementById('numApproved').textContent = totals.approved;
+    document.getElementById('numReview').textContent   = totals.review;
+    document.getElementById('numHomes').textContent    = totals.homes.toLocaleString();
+}
+
+function showResults() {
+    document.getElementById('summaryBar').style.display = '';
+    document.getElementById('filterBar').style.display  = '';
+    rebuildTotals();
+    applyFilters();
+}
+
+// Update a single card in-place after AI analysis arrives
+function patchCard(siteId) {
+    const site = allSites.find(s=>s.id===siteId);
+    if(!site || !site.score) return;
+    const card = document.querySelector('[data-id="' + siteId + '"]');
+    if(!card) return;
+    // Re-render just the strength bar + insight inside the existing card
+    const fillClass = site.tier==='HIGH'?'high':site.tier==='MED'?'med':'low';
+    const fillWidth = Math.max(4, site.score) + '%';
+    // Remove old strength/insight if present
+    card.querySelectorAll('.strength-row,.insight').forEach(el=>el.remove());
+    // Insert before actions div
+    const actions = card.querySelector('.site-actions');
+    if(site.score > 0) {
+        const bar = document.createElement('div');
+        bar.className = 'strength-row';
+        bar.innerHTML = '<span class="strength-label">Opportunity</span>'
+            + '<div class="strength-track"><div class="strength-fill ' + fillClass + '" style="width:' + fillWidth + '"></div></div>'
+            + '<span style="font-size:11px;color:var(--g400);font-weight:600;">' + site.score + '/100</span>';
+        actions.parentNode.insertBefore(bar, actions);
+    }
+    if(site.insight) {
+        const ins = document.createElement('div');
+        ins.className = 'insight';
+        ins.innerHTML = '<div class="insight-label">AI Analysis</div><p>' + esc(site.insight) + '</p>';
+        actions.parentNode.insertBefore(ins, actions);
+    }
+}
+
+// ─── MAIN RUN ─────────────────────────────────────────────────────────
+async function run(demoMode=false) {
+    setButtons(true);
+    setStatus('Loading…','blue');
+    allSites = [];
+    totals   = {total:0,approved:0,review:0,homes:0};
+
+    document.getElementById('progressPanel').style.display = '';
+    document.getElementById('progressLog').innerHTML = '';
+    document.getElementById('summaryBar').style.display = 'none';
+    document.getElementById('filterBar').style.display  = 'none';
+    document.getElementById('sitesList').innerHTML = '';
+    document.getElementById('emptyState').style.display = 'none';
+
+    // ── DEMO MODE ─────────────────────────────────────────────────────
+    if(demoMode) {
+        document.getElementById('progressTitle').textContent = 'Loading demo data…';
+        await sleep(400);
+        log('Loading example sites from Bromley and Lewisham…');
+        allSites = JSON.parse(JSON.stringify(DEMO_SITES));
+        await sleep(300);
+        allSites.forEach(s => {
+            const d = DEMO_INSIGHTS[s.id];
+            if(d){ s.score=d.score; s.tier=d.tier; s.insight=d.insight; }
+        });
+        log('6 sites ready.', 'ok');
+        showResults();
+        document.getElementById('progressPanel').style.display = 'none';
+        setStatus('Demo loaded','green');
+        setButtons(false);
+        return;
+    }
+
+    // ── LIVE MODE ─────────────────────────────────────────────────────
+
+    // file:// blocks all fetch() — browser security, not a bug we can fix in JS
+    if (location.protocol === 'file:') {
+        document.getElementById('fileBanner').style.display = 'block';
+        document.getElementById('progressPanel').style.display = 'none';
+        setStatus('Setup needed', 'red');
+        setButtons(false);
+        return;
+    }
+
+    // ── STEP 1: Fetch data from both sources in parallel ─────────────
+    document.getElementById('progressTitle').textContent = 'Loading sites…';
+    log('Fetching planning applications and strategic sites…');
+
+    // Run both fetches in parallel — each logs its own progress
+    const [appResults, siteResults] = await Promise.allSettled([
+        // Weekly list from Bromley + Lewisham Idox portals (via CORS proxy)
+        Promise.all(Object.keys(PORTALS).map(code => fetchWeeklyList(code).catch(e => {
+            log('Weekly list failed for ' + PORTALS[code].name + ': ' + e.message.substring(0,50), 'err');
+            return [];
+        }))).then(arrays => arrays.flat()),
+        // Brownfield strategic sites from planning.data.gov.uk (CORS-open)
+        fetchStrategicSites().catch(e => {
+            log('Strategic sites failed: ' + e.message.substring(0,50), 'err');
+            return [];
+        }),
+    ]);
+
+    const appRecords  = appResults.status  === 'fulfilled' ? appResults.value  : [];
+    const siteRecords = siteResults.status === 'fulfilled' ? siteResults.value : [];
+    const fetchedSites = [...appRecords, ...siteRecords];
+
+    log('Total: ' + appRecords.length + ' applications + ' + siteRecords.length + ' strategic sites.', 'ok');
+
+    if (fetchedSites.length === 0) {
+        log('No data loaded. Check your connection and try again.', 'err');
+        document.getElementById('emptyState').style.display = '';
+        document.getElementById('progressPanel').style.display = 'none';
+        setStatus('Nothing found', 'red');
+        setButtons(false);
+        return;
+    }
+
+    // Render immediately — don't wait for AI
+    allSites = fetchedSites;
+    showResults();
+    document.getElementById('progressPanel').style.display = '';  // keep visible for AI phase
+
+    // ── STEP 2: AI audit — runs after sites are visible, patches cards in-place ──
+    document.getElementById('progressTitle').textContent = 'Analysing sites with AI…';
+    const toAudit = [...allSites].sort((a, b) => b.homes - a.homes).slice(0, 15);
+    log('Running AI analysis on top ' + toAudit.length + ' sites…');
+    let done = 0;
+    for (const site of toAudit) {
+        try {
+            const result = await auditSite(site);
+            const match  = allSites.find(s => s.id === site.id);
+            if (match) {
+                match.score   = typeof result.score  === 'number' ? result.score  : 50;
+                match.tier    = ['HIGH','MED','LOW'].includes(result.tier) ? result.tier : 'MED';
+                match.insight = typeof result.insight === 'string' ? result.insight : '';
+                patchCard(match.id);
+            }
+            done++;
+            document.getElementById('progressTitle').textContent =
+                'Analysing… (' + done + ' of ' + toAudit.length + ')';
+        } catch (e) {
+            // card already visible — just skip AI enrichment for this site
+        }
+    }
+
+    // Final re-sort now all scores are in
+    applyFilters();
+    log('Done.', 'ok');
+
+    document.getElementById('progressPanel').style.display = 'none';
+    setStatus('Up to date', 'green');
+    setButtons(false);
+}
+
+// ─── FILTERS & SORT ───────────────────────────────────────────────────
+function setFilter(type, btn) {
+    const group = btn.parentElement;
+    group.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    if(type==='status')  fStatus  = btn.dataset.v;
+    if(type==='borough') fBorough = btn.dataset.v;
+    applyFilters();
+}
+
+function applyFilters() {
+    sortMode = document.getElementById('sortSel').value;
+    let filtered = allSites.filter(s => {
+        const statusOk  = fStatus  === 'all' || s.statusKey  === fStatus;
+        const boroughOk = fBorough === 'all' || s.borough    === fBorough;
+        return statusOk && boroughOk;
+    });
+    filtered.sort((a,b) => {
+        if(sortMode==='strength') return (b.score||0) - (a.score||0);
+        if(sortMode==='homes')    return (b.homes||0) - (a.homes||0);
+        if(sortMode==='date')     return (b.date||'').localeCompare(a.date||'');
+        return 0;
+    });
+    document.getElementById('resultCount').textContent = filtered.length + ' of ' + allSites.length + ' shown';
+    renderSites(filtered);
+}
+
+// ─── RENDER SITES ─────────────────────────────────────────────────────
+function renderSites(sites) {
+    const list = document.getElementById('sitesList');
+    list.innerHTML = '';
+    if(!sites.length) {
+        document.getElementById('emptyState').style.display='';
+        document.getElementById('emptyState').querySelector('.empty-title').textContent = 'No sites match this filter';
+        document.getElementById('emptyState').querySelector('.empty-body').textContent  = 'Try changing the filter above.';
+        return;
+    }
+    document.getElementById('emptyState').style.display='none';
+    sites.forEach(s => list.appendChild(makeSiteCard(s)));
+}
+
+function makeSiteCard(s) {
+    const card = document.createElement('div');
+    card.className = 'site-card ' + s.statusKey;
+    card.dataset.id = s.id;
+
+    const fillClass  = s.tier==='HIGH'?'high':s.tier==='MED'?'med':'low';
+    const fillWidth  = Math.max(4, s.score||0) + '%';
+    const hasInsight = s.insight && s.insight.length > 0;
+    const inLeads    = leads.find(l=>l.id===s.id);
+
+    const homesChip  = s.homes  ? `<span class="chip homes">🏠 ${s.homes.toLocaleString()} homes</span>` : '';
+    const areaChip   = s.hectares ? `<span class="chip area">📐 ${s.hectares} ha</span>` : '';
+    const dateChip   = s.date   ? `<span class="chip date">📅 ${s.date}</span>` : '';
+    const sourceChip = `<span class="chip">${esc(s.source)}</span>`;
+
+    card.innerHTML = `
+        <div class="site-top">
+            <div>
+                <div class="site-address">${esc(s.address)}</div>
+                <div class="site-borough">${esc(s.borough)} · ${esc(s.ref)}</div>
+            </div>
+            <span class="status-badge ${s.statusKey}">${esc(s.statusLabel)}</span>
+        </div>
+        ${s.description ? `<div class="site-description">${esc(s.description.substring(0,160))}${s.description.length>160?'…':''}</div>` : ''}
+        <div class="site-chips">${homesChip}${areaChip}${dateChip}${sourceChip}</div>
+        ${s.score>0 ? `
+        <div class="strength-row">
+            <span class="strength-label">Opportunity</span>
+            <div class="strength-track"><div class="strength-fill ${fillClass}" style="width:${fillWidth}"></div></div>
+            <span style="font-size:11px;color:var(--g400);font-weight:600;">${s.score}/100</span>
+        </div>` : ''}
+        ${hasInsight ? `
+        <div class="insight">
+            <div class="insight-label">AI Analysis</div>
+            <p>${esc(s.insight)}</p>
+        </div>` : ''}
+        <div class="site-actions">
+            ${s.link ? `<a href="${esc(s.link)}" target="_blank" style="text-decoration:none;"><button class="action-btn">View on portal ↗</button></a>` : ''}
+            <button class="action-btn primary${inLeads?' saved':''}" id="lead-btn-${s.id}"
+                onclick="saveLead('${s.id}')">${inLeads?'✓ Saved as Lead':'+ Save as Lead'}</button>
+        </div>
+    `;
+    return card;
+}
+
+// ─── LEADS ────────────────────────────────────────────────────────────
+const STAGES = ['New','Contacted','Meeting Booked','Proposal Sent','Won','Not Interested'];
+
+function saveLead(siteId) {
+    const site = allSites.find(s=>s.id===siteId);
+    if(!site) return;
+    if(leads.find(l=>l.id===siteId)) { toast('Already in your leads'); return; }
+    leads.push({ id:siteId, site, stage:'New', note:'', email:null, drafting:false });
+    updateLeadsBadge();
+    renderLeads();
+    // Update button on site card
+    const btn = document.getElementById('lead-btn-'+siteId);
+    if(btn) { btn.textContent='✓ Saved as Lead'; btn.classList.add('saved'); }
+    toast('Saved to My Leads');
+    showTab('leads');
+}
+
+function removeLead(id) {
+    leads = leads.filter(l=>l.id!==id);
+    const el = document.getElementById('leadcard-'+id);
+    if(el) el.remove();
+    if(!leads.length) document.getElementById('leadsEmpty').style.display='';
+    // Revert button
+    const btn = document.getElementById('lead-btn-'+id);
+    if(btn) { btn.textContent='+ Save as Lead'; btn.classList.remove('saved'); }
+    updateLeadsBadge();
+    renderPipeline();
+    toast('Removed');
+}
+
+function updateLeadStage(id, stage) {
+    const lead = leads.find(l=>l.id===id); if(!lead) return;
+    lead.stage = stage;
+    const dot = document.querySelector('#leadcard-'+id+' .stage-dot');
+    if(dot) dot.style.background = stageColor(stage);
+    renderPipeline();
+}
+
+function updateLeadNote(id, note) {
+    const lead = leads.find(l=>l.id===id); if(lead) lead.note = note;
+}
+
+function stageColor(stage) {
+    return stage==='Won'?'#30D158':stage==='Not Interested'?'#FF3B30':stage==='Proposal Sent'?'#6D28D9':stage==='Meeting Booked'?'#FF9F0A':stage==='Contacted'?'#0071E3':'#86868B';
+}
+
+function updateLeadsBadge() {
+    const badge = document.getElementById('leadsBadge');
+    badge.textContent = leads.length;
+    badge.style.display = leads.length ? 'inline' : 'none';
+}
+
+function renderPipeline() {
+    const bar = document.getElementById('pipelineBar');
+    if(!leads.length) { bar.style.display='none'; return; }
+    bar.style.display='flex';
+    bar.innerHTML = STAGES.map(s => {
+        const n = leads.filter(l=>l.stage===s).length;
+        return `<span class="pipeline-chip${n?' active':''}">${s} ${n}</span>`;
+    }).join('');
+}
+
+function renderLeads() {
+    document.getElementById('leadsEmpty').style.display = leads.length ? 'none' : '';
+    renderPipeline();
+    const list = document.getElementById('leadsList');
+    list.innerHTML = '';
+    leads.forEach(lead => {
+        const s = lead.site;
+        const div = document.createElement('div');
+        div.className = 'lead-card'; div.id = 'leadcard-'+lead.id;
+        div.innerHTML = `
+            <div class="lead-header">
+                <div>
+                    <div class="lead-address">${esc(s.address)}</div>
+                    <div class="lead-ref">${esc(s.borough)} · ${esc(s.ref)} · ${esc(s.statusLabel)}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <span class="stage-dot" style="width:9px;height:9px;border-radius:50%;background:${stageColor(lead.stage)};display:inline-block;"></span>
+                    <select class="stage-select" onchange="updateLeadStage('${lead.id}',this.value)">
+                        ${STAGES.map(st=>`<option${st===lead.stage?' selected':''}>${st}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            ${s.insight ? `<div class="insight" style="margin-bottom:12px;"><div class="insight-label">AI Analysis</div><p>${esc(s.insight)}</p></div>` : ''}
+            <textarea class="lead-note" rows="2" placeholder="Add notes about this site…"
+                onchange="updateLeadNote('${lead.id}',this.value)">${esc(lead.note)}</textarea>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button class="action-btn primary" onclick="draftEmail('${lead.id}')">✉ Draft Email</button>
+                <button class="action-btn" onclick="removeLead('${lead.id}')" style="color:var(--red);border-color:#F5AEA8;">Remove</button>
+            </div>
+            <div id="emaildiv-${lead.id}"></div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+async function draftEmail(id) {
+    const lead = leads.find(l=>l.id===id); if(!lead||lead.drafting) return;
+    lead.drafting = true;
+    const div = document.getElementById('emaildiv-'+id);
+    div.innerHTML = '<div class="generating"><div style="width:14px;height:14px;border:2px solid rgba(0,113,227,.2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;"></div>Writing email…</div>';
+    const s = lead.site;
+    const prompt = 'Write a short, professional cold email to a landowner about their planning site. Friendly and specific. Under 150 words. Include subject line.\n\nSite: ' + s.address + '\nBorough: ' + s.borough + '\nStatus: ' + s.statusLabel + '\nHomes: ' + (s.homes||'unknown') + '\nDescription: ' + s.description;
+    try {
+        const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})});
+        if(!res.ok) throw new Error('API '+res.status);
+        const data = await res.json();
+        lead.email = data.content?.[0]?.text||'';
+        div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px;">
+                <span style="font-size:12px;font-weight:600;color:var(--blue);">Draft Email</span>
+                <button class="action-btn" onclick="copyEmail('${id}')">Copy</button>
+            </div>
+            <div class="email-draft">${esc(lead.email)}</div>`;
+    } catch(e) {
+        div.innerHTML = '<p style="font-size:13px;color:var(--red);margin:8px 0;">Could not generate email. Try again.</p>';
+    }
+    lead.drafting = false;
+}
+
+function copyEmail(id) {
+    const lead = leads.find(l=>l.id===id);
+    if(lead?.email) navigator.clipboard.writeText(lead.email).then(()=>toast('Email copied'));
+}
+
+// ─── AI SUMMARY ───────────────────────────────────────────────────────
+async function generateSummary() {
+    const el = document.getElementById('summaryText');
+    el.className = 'summary-text';
+    el.textContent = 'Writing summary…';
+    const topSites = allSites.filter(s=>s.tier==='HIGH').slice(0,3).map(s=>s.address+' ('+s.homes+' homes)').join(', ');
+    const prompt   = 'Write a short executive summary (3 paragraphs, plain English, no jargon) for a UK property professional about these planning results.\n\nTotal sites: ' + allSites.length + '\nApproved: ' + totals.approved + '\nUnder review: ' + totals.review + '\nTotal potential homes: ' + totals.homes.toLocaleString() + '\nTop sites: ' + (topSites||'none') + '\nLeads saved: ' + leads.length + '\n\nCover: what was found, key opportunities, recommended next steps.';
+    try {
+        const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:prompt}]})});
+        if(!res.ok) throw new Error('API '+res.status);
+        const data = await res.json();
+        el.textContent = data.content?.[0]?.text||'No response.';
+    } catch(e) {
+        el.textContent = 'Could not generate summary. Please try again.';
+    }
+}
+
+// ─── EXPORTS ──────────────────────────────────────────────────────────
+function exportCSV() {
+    if(!allSites.length && !leads.length) { toast('Nothing to export yet — run a search first'); return; }
+    const rows = [['Borough','Reference','Address','Description','Status','Type','Homes','Hectares','Date','Opportunity Score','Source']];
+    allSites.forEach(s => rows.push([s.borough,s.ref,s.address,s.description,s.statusLabel,s.type,s.homes||'',s.hectares||'',s.date||'',s.score||'',s.source]));
+    const csv = rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const blob= new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a'); a.href=url; a.download='Accuracy_PIE_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV downloaded');
+}
+
+function exportXLSX() {
+    if(typeof XLSX==='undefined') { toast('Spreadsheet library not loaded yet — try again in a moment'); return; }
+    if(!allSites.length && !leads.length) { toast('Nothing to export yet — run a search first'); return; }
+    const wb = XLSX.utils.book_new();
+
+    const appData  = [['Borough','Reference','Address','Description','Status','Type','Homes','Date','Opportunity Score']];
+    allSites.filter(s=>s.source==='Planning Application').forEach(s => appData.push([s.borough,s.ref,s.address,s.description,s.statusLabel,s.type,s.homes||'',s.date||'',s.score||'']));
+    const ws1 = XLSX.utils.aoa_to_sheet(appData);
+    ws1['!cols']=[{wch:12},{wch:18},{wch:40},{wch:60},{wch:16},{wch:18},{wch:8},{wch:14},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws1,'Applications');
+
+    const siteData = [['Borough','Reference','Address','Description','Status','Homes','Hectares','Date']];
+    allSites.filter(s=>s.source==='Strategic Sites Register').forEach(s => siteData.push([s.borough,s.ref,s.address,s.description,s.statusLabel,s.homes||'',s.hectares||'',s.date||'']));
+    const ws2 = XLSX.utils.aoa_to_sheet(siteData);
+    ws2['!cols']=[{wch:12},{wch:14},{wch:40},{wch:60},{wch:20},{wch:8},{wch:8},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws2,'Strategic Sites');
+
+    const leadData = [['Address','Borough','Status','Stage','Notes','Opportunity Score']];
+    leads.forEach(l => leadData.push([l.site.address,l.site.borough,l.site.statusLabel,l.stage,l.note,l.site.score||'']));
+    const ws3 = XLSX.utils.aoa_to_sheet(leadData);
+    ws3['!cols']=[{wch:40},{wch:12},{wch:16},{wch:18},{wch:40},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws3,'My Leads');
+
+    XLSX.writeFile(wb,'Accuracy_PIE_'+new Date().toISOString().slice(0,10)+'.xlsx');
+    toast('Spreadsheet downloaded');
+}
+
+function exportPDF() {
+    document.getElementById('printDate').textContent = 'Generated ' + new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    const summaryEl = document.getElementById('printSummary');
+    summaryEl.innerHTML = `<h2 style="font-size:16px;margin:0 0 12px;">Summary</h2><table class="ptable"><thead><tr><th>Total Sites</th><th>Approved</th><th>Under Review</th><th>Potential Homes</th><th>Leads Saved</th></tr></thead><tbody><tr><td>${totals.total}</td><td>${totals.approved}</td><td>${totals.review}</td><td>${totals.homes.toLocaleString()}</td><td>${leads.length}</td></tr></tbody></table>`;
+    const sitesEl = document.getElementById('printSites');
+    const rows = allSites.map(s=>`<tr><td>${esc(s.borough)}</td><td>${esc(s.ref)}</td><td>${esc(s.address)}</td><td>${esc(s.statusLabel)}</td><td>${s.homes||''}</td><td>${s.score||''}</td></tr>`).join('');
+    sitesEl.innerHTML = `<h2 style="font-size:16px;margin:0 0 12px;">All Sites (${allSites.length})</h2><table class="ptable"><thead><tr><th>Borough</th><th>Reference</th><th>Address</th><th>Status</th><th>Homes</th><th>Score</th></tr></thead><tbody>${rows||'<tr><td colspan="6">No sites loaded</td></tr>'}</tbody></table>`;
+    const leadsEl = document.getElementById('printLeads');
+    const lrows = leads.map(l=>`<tr><td>${esc(l.site.address)}</td><td>${esc(l.site.borough)}</td><td>${esc(l.site.statusLabel)}</td><td>${esc(l.stage)}</td><td>${esc(l.note)}</td></tr>`).join('');
+    leadsEl.innerHTML = `<h2 style="font-size:16px;margin:24px 0 12px;">My Leads (${leads.length})</h2><table class="ptable"><thead><tr><th>Address</th><th>Borough</th><th>Status</th><th>Stage</th><th>Notes</th></tr></thead><tbody>${lrows||'<tr><td colspan="5">No leads saved</td></tr>'}</tbody></table>`;
+    setTimeout(()=>window.print(), 150);
+}
+</script>
+</body>
+</html>

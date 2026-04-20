@@ -9,6 +9,7 @@ const links = [
   { href: '/audit', label: 'Revenue' },
   { href: '/law', label: 'Law Clerks' },
   { href: '/compliance', label: 'FineGuard' },
+  { href: '/pie.html', label: 'Accuracy PIE', external: true },
   { href: '/dashboard', label: 'Settings' },
 ];
 
@@ -26,7 +27,7 @@ export function NavBar() {
           aria-label="Primary"
         >
           {links.map((l) => {
-            const active = pathname === l.href;
+            const active = !l.external && pathname === l.href;
             return (
               <Link
                 key={l.href}
