@@ -1,13 +1,16 @@
-import express, { Request, Response, NextFunction } from 'express';
+import * as trpcExpress from '@trpc/server/adapters/express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
+import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
+import { getUserByOpenId } from './trpc/db';
+import { appRouter } from './trpc/routers';
+import { desc, eq } from 'drizzle-orm';
 
 // Load environment variables
 dotenv.config();
@@ -81,6 +84,30 @@ app.post(
 
     res.json({ received: true });
   }
+);
+
+// ============================================================================
+// TRPC API (ClerkOS Core Engine)
+// ============================================================================
+
+app.use(
+  '/api/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: appRouter,
+    createContext: async ({ req, res }) => {
+      const openId = req.headers['x-user-open-id'] as string | undefined;
+      let user = null;
+      if (openId) {
+        try {
+          const dbUser = await getUserByOpenId(openId);
+          if (dbUser) user = dbUser;
+        } catch {
+          // graceful degradation — no auth, no user
+        }
+      }
+      return { user, req, res };
+    },
+  }),
 );
 
 // Middleware
