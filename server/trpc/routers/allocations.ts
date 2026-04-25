@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { clerkAllocations } from '../../drizzle/schema';
-import { adminProcedure, authedProcedure, router } from '../_core/trpc';
+import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 import { getAllocationsByClerk, getDb, getPendingAllocations, writeAuditEvent } from '../db';
+import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
 const priorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
 const statusEnum = z.enum(['pending', 'in_progress', 'completed', 'cancelled']);
@@ -25,8 +26,18 @@ export const allocationsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error('Database not available');
-      const [created] = await db.insert(clerkAllocations).values(input).returning();
+
+      // Engine validates case eligibility before allocating
+      const engine = new ClerkOSEngine(db, ctx.tenantId);
+      const validation = await engine.validateAllocationAssignment(input.caseId, input.clerkId);
+      if (!validation.ok) throw new Error(validation.error);
+
+      const [created] = await db
+        .insert(clerkAllocations)
+        .values({ ...input, tenantId: ctx.tenantId })
+        .returning();
       await writeAuditEvent({
+        tenantId: ctx.tenantId,
         entityType: 'allocation',
         entityId: created.id,
         action: 'create',
@@ -53,9 +64,10 @@ export const allocationsRouter = router({
       const [updated] = await db
         .update(clerkAllocations)
         .set({ ...patch, ...(completedAt ? { completedAt } : {}), updatedAt: new Date() })
-        .where(eq(clerkAllocations.id, id))
+        .where(and(eq(clerkAllocations.id, id), eq(clerkAllocations.tenantId, ctx.tenantId)))
         .returning();
       await writeAuditEvent({
+        tenantId: ctx.tenantId,
         entityType: 'allocation',
         entityId: id,
         action: `status_change:${patch.status}`,
@@ -66,9 +78,9 @@ export const allocationsRouter = router({
       return updated;
     }),
 
-  getPending: adminProcedure.query(() => getPendingAllocations()),
+  getPending: adminProcedure.query(({ ctx }) => getPendingAllocations(ctx.tenantId)),
 
-  getByClerk: authedProcedure
+  getByClerk: tenantProcedure
     .input(z.object({ clerkId: z.number() }))
-    .query(async ({ input }) => getAllocationsByClerk(input.clerkId)),
+    .query(async ({ ctx, input }) => getAllocationsByClerk(input.clerkId, ctx.tenantId)),
 });

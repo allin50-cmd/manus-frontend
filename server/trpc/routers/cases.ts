@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { cases } from '../../drizzle/schema';
-import { adminProcedure, authedProcedure, router } from '../_core/trpc';
+import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 import { getAllCases, getCaseById, getDb, searchCases, writeAuditEvent } from '../db';
+import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
 const caseStatusEnum = z.enum(['open', 'in_progress', 'closed', 'on_hold']);
 
@@ -21,8 +22,12 @@ export const casesRouter = router({
   create: adminProcedure.input(createInput).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) throw new Error('Database not available');
-    const [created] = await db.insert(cases).values(input).returning();
+    const [created] = await db
+      .insert(cases)
+      .values({ ...input, tenantId: ctx.tenantId })
+      .returning();
     await writeAuditEvent({
+      tenantId: ctx.tenantId,
       entityType: 'case',
       entityId: created.id,
       action: 'create',
@@ -47,13 +52,14 @@ export const casesRouter = router({
       const db = await getDb();
       if (!db) throw new Error('Database not available');
       const { id, ...patch } = input;
-      const previous = await getCaseById(id);
+      const previous = await getCaseById(id, ctx.tenantId);
       const [updated] = await db
         .update(cases)
         .set({ ...patch, updatedAt: new Date() })
-        .where(eq(cases.id, id))
+        .where(and(eq(cases.id, id), eq(cases.tenantId, ctx.tenantId)))
         .returning();
       await writeAuditEvent({
+        tenantId: ctx.tenantId,
         entityType: 'case',
         entityId: id,
         action: 'update',
@@ -65,7 +71,24 @@ export const casesRouter = router({
       return updated;
     }),
 
-  list: authedProcedure
+  /** Engine-enforced status transition (validates allowed transitions). */
+  transition: adminProcedure
+    .input(z.object({ id: z.number(), status: caseStatusEnum }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database not available');
+      const engine = new ClerkOSEngine(db, ctx.tenantId);
+      const result = await engine.transitionCase(
+        input.id,
+        input.status,
+        ctx.user.id,
+        ctx.user.openId,
+      );
+      if (!result.ok) throw new Error(result.error);
+      return result.value;
+    }),
+
+  list: tenantProcedure
     .input(
       z
         .object({
@@ -75,19 +98,19 @@ export const casesRouter = router({
         })
         .optional(),
     )
-    .query(async ({ input }) => {
-      const all = await getAllCases();
+    .query(async ({ ctx, input }) => {
+      const all = await getAllCases(ctx.tenantId);
       const filtered = input?.status ? all.filter((c) => c.status === input.status) : all;
       const offset = input?.offset ?? 0;
       const limit = input?.limit ?? 50;
       return filtered.slice(offset, offset + limit);
     }),
 
-  getById: authedProcedure
+  getById: tenantProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => getCaseById(input.id)),
+    .query(async ({ ctx, input }) => getCaseById(input.id, ctx.tenantId)),
 
-  search: authedProcedure
+  search: tenantProcedure
     .input(z.object({ query: z.string().min(1) }))
-    .query(async ({ input }) => searchCases(input.query)),
+    .query(async ({ ctx, input }) => searchCases(input.query, ctx.tenantId)),
 });

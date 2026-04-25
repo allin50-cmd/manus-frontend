@@ -1,12 +1,12 @@
-import { authedProcedure, router } from '../_core/trpc';
+import { tenantProcedure, router } from '../_core/trpc';
 import { getAllCases, getAllHearings, getPendingAllocations } from '../db';
 
 export const dashboardRouter = router({
-  stats: authedProcedure.query(async () => {
+  stats: tenantProcedure.query(async ({ ctx }) => {
     const [allCases, allHearings, pendingAllocs] = await Promise.all([
-      getAllCases(),
-      getAllHearings(),
-      getPendingAllocations(),
+      getAllCases(ctx.tenantId),
+      getAllHearings(ctx.tenantId),
+      getPendingAllocations(ctx.tenantId),
     ]);
 
     const today = new Date().toISOString().split('T')[0];

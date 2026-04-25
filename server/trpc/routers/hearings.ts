@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { hearings } from '../../drizzle/schema';
-import { adminProcedure, authedProcedure, router } from '../_core/trpc';
+import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 import { getAllHearings, getDb, getHearingsByCase, writeAuditEvent } from '../db';
 
 const hearingStatusEnum = z.enum(['scheduled', 'completed', 'postponed', 'cancelled']);
@@ -20,8 +20,12 @@ export const hearingsRouter = router({
   create: adminProcedure.input(createInput).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) throw new Error('Database not available');
-    const [created] = await db.insert(hearings).values(input).returning();
+    const [created] = await db
+      .insert(hearings)
+      .values({ ...input, tenantId: ctx.tenantId })
+      .returning();
     await writeAuditEvent({
+      tenantId: ctx.tenantId,
       entityType: 'hearing',
       entityId: created.id,
       action: 'create',
@@ -51,9 +55,10 @@ export const hearingsRouter = router({
       const [updated] = await db
         .update(hearings)
         .set({ ...patch, updatedAt: new Date() })
-        .where(eq(hearings.id, id))
+        .where(and(eq(hearings.id, id), eq(hearings.tenantId, ctx.tenantId)))
         .returning();
       await writeAuditEvent({
+        tenantId: ctx.tenantId,
         entityType: 'hearing',
         entityId: id,
         action: 'update',
@@ -64,7 +69,7 @@ export const hearingsRouter = router({
       return updated;
     }),
 
-  list: authedProcedure
+  list: tenantProcedure
     .input(
       z
         .object({
@@ -73,14 +78,14 @@ export const hearingsRouter = router({
         })
         .optional(),
     )
-    .query(async ({ input }) => {
-      if (input?.caseId) return getHearingsByCase(input.caseId);
-      const all = await getAllHearings();
+    .query(async ({ ctx, input }) => {
+      if (input?.caseId) return getHearingsByCase(input.caseId, ctx.tenantId);
+      const all = await getAllHearings(ctx.tenantId);
       if (input?.status) return all.filter((h) => h.status === input.status);
       return all;
     }),
 
-  getByCaseId: authedProcedure
+  getByCaseId: tenantProcedure
     .input(z.object({ caseId: z.number() }))
-    .query(async ({ input }) => getHearingsByCase(input.caseId)),
+    .query(async ({ ctx, input }) => getHearingsByCase(input.caseId, ctx.tenantId)),
 });

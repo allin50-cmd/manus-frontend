@@ -1,21 +1,23 @@
 import { z } from 'zod';
 import { clerkDiaries } from '../../drizzle/schema';
-import { authedProcedure, router } from '../_core/trpc';
+import { tenantProcedure, router } from '../_core/trpc';
 import { getClerkDiaryByDate, getDb } from '../db';
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 export const diaryRouter = router({
-  getByClerkAndDate: authedProcedure
+  getByClerkAndDate: tenantProcedure
     .input(
       z.object({
         clerkId: z.number(),
         date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD'),
       }),
     )
-    .query(async ({ input }) => getClerkDiaryByDate(input.clerkId, input.date)),
+    .query(async ({ ctx, input }) =>
+      getClerkDiaryByDate(input.clerkId, input.date, ctx.tenantId),
+    ),
 
-  create: authedProcedure
+  create: tenantProcedure
     .input(
       z.object({
         clerkId: z.number(),
@@ -25,10 +27,13 @@ export const diaryRouter = router({
         notes: z.string().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error('Database not available');
-      const [created] = await db.insert(clerkDiaries).values(input).returning();
+      const [created] = await db
+        .insert(clerkDiaries)
+        .values({ ...input, tenantId: ctx.tenantId })
+        .returning();
       return created;
     }),
 });
