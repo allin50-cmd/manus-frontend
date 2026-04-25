@@ -29,8 +29,15 @@ export const documentsRouter = router({
       const [created] = await db
         .insert(documents)
         .values({
-          ...input,
           tenantId: ctx.tenantId,
+          caseId: input.caseId,
+          fileName: input.fileName,
+          fileUrl: input.fileUrl,
+          fileType: input.fileType,
+          fileSize: input.fileSize,
+          documentType: input.documentType,
+          uploadedBy: input.uploadedBy,
+          contentHash: input.contentHash,
           version: 1,
           approvedForBundle: 0,
         })

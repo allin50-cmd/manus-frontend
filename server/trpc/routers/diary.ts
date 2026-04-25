@@ -32,7 +32,14 @@ export const diaryRouter = router({
       if (!db) throw new Error('Database not available');
       const [created] = await db
         .insert(clerkDiaries)
-        .values({ ...input, tenantId: ctx.tenantId })
+        .values({
+          tenantId: ctx.tenantId,
+          clerkId: input.clerkId,
+          date: input.date,
+          hearingId: input.hearingId,
+          allocationId: input.allocationId,
+          notes: input.notes,
+        })
         .returning();
       return created;
     }),

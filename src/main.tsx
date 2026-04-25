@@ -15,14 +15,18 @@ const queryClient = new QueryClient({
   },
 });
 
-const trpcClient = trpc.createClient({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const trpcClient = (trpc.createClient as any)({
   links: [
     httpBatchLink({
       url: '/api/trpc',
       headers() {
-        // Attach stored user identity for server-side context creation
         const openId = localStorage.getItem('clerk-open-id');
-        return openId ? { 'x-user-open-id': openId } : {};
+        const tenant = localStorage.getItem('clerk-tenant');
+        const headers: Record<string, string> = {};
+        if (openId) headers['x-user-open-id'] = openId;
+        if (tenant) headers['x-tenant'] = tenant;
+        return headers;
       },
     }),
   ],

@@ -24,7 +24,17 @@ export const casesRouter = router({
     if (!db) throw new Error('Database not available');
     const [created] = await db
       .insert(cases)
-      .values({ ...input, tenantId: ctx.tenantId })
+      .values({
+        tenantId: ctx.tenantId,
+        referenceNumber: input.referenceNumber,
+        title: input.title,
+        caseType: input.caseType,
+        plaintiff: input.plaintiff,
+        defendant: input.defendant,
+        status: input.status,
+        judge: input.judge,
+        description: input.description,
+      })
       .returning();
     await writeAuditEvent({
       tenantId: ctx.tenantId,
@@ -84,7 +94,7 @@ export const casesRouter = router({
         ctx.user.id,
         ctx.user.openId,
       );
-      if (!result.ok) throw new Error(result.error);
+      if (result.ok === false) throw new Error(result.error);
       return result.value;
     }),
 

@@ -30,11 +30,19 @@ export const allocationsRouter = router({
       // Engine validates case eligibility before allocating
       const engine = new ClerkOSEngine(db, ctx.tenantId);
       const validation = await engine.validateAllocationAssignment(input.caseId, input.clerkId);
-      if (!validation.ok) throw new Error(validation.error);
+      if (validation.ok === false) throw new Error(validation.error);
 
       const [created] = await db
         .insert(clerkAllocations)
-        .values({ ...input, tenantId: ctx.tenantId })
+        .values({
+          tenantId: ctx.tenantId,
+          caseId: input.caseId,
+          clerkId: input.clerkId,
+          taskType: input.taskType,
+          priority: input.priority,
+          dueDate: input.dueDate,
+          notes: input.notes,
+        })
         .returning();
       await writeAuditEvent({
         tenantId: ctx.tenantId,

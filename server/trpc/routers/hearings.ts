@@ -22,7 +22,16 @@ export const hearingsRouter = router({
     if (!db) throw new Error('Database not available');
     const [created] = await db
       .insert(hearings)
-      .values({ ...input, tenantId: ctx.tenantId })
+      .values({
+        tenantId: ctx.tenantId,
+        caseId: input.caseId,
+        hearingDate: input.hearingDate,
+        hearingTime: input.hearingTime,
+        courtroom: input.courtroom,
+        judge: input.judge,
+        status: input.status,
+        notes: input.notes,
+      })
       .returning();
     await writeAuditEvent({
       tenantId: ctx.tenantId,

@@ -4,6 +4,7 @@ import NotFound from '@/pages/NotFound';
 import { Route, Switch } from 'wouter';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
+import Bundles from './pages/Bundles';
 import Cases from './pages/Cases';
 import Dashboard from './pages/Dashboard';
 import Diary from './pages/Diary';
@@ -20,8 +21,8 @@ function Router() {
       <Route path="/documents" component={Documents} />
       <Route path="/queue" component={Queue} />
       <Route path="/diary" component={Diary} />
+      <Route path="/bundles" component={Bundles} />
       <Route path="/404" component={NotFound} />
-      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
