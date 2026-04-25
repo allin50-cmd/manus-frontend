@@ -1,13 +1,17 @@
-import express, { Request, Response, NextFunction } from 'express';
+import * as trpcExpress from '@trpc/server/adapters/express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
+import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
+import { getUserByOpenId, getTenantBySlug, setTenantContext } from './trpc/db';
+import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
+import { appRouter } from './trpc/routers';
+import { desc, eq } from 'drizzle-orm';
 
 // Load environment variables
 dotenv.config();
@@ -81,6 +85,42 @@ app.post(
 
     res.json({ received: true });
   }
+);
+
+// ============================================================================
+// TRPC API (ClerkOS Core Engine)
+// ============================================================================
+
+app.use(
+  '/api/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: appRouter,
+    createContext: async ({ req, res }) => {
+      // 1. Resolve auth user (Azure AD B2C JWT or dev x-user-open-id header)
+      let user = null;
+      try {
+        const authUser = await getUserFromRequest(req);
+        if (authUser) {
+          // 2. Resolve tenant slug from subdomain / x-tenant header / env
+          const slug = getTenantSlugFromRequest(req);
+          const tenant = slug ? await getTenantBySlug(slug) : undefined;
+          const tenantId = tenant?.id ?? null;
+
+          // 3. Set RLS session context so PostgreSQL policies fire
+          if (tenantId) await setTenantContext(tenantId);
+
+          // 4. Look up the DB user record (creates on first sign-in via upsertUser in auth router)
+          const dbUser = await getUserByOpenId(authUser.openId, tenantId ?? undefined);
+          if (dbUser) user = dbUser;
+
+          return { user, tenantId: tenantId ?? null, tenant: tenant ?? null, req, res };
+        }
+      } catch {
+        // graceful degradation — return null context on any error
+      }
+      return { user: null, tenantId: null, tenant: null, req, res };
+    },
+  }),
 );
 
 // Middleware

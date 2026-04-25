@@ -1,35 +1,42 @@
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import NotFound from '@/pages/NotFound';
 import { Route, Switch } from 'wouter';
-import { Toaster } from 'sonner';
-import FineGuard from './pages/FineGuard';
-import ComplianceBundle from './pages/ComplianceBundle';
-import VaultLine from './pages/VaultLine';
-import UltAi from './pages/UltAi';
-import Pricing from './pages/Pricing';
-import About from './pages/About';
-import Team from './pages/Team';
-import BookDemo from './pages/BookDemo';
-import IntakeSheet from './pages/IntakeSheet';
-import Admin from './pages/Admin';
-import NotFound from './pages/NotFound';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
+import Bundles from './pages/Bundles';
+import Cases from './pages/Cases';
+import Dashboard from './pages/Dashboard';
+import Diary from './pages/Diary';
+import Documents from './pages/Documents';
+import Hearings from './pages/Hearings';
+import Queue from './pages/Queue';
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={Dashboard} />
+      <Route path="/cases" component={Cases} />
+      <Route path="/hearings" component={Hearings} />
+      <Route path="/documents" component={Documents} />
+      <Route path="/queue" component={Queue} />
+      <Route path="/diary" component={Diary} />
+      <Route path="/bundles" component={Bundles} />
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
 export default function App() {
   return (
-    <>
-      <Switch>
-        <Route path="/" component={FineGuard} />
-        <Route path="/fineguard" component={FineGuard} />
-        <Route path="/compliance-bundle" component={ComplianceBundle} />
-        <Route path="/vaultline" component={VaultLine} />
-        <Route path="/ultai" component={UltAi} />
-        <Route path="/pricing" component={Pricing} />
-        <Route path="/about" component={About} />
-        <Route path="/team" component={Team} />
-        <Route path="/book-demo" component={BookDemo} />
-        <Route path="/intake" component={IntakeSheet} />
-        <Route path="/admin" component={Admin} />
-        <Route component={NotFound} />
-      </Switch>
-      <Toaster richColors position="top-right" />
-    </>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light" switchable>
+        <TooltipProvider>
+          <Toaster richColors position="top-right" />
+          <Router />
+        </TooltipProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
