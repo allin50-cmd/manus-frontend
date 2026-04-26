@@ -117,6 +117,19 @@ resource kvSecretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
+resource sbRootRule 'Microsoft.ServiceBus/namespaces/authorizationRules@2022-10-01-preview' existing = {
+  parent: serviceBusNs
+  name: 'RootManageSharedAccessKey'
+}
+
+resource kvSecretServiceBus 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'service-bus-connection-string'
+  properties: {
+    value: sbRootRule.listKeys().primaryConnectionString
+  }
+}
+
 // =============================================================================
 // Azure Database for PostgreSQL Flexible Server
 // =============================================================================
@@ -348,6 +361,21 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
 }
 
 // =============================================================================
+// Key Vault RBAC — grant Container App's managed identity secret read access
+// Role: Key Vault Secrets User (4633458b-17de-408a-b874-0445c86b69e6)
+// =============================================================================
+
+resource kvSecretsUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, containerApp.id, '4633458b-17de-408a-b874-0445c86b69e6')
+  scope: keyVault
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+    principalId: containerApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// =============================================================================
 // Static Web App (React frontend)
 // =============================================================================
 
@@ -355,15 +383,7 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
   name: staticWebAppName
   location: location
   sku: { name: environment == 'prod' ? 'Standard' : 'Free' }
-  properties: {
-    repositoryUrl: 'https://github.com/allin50-cmd/manus-frontend'
-    branch: environment == 'prod' ? 'main' : 'claude/build-superlawclerk-engine-FvlUa'
-    buildProperties: {
-      appLocation: '/'
-      outputLocation: 'dist'
-      appBuildCommand: 'npm run build'
-    }
-  }
+  properties: {}
 }
 
 // =============================================================================
