@@ -13,6 +13,15 @@ import {
   users,
 } from '../drizzle/schema';
 import { ENV } from './_core/env';
+import {
+  mockAllocations,
+  mockCases,
+  mockDiaries,
+  mockDocuments,
+  mockHearings,
+  mockTenant,
+  mockUsers,
+} from './mock-db';
 
 // ─── Lazy DB connection ───────────────────────────────────────────────────────
 
@@ -35,8 +44,6 @@ export async function getDb(): Promise<DrizzleDb | null> {
 }
 
 // ─── RLS session context ──────────────────────────────────────────────────────
-// Must be called before any tenant-scoped query within the same connection
-// context. The 'true' arg scopes the setting to the current transaction only.
 
 export async function setTenantContext(tenantId: string): Promise<void> {
   const db = await getDb();
@@ -44,10 +51,6 @@ export async function setTenantContext(tenantId: string): Promise<void> {
   await db.execute(sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`);
 }
 
-/**
- * Wraps a DB operation with RLS tenant context.
- * Always use this for tenant-scoped queries in production.
- */
 export async function withTenant<T>(
   tenantId: string,
   fn: (db: DrizzleDb) => Promise<T>,
@@ -62,14 +65,14 @@ export async function withTenant<T>(
 
 export async function getTenantBySlug(slug: string) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return slug === mockTenant.slug ? mockTenant : undefined;
   const rows = await db.select().from(tenants).where(eq(tenants.slug, slug)).limit(1);
   return rows[0];
 }
 
 export async function getTenantById(id: string) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return id === mockTenant.id ? mockTenant : undefined;
   const rows = await db.select().from(tenants).where(eq(tenants.id, id)).limit(1);
   return rows[0];
 }
@@ -81,7 +84,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.tenantId) throw new Error('User tenantId is required for upsert');
   const db = await getDb();
   if (!db) {
-    console.warn('[ClerkDB] upsertUser: database not available');
+    console.warn('[ClerkDB] upsertUser: database not available (demo mode)');
     return;
   }
 
@@ -113,7 +116,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  // Unique on (tenantId, openId) — use manual insert + update
   await db
     .insert(users)
     .values(values)
@@ -122,7 +124,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
 export async function getUserByOpenId(openId: string, tenantId?: string) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) {
+    return mockUsers.find(
+      (u) => u.openId === openId && (!tenantId || u.tenantId === tenantId),
+    );
+  }
   const where =
     tenantId
       ? and(eq(users.openId, openId), eq(users.tenantId, tenantId))
@@ -135,7 +141,7 @@ export async function getUserByOpenId(openId: string, tenantId?: string) {
 
 export async function getCaseById(id: number, tenantId: string) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return mockCases.find((c) => c.id === id && c.tenantId === tenantId);
   const rows = await db
     .select()
     .from(cases)
@@ -146,7 +152,7 @@ export async function getCaseById(id: number, tenantId: string) {
 
 export async function getAllCases(tenantId: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return mockCases.filter((c) => c.tenantId === tenantId);
   return db.select().from(cases).where(eq(cases.tenantId, tenantId));
 }
 
@@ -166,13 +172,13 @@ export async function searchCases(query: string, tenantId: string) {
 
 export async function getAllHearings(tenantId: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return mockHearings.filter((h) => h.tenantId === tenantId);
   return db.select().from(hearings).where(eq(hearings.tenantId, tenantId));
 }
 
 export async function getHearingsByCase(caseId: number, tenantId: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return mockHearings.filter((h) => h.caseId === caseId && h.tenantId === tenantId);
   return db
     .select()
     .from(hearings)
@@ -183,7 +189,7 @@ export async function getHearingsByCase(caseId: number, tenantId: string) {
 
 export async function getDocumentsByCase(caseId: number, tenantId: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return mockDocuments.filter((d) => d.caseId === caseId && d.tenantId === tenantId);
   return db
     .select()
     .from(documents)
@@ -194,7 +200,11 @@ export async function getDocumentsByCase(caseId: number, tenantId: string) {
 
 export async function getPendingAllocations(tenantId: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    return mockAllocations.filter(
+      (a) => a.tenantId === tenantId && (a.status === 'pending' || a.status === 'in_progress'),
+    );
+  }
   return db
     .select()
     .from(clerkAllocations)
@@ -203,7 +213,7 @@ export async function getPendingAllocations(tenantId: string) {
 
 export async function getAllocationsByClerk(clerkId: number, tenantId: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return mockAllocations.filter((a) => a.clerkId === clerkId && a.tenantId === tenantId);
   return db
     .select()
     .from(clerkAllocations)
@@ -214,7 +224,11 @@ export async function getAllocationsByClerk(clerkId: number, tenantId: string) {
 
 export async function getClerkDiaryByDate(clerkId: number, date: string, tenantId: string) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    return mockDiaries.filter(
+      (d) => d.clerkId === clerkId && d.date === date && d.tenantId === tenantId,
+    );
+  }
   return db
     .select()
     .from(clerkDiaries)
@@ -231,7 +245,6 @@ export async function getClerkDiaryByDate(clerkId: number, date: string, tenantI
 
 export async function writeAuditEvent(event: InsertAuditEvent): Promise<void> {
   const db = await getDb();
-  if (!db) return;
-  // Audit events are immutable — insert only, no update
+  if (!db) return; // silently skip in demo mode
   await db.insert(auditEvents).values(event);
 }

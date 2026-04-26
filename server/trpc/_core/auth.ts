@@ -60,7 +60,7 @@ export async function verifyB2CToken(token: string): Promise<VerifiedAuthUser | 
     return {
       openId: claims.oid,
       email: claims.emails?.[0] ?? null,
-      name: claims.name ?? [claims.given_name, claims.family_name].filter(Boolean).join(' ') || null,
+      name: claims.name ?? ([claims.given_name, claims.family_name].filter(Boolean).join(' ') || null),
     };
   } catch {
     return null;

@@ -2,30 +2,32 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 
-// Get database URL from environment
 const databaseUrl = process.env.DATABASE_URL;
 
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL environment variable is not set');
+let _client: ReturnType<typeof postgres> | null = null;
+
+if (databaseUrl) {
+  _client = postgres(databaseUrl, {
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
+} else {
+  console.warn(
+    '[DB] DATABASE_URL not set — server starting in demo mode. ClerkOS tRPC routes use in-memory mock data.',
+  );
 }
 
-// Create postgres connection
-const client = postgres(databaseUrl, {
-  max: 10, // Maximum number of connections
-  idle_timeout: 20, // Close idle connections after 20 seconds
-  connect_timeout: 10, // Connection timeout in seconds
-});
-
-// Create drizzle instance
-export const db = drizzle(client, { schema });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const db = (_client ? drizzle(_client, { schema }) : null) as ReturnType<typeof drizzle<typeof schema>>;
 
 // Export schema for use in queries
 export { schema };
 
-// Health check function
 export async function checkDatabaseConnection(): Promise<boolean> {
+  if (!_client) return false;
   try {
-    await client`SELECT 1`;
+    await _client`SELECT 1`;
     return true;
   } catch (error) {
     console.error('Database connection failed:', error);

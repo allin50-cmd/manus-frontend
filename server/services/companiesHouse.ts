@@ -113,10 +113,7 @@ export class CompaniesHouseService {
   private apiKey: string;
 
   constructor() {
-    if (!CH_API_KEY) {
-      throw new Error('COMPANIES_HOUSE_API_KEY environment variable is required');
-    }
-    this.apiKey = CH_API_KEY;
+    this.apiKey = CH_API_KEY ?? '';
   }
 
   /**

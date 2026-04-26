@@ -3,6 +3,7 @@ import { documents } from '../../drizzle/schema';
 import { tenantProcedure, router } from '../_core/trpc';
 import { getDb, getDocumentsByCase, writeAuditEvent } from '../db';
 import { BlobStorage, buildBlobPath } from '../../services/blobStorage';
+import { mockDocuments, nextMockId } from '../mock-db';
 
 export const documentsRouter = router({
   /**
@@ -24,7 +25,27 @@ export const documentsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) {
+        const created = {
+          id: nextMockId(mockDocuments),
+          tenantId: ctx.tenantId,
+          caseId: input.caseId,
+          fileName: input.fileName,
+          blobPath: null,
+          fileUrl: input.fileUrl,
+          fileType: input.fileType,
+          fileSize: input.fileSize ?? null,
+          documentType: input.documentType,
+          version: 1,
+          contentHash: input.contentHash ?? null,
+          approvedForBundle: 0,
+          uploadedBy: input.uploadedBy,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        mockDocuments.push(created);
+        return created;
+      }
 
       const [created] = await db
         .insert(documents)
@@ -43,14 +64,7 @@ export const documentsRouter = router({
         })
         .returning();
 
-      // Build canonical blob path for this document
-      const blobPath = buildBlobPath(
-        ctx.tenantId,
-        input.caseId,
-        created.id,
-        1,
-        input.fileName,
-      );
+      buildBlobPath(ctx.tenantId, input.caseId, created.id, 1, input.fileName);
 
       await writeAuditEvent({
         tenantId: ctx.tenantId,
@@ -101,7 +115,18 @@ export const documentsRouter = router({
     .input(z.object({ id: z.number(), approved: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) {
+        const idx = mockDocuments.findIndex(
+          (d) => d.id === input.id && d.tenantId === ctx.tenantId,
+        );
+        if (idx === -1) throw new Error(`Document ${input.id} not found`);
+        mockDocuments[idx] = {
+          ...mockDocuments[idx],
+          approvedForBundle: input.approved ? 1 : 0,
+          updatedAt: new Date(),
+        };
+        return mockDocuments[idx];
+      }
       const { eq, and } = await import('drizzle-orm');
       const [updated] = await db
         .update(documents)

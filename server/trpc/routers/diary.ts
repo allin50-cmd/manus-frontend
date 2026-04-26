@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { clerkDiaries } from '../../drizzle/schema';
 import { tenantProcedure, router } from '../_core/trpc';
 import { getClerkDiaryByDate, getDb } from '../db';
+import { mockDiaries, nextMockId } from '../mock-db';
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -29,7 +30,21 @@ export const diaryRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) {
+        const created = {
+          id: nextMockId(mockDiaries),
+          tenantId: ctx.tenantId,
+          clerkId: input.clerkId,
+          date: input.date,
+          hearingId: input.hearingId ?? null,
+          allocationId: input.allocationId ?? null,
+          notes: input.notes ?? null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        mockDiaries.push(created);
+        return created;
+      }
       const [created] = await db
         .insert(clerkDiaries)
         .values({

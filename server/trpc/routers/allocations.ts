@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { clerkAllocations } from '../../drizzle/schema';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 import { getAllocationsByClerk, getDb, getPendingAllocations, writeAuditEvent } from '../db';
+import { mockAllocations, nextMockId } from '../mock-db';
 import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
 const priorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
@@ -25,7 +26,25 @@ export const allocationsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) {
+        const created = {
+          id: nextMockId(mockAllocations),
+          tenantId: ctx.tenantId,
+          clerkId: input.clerkId,
+          caseId: input.caseId,
+          taskType: input.taskType,
+          priority: input.priority ?? 'medium',
+          status: 'pending' as const,
+          dueDate: input.dueDate ?? null,
+          notes: input.notes ?? null,
+          assignedAt: new Date(),
+          completedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        mockAllocations.push(created);
+        return created;
+      }
 
       // Engine validates case eligibility before allocating
       const engine = new ClerkOSEngine(db, ctx.tenantId);
@@ -66,7 +85,20 @@ export const allocationsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) {
+        const idx = mockAllocations.findIndex(
+          (a) => a.id === input.id && a.tenantId === ctx.tenantId,
+        );
+        if (idx === -1) throw new Error(`Allocation ${input.id} not found`);
+        mockAllocations[idx] = {
+          ...mockAllocations[idx],
+          status: input.status,
+          notes: input.notes ?? mockAllocations[idx].notes,
+          completedAt: input.status === 'completed' ? new Date() : mockAllocations[idx].completedAt,
+          updatedAt: new Date(),
+        };
+        return mockAllocations[idx];
+      }
       const { id, ...patch } = input;
       const completedAt = patch.status === 'completed' ? new Date() : undefined;
       const [updated] = await db

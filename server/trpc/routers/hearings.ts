@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { hearings } from '../../drizzle/schema';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 import { getAllHearings, getDb, getHearingsByCase, writeAuditEvent } from '../db';
+import { mockHearings, nextMockId } from '../mock-db';
 
 const hearingStatusEnum = z.enum(['scheduled', 'completed', 'postponed', 'cancelled']);
 
@@ -19,7 +20,23 @@ const createInput = z.object({
 export const hearingsRouter = router({
   create: adminProcedure.input(createInput).mutation(async ({ ctx, input }) => {
     const db = await getDb();
-    if (!db) throw new Error('Database not available');
+    if (!db) {
+      const created = {
+        id: nextMockId(mockHearings),
+        tenantId: ctx.tenantId,
+        caseId: input.caseId,
+        hearingDate: input.hearingDate,
+        hearingTime: input.hearingTime,
+        courtroom: input.courtroom,
+        judge: input.judge,
+        status: input.status ?? 'scheduled',
+        notes: input.notes ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockHearings.push(created);
+      return created;
+    }
     const [created] = await db
       .insert(hearings)
       .values({
@@ -59,7 +76,15 @@ export const hearingsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error('Database not available');
+      if (!db) {
+        const idx = mockHearings.findIndex(
+          (h) => h.id === input.id && h.tenantId === ctx.tenantId,
+        );
+        if (idx === -1) throw new Error(`Hearing ${input.id} not found`);
+        const { id: _id, ...patch } = input;
+        mockHearings[idx] = { ...mockHearings[idx], ...patch, updatedAt: new Date() };
+        return mockHearings[idx];
+      }
       const { id, ...patch } = input;
       const [updated] = await db
         .update(hearings)
