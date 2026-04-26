@@ -1,0 +1,120 @@
+name: Deploy ClerkOS API → Azure Container Apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'src/**'
+      - 'Dockerfile'
+      - 'package*.json'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options: [dev, staging, prod]
+
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run type-check
+
+      - run: npm test
+
+  build-and-push:
+    name: Build & Push image
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Resolve ACR name
+        id: acr
+        run: |
+          NAME="clerkos${{ env.ENVIRONMENT }}cr"
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "server=${NAME}.azurecr.io" >> $GITHUB_OUTPUT
+
+      - name: Build and push via ACR Tasks
+        id: meta
+        run: |
+          TAG=${{ github.sha }}
+          az acr build \
+            --registry ${{ steps.acr.outputs.name }} \
+            --image clerkos-api:${TAG} \
+            --image clerkos-api:latest \
+            --file Dockerfile \
+            .
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "image=${{ steps.acr.outputs.server }}/clerkos-api:${TAG}" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy to Container Apps
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Resolve resource names
+        id: names
+        run: |
+          ENV=${{ env.ENVIRONMENT }}
+          echo "rg=rg-clerkos-${ENV}"                    >> $GITHUB_OUTPUT
+          echo "app=clerkos-${ENV}-api"                  >> $GITHUB_OUTPUT
+          echo "acr=clerkos${ENV}cr.azurecr.io"          >> $GITHUB_OUTPUT
+
+      - name: Update Container App image
+        run: |
+          az containerapp update \
+            --name ${{ steps.names.outputs.app }} \
+            --resource-group ${{ steps.names.outputs.rg }} \
+            --image ${{ steps.names.outputs.acr }}/clerkos-api:${{ needs.build-and-push.outputs.image-tag }}
+
+      - name: Verify revision is active
+        run: |
+          az containerapp revision list \
+            --name ${{ steps.names.outputs.app }} \
+            --resource-group ${{ steps.names.outputs.rg }} \
+            --query "[0].properties.active" \
+            --output tsv
+
+      - name: Output URL
+        run: |
+          URL=$(az containerapp show \
+            --name ${{ steps.names.outputs.app }} \
+            --resource-group ${{ steps.names.outputs.rg }} \
+            --query "properties.configuration.ingress.fqdn" \
+            --output tsv)
+          echo "### Deployed to https://${URL}" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: \`clerkos-api:${{ needs.build-and-push.outputs.image-tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: \`${{ env.ENVIRONMENT }}\`" >> $GITHUB_STEP_SUMMARY

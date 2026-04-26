@@ -1,9 +1,13 @@
 // =============================================================================
 // ClerkOS v1.1 — Main Bicep Infrastructure Template
 // Deploys all Azure resources for a complete ClerkOS environment.
-// Usage: az deployment group create --resource-group rg-clerkos-<env>
-//          --template-file deploy/main.bicep
-//          --parameters @deploy/parameters.<env>.json
+//
+// Usage:
+//   az group create --name rg-clerkos-<env> --location uksouth
+//   az deployment group create \
+//     --resource-group rg-clerkos-<env> \
+//     --template-file deploy/main.bicep \
+//     --parameters @deploy/parameters.<env>.json
 // =============================================================================
 
 @description('Deployment environment')
@@ -16,9 +20,9 @@ param appName string = 'clerkos'
 @description('Azure region')
 param location string = resourceGroup().location
 
-@description('SQL Server administrator password')
+@description('PostgreSQL administrator password')
 @secure()
-param sqlAdminPassword string
+param dbAdminPassword string
 
 @description('Azure AD B2C Tenant Name (e.g. contoso)')
 param b2cTenantName string
@@ -30,24 +34,25 @@ param b2cClientId string
 param initialTenantSlug string = 'default'
 
 // =============================================================================
-// Naming convention: {appName}-{resource}-{environment}
+// Naming — {appName}-{environment}-{resource}
 // =============================================================================
 
 var prefix = '${appName}-${environment}'
-var sqlServerName = '${prefix}-sql'
-var sqlDbName = '${prefix}-db'
+var pgServerName       = '${prefix}-pg'
+var pgDbName           = '${prefix}-db'
 var storageAccountName = replace('${appName}${environment}docs', '-', '')
-var serviceBusNamespace = '${prefix}-sb'
-var containerRegistryName = replace('${appName}${environment}cr', '-', '')
+var serviceBusNsName   = '${prefix}-sb'
+var acrName            = replace('${appName}${environment}cr', '-', '')
 var containerAppEnvName = '${prefix}-cae'
-var containerAppName = '${prefix}-api'
-var staticWebAppName = '${prefix}-web'
-var keyVaultName = '${prefix}-kv'
-var logAnalyticsName = '${prefix}-log'
-var appInsightsName = '${prefix}-ai'
+var containerAppName   = '${prefix}-api'
+var staticWebAppName   = '${prefix}-web'
+var keyVaultName       = '${prefix}-kv'
+var logAnalyticsName   = '${prefix}-log'
+var appInsightsName    = '${prefix}-ai'
+var dbAdminLogin       = '${appName}admin'
 
 // =============================================================================
-// Log Analytics (dependency for Application Insights)
+// Log Analytics
 // =============================================================================
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
@@ -91,10 +96,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
-resource kvSecretSqlPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+resource kvSecretDbPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
-  name: 'sql-admin-password'
-  properties: { value: sqlAdminPassword }
+  name: 'db-admin-password'
+  properties: { value: dbAdminPassword }
 }
 
 resource kvSecretAppInsights 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
@@ -103,40 +108,59 @@ resource kvSecretAppInsights 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   properties: { value: appInsights.properties.ConnectionString }
 }
 
-// =============================================================================
-// Azure SQL Server & Database
-// =============================================================================
-
-resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
-  name: sqlServerName
-  location: location
+// DATABASE_URL stored as a secret so Container App can reference it
+resource kvSecretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'database-url'
   properties: {
-    administratorLogin: '${appName}admin'
-    administratorLoginPassword: sqlAdminPassword
-    version: '12.0'
-    minimalTlsVersion: '1.2'
-    publicNetworkAccess: environment == 'prod' ? 'Disabled' : 'Enabled'
+    value: 'postgresql://${dbAdminLogin}:${dbAdminPassword}@${pgServerName}.postgres.database.azure.com/${pgDbName}?sslmode=require'
   }
 }
 
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
-  parent: sqlServer
-  name: sqlDbName
+// =============================================================================
+// Azure Database for PostgreSQL Flexible Server
+// =============================================================================
+
+resource pgServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview' = {
+  name: pgServerName
   location: location
   sku: {
-    name: environment == 'prod' ? 'Hyperscale' : 'GP_Gen5'
-    tier: environment == 'prod' ? 'Hyperscale' : 'GeneralPurpose'
-    capacity: environment == 'prod' ? 4 : 2
+    name: environment == 'prod' ? 'Standard_D4ds_v5' : 'Standard_B2ms'
+    tier: environment == 'prod' ? 'GeneralPurpose' : 'Burstable'
   }
   properties: {
-    collation: 'SQL_Latin1_General_CP1_CI_AS'
-    catalogCollation: 'SQL_Latin1_General_CP1_CI_AS'
+    administratorLogin: dbAdminLogin
+    administratorLoginPassword: dbAdminPassword
+    version: '16'
+    storage: {
+      storageSizeGB: environment == 'prod' ? 128 : 32
+    }
+    backup: {
+      backupRetentionDays: environment == 'prod' ? 35 : 7
+      geoRedundantBackup: environment == 'prod' ? 'Enabled' : 'Disabled'
+    }
+    highAvailability: {
+      mode: environment == 'prod' ? 'ZoneRedundant' : 'Disabled'
+    }
+    authConfig: {
+      activeDirectoryAuth: 'Disabled'
+      passwordAuth: 'Enabled'
+    }
   }
 }
 
-// Allow Azure services to connect (dev only — use private endpoint in prod)
-resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-05-01-preview' = if (environment != 'prod') {
-  parent: sqlServer
+resource pgDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2023-06-01-preview' = {
+  parent: pgServer
+  name: pgDbName
+  properties: {
+    charset: 'UTF8'
+    collation: 'en_US.utf8'
+  }
+}
+
+// Allow Azure services to reach Postgres (dev/staging only — use VNet in prod)
+resource pgFirewallAzure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-06-01-preview' = if (environment != 'prod') {
+  parent: pgServer
   name: 'AllowAzureServices'
   properties: {
     startIpAddress: '0.0.0.0'
@@ -145,7 +169,7 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-05-01-previe
 }
 
 // =============================================================================
-// Blob Storage (immutable for legal document retention)
+// Blob Storage (immutable legal document retention)
 // =============================================================================
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
@@ -157,7 +181,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
     minimumTlsVersion: 'TLS1_2'
     allowBlobPublicAccess: false
     supportsHttpsTrafficOnly: true
-    isVersioningEnabled: true  // Required for immutability policies
+    isVersioningEnabled: true
   }
 }
 
@@ -178,19 +202,16 @@ resource documentsContainer 'Microsoft.Storage/storageAccounts/blobServices/cont
   name: 'clerkos-documents'
   properties: {
     publicAccess: 'None'
-    // Time-based retention for legal compliance (prod only)
-    immutableStorageWithVersioning: environment == 'prod' ? {
-      enabled: true
-    } : null
+    immutableStorageWithVersioning: environment == 'prod' ? { enabled: true } : null
   }
 }
 
 // =============================================================================
-// Service Bus (for bundle generation queue)
+// Service Bus
 // =============================================================================
 
 resource serviceBusNs 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
-  name: serviceBusNamespace
+  name: serviceBusNsName
   location: location
   sku: {
     name: environment == 'prod' ? 'Premium' : 'Standard'
@@ -225,15 +246,15 @@ resource tasksQueue 'Microsoft.ServiceBus/namespaces/queues@2022-10-01-preview' 
 // Container Registry
 // =============================================================================
 
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: containerRegistryName
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: acrName
   location: location
   sku: { name: environment == 'prod' ? 'Premium' : 'Basic' }
-  properties: { adminUserEnabled: false }
+  properties: { adminUserEnabled: true }
 }
 
 // =============================================================================
-// Container Apps (API / tRPC server)
+// Container Apps (tRPC / Express API)
 // =============================================================================
 
 resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
@@ -253,6 +274,7 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
 resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: containerAppName
   location: location
+  identity: { type: 'SystemAssigned' }
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
@@ -260,16 +282,32 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         external: true
         targetPort: 3000
         transport: 'http'
+        corsPolicy: {
+          allowedOrigins: ['*']
+          allowedMethods: ['GET', 'POST', 'OPTIONS']
+          allowedHeaders: ['*']
+        }
       }
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ]
       secrets: [
         {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+        {
           name: 'database-url'
-          keyVaultUrl: 'https://${keyVaultName}.vault.azure.net/secrets/database-url'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/database-url'
           identity: 'system'
         }
         {
           name: 'service-bus-connection'
-          keyVaultUrl: 'https://${keyVaultName}.vault.azure.net/secrets/service-bus-connection-string'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/service-bus-connection-string'
           identity: 'system'
         }
       ]
@@ -288,24 +326,25 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: 'api'
-          image: '${containerRegistryName}.azurecr.io/clerkos-api:latest'
+          image: '${acr.properties.loginServer}/clerkos-api:latest'
           resources: {
             cpu: json(environment == 'prod' ? '1.0' : '0.5')
             memory: environment == 'prod' ? '2Gi' : '1Gi'
           }
           env: [
-            { name: 'NODE_ENV', value: environment == 'prod' ? 'production' : environment }
-            { name: 'DATABASE_URL', secretRef: 'database-url' }
+            { name: 'NODE_ENV',                          value: environment == 'prod' ? 'production' : environment }
+            { name: 'PORT',                              value: '3000' }
+            { name: 'DATABASE_URL',                      secretRef: 'database-url' }
             { name: 'AZURE_SERVICE_BUS_CONNECTION_STRING', secretRef: 'service-bus-connection' }
-            { name: 'AZURE_B2C_TENANT_NAME', value: b2cTenantName }
-            { name: 'AZURE_B2C_CLIENT_ID', value: b2cClientId }
+            { name: 'AZURE_B2C_TENANT_NAME',             value: b2cTenantName }
+            { name: 'AZURE_B2C_CLIENT_ID',               value: b2cClientId }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
+            { name: 'DEFAULT_TENANT_SLUG',               value: initialTenantSlug }
           ]
         }
       ]
     }
   }
-  identity: { type: 'SystemAssigned' }
 }
 
 // =============================================================================
@@ -331,8 +370,9 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
 // Outputs
 // =============================================================================
 
-output containerAppUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
-output staticWebAppUrl string = 'https://${staticWebApp.properties.defaultHostname}'
-output containerRegistryLoginServer string = containerRegistry.properties.loginServer
-output keyVaultUri string = keyVault.properties.vaultUri
-output appInsightsConnectionString string = appInsights.properties.ConnectionString
+output containerAppUrl        string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
+output staticWebAppUrl        string = 'https://${staticWebApp.properties.defaultHostname}'
+output acrLoginServer         string = acr.properties.loginServer
+output keyVaultUri            string = keyVault.properties.vaultUri
+output appInsightsConnStr     string = appInsights.properties.ConnectionString
+output pgServerFqdn           string = pgServer.properties.fullyQualifiedDomainName

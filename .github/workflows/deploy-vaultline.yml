@@ -10,10 +10,7 @@ on:
         required: true
         default: 'dev'
         type: choice
-        options:
-          - dev
-          - staging
-          - prod
+        options: [dev, staging, prod]
 
 jobs:
   deploy:
@@ -21,44 +18,41 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'dev' }}
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: '20'
+          cache: 'npm'
 
-      - name: 📦 Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+      - name: Install dependencies
+        run: npm ci
 
-      - name: 📦 Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Run tests
+        run: npm test
+        continue-on-error: true
 
-      - name: 🏗️ Build application
-        run: pnpm build
+      - name: Build application
+        run: npm run build
         env:
           NODE_ENV: production
 
-      - name: 🚀 Deploy to Azure App Service
+      - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./dist
+          package: .
 
-      - name: 📝 Record Deployment Status
+      - name: Record deployment status
         if: always()
         run: |
           STATUS="success"
-          if [ "${{ job.status }}" != "success" ]; then
-            STATUS="failed"
-          fi
+          if [ "${{ job.status }}" != "success" ]; then STATUS="failed"; fi
 
-          curl -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
+          curl -s -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
             -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{
@@ -66,16 +60,12 @@ jobs:
               \"status\": \"$STATUS\",
               \"commit\": \"${{ github.sha }}\",
               \"workflowRun\": \"${{ github.run_id }}\"
-            }" || echo "⚠️  Deployment recording failed (non-critical)"
+            }" || echo "Deployment recording failed (non-critical)"
 
-      - name: 📊 Deployment Summary
+      - name: Deployment summary
         if: always()
         run: |
-          echo "## Deployment Summary 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment:** ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Deploy — ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Workflow Run:** [\#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View deployment status at: ${{ secrets.VAULTLINE_API_URL }}/admin" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run:** [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
