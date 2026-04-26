@@ -18,6 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "demo": "docker compose up --build",
+    "demo:down": "docker compose down -v",
     "dev:full": "concurrently -k -n frontend,backend -c cyan,yellow \"npm run dev\" \"npm run server:watch\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit"

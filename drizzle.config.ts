@@ -8,7 +8,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default {
-  schema: './server/db/schema.ts',
+  schema: ['./server/db/schema.ts', './server/drizzle/schema.ts'],
   out: './drizzle',
   driver: 'pg',
   dbCredentials: {
