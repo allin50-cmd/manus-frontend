@@ -1,9 +1,8 @@
-import { and, eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { cases } from '../../drizzle/schema';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 import { getAllCases, getCaseById, getDb, searchCases, writeAuditEvent } from '../db';
-import { mockCases, nextMockId } from '../mock-db';
 import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
 const caseStatusEnum = z.enum(['open', 'in_progress', 'closed', 'on_hold']);
@@ -22,24 +21,7 @@ const createInput = z.object({
 export const casesRouter = router({
   create: adminProcedure.input(createInput).mutation(async ({ ctx, input }) => {
     const db = await getDb();
-    if (!db) {
-      const created = {
-        id: nextMockId(mockCases),
-        tenantId: ctx.tenantId,
-        referenceNumber: input.referenceNumber,
-        title: input.title,
-        caseType: input.caseType,
-        plaintiff: input.plaintiff,
-        defendant: input.defendant,
-        status: input.status ?? 'open',
-        judge: input.judge ?? null,
-        description: input.description ?? null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      mockCases.push(created);
-      return created;
-    }
+    if (!db) throw new Error('Database not available');
     const [created] = await db
       .insert(cases)
       .values({
@@ -78,13 +60,7 @@ export const casesRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) {
-        const idx = mockCases.findIndex((c) => c.id === input.id && c.tenantId === ctx.tenantId);
-        if (idx === -1) throw new Error(`Case ${input.id} not found`);
-        const { id: _id, ...patch } = input;
-        mockCases[idx] = { ...mockCases[idx], ...patch, updatedAt: new Date() };
-        return mockCases[idx];
-      }
+      if (!db) throw new Error('Database not available');
       const { id, ...patch } = input;
       const previous = await getCaseById(id, ctx.tenantId);
       const [updated] = await db
@@ -110,12 +86,7 @@ export const casesRouter = router({
     .input(z.object({ id: z.number(), status: caseStatusEnum }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) {
-        const idx = mockCases.findIndex((c) => c.id === input.id && c.tenantId === ctx.tenantId);
-        if (idx === -1) throw new Error(`Case ${input.id} not found`);
-        mockCases[idx] = { ...mockCases[idx], status: input.status, updatedAt: new Date() };
-        return mockCases[idx];
-      }
+      if (!db) throw new Error('Database not available');
       const engine = new ClerkOSEngine(db, ctx.tenantId);
       const result = await engine.transitionCase(
         input.id,
