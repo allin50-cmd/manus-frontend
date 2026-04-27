@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Diary from './pages/Diary';
 import Documents from './pages/Documents';
 import Hearings from './pages/Hearings';
+import LegalDashboard from './pages/LegalDashboard';
 import Queue from './pages/Queue';
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/queue" component={Queue} />
       <Route path="/diary" component={Diary} />
       <Route path="/bundles" component={Bundles} />
+      <Route path="/legal" component={LegalDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
