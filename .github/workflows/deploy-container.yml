@@ -36,9 +36,19 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run type-check
+      - name: Type-check frontend
+        run: npx tsc --noEmit
+
+      - name: Type-check server
+        run: npx tsc -p tsconfig.server.json --noEmit
 
       - run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          CI: true
+          NODE_ENV: production
 
   build-and-push:
     name: Build & Push image
