@@ -30,7 +30,7 @@ jobs:
           cache: 'npm'
 
       - name: Install
-        run: npm ci
+        run: npm ci --no-audit
 
       - name: Test
         run: npm test
@@ -65,7 +65,7 @@ jobs:
           cache: 'npm'
 
       - name: Install
-        run: npm ci
+        run: npm ci --no-audit
 
       - name: Build
         run: npm run build
