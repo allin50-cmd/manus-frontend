@@ -25,7 +25,7 @@ const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
 // Stripe client – only initialised when key is present
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' }) : null;
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }) : null;
 
 // ============================================================================
 // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)

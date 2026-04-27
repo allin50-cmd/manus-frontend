@@ -66,7 +66,7 @@ export class SystemSpine {
       payload.actorOpenId,
     );
 
-    if (!result.ok) {
+    if (result.ok === false) {
       console.error('[SystemSpine] Bundle initiation failed:', result.error);
       return;
     }
@@ -99,7 +99,7 @@ export class SystemSpine {
       payload.actorOpenId,
     );
 
-    if (!result.ok) {
+    if (result.ok === false) {
       console.error('[SystemSpine] Case transition failed:', result.error);
     }
   }
