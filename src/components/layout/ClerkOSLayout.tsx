@@ -3,6 +3,7 @@ import {
   BookOpen,
   LayoutDashboard,
   FileText,
+  Fingerprint,
   Gavel,
   ListTodo,
   Moon,
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { path: '/queue', label: 'Queue', icon: ListTodo },
   { path: '/diary', label: 'Diary', icon: CalendarDays },
   { path: '/bundles', label: 'Bundles', icon: Layers },
+  { path: '/legal', label: 'Legal View', icon: Fingerprint },
 ];
 
 export default function ClerkOSLayout({ children }: { children: React.ReactNode }) {
