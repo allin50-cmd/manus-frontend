@@ -98,7 +98,7 @@ app.use(
     router: appRouter,
     createContext: async ({ req, res }) => {
       // 1. Resolve auth user (Azure AD B2C JWT or dev x-user-open-id header)
-      let user = null;
+      let user: import('./trpc/_core/context').TrpcUser | null = null;
       try {
         const authUser = await getUserFromRequest(req);
         if (authUser) {
@@ -112,7 +112,7 @@ app.use(
 
           // 4. Look up the DB user record (creates on first sign-in via upsertUser in auth router)
           const dbUser = await getUserByOpenId(authUser.openId, tenantId ?? undefined);
-          if (dbUser) user = dbUser;
+          if (dbUser) user = dbUser as import('./trpc/_core/context').TrpcUser;
 
           return { user, tenantId: tenantId ?? null, tenant: tenant ?? null, req, res };
         }
