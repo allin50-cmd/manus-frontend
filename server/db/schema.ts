@@ -125,6 +125,54 @@ export const zapierSubscriptions = pgTable('zapier_subscriptions', {
 export type ZapierSubscription = typeof zapierSubscriptions.$inferSelect;
 export type NewZapierSubscription = typeof zapierSubscriptions.$inferInsert;
 
+// ── Law Clerks App ───────────────────────────────────────────────────────────
+
+export const barristers = pgTable('barristers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  chamberRef: varchar('chamber_ref', { length: 50 }).notNull().unique(),
+  fullName: varchar('full_name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }),
+  phone: varchar('phone', { length: 50 }),
+  yearOfCall: varchar('year_of_call', { length: 4 }),
+  status: varchar('status', { length: 20 }).default('active').notNull(), // active | inactive | silk
+  specialisms: text('specialisms'), // JSON array
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const briefs = pgTable('briefs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  briefRef: varchar('brief_ref', { length: 50 }).notNull().unique(),
+  barristerId: uuid('barrister_id').references(() => barristers.id),
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  solicitorFirm: varchar('solicitor_firm', { length: 255 }),
+  matterType: varchar('matter_type', { length: 100 }).notNull(),
+  courtName: varchar('court_name', { length: 255 }),
+  hearingDate: timestamp('hearing_date'),
+  briefedAt: timestamp('briefed_at').defaultNow().notNull(),
+  feeAgreed: varchar('fee_agreed', { length: 50 }),
+  feeStatus: varchar('fee_status', { length: 30 }).default('awaiting_negotiation').notNull(),
+  status: varchar('status', { length: 30 }).default('instructions_received').notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const clerkNotes = pgTable('clerk_notes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  noteRef: varchar('note_ref', { length: 50 }).notNull().unique(),
+  briefId: uuid('brief_id').references(() => briefs.id),
+  barristerId: uuid('barrister_id').references(() => barristers.id),
+  note: text('note').notNull(),
+  createdBy: varchar('created_by', { length: 255 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type Barrister = typeof barristers.$inferSelect;
+export type NewBarrister = typeof barristers.$inferInsert;
+export type Brief = typeof briefs.$inferSelect;
+export type NewBrief = typeof briefs.$inferInsert;
+export type ClerkNote = typeof clerkNotes.$inferSelect;
+export type NewClerkNote = typeof clerkNotes.$inferInsert;
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
