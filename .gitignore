@@ -54,6 +54,9 @@ Thumbs.db
 *.temp
 .cache/
 
+# Claude Code internal (agent worktrees, session state)
+.claude/
+
 # Azure
 .azure/
 
