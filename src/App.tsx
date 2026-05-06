@@ -6,9 +6,16 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { AutoSync } from './components/AutoSync';
 import { HealthAlerts } from './components/HealthAlerts';
 import { SyncQueuePanel } from './components/SyncQueuePanel';
+import { SystemMonitor } from './components/SystemMonitor';
 import { SwarmProvider } from './contexts/SwarmContext';
 import { SyncQueueProvider } from './contexts/SyncQueueContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+
+declare global {
+  interface Window {
+    __SYSTEM_METRICS?: Array<Record<string, unknown>>;
+  }
+}
 
 const About = lazy(() => import('./pages/About'));
 const Admin = lazy(() => import('./pages/Admin'));
@@ -75,6 +82,7 @@ export default function App() {
           <SyncQueueProvider>
             <TooltipProvider>
               <Toaster richColors position="top-right" />
+              <SystemMonitor />
               <AutoSync />
               <HealthAlerts />
               <Router />
