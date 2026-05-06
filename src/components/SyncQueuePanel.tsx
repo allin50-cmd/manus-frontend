@@ -1,6 +1,6 @@
 import { useSyncQueue } from '@/contexts/SyncQueueContext';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { CloudSync, Trash2, RotateCcw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CloudSync, Trash2, RotateCcw, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 
 export function SyncQueuePanel() {
   const { items, remove, retry, retryAll, clear } = useSyncQueue();
@@ -8,10 +8,12 @@ export function SyncQueuePanel() {
 
   if (items.length === 0) return null;
 
+  const MAX_ATTEMPTS = 5;
   const formatted = items.map((item) => ({
     ...item,
     icon: item.entityType === 'case' ? '📋' : item.entityType === 'hearing' ? '⚖️' : item.entityType === 'allocation' ? '📌' : item.entityType === 'document' ? '📄' : '📅',
     label: `${item.entityType} ${item.action}`,
+    isMaxed: item.attempts >= MAX_ATTEMPTS && item.lastError,
   }));
 
   return (
@@ -34,11 +36,19 @@ export function SyncQueuePanel() {
               <div className="flex items-center gap-2">
                 <span className="text-lg">{item.icon}</span>
                 <div>
-                  <div className="text-slate-200 font-mono text-xs">{item.label}</div>
+                  <div className={`font-mono text-xs ${item.isMaxed ? 'text-red-400' : 'text-slate-200'}`}>
+                    {item.label}
+                  </div>
                   <div className="text-slate-500 text-xs">{new Date(item.timestamp).toLocaleTimeString()}</div>
                 </div>
               </div>
-              {item.lastError ? <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" /> : <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
+              {item.isMaxed ? (
+                <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              ) : item.lastError ? (
+                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              )}
             </div>
             {item.lastError && <div className="text-xs text-red-400 mb-2">{item.lastError}</div>}
             <div className="flex items-center justify-between">

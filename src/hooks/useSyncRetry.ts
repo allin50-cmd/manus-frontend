@@ -6,12 +6,15 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 
+const MAX_SYNC_ATTEMPTS = 5;
+
 export function useSyncRetry() {
   const { items, remove } = useSyncQueue();
   const online = useOnlineStatus();
   const { otherTabSyncing } = useCrossTabSync();
   const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const processingRef = useRef<Set<string>>(new Set());
+  const exhaustedRef = useRef<Set<string>>(new Set());
 
   const caseCreate = trpc.cases.create.useMutation();
   const hearingCreate = trpc.hearings.create.useMutation();
@@ -23,8 +26,17 @@ export function useSyncRetry() {
     if (!online || otherTabSyncing) return;
 
     for (const item of items) {
-      if (item.lastError && !processingRef.current.has(item.id)) {
-        const backoffMs = calculateBackoff(item.attempts);
+      if (item.lastError && !processingRef.current.has(item.id) && !exhaustedRef.current.has(item.id)) {
+        if (item.attempts >= MAX_SYNC_ATTEMPTS) {
+          exhaustedRef.current.add(item.id);
+          toast.error(
+            `${item.entityType} sync exhausted after ${MAX_SYNC_ATTEMPTS} attempts`,
+            { icon: '❌', duration: 5000 },
+          );
+          continue;
+        }
+
+        const backoffMs = calculateBackoff(item.attempts, { maxAttempts: MAX_SYNC_ATTEMPTS });
         const timeout = setTimeout(async () => {
           processingRef.current.add(item.id);
 
