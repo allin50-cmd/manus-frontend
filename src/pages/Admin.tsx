@@ -21,9 +21,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  ExternalLink,
   GitCommit,
-  Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,6 +82,8 @@ interface Deployment {
   deployedAt: string;
 }
 
+const ADMIN_TOKEN_KEY = 'vaultline_admin_token';
+
 export default function Admin() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
@@ -91,21 +91,69 @@ export default function Admin() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adminToken, setAdminToken] = useState<string>(
+    () => localStorage.getItem(ADMIN_TOKEN_KEY) ?? ''
+  );
+  const [tokenInput, setTokenInput] = useState('');
+
+  const adminHeaders = { 'X-Admin-Token': adminToken };
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    if (adminToken) fetchAllData();
+    else setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminToken]);
+
+  const handleTokenSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tokenInput.trim()) return;
+    localStorage.setItem(ADMIN_TOKEN_KEY, tokenInput.trim());
+    setAdminToken(tokenInput.trim());
+    setLoading(true);
+  };
+
+  if (!adminToken) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 w-full max-w-sm">
+          <h2 className="text-white text-lg font-semibold mb-4">Admin Access</h2>
+          <form onSubmit={handleTokenSubmit} className="space-y-4">
+            <input
+              type="password"
+              placeholder="Enter admin token"
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            />
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-2 text-sm font-medium"
+            >
+              Authenticate
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
       const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
-        fetch('/api/admin/leads'),
-        fetch('/api/admin/intake-forms'),
-        fetch('/api/admin/compliance-bundles'),
-        fetch('/api/admin/contacts'),
+        fetch('/api/admin/leads', { headers: adminHeaders }),
+        fetch('/api/admin/intake-forms', { headers: adminHeaders }),
+        fetch('/api/admin/compliance-bundles', { headers: adminHeaders }),
+        fetch('/api/admin/contacts', { headers: adminHeaders }),
         fetch('/api/deployments/status'),
       ]);
+
+      if (leadsRes.status === 401 || intakeRes.status === 401) {
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        setAdminToken('');
+        toast.error('Invalid admin token — please re-authenticate');
+        return;
+      }
 
       if (leadsRes.ok) setLeads(await leadsRes.json());
       if (intakeRes.ok) setIntakeForms(await intakeRes.json());

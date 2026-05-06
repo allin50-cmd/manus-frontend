@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CompanyData {

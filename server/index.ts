@@ -202,6 +202,15 @@ app.get('/api/protection-status', async (req: Request, res: Response) => {
   }
 });
 
+// Admin auth — reuses DEPLOY_RECORD_TOKEN; clients send X-Admin-Token header
+const requireAdminToken = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers['x-admin-token'];
+  if (!token || token !== DEPLOY_RECORD_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+};
+
 // ============================================================================
 // DEPLOYMENT TRACKING API ENDPOINTS
 // ============================================================================
@@ -309,9 +318,10 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
       query = query.where(eq(deploymentStatus.environment, environment)) as any;
     }
 
+    const limitVal = Math.min(Math.max(parseInt(limit as string) || 50, 1), 500);
     const deployments = await query
       .orderBy(desc(deploymentStatus.deployedAt))
-      .limit(parseInt(limit as string));
+      .limit(limitVal);
 
     res.json({ deployments });
   } catch (error) {
@@ -375,7 +385,7 @@ app.post('/api/lead', async (req: Request, res: Response) => {
  * GET /api/admin/leads
  * Get all leads (admin endpoint)
  */
-app.get('/api/admin/leads', async (req: Request, res: Response) => {
+app.get('/api/admin/leads', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const allLeads = await db
       .select()
@@ -454,7 +464,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
  * GET /api/admin/intake-forms
  * Get all intake forms (admin endpoint)
  */
-app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
+app.get('/api/admin/intake-forms', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const allForms = await db
       .select()
@@ -610,7 +620,7 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
  * GET /api/admin/compliance-bundles
  * Get all compliance bundle requests (admin endpoint)
  */
-app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => {
+app.get('/api/admin/compliance-bundles', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const allBundles = await db
       .select()
@@ -678,7 +688,7 @@ app.post('/api/contact', async (req: Request, res: Response) => {
  * GET /api/admin/contacts
  * Get all contacts (admin endpoint)
  */
-app.get('/api/admin/contacts', async (req: Request, res: Response) => {
+app.get('/api/admin/contacts', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const allContacts = await db
       .select()
@@ -696,10 +706,14 @@ app.get('/api/admin/contacts', async (req: Request, res: Response) => {
  * PATCH /api/contacts/:id
  * Update contact status
  */
-app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
+app.patch('/api/contacts/:id', requireAdminToken, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ error: 'Invalid contact ID' });
+    }
 
     if (!status || !['new', 'read', 'replied'].includes(status)) {
       return res.status(400).json({
@@ -724,32 +738,6 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
   }
 });
 
-// ============================================================================
-// HEALTH CHECK
-// ============================================================================
-
-/**
- * GET /health
- * Health check endpoint
- */
-app.get('/health', async (req: Request, res: Response) => {
-  try {
-    // Check database connection
-    await db.select().from(deploymentStatus).limit(1);
-
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      database: 'connected',
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      database: 'disconnected',
-    });
-  }
-});
 
 // ============================================================================
 // STATIC FILE SERVING & SPA FALLBACK
