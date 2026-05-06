@@ -373,6 +373,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
     let query = db.select().from(deploymentStatus);
 
     if (environment && typeof environment === 'string') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       query = query.where(eq(deploymentStatus.environment, environment)) as any;
     }
 
@@ -546,7 +547,7 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
 app.post('/api/compliance-bundle', publicApiLimiter, async (req: Request, res: Response) => {
   try {
     const {
-      companyName,
+      companyName: _companyName,
       companyNumber,
       requestorName,
       requestorEmail,
@@ -835,7 +836,7 @@ app.get('*', (req: Request, res: Response) => {
 // ERROR HANDLING
 // ============================================================================
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });

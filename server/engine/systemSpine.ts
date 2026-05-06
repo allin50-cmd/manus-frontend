@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm';
-import type { ClerkAllocation } from '../drizzle/schema';
 import { clerkAllocations } from '../drizzle/schema';
 import { getDb, writeAuditEvent } from '../trpc/db';
 import { ServiceBusClient } from '../services/serviceBus';
@@ -50,6 +49,7 @@ export class SystemSpine {
         break;
 
       default:
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         console.warn('[SystemSpine] Unknown queue item type:', (payload as any).type);
     }
   }
@@ -94,6 +94,7 @@ export class SystemSpine {
 
     const result = await engine.transitionCase(
       payload.caseId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       payload.targetStatus as any,
       payload.actorId,
       payload.actorOpenId,

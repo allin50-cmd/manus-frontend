@@ -182,6 +182,7 @@ export class CompaniesHouseService {
   /**
    * Check if error is retryable
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private isRetryableError(error: any): boolean {
     if (error.message?.includes('rate limit')) return false;
     if (error.message?.includes('Invalid')) return false;
@@ -214,6 +215,7 @@ export class CompaniesHouseService {
         throw new Error(`Failed to fetch filing history: ${response.status}`);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await response.json() as any;
       const items = data.items || [];
       console.log(`📈 Filing history retrieved: ${items.length} filings`);

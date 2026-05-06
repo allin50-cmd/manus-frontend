@@ -117,7 +117,7 @@ export class ClerkOSEngine {
 
   // ─── Validate allocation assignment ─────────────────────────────────────────
 
-  async validateAllocationAssignment(caseId: number, clerkId: number): Promise<Result<true>> {
+  async validateAllocationAssignment(caseId: number, _clerkId: number): Promise<Result<true>> {
     const [caseRow] = await this.db
       .select()
       .from(cases)

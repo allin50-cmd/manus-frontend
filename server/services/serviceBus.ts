@@ -3,7 +3,7 @@ import { ServiceBusClient as AzureServiceBusClient } from '@azure/service-bus';
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const CONNECTION_STRING = process.env.AZURE_SERVICE_BUS_CONNECTION_STRING ?? '';
-const NAMESPACE = process.env.AZURE_SERVICE_BUS_NAMESPACE ?? '';
+const _NAMESPACE = process.env.AZURE_SERVICE_BUS_NAMESPACE ?? '';
 
 // ─── Lazy client ──────────────────────────────────────────────────────────────
 

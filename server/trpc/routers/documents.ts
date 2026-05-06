@@ -44,7 +44,7 @@ export const documentsRouter = router({
         .returning();
 
       // Build canonical blob path for this document
-      const blobPath = buildBlobPath(
+      const _blobPath = buildBlobPath(
         ctx.tenantId,
         input.caseId,
         created.id,

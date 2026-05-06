@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { TRPCError } from "@trpc/server";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import type { Tenant } from "../drizzle/schema";
