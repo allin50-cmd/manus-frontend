@@ -104,7 +104,7 @@ export function DeploymentStatusPanel() {
 
   const getGitHubWorkflowUrl = (workflowRun: string) => {
     // Assuming GitHub repo is configured in environment
-    const repo = import.meta.env.VITE_GITHUB_REPO || 'owner/repo';
+    const repo = import.meta.env.VITE_GITHUB_REPO || 'allin50-cmd/manus-frontend';
     return `https://github.com/${repo}/actions/runs/${workflowRun}`;
   };
 

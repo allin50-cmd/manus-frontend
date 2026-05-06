@@ -182,9 +182,10 @@ export class CompaniesHouseService {
   /**
    * Check if error is retryable
    */
-  private isRetryableError(error: any): boolean {
-    if (error.message?.includes('rate limit')) return false;
-    if (error.message?.includes('Invalid')) return false;
+  private isRetryableError(error: unknown): boolean {
+    if (!(error instanceof Error)) return true;
+    if (error.message.includes('rate limit')) return false;
+    if (error.message.includes('Invalid')) return false;
     return true; // Network errors are retryable
   }
 
@@ -440,5 +441,11 @@ export class CompaniesHouseService {
   }
 }
 
-// Export singleton instance
-export const companiesHouseService = new CompaniesHouseService();
+let _instance: CompaniesHouseService | null = null;
+
+export const companiesHouseService = new Proxy({} as CompaniesHouseService, {
+  get(_target, prop) {
+    if (!_instance) _instance = new CompaniesHouseService();
+    return (_instance as any)[prop];
+  },
+});

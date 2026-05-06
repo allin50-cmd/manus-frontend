@@ -19,7 +19,7 @@ export default function UltAi() {
             AI-powered secure client matter intake for law firms
           </p>
           <Button
-            onClick={() => setLocation('/intake-sheet')}
+            onClick={() => setLocation('/intake')}
             className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-8 py-6 text-lg"
           >
             Try Intake Sheet

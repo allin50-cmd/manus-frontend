@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
-import { db } from './db/index';
+import { db, client } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
@@ -818,8 +818,9 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown — App Service sends SIGTERM before killing the process
 function shutdown(signal: string) {
   console.log(`${signal} received; closing HTTP server…`);
-  server.close(() => {
+  server.close(async () => {
     console.log('HTTP server closed');
+    await client.end().catch(() => {});
     process.exit(0);
   });
   // Force-exit if connections linger beyond 10s

@@ -148,7 +148,7 @@ export default function Admin() {
         fetch('/api/deployments/status'),
       ]);
 
-      if (leadsRes.status === 401 || intakeRes.status === 401) {
+      if ([leadsRes, intakeRes, bundlesRes, contactsRes].some(r => r.status === 401)) {
         localStorage.removeItem(ADMIN_TOKEN_KEY);
         setAdminToken('');
         toast.error('Invalid admin token — please re-authenticate');
