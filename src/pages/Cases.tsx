@@ -6,9 +6,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
-import { Search, AlertCircle, Plus, ChevronRight, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { Search, AlertCircle, Clock, Plus, ChevronRight, ArrowRight } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const STATUSES = ['all', 'open', 'in_progress', 'closed', 'on_hold'] as const;
@@ -291,22 +292,32 @@ export default function Cases() {
   const [showNew, setShowNew] = useState(false);
   const [selected, setSelected] = useState<Case | null>(null);
 
+  const cacheKey = `cases.list.${status}`;
+
   const listQuery = trpc.cases.list.useQuery(
     status === 'all' ? undefined : { status },
-    { retry: false },
   );
 
   const searchQuery = trpc.cases.search.useQuery(
     { query: search },
-    { enabled: search.trim().length > 1, retry: false },
+    { enabled: search.trim().length > 1 },
   );
 
-  const cases = search.trim().length > 1
-    ? (searchQuery.data ?? [])
-    : (listQuery.data ?? []);
+  useEffect(() => {
+    if (listQuery.data) cacheWrite(cacheKey, listQuery.data);
+  }, [listQuery.data, cacheKey]);
 
+  const cachedEntry = useMemo(
+    () => (!listQuery.data && listQuery.error ? cacheRead<typeof listQuery.data>(cacheKey) : null),
+    [listQuery.data, listQuery.error, cacheKey],
+  );
+
+  const listCases = listQuery.data ?? cachedEntry?.data ?? [];
+  const cases = search.trim().length > 1 ? (searchQuery.data ?? []) : listCases;
   const isLoading = search.trim().length > 1 ? searchQuery.isLoading : listQuery.isLoading;
   const hasError = listQuery.error || searchQuery.error;
+  const isFromCache = !listQuery.data && !!cachedEntry?.data;
+  const staleAgeLabel = cachedEntry ? formatCacheAge(cachedEntry.ageMs) : undefined;
 
   return (
     <ClerkOSLayout>
@@ -327,7 +338,20 @@ export default function Cases() {
           </button>
         </div>
 
-        {hasError && (
+        {hasError && isFromCache && (
+          <div className="mb-4 flex items-center justify-between gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div className="flex items-center gap-3 min-w-0">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Showing cached data from {staleAgeLabel} — live data unavailable.
+              </p>
+            </div>
+            <button onClick={() => listQuery.refetch()} className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 flex-shrink-0 transition-colors">
+              Retry
+            </button>
+          </div>
+        )}
+        {hasError && !isFromCache && (
           <div className="mb-4 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">

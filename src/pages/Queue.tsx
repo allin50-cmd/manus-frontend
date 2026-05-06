@@ -6,9 +6,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
 import { AlertCircle, Clock, Plus, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const PRIORITY_BADGE: Record<string, string> = {
@@ -150,11 +151,21 @@ export default function Queue() {
   const [showCreate, setShowCreate] = useState(false);
   const utils = trpc.useContext();
 
-  const { data: allocations = [], isLoading, error } = trpc.allocations.getPending.useQuery(
-    undefined,
-    { retry: false },
+  const { data: liveAllocations, isLoading, error, refetch } = trpc.allocations.getPending.useQuery(undefined);
+  const { data: cases = [] } = trpc.cases.list.useQuery(undefined);
+
+  useEffect(() => {
+    if (liveAllocations) cacheWrite('allocations.pending', liveAllocations);
+  }, [liveAllocations]);
+
+  const cachedEntry = useMemo(
+    () => (!liveAllocations && error ? cacheRead<typeof liveAllocations>('allocations.pending') : null),
+    [liveAllocations, error],
   );
-  const { data: cases = [] } = trpc.cases.list.useQuery(undefined, { retry: false });
+
+  const allocations = liveAllocations ?? cachedEntry?.data ?? [];
+  const isFromCache = !liveAllocations && !!cachedEntry?.data;
+  const staleAgeLabel = cachedEntry ? formatCacheAge(cachedEntry.ageMs) : undefined;
 
   const updateMutation = trpc.allocations.update.useMutation({
     onSuccess: () => {
@@ -202,7 +213,20 @@ export default function Queue() {
           </button>
         </div>
 
-        {error && (
+        {error && isFromCache && (
+          <div className="mb-4 flex items-center justify-between gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div className="flex items-center gap-3 min-w-0">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Showing cached data from {staleAgeLabel} — live data unavailable.
+              </p>
+            </div>
+            <button onClick={() => refetch()} className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 flex-shrink-0 transition-colors">
+              Retry
+            </button>
+          </div>
+        )}
+        {error && !isFromCache && (
           <div className="mb-4 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">

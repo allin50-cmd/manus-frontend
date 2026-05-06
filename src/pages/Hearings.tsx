@@ -6,9 +6,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
-import { AlertCircle, Gavel, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, Clock, Gavel, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const STATUSES = ['all', 'scheduled', 'completed', 'postponed', 'cancelled'] as const;
@@ -144,11 +145,23 @@ export default function Hearings() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const { data: hearings = [], isLoading, error } = trpc.hearings.list.useQuery(
+  const { data: liveHearings, isLoading, error, refetch } = trpc.hearings.list.useQuery(
     status === 'all' ? undefined : { status },
-    { retry: false },
   );
-  const { data: cases = [] } = trpc.cases.list.useQuery(undefined, { retry: false });
+  const { data: cases = [] } = trpc.cases.list.useQuery(undefined);
+
+  useEffect(() => {
+    if (liveHearings) cacheWrite('hearings.list', liveHearings);
+  }, [liveHearings]);
+
+  const cachedEntry = useMemo(
+    () => (!liveHearings && error ? cacheRead<typeof liveHearings>('hearings.list') : null),
+    [liveHearings, error],
+  );
+
+  const hearings = liveHearings ?? cachedEntry?.data ?? [];
+  const isFromCache = !liveHearings && !!cachedEntry?.data;
+  const staleAgeLabel = cachedEntry ? formatCacheAge(cachedEntry.ageMs) : undefined;
 
   // Sort: today first, then upcoming, then past
   const sorted = [...hearings].sort((a, b) => {
@@ -182,7 +195,20 @@ export default function Hearings() {
           </div>
         </div>
 
-        {error && (
+        {error && isFromCache && (
+          <div className="mb-4 flex items-center justify-between gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div className="flex items-center gap-3 min-w-0">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Showing cached data from {staleAgeLabel} — live data unavailable.
+              </p>
+            </div>
+            <button onClick={() => refetch()} className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 flex-shrink-0 transition-colors">
+              Retry
+            </button>
+          </div>
+        )}
+        {error && !isFromCache && (
           <div className="mb-4 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">
