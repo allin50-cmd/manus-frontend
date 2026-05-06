@@ -897,15 +897,28 @@
     }
 
     // Initialize
-    log('info', 'ClerkOS graceful failure system initialized');
-    log('info', 'Offline cache: 24h TTL, localStorage persistence');
-    log('info', 'Swarm orchestration: 3 agents with Phi accrual & Raft consensus');
-    updateLogs();
-    updateUI();
+    try {
+      log('info', 'ClerkOS graceful failure system initialized');
+      log('info', 'Offline cache: 24h TTL, localStorage persistence');
+      log('info', 'Swarm orchestration: 3 agents with Phi accrual & Raft consensus');
+      updateLogs();
+      updateUI();
 
-    // Real-time updates every 500ms
-    setInterval(updateUI, 500);
-    setInterval(updateAgents, 600);
+      // Real-time updates every 500ms
+      setInterval(updateUI, 500);
+      setInterval(updateAgents, 600);
+
+      log('info', '✅ System ready - all modules loaded');
+    } catch (err) {
+      console.error('Initialization error:', err);
+      document.body.innerHTML += '<div style="color: red; padding: 20px;">Error: ' + err.message + '</div>';
+    }
+
+    // Global error handler
+    window.addEventListener('error', (event) => {
+      log('error', `Runtime error: ${event.error?.message || 'Unknown error'}`);
+      updateLogs();
+    });
   </script>
 </body>
 </html>
