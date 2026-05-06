@@ -1,0 +1,13 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1778080980992,
+      "tag": "0000_puzzling_luckman",
+      "breakpoints": true
+    }
+  ]
+}
