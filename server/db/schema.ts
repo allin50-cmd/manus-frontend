@@ -1,59 +1,51 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { pgTable, uuid, varchar, timestamp, text, index } from 'drizzle-orm/pg-core';
 
-/**
- * Deployment Status Table
- * Tracks all deployments across dev, staging, and production environments
- */
 export const deploymentStatus = pgTable('deployment_status', {
   id: uuid('id').primaryKey().defaultRandom(),
-  environment: varchar('environment', { length: 20 }).notNull(), // dev, staging, prod
-  status: varchar('status', { length: 20 }).notNull(), // success, failed, in_progress
-  commit: varchar('commit', { length: 50 }).notNull(), // Git commit SHA
-  workflowRun: varchar('workflow_run', { length: 50 }).notNull(), // GitHub workflow run ID
+  environment: varchar('environment', { length: 20 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull(),
+  commit: varchar('commit', { length: 50 }).notNull(),
+  workflowRun: varchar('workflow_run', { length: 50 }).notNull(),
   deployedAt: timestamp('deployed_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('deployment_status_environment_idx').on(t.environment),
+  index('deployment_status_deployed_at_idx').on(t.deployedAt),
+]);
 
-/**
- * Leads Table
- * Stores demo booking requests from all landing pages
- */
 export const leads = pgTable('leads', {
   id: uuid('id').primaryKey().defaultRandom(),
-  leadId: varchar('lead_id', { length: 50 }).notNull().unique(), // LEAD-1234567890
+  leadId: varchar('lead_id', { length: 50 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   company: varchar('company', { length: 255 }),
-  product: varchar('product', { length: 50 }), // vaultline, ultai, fineguard
+  product: varchar('product', { length: 50 }),
   phone: varchar('phone', { length: 50 }),
   message: text('message'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('leads_email_idx').on(t.email),
+  index('leads_created_at_idx').on(t.createdAt),
+]);
 
-/**
- * Client Intake Forms Table
- * Stores client matter intake sheet submissions
- */
 export const intakeForms = pgTable('intake_forms', {
   id: uuid('id').primaryKey().defaultRandom(),
-  matterRef: varchar('matter_ref', { length: 50 }).notNull().unique(), // MAT-1234567890
+  matterRef: varchar('matter_ref', { length: 50 }).notNull().unique(),
   clientName: varchar('client_name', { length: 255 }).notNull(),
   clientEmail: varchar('client_email', { length: 255 }),
   clientPhone: varchar('client_phone', { length: 50 }),
   matterType: varchar('matter_type', { length: 100 }).notNull(),
-  urgency: varchar('urgency', { length: 20 }).notNull(), // low, medium, high, critical
+  urgency: varchar('urgency', { length: 20 }).notNull(),
   description: text('description'),
   claimValue: varchar('claim_value', { length: 50 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('intake_forms_matter_type_idx').on(t.matterType),
+  index('intake_forms_created_at_idx').on(t.createdAt),
+]);
 
-/**
- * Compliance Bundle Requests Table
- * Stores requests for compliance bundle samples
- */
 export const complianceBundles = pgTable('compliance_bundles', {
   id: uuid('id').primaryKey().defaultRandom(),
-  bundleId: varchar('bundle_id', { length: 50 }).notNull().unique(), // BUNDLE-1234567890
+  bundleId: varchar('bundle_id', { length: 50 }).notNull().unique(),
   companyName: varchar('company_name', { length: 255 }).notNull(),
   companyNumber: varchar('company_number', { length: 50 }).notNull(),
   requestorName: varchar('requestor_name', { length: 255 }),
@@ -61,27 +53,24 @@ export const complianceBundles = pgTable('compliance_bundles', {
   bundleType: varchar('bundle_type', { length: 50 }).default('full'),
   estimatedTime: varchar('estimated_time', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('compliance_bundles_company_number_idx').on(t.companyNumber),
+]);
 
-/**
- * Contact Form Submissions Table
- * General contact form submissions
- */
 export const contacts = pgTable('contacts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  ticketId: varchar('ticket_id', { length: 50 }).notNull().unique(), // TICKET-1234567890
+  ticketId: varchar('ticket_id', { length: 50 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull(),
   subject: varchar('subject', { length: 255 }),
   message: text('message').notNull(),
-  status: varchar('status', { length: 20 }).default('new').notNull(), // new, read, replied
+  status: varchar('status', { length: 20 }).default('new').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('contacts_status_idx').on(t.status),
+  index('contacts_created_at_idx').on(t.createdAt),
+]);
 
-/**
- * Monitored Companies Table
- * Tracks companies that have paid and activated FineGuard protection
- */
 export const monitoredCompanies = pgTable('monitored_companies', {
   id: uuid('id').primaryKey().defaultRandom(),
   companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
@@ -90,21 +79,15 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
 
-// Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
-
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
-
 export type IntakeForm = typeof intakeForms.$inferSelect;
 export type NewIntakeForm = typeof intakeForms.$inferInsert;
-
 export type ComplianceBundle = typeof complianceBundles.$inferSelect;
 export type NewComplianceBundle = typeof complianceBundles.$inferInsert;
-
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
-
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;

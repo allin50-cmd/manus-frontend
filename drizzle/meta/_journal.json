@@ -8,6 +8,13 @@
       "when": 1778080980992,
       "tag": "0000_puzzling_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778090441728,
+      "tag": "0001_brown_sandman",
+      "breakpoints": true
     }
   ]
 }

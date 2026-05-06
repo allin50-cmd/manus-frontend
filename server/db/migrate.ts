@@ -2,8 +2,8 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
-// Load environment variables
 dotenv.config();
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -13,8 +13,13 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
+if (!fs.existsSync('./drizzle')) {
+  console.error('❌ Migrations folder ./drizzle not found — run npm run db:generate first');
+  process.exit(1);
+}
+
 async function runMigration() {
-  console.log('🔄 Starting database migration...');
+  console.log('🔄 Starting database migration…');
 
   const migrationClient = postgres(databaseUrl, { max: 1 });
   const db = drizzle(migrationClient);
