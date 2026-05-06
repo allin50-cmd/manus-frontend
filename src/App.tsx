@@ -21,6 +21,7 @@ const IntakeSheet = lazy(() => import('./pages/IntakeSheet'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Queue = lazy(() => import('./pages/Queue'));
+const Status = lazy(() => import('./pages/Status'));
 const Team = lazy(() => import('./pages/Team'));
 const UltAi = lazy(() => import('./pages/UltAi'));
 const VaultLine = lazy(() => import('./pages/VaultLine'));
@@ -54,6 +55,7 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/about" component={About} />
         <Route path="/team" component={Team} />
+        <Route path="/status" component={Status} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
