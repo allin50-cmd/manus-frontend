@@ -3,7 +3,9 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { lazy, Suspense } from 'react';
 import { Route, Switch } from 'wouter';
 import ErrorBoundary from './components/ErrorBoundary';
+import { SyncQueuePanel } from './components/SyncQueuePanel';
 import { SwarmProvider } from './contexts/SwarmContext';
+import { SyncQueueProvider } from './contexts/SyncQueueContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 const About = lazy(() => import('./pages/About'));
@@ -68,10 +70,13 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
         <SwarmProvider>
-          <TooltipProvider>
-            <Toaster richColors position="top-right" />
-            <Router />
-          </TooltipProvider>
+          <SyncQueueProvider>
+            <TooltipProvider>
+              <Toaster richColors position="top-right" />
+              <Router />
+              <SyncQueuePanel />
+            </TooltipProvider>
+          </SyncQueueProvider>
         </SwarmProvider>
       </ThemeProvider>
     </ErrorBoundary>
