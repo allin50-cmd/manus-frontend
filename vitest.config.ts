@@ -4,9 +4,12 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
-    include: ['server/**/*.test.ts'],
+    include: ['server/**/*.test.ts', 'src/**/*.test.ts'],
     exclude: ['node_modules/**'],
+    environmentMatchGlobs: [
+      ['server/**/*.test.ts', 'node'],
+      ['src/**/*.test.ts', 'jsdom'],
+    ],
   },
   resolve: {
     alias: {
