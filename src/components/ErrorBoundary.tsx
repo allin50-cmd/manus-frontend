@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: React.ReactNode;
@@ -8,12 +9,13 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+  retryCount: number;
 }
 
 export default class ErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false };
+  state: State = { hasError: false, retryCount: 0 };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
@@ -21,30 +23,42 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     console.error('[ClerkOS] Uncaught error:', error, info);
   }
 
+  private handleRetry = () => {
+    this.setState((s) => ({ hasError: false, error: undefined, retryCount: s.retryCount + 1 }));
+  };
+
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback;
+
       return (
-        this.props.fallback ?? (
-          <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-            <div className="text-center p-8">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-red-600 dark:text-red-400 text-2xl">⚠</span>
-              </div>
-              <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                Something went wrong
-              </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-sm">
-                {this.state.error?.message ?? 'An unexpected error occurred.'}
-              </p>
-              <button
-                onClick={() => this.setState({ hasError: false })}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Try again
-              </button>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-6">
+          <div className="text-center max-w-sm w-full">
+            <div className="w-14 h-14 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+              <AlertTriangle className="w-7 h-7 text-rose-600 dark:text-rose-400" />
             </div>
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+              Something went wrong
+            </h1>
+            {this.state.error?.message && (
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-mono bg-slate-100 dark:bg-slate-800 rounded px-3 py-2 text-left break-all">
+                {this.state.error.message}
+              </p>
+            )}
+            {this.state.retryCount > 0 && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
+                Retry attempt {this.state.retryCount}
+              </p>
+            )}
+            <button
+              onClick={this.handleRetry}
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try again
+            </button>
           </div>
-        )
+        </div>
       );
     }
     return this.props.children;

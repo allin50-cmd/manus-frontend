@@ -1,4 +1,6 @@
+import OfflineBanner from '@/components/OfflineBanner';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import {
   BookOpen,
   LayoutDashboard,
@@ -32,6 +34,7 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
   const [location] = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const online = useOnlineStatus();
 
   const tenantSlug =
     typeof window !== 'undefined'
@@ -57,6 +60,10 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
             Core Engine v1.1
           </p>
         </div>
+        <span
+          title={online ? 'Connected' : 'Offline'}
+          className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors ${online ? 'bg-emerald-500' : 'bg-amber-500'}`}
+        />
         <button
           onClick={() => setSidebarOpen(false)}
           className="md:hidden p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
@@ -155,6 +162,7 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
           </div>
         </div>
 
+        {!online && <OfflineBanner />}
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>

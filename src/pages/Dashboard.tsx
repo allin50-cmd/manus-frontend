@@ -1,7 +1,11 @@
 import ClerkOSLayout from '@/components/layout/ClerkOSLayout';
+import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
-import { Scale, Gavel, ListTodo, TrendingUp, AlertCircle, XCircle, CalendarCheck, ArrowRight } from 'lucide-react';
+import { Scale, Gavel, ListTodo, TrendingUp, AlertCircle, XCircle, CalendarCheck, ArrowRight, Clock } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'wouter';
+
+const CACHE_KEY = 'dashboard.stats';
 
 function Skeleton({ className = '' }: { className?: string }) {
   return (
@@ -62,10 +66,24 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { data: stats, isLoading, error } = trpc.dashboard.stats.useQuery(undefined, {
-    retry: false,
+  const { data: liveStats, isLoading, error, refetch } = trpc.dashboard.stats.useQuery(undefined, {
     refetchInterval: 30_000,
   });
+
+  // Persist successful responses to localStorage for offline fallback
+  useEffect(() => {
+    if (liveStats) cacheWrite(CACHE_KEY, liveStats);
+  }, [liveStats]);
+
+  // Fall back to cached data when the live query fails
+  const cachedEntry = useMemo(
+    () => (!liveStats && error ? cacheRead<typeof liveStats>(CACHE_KEY) : null),
+    [liveStats, error],
+  );
+
+  const stats = liveStats ?? cachedEntry?.data;
+  const isFromCache = !liveStats && !!cachedEntry?.data;
+  const staleAgeLabel = cachedEntry ? formatCacheAge(cachedEntry.ageMs) : undefined;
 
   return (
     <ClerkOSLayout>
@@ -78,7 +96,23 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {error && (
+        {error && isFromCache && (
+          <div className="mb-6 flex items-center justify-between gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div className="flex items-center gap-3 min-w-0">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Showing cached data from {staleAgeLabel} — live data unavailable.
+              </p>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 flex-shrink-0 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {error && !isFromCache && (
           <div className="mb-6 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">
