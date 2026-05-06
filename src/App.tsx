@@ -3,6 +3,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/NotFound';
 import { Route, Switch } from 'wouter';
 import ErrorBoundary from './components/ErrorBoundary';
+import { SwarmProvider } from './contexts/SwarmContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Bundles from './pages/Bundles';
 import Cases from './pages/Cases';
@@ -32,10 +33,12 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
-        <TooltipProvider>
-          <Toaster richColors position="top-right" />
-          <Router />
-        </TooltipProvider>
+        <SwarmProvider>
+          <TooltipProvider>
+            <Toaster richColors position="top-right" />
+            <Router />
+          </TooltipProvider>
+        </SwarmProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

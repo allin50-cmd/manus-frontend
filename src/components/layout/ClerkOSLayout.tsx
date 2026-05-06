@@ -1,4 +1,5 @@
 import OfflineBanner from '@/components/OfflineBanner';
+import SwarmHealthWidget from '@/components/SwarmHealthWidget';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import {
@@ -107,6 +108,9 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
           );
         })}
       </nav>
+
+      {/* Swarm health */}
+      <SwarmHealthWidget />
 
       {/* Footer */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800 space-y-1">
