@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { clerkDiaries } from '../../drizzle/schema';
 import { tenantProcedure, router } from '../_core/trpc';
+import { checkIdempotency, recordIdempotency } from '../_core/idempotency';
 import { getClerkDiaryByDate, getDb } from '../db';
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -25,9 +26,14 @@ export const diaryRouter = router({
         hearingId: z.number().optional(),
         allocationId: z.number().optional(),
         notes: z.string().optional(),
+        idempotencyKey: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const cached = checkIdempotency<typeof clerkDiaries.$inferSelect>(
+        'diary', ctx.tenantId, input.idempotencyKey,
+      );
+      if (cached) return cached;
       const db = await getDb();
       if (!db) throw new Error('Database not available');
       const [created] = await db
@@ -41,6 +47,7 @@ export const diaryRouter = router({
           notes: input.notes,
         })
         .returning();
+      recordIdempotency('diary', ctx.tenantId, input.idempotencyKey, created);
       return created;
     }),
 });

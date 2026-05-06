@@ -9,7 +9,7 @@ import {
 import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
 import { AlertCircle, Clock, Gavel, Plus } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const STATUSES = ['all', 'scheduled', 'completed', 'postponed', 'cancelled'] as const;
@@ -32,11 +32,13 @@ function ScheduleDialog({
   cases: { id: number; referenceNumber: string; title: string }[];
 }) {
   const utils = trpc.useContext();
+  const idempotencyKey = useRef(crypto.randomUUID());
   const create = trpc.hearings.create.useMutation({
     onSuccess: () => {
       utils.hearings.list.invalidate();
       utils.dashboard.stats.invalidate();
       onOpenChange(false);
+      idempotencyKey.current = crypto.randomUUID();
       toast.success('Hearing scheduled');
     },
     onError: (e) => toast.error(e.message),
@@ -68,6 +70,7 @@ function ScheduleDialog({
       courtroom: form.courtroom,
       judge: form.judge,
       notes: form.notes || undefined,
+      idempotencyKey: idempotencyKey.current,
     });
   };
 

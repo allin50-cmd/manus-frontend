@@ -9,7 +9,7 @@ import {
 import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
 import { Search, AlertCircle, Clock, Plus, ChevronRight, ArrowRight } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const STATUSES = ['all', 'open', 'in_progress', 'closed', 'on_hold'] as const;
@@ -51,11 +51,13 @@ type Case = {
 
 function NewCaseDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const utils = trpc.useContext();
+  const idempotencyKey = useRef(crypto.randomUUID());
   const create = trpc.cases.create.useMutation({
     onSuccess: () => {
       utils.cases.list.invalidate();
       utils.dashboard.stats.invalidate();
       onOpenChange(false);
+      idempotencyKey.current = crypto.randomUUID();
       toast.success('Case created');
     },
     onError: (e) => toast.error(e.message),
@@ -87,6 +89,7 @@ function NewCaseDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
       defendant: form.defendant,
       judge: form.judge || undefined,
       description: form.description || undefined,
+      idempotencyKey: idempotencyKey.current,
     });
   };
 

@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { cases } from '../../drizzle/schema';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
+import { checkIdempotency, recordIdempotency } from '../_core/idempotency';
 import { getAllCases, getCaseById, getDb, searchCases, writeAuditEvent } from '../db';
 import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
@@ -16,10 +17,15 @@ const createInput = z.object({
   status: caseStatusEnum.optional().default('open'),
   judge: z.string().optional(),
   description: z.string().optional(),
+  idempotencyKey: z.string().optional(),
 });
 
 export const casesRouter = router({
   create: adminProcedure.input(createInput).mutation(async ({ ctx, input }) => {
+    const cached = checkIdempotency<typeof cases.$inferSelect>(
+      'cases', ctx.tenantId, input.idempotencyKey,
+    );
+    if (cached) return cached;
     const db = await getDb();
     if (!db) throw new Error('Database not available');
     const [created] = await db
@@ -45,6 +51,7 @@ export const casesRouter = router({
       actorOpenId: ctx.user.openId,
       nextState: JSON.stringify(created),
     });
+    recordIdempotency('cases', ctx.tenantId, input.idempotencyKey, created);
     return created;
   }),
 

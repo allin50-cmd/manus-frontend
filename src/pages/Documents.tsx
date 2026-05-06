@@ -34,10 +34,12 @@ function UploadDialog({
   caseId: number;
 }) {
   const utils = trpc.useContext();
+  const idempotencyKey = useRef(crypto.randomUUID());
   const create = trpc.documents.create.useMutation({
     onSuccess: () => {
       utils.documents.getByCaseId.invalidate({ caseId });
       onOpenChange(false);
+      idempotencyKey.current = crypto.randomUUID();
       toast.success('Document registered');
     },
     onError: (e) => toast.error(e.message),
@@ -64,6 +66,7 @@ function UploadDialog({
       fileSize: file.size,
       documentType,
       uploadedBy: 1,
+      idempotencyKey: idempotencyKey.current,
     });
   };
 

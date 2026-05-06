@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { hearings } from '../../drizzle/schema';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
+import { checkIdempotency, recordIdempotency } from '../_core/idempotency';
 import { getAllHearings, getDb, getHearingsByCase, writeAuditEvent } from '../db';
 
 const hearingStatusEnum = z.enum(['scheduled', 'completed', 'postponed', 'cancelled']);
@@ -14,10 +15,15 @@ const createInput = z.object({
   judge: z.string().min(1),
   status: hearingStatusEnum.optional().default('scheduled'),
   notes: z.string().optional(),
+  idempotencyKey: z.string().optional(),
 });
 
 export const hearingsRouter = router({
   create: adminProcedure.input(createInput).mutation(async ({ ctx, input }) => {
+    const cached = checkIdempotency<typeof hearings.$inferSelect>(
+      'hearings', ctx.tenantId, input.idempotencyKey,
+    );
+    if (cached) return cached;
     const db = await getDb();
     if (!db) throw new Error('Database not available');
     const [created] = await db
@@ -42,6 +48,7 @@ export const hearingsRouter = router({
       actorOpenId: ctx.user.openId,
       nextState: JSON.stringify(created),
     });
+    recordIdempotency('hearings', ctx.tenantId, input.idempotencyKey, created);
     return created;
   }),
 

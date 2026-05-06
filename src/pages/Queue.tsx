@@ -9,7 +9,7 @@ import {
 import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
 import { AlertCircle, Clock, Plus, AlertTriangle } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 const PRIORITY_BADGE: Record<string, string> = {
@@ -38,11 +38,13 @@ function CreateAllocationDialog({
   cases: { id: number; referenceNumber: string; title: string }[];
 }) {
   const utils = trpc.useContext();
+  const idempotencyKey = useRef(crypto.randomUUID());
   const create = trpc.allocations.create.useMutation({
     onSuccess: () => {
       utils.allocations.getPending.invalidate();
       utils.dashboard.stats.invalidate();
       onOpenChange(false);
+      idempotencyKey.current = crypto.randomUUID();
       toast.success('Allocation created');
     },
     onError: (e) => toast.error(e.message),
@@ -73,6 +75,7 @@ function CreateAllocationDialog({
       priority: form.priority,
       dueDate: form.dueDate || undefined,
       notes: form.notes || undefined,
+      idempotencyKey: idempotencyKey.current,
     });
   };
 

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { documents } from '../../drizzle/schema';
 import { tenantProcedure, router } from '../_core/trpc';
+import { checkIdempotency, recordIdempotency } from '../_core/idempotency';
 import { getDb, getDocumentsByCase, writeAuditEvent } from '../db';
 import { BlobStorage, buildBlobPath } from '../../services/blobStorage';
 
@@ -20,9 +21,14 @@ export const documentsRouter = router({
         documentType: z.string().min(1),
         uploadedBy: z.number(),
         contentHash: z.string().optional(),
+        idempotencyKey: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const cached = checkIdempotency<typeof documents.$inferSelect>(
+        'documents', ctx.tenantId, input.idempotencyKey,
+      );
+      if (cached) return cached;
       const db = await getDb();
       if (!db) throw new Error('Database not available');
 
@@ -61,7 +67,7 @@ export const documentsRouter = router({
         actorOpenId: ctx.user.openId,
         nextState: JSON.stringify({ fileName: created.fileName, caseId: created.caseId }),
       });
-
+      recordIdempotency('documents', ctx.tenantId, input.idempotencyKey, created);
       return created;
     }),
 
