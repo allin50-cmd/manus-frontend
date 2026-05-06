@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -87,7 +88,31 @@ app.post(
 );
 
 // Middleware
-app.use(cors());
+app.use(compression());
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+}));
+
+app.use((_req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    res.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+  });
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -100,6 +125,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ============================================================================
 // HEALTH CHECK ENDPOINT
 // ============================================================================
+
+/**
+ * GET /api/ping
+ * Lightweight liveness check — no DB call
+ */
+app.get('/api/ping', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
 /**
  * GET /api/health
@@ -1001,6 +1032,19 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // ============================================================================
 // START SERVER
 // ============================================================================
+
+function logStartupConfig(): void {
+  const vars = {
+    DATABASE_URL: !!process.env.DATABASE_URL,
+    STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+    COMPANIES_HOUSE_API_KEY: !!process.env.COMPANIES_HOUSE_API_KEY,
+    AZURE_B2C_TENANT_NAME: !!process.env.AZURE_B2C_TENANT_NAME,
+    DEPLOY_RECORD_TOKEN: !!process.env.DEPLOY_RECORD_TOKEN,
+  };
+  console.log('Environment:', Object.entries(vars).map(([k,v]) => `${k}=${v ? '✓' : '✗'}`).join(' | '));
+}
+
+logStartupConfig();
 
 app.listen(PORT, () => {
   console.log('');
