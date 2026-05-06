@@ -1,6 +1,20 @@
+import { useSwarm } from '@/contexts/SwarmContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { FileText, ArrowRight } from 'lucide-react';
+
+function SwarmStatusBadge() {
+  const { snapshot } = useSwarm();
+  const pct = Math.round(snapshot.swarmConfidence * 100);
+  const ok = pct >= 70;
+  if (snapshot.tick === 0) return null;
+  return (
+    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-xs font-medium text-white/70">
+      <span className={`w-1.5 h-1.5 rounded-full ${ok ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+      System {ok ? 'Operational' : 'Degraded'} · {pct}% confidence
+    </div>
+  );
+}
 
 export default function UltAi() {
   const [, setLocation] = useLocation();
@@ -9,8 +23,11 @@ export default function UltAi() {
     <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10]">
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center justify-center mb-4">
             <FileText className="w-16 h-16 text-cyan-400" />
+          </div>
+          <div className="flex justify-center mb-6">
+            <SwarmStatusBadge />
           </div>
           <h1 className="text-5xl font-bold text-white mb-6">
             UltAi Secure Intake

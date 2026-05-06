@@ -6,9 +6,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
-import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 function formatDate(d: Date): string {
@@ -156,15 +157,28 @@ export default function Diary() {
   const weekDays = getWeekDays(selectedDate);
   const today = formatDate(new Date());
 
-  const { data: entries = [], isLoading, error } = trpc.diary.getByClerkAndDate.useQuery(
+  const cacheKey = `diary.${DEMO_CLERK_ID}.${dateStr}`;
+
+  const { data: liveEntries, isLoading, error, refetch } = trpc.diary.getByClerkAndDate.useQuery(
     { clerkId: DEMO_CLERK_ID, date: dateStr },
-    { retry: false },
   );
 
-  const { data: hearings = [] } = trpc.hearings.list.useQuery(undefined, { retry: false });
+  useEffect(() => {
+    if (liveEntries) cacheWrite(cacheKey, liveEntries);
+  }, [liveEntries, cacheKey]);
+
+  const cachedEntry = useMemo(
+    () => (!liveEntries && error ? cacheRead<typeof liveEntries>(cacheKey) : null),
+    [liveEntries, error, cacheKey],
+  );
+
+  const entries = liveEntries ?? cachedEntry?.data ?? [];
+  const isFromCache = !liveEntries && !!cachedEntry?.data;
+  const staleAgeLabel = cachedEntry ? formatCacheAge(cachedEntry.ageMs) : undefined;
+
+  const { data: hearings = [] } = trpc.hearings.list.useQuery(undefined);
   const { data: allocations = [] } = trpc.allocations.getByClerk.useQuery(
     { clerkId: DEMO_CLERK_ID },
-    { retry: false },
   );
 
   const formattedDisplay = selectedDate.toLocaleDateString('en-GB', {
@@ -193,7 +207,20 @@ export default function Diary() {
           </button>
         </div>
 
-        {error && (
+        {error && isFromCache && (
+          <div className="mb-4 flex items-center justify-between gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div className="flex items-center gap-3 min-w-0">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Showing cached entries from {staleAgeLabel} — live data unavailable.
+              </p>
+            </div>
+            <button onClick={() => refetch()} className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 flex-shrink-0 transition-colors">
+              Retry
+            </button>
+          </div>
+        )}
+        {error && !isFromCache && (
           <div className="mb-4 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">

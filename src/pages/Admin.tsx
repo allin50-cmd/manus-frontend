@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -91,37 +92,59 @@ export default function Admin() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [endpointHealth, setEndpointHealth] = useState<Record<string, 'live' | 'cached' | 'error'>>({});
 
-  useEffect(() => {
-    fetchAllData();
+  const fetchWithRetry = async (url: string, retries = 3): Promise<Response | null> => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(url);
+        if (res.ok) return res;
+      } catch {
+        if (i < retries - 1) await new Promise((r) => setTimeout(r, 1_000 * 2 ** i));
+      }
+    }
+    return null;
+  };
+
+  const fetchAllData = useCallback(async () => {
+    setLoading(true);
+    const health: Record<string, 'live' | 'cached' | 'error'> = {};
+
+    const endpoints: Array<{ key: string; url: string; apply: (d: unknown) => void }> = [
+      { key: 'leads',    url: '/api/admin/leads',             apply: (d) => setLeads(d as Lead[]) },
+      { key: 'intake',   url: '/api/admin/intake-forms',      apply: (d) => setIntakeForms(d as IntakeForm[]) },
+      { key: 'bundles',  url: '/api/admin/compliance-bundles',apply: (d) => setComplianceBundles(d as ComplianceBundle[]) },
+      { key: 'contacts', url: '/api/admin/contacts',          apply: (d) => setContacts(d as Contact[]) },
+      { key: 'deploys',  url: '/api/deployments/status',      apply: (d) => setDeployments(((d as Record<string, unknown>).deployments as Deployment[]) || []) },
+    ];
+
+    await Promise.all(endpoints.map(async ({ key, url, apply }) => {
+      const cacheKey = `admin:${key}`;
+      const res = await fetchWithRetry(url);
+      if (res) {
+        const data = await res.json();
+        apply(data);
+        cacheWrite(cacheKey, data);
+        health[key] = 'live';
+      } else {
+        const cached = cacheRead<unknown>(cacheKey);
+        if (cached) {
+          apply(cached.data);
+          health[key] = 'cached';
+          toast.warning(`${key}: showing cached data from ${formatCacheAge(cached.ageMs)}`);
+        } else {
+          health[key] = 'error';
+        }
+      }
+    }));
+
+    setEndpointHealth(health);
+    const errors = Object.values(health).filter((v) => v === 'error').length;
+    if (errors > 0 && errors === endpoints.length) toast.error('All endpoints unreachable');
+    setLoading(false);
   }, []);
 
-  const fetchAllData = async () => {
-    setLoading(true);
-    try {
-      const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
-        fetch('/api/admin/leads'),
-        fetch('/api/admin/intake-forms'),
-        fetch('/api/admin/compliance-bundles'),
-        fetch('/api/admin/contacts'),
-        fetch('/api/deployments/status'),
-      ]);
-
-      if (leadsRes.ok) setLeads(await leadsRes.json());
-      if (intakeRes.ok) setIntakeForms(await intakeRes.json());
-      if (bundlesRes.ok) setComplianceBundles(await bundlesRes.json());
-      if (contactsRes.ok) setContacts(await contactsRes.json());
-      if (deploymentsRes.ok) {
-        const data = await deploymentsRes.json();
-        setDeployments(data.deployments || []);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -328,22 +351,26 @@ export default function Admin() {
         {/* Data Tables */}
         <Tabs defaultValue="leads" className="space-y-6">
           <TabsList className="bg-[#13151C] border border-[#2A2D3A]">
-            <TabsTrigger value="leads" className="data-[state=active]:bg-[#5A4BFF]">
-              <Users className="w-4 h-4 mr-2" />
-              Leads
-            </TabsTrigger>
-            <TabsTrigger value="intake" className="data-[state=active]:bg-cyan-500">
-              <FileText className="w-4 h-4 mr-2" />
-              Intake Forms
-            </TabsTrigger>
-            <TabsTrigger value="bundles" className="data-[state=active]:bg-[#C9A64A]">
-              <Package className="w-4 h-4 mr-2" />
-              Compliance Bundles
-            </TabsTrigger>
-            <TabsTrigger value="contacts" className="data-[state=active]:bg-green-500">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Contacts
-            </TabsTrigger>
+            {([
+              { value: 'leads',    icon: Users,        label: 'Leads',              colour: 'data-[state=active]:bg-[#5A4BFF]' },
+              { value: 'intake',   icon: FileText,     label: 'Intake Forms',       colour: 'data-[state=active]:bg-cyan-500' },
+              { value: 'bundles',  icon: Package,      label: 'Compliance Bundles', colour: 'data-[state=active]:bg-[#C9A64A]' },
+              { value: 'contacts', icon: MessageSquare,label: 'Contacts',           colour: 'data-[state=active]:bg-green-500' },
+            ] as const).map(({ value, icon: Icon, label, colour }) => (
+              <TabsTrigger key={value} value={value} className={colour}>
+                <Icon className="w-4 h-4 mr-2" />
+                {label}
+                {endpointHealth[value] === 'cached' && (
+                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" title="Cached data" />
+                )}
+                {endpointHealth[value] === 'error' && (
+                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-red-500 inline-block" title="Unreachable" />
+                )}
+                {endpointHealth[value] === 'live' && (
+                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" title="Live" />
+                )}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Leads Tab */}

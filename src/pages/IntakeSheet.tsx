@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useRef, FormEvent } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,8 @@ export default function IntakeSheet() {
   const [matterRef, setMatterRef] = useState('');
   const [urgencyLevel, setUrgencyLevel] = useState('');
   const [error, setError] = useState('');
+  // Stable idempotency key per form session — cleared only on success
+  const idempotencyKey = useRef(crypto.randomUUID());
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -33,41 +35,44 @@ export default function IntakeSheet() {
     setLoading(true);
     setError('');
 
-    try {
-      const response = await fetch('/api/intake', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.ok) {
-        setSuccess(true);
-        setMatterRef(data.matterRef);
-        setUrgencyLevel(data.urgency);
-        toast.success(data.message || 'Matter intake recorded successfully!');
-
-        // Reset form
-        setFormData({
-          clientName: '',
-          clientEmail: '',
-          clientPhone: '',
-          matterType: '',
-          urgency: '',
-          description: '',
-          claimValue: '',
+    const submit = async (attempt = 0): Promise<void> => {
+      try {
+        const response = await fetch('/api/intake', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Idempotency-Key': idempotencyKey.current,
+          },
+          body: JSON.stringify(formData),
         });
-      } else {
-        setError(data.error || 'Failed to submit form. Please try again.');
-        toast.error(data.error || 'Submission failed');
+
+        const data = await response.json();
+
+        if (response.ok && data.ok) {
+          setSuccess(true);
+          setMatterRef(data.matterRef);
+          setUrgencyLevel(data.urgency);
+          toast.success(data.message || 'Matter intake recorded successfully!');
+          idempotencyKey.current = crypto.randomUUID(); // fresh key for next submission
+          setFormData({ clientName: '', clientEmail: '', clientPhone: '', matterType: '', urgency: '', description: '', claimValue: '' });
+        } else {
+          setError(data.error || 'Failed to submit form. Please try again.');
+          toast.error(data.error || 'Submission failed');
+        }
+      } catch (err) {
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1_000 * 2 ** attempt));
+          return submit(attempt + 1);
+        }
+        console.error('Error submitting form:', err);
+        setError('Network error after 3 attempts. Please check your connection.');
+        toast.error('Network error — could not reach server');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error submitting form:', err);
-      setError('Network error. Please check your connection and try again.');
-      toast.error('Network error occurred');
+    };
+    try {
+      await submit();
     } finally {
       setLoading(false);
     }

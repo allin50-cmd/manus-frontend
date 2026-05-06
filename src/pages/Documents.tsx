@@ -6,9 +6,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { cacheRead, cacheWrite, formatCacheAge } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
-import { FileText, AlertCircle, Upload, CheckCircle2, Circle } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { FileText, AlertCircle, Clock, Upload, CheckCircle2, Circle } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 
 function formatBytes(bytes?: number | null) {
@@ -161,13 +162,27 @@ export default function Documents() {
   const [caseId, setCaseId] = useState<number | null>(null);
   const [showUpload, setShowUpload] = useState(false);
 
-  const { data: cases = [] } = trpc.cases.list.useQuery(undefined, { retry: false });
+  const { data: cases = [] } = trpc.cases.list.useQuery(undefined);
   const utils = trpc.useContext();
+  const cacheKey = caseId !== null ? `docs.case.${caseId}` : '';
 
-  const { data: docs = [], isLoading, error } = trpc.documents.getByCaseId.useQuery(
+  const { data: liveDocs, isLoading, error, refetch } = trpc.documents.getByCaseId.useQuery(
     { caseId: caseId! },
-    { enabled: caseId !== null, retry: false },
+    { enabled: caseId !== null },
   );
+
+  useEffect(() => {
+    if (liveDocs && cacheKey) cacheWrite(cacheKey, liveDocs);
+  }, [liveDocs, cacheKey]);
+
+  const cachedEntry = useMemo(
+    () => (!liveDocs && error && cacheKey ? cacheRead<typeof liveDocs>(cacheKey) : null),
+    [liveDocs, error, cacheKey],
+  );
+
+  const docs = liveDocs ?? cachedEntry?.data ?? [];
+  const isFromCache = !liveDocs && !!cachedEntry?.data;
+  const staleAgeLabel = cachedEntry ? formatCacheAge(cachedEntry.ageMs) : undefined;
 
   const approveMutation = trpc.documents.approveForBundle.useMutation({
     onSuccess: () => utils.documents.getByCaseId.invalidate({ caseId: caseId! }),
@@ -195,7 +210,20 @@ export default function Documents() {
           )}
         </div>
 
-        {error && (
+        {error && isFromCache && (
+          <div className="mb-4 flex items-center justify-between gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div className="flex items-center gap-3 min-w-0">
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Showing cached documents from {staleAgeLabel} — live data unavailable.
+              </p>
+            </div>
+            <button onClick={() => refetch()} className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 flex-shrink-0 transition-colors">
+              Retry
+            </button>
+          </div>
+        )}
+        {error && !isFromCache && (
           <div className="mb-4 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">

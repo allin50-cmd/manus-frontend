@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +56,8 @@ export default function ComplianceBundle() {
   const [error, setError] = useState('');
   const [monitored, setMonitored] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  // Stable idempotency key for Stripe checkout — prevents double-charge on retry
+  const checkoutKey = useRef(crypto.randomUUID());
 
   const [formData, setFormData] = useState({
     companyName: '',
@@ -104,7 +106,10 @@ export default function ComplianceBundle() {
     try {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': checkoutKey.current,
+        },
         body: JSON.stringify({
           companyNumber: companyData.number,
           companyName: companyData.name,

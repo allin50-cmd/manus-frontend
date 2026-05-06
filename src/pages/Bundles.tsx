@@ -1,4 +1,5 @@
 import ClerkOSLayout from '@/components/layout/ClerkOSLayout';
+import { cacheWrite } from '@/lib/offlineCache';
 import { trpc } from '@/lib/trpc';
 import {
   Layers,
@@ -10,7 +11,7 @@ import {
   Lock,
   Zap,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 type EventNode = {
@@ -232,7 +233,8 @@ export default function Bundles() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [tamperedMode, setTamperedMode] = useState(false);
 
-  const { data: cases = [] } = trpc.cases.list.useQuery(undefined, { retry: false });
+  const { data: cases = [] } = trpc.cases.list.useQuery(undefined);
+  useEffect(() => { if (cases.length) cacheWrite('cases.list.all', cases); }, [cases]);
 
   const loadChain = (caseId: number) => {
     setSelectedCaseId(caseId);

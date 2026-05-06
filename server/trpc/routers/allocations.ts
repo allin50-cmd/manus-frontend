@@ -5,6 +5,10 @@ import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 import { getAllocationsByClerk, getDb, getPendingAllocations, writeAuditEvent } from '../db';
 import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
+// In-process idempotency store: key → committed result
+// Survives the lifetime of the server process; prevents double-allocation on retry.
+const idempotencyStore = new Map<string, unknown>();
+
 const priorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
 const statusEnum = z.enum(['pending', 'in_progress', 'completed', 'cancelled']);
 
@@ -21,9 +25,17 @@ export const allocationsRouter = router({
           .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
           .optional(),
         notes: z.string().optional(),
+        idempotencyKey: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Exactly-once: return cached result if this key was already committed
+      if (input.idempotencyKey) {
+        const storeKey = `${ctx.tenantId}:${input.idempotencyKey}`;
+        const cached = idempotencyStore.get(storeKey);
+        if (cached) return cached;
+      }
+
       const db = await getDb();
       if (!db) throw new Error('Database not available');
 
@@ -53,6 +65,12 @@ export const allocationsRouter = router({
         actorOpenId: ctx.user.openId,
         nextState: JSON.stringify(created),
       });
+
+      // Cache for idempotency replay
+      if (input.idempotencyKey) {
+        idempotencyStore.set(`${ctx.tenantId}:${input.idempotencyKey}`, created);
+      }
+
       return created;
     }),
 
