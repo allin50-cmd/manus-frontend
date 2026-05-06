@@ -4,6 +4,7 @@ import { useCrossTabSync } from '@/hooks/useCrossTabSync';
 import { calculateBackoff } from '@/lib/backoffStrategy';
 import { classifyError } from '@/lib/errorClassification';
 import { syncLogger } from '@/lib/syncLogger';
+import { syncAnalytics } from '@/lib/syncAnalytics';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -49,6 +50,7 @@ export function useSyncRetry() {
       // Mark as exhausted and stop retrying
       if (item.attempts >= MAX_SYNC_ATTEMPTS) {
         exhaustedRef.current.add(item.id);
+        syncAnalytics.recordExhausted(item.entityType, item.attempts);
         syncLogger.error(`${item.entityType} sync exhausted`, {
           itemId: item.id,
           entityType: item.entityType,
@@ -69,6 +71,7 @@ export function useSyncRetry() {
         attempt: item.attempts + 1,
         metadata: { backoffMs },
       });
+      syncAnalytics.recordAttempt(item.entityType, item.attempts + 1);
 
       const timeout = setTimeout(async () => {
         processingRef.current.add(item.id);
@@ -107,6 +110,7 @@ export function useSyncRetry() {
               break;
           }
           remove(item.id);
+          syncAnalytics.recordSuccess(item.entityType, item.attempts + 1);
           syncLogger.info(`${item.entityType} synced successfully`, {
             itemId: item.id,
             entityType: item.entityType,
@@ -115,6 +119,7 @@ export function useSyncRetry() {
           toast.success(`${item.entityType} synced successfully`, { icon: '✓' });
         } catch (error) {
           const classified = classifyError(error);
+          syncAnalytics.recordFailure(item.entityType, classified.type, item.attempts + 1);
           syncLogger.error(`Failed to sync ${item.entityType}`, {
             itemId: item.id,
             entityType: item.entityType,
