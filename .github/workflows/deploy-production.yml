@@ -28,11 +28,16 @@ on:
       environment:
         description: Deployment environment
         required: true
-        default: production
+        default: prod
         type: choice
         options:
-          - production
+          - prod
           - staging
+          - dev
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '20'
@@ -96,7 +101,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -197,7 +202,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
             -d "{
-              \"environment\": \"${{ inputs.environment || 'production' }}\",
+              \"environment\": \"${{ inputs.environment || 'prod' }}\",
               \"status\": \"${{ steps.status.outputs.value }}\",
               \"commit\": \"${{ github.sha }}\",
               \"workflowRun\": \"${{ github.run_id }}\"

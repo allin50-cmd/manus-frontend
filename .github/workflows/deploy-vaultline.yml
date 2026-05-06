@@ -16,6 +16,10 @@ on:
           - staging
           - prod
 
+concurrency:
+  group: deploy-vaultline-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -54,7 +58,7 @@ jobs:
             STATUS="failed"
           fi
 
-          curl -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
+          curl -fsS -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
             -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{

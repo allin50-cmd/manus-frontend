@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
@@ -152,6 +153,10 @@ app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
 
   if (!companyNumber || !companyName) {
     return res.status(400).json({ error: 'companyNumber and companyName are required' });
+  }
+
+  if (companyNumber.length > 20 || companyName.length > 255) {
+    return res.status(400).json({ error: 'Company number or name too long' });
   }
 
   const priceId = process.env.STRIPE_PRICE_ID;
@@ -312,14 +317,15 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
   try {
     const { environment, limit = '50' } = req.query;
 
-    let query = db.select().from(deploymentStatus);
-
-    if (environment && typeof environment === 'string') {
-      query = query.where(eq(deploymentStatus.environment, environment)) as any;
+    if (environment && !['dev', 'staging', 'prod'].includes(environment as string)) {
+      return res.status(400).json({ error: 'Invalid environment' });
     }
 
     const limitVal = Math.min(Math.max(parseInt(limit as string) || 50, 1), 500);
-    const deployments = await query
+    const deployments = await db
+      .select()
+      .from(deploymentStatus)
+      .where(environment ? eq(deploymentStatus.environment, environment as string) : undefined)
       .orderBy(desc(deploymentStatus.deployedAt))
       .limit(limitVal);
 
@@ -342,6 +348,10 @@ app.post('/api/lead', async (req: Request, res: Response) => {
   try {
     const { name, email, company, product, phone, message } = req.body;
 
+    if (name?.length > 255 || email?.length > 255) {
+      return res.status(400).json({ ok: false, error: 'Input too long' });
+    }
+
     if (!name || !email) {
       return res.status(400).json({
         ok: false,
@@ -350,7 +360,7 @@ app.post('/api/lead', async (req: Request, res: Response) => {
     }
 
     // Generate unique lead ID
-    const leadId = `LEAD-${Date.now()}`;
+    const leadId = `LEAD-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const [lead] = await db
       .insert(leads)
@@ -419,6 +429,10 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       claimValue
     } = req.body;
 
+    if (clientName?.length > 255 || clientEmail?.length > 255) {
+      return res.status(400).json({ ok: false, error: 'Input too long' });
+    }
+
     if (!clientName || !matterType || !urgency) {
       return res.status(400).json({
         ok: false,
@@ -427,7 +441,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
     }
 
     // Generate unique matter reference
-    const matterRef = `MAT-${Date.now()}`;
+    const matterRef = `MAT-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const [intake] = await db
       .insert(intakeForms)
@@ -528,7 +542,7 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
     const complianceStatus = await companiesHouseService.getComplianceStatus(formattedNumber);
 
     // Generate unique bundle ID
-    const bundleId = `BUNDLE-${Date.now()}`;
+    const bundleId = `BUNDLE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     // Save to database with REAL company data
     const [bundle] = await db
@@ -646,6 +660,10 @@ app.post('/api/contact', async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 
+    if (name?.length > 255 || email?.length > 255 || subject?.length > 255) {
+      return res.status(400).json({ ok: false, error: 'Input too long' });
+    }
+
     if (!name || !email || !message) {
       return res.status(400).json({
         ok: false,
@@ -654,7 +672,7 @@ app.post('/api/contact', async (req: Request, res: Response) => {
     }
 
     // Generate unique ticket ID
-    const ticketId = `TICKET-${Date.now()}`;
+    const ticketId = `TICKET-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const [contact] = await db
       .insert(contacts)
@@ -745,11 +763,19 @@ app.patch('/api/contacts/:id', requireAdminToken, async (req: Request, res: Resp
 
 // Serve static files from dist folder
 const distPath = path.join(__dirname, '../dist');
-app.use(express.static(distPath));
+const hasDistFolder = fs.existsSync(distPath);
+
+if (hasDistFolder) {
+  app.use(express.static(distPath));
+}
 
 // SPA fallback - serve index.html for all other routes
 app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+  if (hasDistFolder) {
+    res.sendFile(path.join(distPath, 'index.html'));
+  } else {
+    res.status(404).json({ error: 'Frontend not bundled in this image. Use the SWA URL.' });
+  }
 });
 
 // ============================================================================
@@ -776,14 +802,14 @@ const server = app.listen(PORT, () => {
   console.log('  POST   /api/deployments/record');
   console.log('  GET    /api/deployments/status');
   console.log('  GET    /api/deployments/history');
-  console.log('  POST   /api/leads');
-  console.log('  GET    /api/leads');
+  console.log('  POST   /api/lead');
+  console.log('  GET    /api/admin/leads');
   console.log('  POST   /api/intake');
-  console.log('  GET    /api/intake');
-  console.log('  POST   /api/compliance-bundles');
-  console.log('  GET    /api/compliance-bundles');
-  console.log('  POST   /api/contacts');
-  console.log('  GET    /api/contacts');
+  console.log('  GET    /api/admin/intake-forms');
+  console.log('  POST   /api/compliance-bundle');
+  console.log('  GET    /api/admin/compliance-bundles');
+  console.log('  POST   /api/contact');
+  console.log('  GET    /api/admin/contacts');
   console.log('  PATCH  /api/contacts/:id');
   console.log('  GET    /health');
   console.log('');
