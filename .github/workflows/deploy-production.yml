@@ -1,0 +1,201 @@
+name: Deploy to Production
+
+# Required GitHub secrets:
+#   AZURE_STATIC_WEB_APPS_API_TOKEN  - SWA resource → Manage deployment token
+#   ACR_LOGIN_SERVER                 - e.g. acrvaultlineprod.azurecr.io
+#   ACR_USERNAME                     - ACR admin username
+#   ACR_PASSWORD                     - ACR admin password
+#   AZURE_CREDENTIALS                - JSON from: az ad sp create-for-rbac --sdk-auth
+#   AZURE_WEBAPP_NAME                - App Service name
+#   AZURE_RESOURCE_GROUP             - Resource group name
+#   DATABASE_URL                     - PostgreSQL connection string
+#   COMPANIES_HOUSE_API_KEY          - Companies House developer API key
+#   STRIPE_SECRET_KEY                - Stripe secret key
+#   STRIPE_WEBHOOK_SECRET            - Stripe webhook signing secret
+#   STRIPE_PRICE_ID                  - Stripe price ID
+#   APP_URL                          - SWA URL (used for Stripe redirects)
+#   DEPLOY_RECORD_TOKEN              - random hex: openssl rand -hex 32
+#   VAULTLINE_API_URL                - App Service URL
+
+on:
+  push:
+    branches:
+      - main
+      - claude/azure-deployment-setup-011CUS62xT9EdoNE7BnFpG3f
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  NODE_VERSION: '20'
+  IMAGE_NAME: vaultline-api
+
+jobs:
+  deploy-frontend:
+    name: Build & Deploy Frontend (Azure SWA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: /
+          output_location: dist
+          skip_deploy_on_missing_secrets: true
+
+  build-push-api:
+    name: Build & Push API Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Docker image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-api:
+    name: Deploy API (Azure App Service)
+    needs: build-push-api
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'production' }}
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy container to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ needs.build-push-api.outputs.image-tag }}
+
+      - name: Configure App Service environment variables
+        run: |
+          az webapp config appsettings set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --settings \
+              WEBSITES_PORT=3000 \
+              NODE_ENV=production \
+              DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              COMPANIES_HOUSE_API_KEY="${{ secrets.COMPANIES_HOUSE_API_KEY }}" \
+              STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+              STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+              STRIPE_PRICE_ID="${{ secrets.STRIPE_PRICE_ID }}" \
+              APP_URL="${{ secrets.APP_URL }}" \
+              DEPLOY_RECORD_TOKEN="${{ secrets.DEPLOY_RECORD_TOKEN }}"
+
+  run-migrations:
+    name: Run Database Migrations
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  record-deployment:
+    name: Record Deployment Status
+    needs: [deploy-frontend, run-migrations]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Determine status
+        id: status
+        run: |
+          FRONTEND="${{ needs.deploy-frontend.result }}"
+          MIGRATIONS="${{ needs.run-migrations.result }}"
+          if [ "$FRONTEND" = "success" ] && [ "$MIGRATIONS" = "success" ]; then
+            echo "value=success" >> $GITHUB_OUTPUT
+          else
+            echo "value=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Record deployment
+        run: |
+          curl -fsS -X POST "${{ secrets.VAULTLINE_API_URL }}/api/deployments/record" \
+            -H "Content-Type: application/json" \
+            -H "X-DEPLOY-TOKEN: ${{ secrets.DEPLOY_RECORD_TOKEN }}" \
+            -d "{
+              \"environment\": \"${{ inputs.environment || 'production' }}\",
+              \"status\": \"${{ steps.status.outputs.value }}\",
+              \"commit\": \"${{ github.sha }}\",
+              \"workflowRun\": \"${{ github.run_id }}\"
+            }" || echo "Warning: deployment recording failed (non-critical)"
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend (SWA) | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API (App Service) | ${{ needs.run-migrations.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
