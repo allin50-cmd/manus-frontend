@@ -3,6 +3,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useCrossTabSync } from '@/hooks/useCrossTabSync';
 import { calculateBackoff } from '@/lib/backoffStrategy';
 import { classifyError } from '@/lib/errorClassification';
+import { syncLogger } from '@/lib/syncLogger';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -48,6 +49,12 @@ export function useSyncRetry() {
       // Mark as exhausted and stop retrying
       if (item.attempts >= MAX_SYNC_ATTEMPTS) {
         exhaustedRef.current.add(item.id);
+        syncLogger.error(`${item.entityType} sync exhausted`, {
+          itemId: item.id,
+          entityType: item.entityType,
+          attempt: item.attempts,
+          metadata: { maxAttempts: MAX_SYNC_ATTEMPTS },
+        });
         toast.error(
           `${item.entityType} sync exhausted after ${MAX_SYNC_ATTEMPTS} attempts`,
           { icon: '❌', duration: 5000 },
@@ -56,8 +63,20 @@ export function useSyncRetry() {
       }
 
       const backoffMs = calculateBackoff(item.attempts, { maxAttempts: MAX_SYNC_ATTEMPTS });
+      syncLogger.debug(`Scheduling retry for ${item.entityType}`, {
+        itemId: item.id,
+        entityType: item.entityType,
+        attempt: item.attempts + 1,
+        metadata: { backoffMs },
+      });
+
       const timeout = setTimeout(async () => {
         processingRef.current.add(item.id);
+        syncLogger.info(`Retrying ${item.entityType}`, {
+          itemId: item.id,
+          entityType: item.entityType,
+          attempt: item.attempts + 1,
+        });
 
         try {
           switch (item.entityType) {
@@ -88,9 +107,20 @@ export function useSyncRetry() {
               break;
           }
           remove(item.id);
+          syncLogger.info(`${item.entityType} synced successfully`, {
+            itemId: item.id,
+            entityType: item.entityType,
+            attempt: item.attempts + 1,
+          });
           toast.success(`${item.entityType} synced successfully`, { icon: '✓' });
         } catch (error) {
           const classified = classifyError(error);
+          syncLogger.error(`Failed to sync ${item.entityType}`, {
+            itemId: item.id,
+            entityType: item.entityType,
+            attempt: item.attempts + 1,
+            metadata: { errorType: classified.type, message: classified.message },
+          });
           if (!classified.isRetryable && item.attempts < MAX_SYNC_ATTEMPTS) {
             toast.error(`${item.entityType}: ${classified.message}`, { icon: '❌' });
           }
