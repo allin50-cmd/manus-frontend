@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment":        { "value": "dev" },
+    "appName":            { "value": "clerkos" },
+    "location":           { "value": "uksouth" },
+    "dbAdminPassword":    { "reference": { "keyVault": { "id": "/subscriptions/<sub-id>/resourceGroups/rg-clerkos-dev/providers/Microsoft.KeyVault/vaults/clerkos-dev-kv" }, "secretName": "db-admin-password" } },
+    "b2cTenantName":      { "value": "clerkosdev" },
+    "b2cClientId":        { "value": "<dev-b2c-client-id>" },
+    "initialTenantSlug":  { "value": "demo" }
+  }
+}
