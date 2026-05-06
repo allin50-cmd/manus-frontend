@@ -936,6 +936,7 @@ export default function ClerkDashboard() {
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: BG, color: 'white' }}>
+      <h1 className="sr-only">Law Clerks — Chambers Management Dashboard</h1>
       {/* Top nav */}
       <nav
         className="sticky top-0 z-40 border-b backdrop-blur"

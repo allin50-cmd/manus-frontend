@@ -29,6 +29,7 @@ export default function App() {
         <Route path="/team" component={Team} />
         <Route path="/book-demo" component={BookDemo} />
         <Route path="/intake" component={IntakeSheet} />
+        <Route path="/intake-sheet" component={IntakeSheet} />
         <Route path="/admin" component={Admin} />
         <Route path="/audit" component={AuditLanding} />
         <Route path="/law-clerks" component={LawClerks} />
