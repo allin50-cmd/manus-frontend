@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
+import rateLimit from 'express-rate-limit';
 import Stripe from 'stripe';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
@@ -124,9 +125,47 @@ app.use(
 );
 
 // Middleware
-app.use(cors());
+const allowedOrigin = process.env.APP_URL ?? 'http://localhost:3000';
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || origin === allowedOrigin || origin.startsWith('http://localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Rate limiters
+const publicApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+const stripeCheckoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+// Admin API authentication
+const ADMIN_API_TOKEN = process.env.ADMIN_API_TOKEN;
+
+app.use('/api/admin', (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers['x-admin-token'];
+  if (!ADMIN_API_TOKEN || !token || token !== ADMIN_API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+});
 
 // Logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -171,7 +210,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
  * Body: { companyNumber: string, companyName: string }
  * Returns: { url: string }
  */
-app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
+app.post('/api/stripe/checkout', stripeCheckoutLimiter, async (req: Request, res: Response) => {
   if (!stripe) {
     return res.status(500).json({ error: 'Stripe not configured' });
   }
@@ -356,7 +395,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
  * POST /api/lead
  * Submit a demo booking lead
  */
-app.post('/api/lead', async (req: Request, res: Response) => {
+app.post('/api/lead', publicApiLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, company, product, phone, message } = req.body;
 
@@ -425,7 +464,7 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
  * POST /api/intake
  * Submit a client intake form
  */
-app.post('/api/intake', async (req: Request, res: Response) => {
+app.post('/api/intake', publicApiLimiter, async (req: Request, res: Response) => {
   try {
     const {
       clientName,
@@ -504,7 +543,7 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
  * POST /api/compliance-bundle
  * Submit a compliance bundle request with REAL-TIME Companies House lookup
  */
-app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
+app.post('/api/compliance-bundle', publicApiLimiter, async (req: Request, res: Response) => {
   try {
     const {
       companyName,
@@ -660,7 +699,7 @@ app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => 
  * POST /api/contact
  * Submit a contact form
  */
-app.post('/api/contact', async (req: Request, res: Response) => {
+app.post('/api/contact', publicApiLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 
@@ -816,8 +855,8 @@ app.listen(PORT, () => {
   console.log('  POST   /api/deployments/record');
   console.log('  GET    /api/deployments/status');
   console.log('  GET    /api/deployments/history');
-  console.log('  POST   /api/leads');
-  console.log('  GET    /api/leads');
+  console.log('  POST   /api/lead');
+  console.log('  GET    /api/lead');
   console.log('  POST   /api/intake');
   console.log('  GET    /api/intake');
   console.log('  POST   /api/compliance-bundles');
