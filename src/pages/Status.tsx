@@ -2,7 +2,8 @@ import { useSwarm } from '@/contexts/SwarmContext';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cacheRead } from '@/lib/offlineCache';
 import { syncLogger } from '@/lib/syncLogger';
-import { Activity, Wifi, WifiOff, Database, AlertCircle, CheckCircle2, Clock, Zap, Trash2 } from 'lucide-react';
+import { syncAnalytics } from '@/lib/syncAnalytics';
+import { Activity, Wifi, WifiOff, Database, AlertCircle, CheckCircle2, Clock, Zap, Trash2, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type CacheEntry = { key: string; size: number; age: string };
@@ -12,6 +13,7 @@ export default function Status() {
   const online = useOnlineStatus();
   const [cacheEntries, setCacheEntries] = useState<CacheEntry[]>([]);
   const [syncLogs, setSyncLogs] = useState<ReturnType<typeof syncLogger.getLogs>>([]);
+  const [metrics, setMetrics] = useState<ReturnType<typeof syncAnalytics.getMetrics> | null>(null);
 
   useEffect(() => {
     const keys = ['dashboard.stats', 'cases.list.all', 'hearings.list', 'allocations.pending', 'docs.case.*', 'diary.*', 'cases.list.open', 'cases.list.in_progress', 'cases.list.closed', 'cases.list.on_hold'];
@@ -28,6 +30,7 @@ export default function Status() {
     });
     setCacheEntries(entries);
     setSyncLogs(syncLogger.getLogs());
+    setMetrics(syncAnalytics.getMetrics());
   }, []);
 
   const pct = Math.round(snapshot.swarmConfidence * 100);
@@ -214,6 +217,63 @@ export default function Status() {
             <div className="text-slate-400 text-sm">No sync logs yet. Pending sync items will appear here.</div>
           )}
         </div>
+
+        {metrics && metrics.totalAttempted > 0 && (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-400" />
+              Sync Performance
+            </h2>
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="bg-slate-900/50 p-4 rounded border border-slate-700">
+                <div className="text-slate-400 text-sm font-medium mb-2">Success Rate</div>
+                <div className="text-3xl font-bold text-emerald-400">{Math.round(metrics.successRate)}%</div>
+                <div className="text-xs text-slate-500 mt-1">{metrics.totalSuccessful} of {metrics.totalAttempted}</div>
+              </div>
+              <div className="bg-slate-900/50 p-4 rounded border border-slate-700">
+                <div className="text-slate-400 text-sm font-medium mb-2">Avg Attempts</div>
+                <div className="text-3xl font-bold text-cyan-400">{metrics.averageAttemptsPerItem.toFixed(1)}</div>
+                <div className="text-xs text-slate-500 mt-1">per item</div>
+              </div>
+              <div className="bg-slate-900/50 p-4 rounded border border-slate-700">
+                <div className="text-slate-400 text-sm font-medium mb-2">Failed Items</div>
+                <div className="text-3xl font-bold text-orange-400">{metrics.totalFailed}</div>
+                <div className="text-xs text-slate-500 mt-1">still retrying</div>
+              </div>
+              <div className="bg-slate-900/50 p-4 rounded border border-slate-700">
+                <div className="text-slate-400 text-sm font-medium mb-2">Exhausted</div>
+                <div className="text-3xl font-bold text-red-400">{metrics.totalExhausted}</div>
+                <div className="text-xs text-slate-500 mt-1">max retries</div>
+              </div>
+            </div>
+
+            {Object.keys(metrics.errorCounts).length > 0 && (
+              <div className="bg-slate-900/50 border border-slate-700 rounded p-4">
+                <div className="text-sm font-medium text-slate-300 mb-3">Error Distribution</div>
+                <div className="space-y-2">
+                  {Object.entries(metrics.errorCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([errorType, count]) => (
+                      <div key={errorType} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">{errorType}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-slate-800 rounded-full h-2">
+                            <div
+                              className="bg-orange-500 h-full rounded-full"
+                              style={{
+                                width: `${(count / Math.max(...Object.values(metrics.errorCounts))) * 100}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="text-slate-500 w-8 text-right">{count}</span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
           <p className="text-xs text-slate-500 text-center">
