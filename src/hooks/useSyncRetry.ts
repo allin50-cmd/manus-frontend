@@ -2,6 +2,7 @@ import { useSyncQueue } from '@/contexts/SyncQueueContext';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useCrossTabSync } from '@/hooks/useCrossTabSync';
 import { calculateBackoff } from '@/lib/backoffStrategy';
+import { classifyError } from '@/lib/errorClassification';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -71,8 +72,10 @@ export function useSyncRetry() {
             remove(item.id);
             toast.success(`${item.entityType} synced successfully`, { icon: '✓' });
           } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error';
-            toast.error(`Failed to sync ${item.entityType}: ${message}`, { icon: '❌' });
+            const classified = classifyError(error);
+            if (!classified.isRetryable && item.attempts < MAX_SYNC_ATTEMPTS) {
+              toast.error(`${item.entityType}: ${classified.message}`, { icon: '❌' });
+            }
           } finally {
             processingRef.current.delete(item.id);
           }
