@@ -8,6 +8,7 @@ import { HealthAlerts } from './components/HealthAlerts';
 import { NetworkIndicator } from './components/NetworkIndicator';
 import { SyncProgress } from './components/SyncProgress';
 import { SyncQueuePanel } from './components/SyncQueuePanel';
+import { SyncRetry } from './components/SyncRetry';
 import { SystemMonitor } from './components/SystemMonitor';
 import { SwarmProvider } from './contexts/SwarmContext';
 import { SyncQueueProvider } from './contexts/SyncQueueContext';
@@ -86,6 +87,7 @@ export default function App() {
               <Toaster richColors position="top-right" />
               <SystemMonitor />
               <AutoSync />
+              <SyncRetry />
               <HealthAlerts />
               <Router />
               <SyncQueuePanel />
