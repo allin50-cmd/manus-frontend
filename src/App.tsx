@@ -3,6 +3,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { lazy, Suspense } from 'react';
 import { Route, Switch } from 'wouter';
 import ErrorBoundary from './components/ErrorBoundary';
+import { HealthAlerts } from './components/HealthAlerts';
 import { SyncQueuePanel } from './components/SyncQueuePanel';
 import { SwarmProvider } from './contexts/SwarmContext';
 import { SyncQueueProvider } from './contexts/SyncQueueContext';
@@ -73,6 +74,7 @@ export default function App() {
           <SyncQueueProvider>
             <TooltipProvider>
               <Toaster richColors position="top-right" />
+              <HealthAlerts />
               <Router />
               <SyncQueuePanel />
             </TooltipProvider>
