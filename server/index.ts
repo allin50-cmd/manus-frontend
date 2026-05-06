@@ -1128,10 +1128,16 @@ app.put('/api/clerks/barristers/:id', async (req: Request, res: Response) => {
 app.post('/api/clerks/briefs', async (req: Request, res: Response) => {
   try {
     const briefRef = `BRIEF-${Date.now()}`;
+    const { hearingDate, barristerId, ...rest } = req.body;
 
     const [brief] = await db
       .insert(briefs)
-      .values({ ...req.body, briefRef })
+      .values({
+        ...rest,
+        briefRef,
+        hearingDate: hearingDate ? new Date(hearingDate) : null,
+        barristerId: barristerId || null,
+      })
       .returning();
 
     res.status(201).json(brief);
@@ -1199,7 +1205,7 @@ app.put('/api/clerks/briefs/:id', async (req: Request, res: Response) => {
     if (feeStatus !== undefined) patch.feeStatus = feeStatus;
     if (feeAgreed !== undefined) patch.feeAgreed = feeAgreed;
     if (notes !== undefined) patch.notes = notes;
-    if (hearingDate !== undefined) patch.hearingDate = hearingDate;
+    if (hearingDate !== undefined) patch.hearingDate = hearingDate ? new Date(hearingDate) : null;
 
     const [updated] = await db
       .update(briefs)
@@ -1223,10 +1229,16 @@ app.put('/api/clerks/briefs/:id', async (req: Request, res: Response) => {
 app.post('/api/clerks/notes', async (req: Request, res: Response) => {
   try {
     const noteRef = `NOTE-${Date.now()}`;
+    const { briefId, barristerId, ...rest } = req.body;
 
     const [note] = await db
       .insert(clerkNotes)
-      .values({ ...req.body, noteRef })
+      .values({
+        ...rest,
+        noteRef,
+        briefId: briefId || null,
+        barristerId: barristerId || null,
+      })
       .returning();
 
     res.status(201).json(note);
