@@ -139,6 +139,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ============================================================================
 
 /**
+ * GET /api/ping
+ * Lightweight liveness check — no DB call
+ */
+app.get('/api/ping', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+
+/**
  * GET /api/health
  * Health check endpoint
  */
