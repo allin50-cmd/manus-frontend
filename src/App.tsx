@@ -5,6 +5,8 @@ import { Route, Switch } from 'wouter';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AutoSync } from './components/AutoSync';
 import { HealthAlerts } from './components/HealthAlerts';
+import { NetworkIndicator } from './components/NetworkIndicator';
+import { SyncProgress } from './components/SyncProgress';
 import { SyncQueuePanel } from './components/SyncQueuePanel';
 import { SystemMonitor } from './components/SystemMonitor';
 import { SwarmProvider } from './contexts/SwarmContext';
@@ -87,6 +89,8 @@ export default function App() {
               <HealthAlerts />
               <Router />
               <SyncQueuePanel />
+              <SyncProgress />
+              <NetworkIndicator />
             </TooltipProvider>
           </SyncQueueProvider>
         </SwarmProvider>
