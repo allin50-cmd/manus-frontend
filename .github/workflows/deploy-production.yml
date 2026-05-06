@@ -137,10 +137,26 @@ jobs:
               APP_URL="${{ secrets.APP_URL }}" \
               DEPLOY_RECORD_TOKEN="${{ secrets.DEPLOY_RECORD_TOKEN }}"
 
+      - name: Smoke test — wait for API health
+        run: |
+          echo "Waiting for App Service to be ready…"
+          for i in $(seq 1 12); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.VAULTLINE_API_URL }}/api/health" || echo "000")
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "API is healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "API did not become healthy within 120s"
+          exit 1
+
   run-migrations:
     name: Run Database Migrations
     needs: deploy-api
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

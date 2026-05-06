@@ -12,6 +12,15 @@ import { companiesHouseService } from './services/companiesHouse';
 // Load environment variables
 dotenv.config();
 
+// Fail fast if critical vars are missing
+const REQUIRED_ENV = ['DATABASE_URL', 'DEPLOY_RECORD_TOKEN'] as const;
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`FATAL: missing required environment variable ${key}`);
+    process.exit(1);
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -84,9 +93,12 @@ app.post(
 );
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const allowedOrigins = process.env.APP_URL
+  ? [process.env.APP_URL, 'http://localhost:5173', 'http://localhost:3000']
+  : true; // allow all in dev when APP_URL is not set
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -765,7 +777,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 // START SERVER
 // ============================================================================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('');
   console.log('🚀 VaultLine Brand Suite Server');
   console.log('================================');
@@ -788,3 +800,16 @@ app.listen(PORT, () => {
   console.log('  GET    /health');
   console.log('');
 });
+
+// Graceful shutdown — App Service sends SIGTERM before killing the process
+function shutdown(signal: string) {
+  console.log(`${signal} received; closing HTTP server…`);
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+  // Force-exit if connections linger beyond 10s
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

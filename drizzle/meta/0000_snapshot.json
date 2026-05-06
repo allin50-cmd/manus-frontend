@@ -1,10 +1,8 @@
 {
-  "id": "440795d8-3005-4307-8bfd-ee7363063578",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "tables": {
-    "compliance_bundles": {
+    "public.compliance_bundles": {
       "name": "compliance_bundles",
       "schema": "",
       "columns": {
@@ -72,14 +70,17 @@
       "uniqueConstraints": {
         "compliance_bundles_bundle_id_unique": {
           "name": "compliance_bundles_bundle_id_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "bundle_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
-      }
+      },
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
-    "contacts": {
+    "public.contacts": {
       "name": "contacts",
       "schema": "",
       "columns": {
@@ -141,14 +142,17 @@
       "uniqueConstraints": {
         "contacts_ticket_id_unique": {
           "name": "contacts_ticket_id_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "ticket_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
-      }
+      },
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
-    "deployment_status": {
+    "public.deployment_status": {
       "name": "deployment_status",
       "schema": "",
       "columns": {
@@ -194,9 +198,12 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
-    "intake_forms": {
+    "public.intake_forms": {
       "name": "intake_forms",
       "schema": "",
       "columns": {
@@ -269,14 +276,17 @@
       "uniqueConstraints": {
         "intake_forms_matter_ref_unique": {
           "name": "intake_forms_matter_ref_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "matter_ref"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
-      }
+      },
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
-    "leads": {
+    "public.leads": {
       "name": "leads",
       "schema": "",
       "columns": {
@@ -343,14 +353,17 @@
       "uniqueConstraints": {
         "leads_lead_id_unique": {
           "name": "leads_lead_id_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "lead_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
-      }
+      },
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
-    "monitored_companies": {
+    "public.monitored_companies": {
       "name": "monitored_companies",
       "schema": "",
       "columns": {
@@ -393,19 +406,28 @@
       "uniqueConstraints": {
         "monitored_companies_company_number_unique": {
           "name": "monitored_companies_company_number_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "company_number"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
-      }
+      },
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     }
   },
   "enums": {},
   "schemas": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "440795d8-3005-4307-8bfd-ee7363063578",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "sequences": {},
+  "policies": {},
+  "views": {},
+  "roles": {}
 }
