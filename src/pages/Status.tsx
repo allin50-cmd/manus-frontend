@@ -1,7 +1,8 @@
 import { useSwarm } from '@/contexts/SwarmContext';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cacheRead } from '@/lib/offlineCache';
-import { Activity, Wifi, WifiOff, Database, AlertCircle, CheckCircle2, Clock, Zap } from 'lucide-react';
+import { syncLogger } from '@/lib/syncLogger';
+import { Activity, Wifi, WifiOff, Database, AlertCircle, CheckCircle2, Clock, Zap, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type CacheEntry = { key: string; size: number; age: string };
@@ -10,6 +11,7 @@ export default function Status() {
   const { snapshot } = useSwarm();
   const online = useOnlineStatus();
   const [cacheEntries, setCacheEntries] = useState<CacheEntry[]>([]);
+  const [syncLogs, setSyncLogs] = useState<ReturnType<typeof syncLogger.getLogs>>([]);
 
   useEffect(() => {
     const keys = ['dashboard.stats', 'cases.list.all', 'hearings.list', 'allocations.pending', 'docs.case.*', 'diary.*', 'cases.list.open', 'cases.list.in_progress', 'cases.list.closed', 'cases.list.on_hold'];
@@ -25,6 +27,7 @@ export default function Status() {
       }
     });
     setCacheEntries(entries);
+    setSyncLogs(syncLogger.getLogs());
   }, []);
 
   const pct = Math.round(snapshot.swarmConfidence * 100);
@@ -164,6 +167,52 @@ export default function Status() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-400" />
+              Sync Logs
+            </h2>
+            <button
+              onClick={() => {
+                syncLogger.clear();
+                setSyncLogs([]);
+              }}
+              className="text-slate-400 hover:text-red-400 transition"
+              title="Clear logs"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+          {syncLogs.length > 0 ? (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {syncLogs.slice().reverse().map((log, idx) => (
+                <div
+                  key={idx}
+                  className={`text-xs p-2 rounded border font-mono ${
+                    log.level === 'error'
+                      ? 'bg-red-900/20 border-red-700 text-red-300'
+                      : log.level === 'warn'
+                        ? 'bg-amber-900/20 border-amber-700 text-amber-300'
+                        : log.level === 'info'
+                          ? 'bg-slate-700/30 border-slate-600 text-slate-200'
+                          : 'bg-slate-800/30 border-slate-700 text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="opacity-75">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <span className="opacity-60">{log.level.toUpperCase()}</span>
+                  </div>
+                  <div className="mt-1">{log.message}</div>
+                  {log.itemId && <div className="opacity-75">Item: {log.itemId}</div>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-slate-400 text-sm">No sync logs yet. Pending sync items will appear here.</div>
+          )}
         </div>
 
         <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
