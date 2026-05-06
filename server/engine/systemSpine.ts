@@ -50,7 +50,7 @@ export class SystemSpine {
         break;
 
       default:
-        console.warn('[SystemSpine] Unknown queue item type:', (payload as any).type);
+        console.warn('[SystemSpine] Unknown queue item type:', (payload as { type: string }).type);
     }
   }
 
@@ -94,7 +94,7 @@ export class SystemSpine {
 
     const result = await engine.transitionCase(
       payload.caseId,
-      payload.targetStatus as any,
+      payload.targetStatus as import('./clerkOS.engine').CaseStatus,
       payload.actorId,
       payload.actorOpenId,
     );

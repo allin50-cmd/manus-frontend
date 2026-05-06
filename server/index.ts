@@ -331,17 +331,16 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
   try {
     const { environment, limit = '50' } = req.query;
 
-    let query = db.select().from(deploymentStatus);
+    const baseQuery = db.select().from(deploymentStatus);
+    const filteredQuery = environment && typeof environment === 'string'
+      ? baseQuery.where(eq(deploymentStatus.environment, environment))
+      : baseQuery;
 
-    if (environment && typeof environment === 'string') {
-      query = query.where(eq(deploymentStatus.environment, environment)) as any;
-    }
-
-    const deployments = await query
+    const deployments = await filteredQuery
       .orderBy(desc(deploymentStatus.deployedAt))
       .limit(parseInt(limit as string));
 
-    res.json({ deployments });
+    return res.json({ deployments });
   } catch (error) {
     console.error('Error fetching deployment history:', error);
     res.status(500).json({ error: 'Internal server error' });
