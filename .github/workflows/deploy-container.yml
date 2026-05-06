@@ -26,6 +26,7 @@ jobs:
   test:
     name: Install · Type-check · Test · Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +36,7 @@ jobs:
           cache: 'npm'
 
       - name: Install
-        run: npm ci --no-audit
+        run: npm ci --no-audit --prefer-offline
 
       - name: Type-check frontend
         run: npx tsc --noEmit
@@ -56,6 +57,7 @@ jobs:
     name: Build & Push image
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: ${{ secrets.AZURE_CREDENTIALS != '' }}
     outputs:
       image-tag: ${{ steps.meta.outputs.tag }}
@@ -91,6 +93,7 @@ jobs:
     name: Deploy to Container Apps
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: ${{ secrets.AZURE_CREDENTIALS != '' }}
     environment: ${{ github.event.inputs.environment || 'dev' }}
     steps:
