@@ -3,8 +3,6 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import SEO from '../components/SEO';
-import LegalNav from '../components/LegalNav';
 
 const PAIN_POINTS = [
   'Unbilled emails & calls',
@@ -50,6 +48,7 @@ export default function AuditLanding() {
       }
 
       setSubmitted(true);
+      toast.success('Audit request submitted! Check your inbox for your personalised report.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
@@ -59,8 +58,6 @@ export default function AuditLanding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-black text-white">
-      <SEO title="Free Revenue Audit" description="Get a free AI-powered revenue audit for your chambers. Discover how much fee income you're leaving on the table." />
-      <LegalNav active="hub" />
       {/* Hero */}
       <div className="container mx-auto max-w-3xl px-6 py-20 text-center">
         <div className="mb-4 inline-block rounded-full bg-blue-600/20 px-4 py-1 text-sm text-blue-400 ring-1 ring-blue-500/30">
@@ -182,26 +179,6 @@ export default function AuditLanding() {
           <span>Average recovery: <strong className="text-white">£6,400/month</strong></span>
           <span>Setup time: <strong className="text-white">&lt; 1 day</strong></span>
           <span>No workflow changes required</span>
-        </div>
-      </div>
-
-      {/* Trust signals */}
-      <div className="container mx-auto max-w-3xl px-6 py-8">
-        <div className="flex flex-wrap justify-center gap-3">
-          {[
-            { icon: '🔒', label: 'GDPR Compliant' },
-            { icon: '🛡', label: 'SOC 2 Certified' },
-            { icon: '📋', label: 'No credit card required' },
-            { icon: '⚡', label: 'Results in 24 hours' },
-          ].map(({ icon, label }) => (
-            <div
-              key={label}
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300"
-            >
-              <span>{icon}</span>
-              <span>{label}</span>
-            </div>
-          ))}
         </div>
       </div>
 

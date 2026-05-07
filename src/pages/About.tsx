@@ -95,7 +95,7 @@ export default function About() {
       <MainNav active="About" />
 
       {/* Hero */}
-      <section className="pt-24 pb-20 px-4 text-center max-w-4xl mx-auto">
+      <section id="main-content" className="pt-24 pb-20 px-4 text-center max-w-4xl mx-auto">
         <div className="inline-block rounded-full border border-[#5A4BFF]/40 bg-[#5A4BFF]/10 px-4 py-1 text-sm text-[#8B82FF] font-medium mb-6">
           Founded in London, 2023
         </div>

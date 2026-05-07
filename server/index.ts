@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
@@ -20,6 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.use(compression());
 const PORT = process.env.PORT || 3000;
 const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
@@ -424,12 +426,17 @@ app.post('/api/lead', async (req: Request, res: Response) => {
  */
 app.get('/api/admin/leads', async (req: Request, res: Response) => {
   try {
-    const allLeads = await db
-      .select()
-      .from(leads)
-      .orderBy(desc(leads.createdAt));
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = (page - 1) * limit;
 
-    res.json(allLeads);
+    const [allLeads, [{ count: total }]] = await Promise.all([
+      db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql`count(*)` }).from(leads),
+    ]);
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ data: allLeads, pagination: { page, limit, total: Number(total) } });
   } catch (error) {
     console.error('Error fetching leads:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
@@ -505,12 +512,17 @@ app.post('/api/intake', async (req: Request, res: Response) => {
  */
 app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
   try {
-    const allForms = await db
-      .select()
-      .from(intakeForms)
-      .orderBy(desc(intakeForms.createdAt));
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = (page - 1) * limit;
 
-    res.json(allForms);
+    const [allForms, [{ count: total }]] = await Promise.all([
+      db.select().from(intakeForms).orderBy(desc(intakeForms.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql`count(*)` }).from(intakeForms),
+    ]);
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ data: allForms, pagination: { page, limit, total: Number(total) } });
   } catch (error) {
     console.error('Error fetching intake forms:', error);
     res.status(500).json({ error: 'Failed to fetch intake forms' });
@@ -735,12 +747,17 @@ app.post('/api/contact', async (req: Request, res: Response) => {
  */
 app.get('/api/admin/contacts', async (req: Request, res: Response) => {
   try {
-    const allContacts = await db
-      .select()
-      .from(contacts)
-      .orderBy(desc(contacts.createdAt));
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = (page - 1) * limit;
 
-    res.json(allContacts);
+    const [allContacts, [{ count: total }]] = await Promise.all([
+      db.select().from(contacts).orderBy(desc(contacts.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql`count(*)` }).from(contacts),
+    ]);
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ data: allContacts, pagination: { page, limit, total: Number(total) } });
   } catch (error) {
     console.error('Error fetching contacts:', error);
     res.status(500).json({ error: 'Failed to fetch contacts' });
@@ -792,6 +809,7 @@ app.get('/health', async (req: Request, res: Response) => {
     // Check database connection
     await db.select().from(deploymentStatus).limit(1);
 
+    res.setHeader('Cache-Control', 'no-store');
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -1059,6 +1077,7 @@ app.get('/api/clerks/stats', async (req: Request, res: Response) => {
       .from(briefs)
       .where(sql`fee_status IN ('awaiting_negotiation', 'under_negotiation')`);
 
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
     res.json({
       totalBarristers: Number(totalBarristersRow.count),
       activeBarristers: Number(activeBarristersRow.count),
@@ -1392,6 +1411,7 @@ app.get('/api/stats', async (req: Request, res: Response) => {
       db.select({ count: sql<number>`count(*)` }).from(contacts),
     ]);
 
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
     res.json({
       leads: Number(leadsRow.count),
       intakeForms: Number(intakeFormsRow.count),

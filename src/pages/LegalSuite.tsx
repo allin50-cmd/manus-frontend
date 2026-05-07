@@ -100,7 +100,7 @@ export default function LegalSuite() {
       <LegalNav active="hub" />
 
       {/* Hero */}
-      <section className="relative overflow-hidden px-6 py-24 text-center">
+      <section id="main-content" className="relative overflow-hidden px-6 py-24 text-center">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#C9A64A]/5 via-transparent to-transparent" />
         <div className="mx-auto max-w-4xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#C9A64A]/30 bg-[#C9A64A]/10 px-4 py-1.5 text-sm text-[#C9A64A]">

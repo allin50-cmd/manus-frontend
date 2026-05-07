@@ -89,6 +89,8 @@ function TeamCard({ member }: { member: (typeof TEAM)[0] }) {
           Connect
         </span>
         <button
+          type="button"
+          tabIndex={0}
           aria-label={`LinkedIn profile of ${member.name}`}
           className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#0A66C2]/20 border border-white/10 hover:border-[#0A66C2]/40 flex items-center justify-center transition-all duration-150"
         >
@@ -108,7 +110,7 @@ export default function Team() {
       <MainNav active="Team" />
 
       {/* Hero */}
-      <section className="pt-24 pb-16 px-4 text-center max-w-3xl mx-auto">
+      <section id="main-content" className="pt-24 pb-16 px-4 text-center max-w-3xl mx-auto">
         <div className="inline-block rounded-full border border-[#5A4BFF]/40 bg-[#5A4BFF]/10 px-4 py-1 text-sm text-[#8B82FF] font-medium mb-6">
           The people behind the platform
         </div>

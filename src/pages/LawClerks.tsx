@@ -85,7 +85,7 @@ export default function LawClerks() {
       <LegalNav active="clerks" />
 
       {/* Hero */}
-      <section className="mx-auto max-w-4xl px-6 pt-24 pb-24 text-center">
+      <section id="main-content" className="mx-auto max-w-4xl px-6 pt-24 pb-24 text-center">
         <div
           className="mb-5 inline-block rounded-full px-4 py-1 text-xs font-semibold tracking-widest uppercase"
           style={{ backgroundColor: `${GOLD}20`, color: GOLD, border: `1px solid ${GOLD}40` }}

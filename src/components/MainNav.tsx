@@ -33,6 +33,12 @@ export default function MainNav({ theme = 'dark', active }: MainNavProps) {
 
   return (
     <nav className={`${bg} ${border} border-b sticky top-0 z-50 backdrop-blur-md`}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-[#5A4BFF] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold"
+      >
+        Skip to main content
+      </a>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         {/* Logo */}
         <button
@@ -110,6 +116,8 @@ export default function MainNav({ theme = 'dark', active }: MainNavProps) {
         <button
           className="md:hidden text-gray-400 hover:text-white"
           onClick={() => setMobileOpen(v => !v)}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-menu"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -117,7 +125,7 @@ export default function MainNav({ theme = 'dark', active }: MainNavProps) {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-white/10 bg-[#0F1014] px-6 py-4 md:hidden">
+        <div id="mobile-menu" className="border-t border-white/10 bg-[#0F1014] px-6 py-4 md:hidden">
           <div className="space-y-1">
             {products.map(({ label, href, dot }) => (
               <button

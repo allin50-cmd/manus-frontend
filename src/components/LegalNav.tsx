@@ -17,6 +17,12 @@ export default function LegalNav({ active }: LegalNavProps) {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-[#C9A64A]/20 bg-[#0A0C12]/95 backdrop-blur">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-[#5A4BFF] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold"
+      >
+        Skip to main content
+      </a>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         {/* Logo */}
         <button

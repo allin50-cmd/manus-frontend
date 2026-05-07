@@ -325,7 +325,7 @@ export default function Pricing() {
       <MainNav active="Pricing" />
 
       {/* Hero */}
-      <section className="pt-24 pb-14 px-4 text-center">
+      <section id="main-content" className="pt-24 pb-14 px-4 text-center">
         <div className="inline-block rounded-full border border-[#5A4BFF]/40 bg-[#5A4BFF]/10 px-4 py-1 text-sm text-[#8B82FF] font-medium mb-6">
           4 products. One platform.
         </div>
