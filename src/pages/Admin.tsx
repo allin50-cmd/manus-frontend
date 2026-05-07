@@ -24,7 +24,8 @@ import {
   ExternalLink,
   GitCommit,
   Calendar,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -142,6 +143,30 @@ export default function Admin() {
       setLoading(false);
     }
   };
+
+  async function handleDelete(type: 'lead' | 'contact', id: string) {
+    if (!confirm('Delete this record?')) return;
+    const endpoint = type === 'lead' ? `/api/admin/leads/${id}` : `/api/admin/contacts/${id}`;
+    const res = await fetch(endpoint, { method: 'DELETE' });
+    if (res.ok) {
+      if (type === 'lead') setLeads(prev => prev.filter(l => l.id !== id));
+      else setContacts(prev => prev.filter(c => c.id !== id));
+      toast.success('Record deleted');
+    } else {
+      toast.error('Failed to delete');
+    }
+  }
+
+  async function handleContactStatus(id: string, status: string) {
+    const res = await fetch(`/api/contacts/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) {
+      setContacts(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+      toast.success('Status updated');
+    }
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -438,6 +463,7 @@ export default function Admin() {
                         <TableHead className="text-gray-400">Company</TableHead>
                         <TableHead className="text-gray-400">Product</TableHead>
                         <TableHead className="text-gray-400">Date</TableHead>
+                        <TableHead className="text-gray-400"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -456,6 +482,15 @@ export default function Admin() {
                           </TableCell>
                           <TableCell className="text-gray-400 text-sm">
                             {formatDate(lead.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => handleDelete('lead', lead.id)}
+                              className="text-red-400/60 hover:text-red-400 transition-colors p-1 rounded"
+                              aria-label="Delete record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -501,6 +536,7 @@ export default function Admin() {
                         <TableHead className="text-gray-400">Urgency</TableHead>
                         <TableHead className="text-gray-400">Claim Value</TableHead>
                         <TableHead className="text-gray-400">Date</TableHead>
+                        <TableHead className="text-gray-400"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -517,6 +553,15 @@ export default function Admin() {
                           <TableCell className="text-gray-400">{form.claimValue || '-'}</TableCell>
                           <TableCell className="text-gray-400 text-sm">
                             {formatDate(form.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => handleDelete('lead', form.id)}
+                              className="text-red-400/60 hover:text-red-400 transition-colors p-1 rounded"
+                              aria-label="Delete record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -608,6 +653,7 @@ export default function Admin() {
                         <TableHead className="text-gray-400">Subject</TableHead>
                         <TableHead className="text-gray-400">Status</TableHead>
                         <TableHead className="text-gray-400">Date</TableHead>
+                        <TableHead className="text-gray-400">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -624,6 +670,23 @@ export default function Admin() {
                           </TableCell>
                           <TableCell className="text-gray-400 text-sm">
                             {formatDate(contact.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleContactStatus(contact.id, 'followed_up')}
+                                className="text-xs bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded px-2 py-0.5 transition-colors"
+                              >
+                                ✓ Followed up
+                              </button>
+                              <button
+                                onClick={() => handleDelete('contact', contact.id)}
+                                className="text-red-400/60 hover:text-red-400 transition-colors p-1 rounded"
+                                aria-label="Delete record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

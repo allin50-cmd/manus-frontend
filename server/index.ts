@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
+import swaggerUi from 'swagger-ui-express';
 import { db } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions, barristers, briefs } from './db/schema';
 import { desc, eq, sql } from 'drizzle-orm';
@@ -20,6 +21,7 @@ import {
 } from './schemas/index.js';
 import clerksRouter from './routes/clerks.js';
 import { fgQueue, type AuditJobData } from './queue/fgQueue.js';
+import { openApiSpec } from './openapi.js';
 
 // Load environment variables
 dotenv.config();
@@ -807,6 +809,12 @@ app.get('/api/version', (_req, res) => {
     uptime: Math.floor(process.uptime()),
   });
 });
+
+// API Documentation
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {
+  customSiteTitle: 'Allin50 API Docs',
+  customCss: '.swagger-ui .topbar { display: none }',
+}));
 
 // ============================================================================
 // ZAPIER REST-HOOK ENDPOINTS

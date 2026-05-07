@@ -238,9 +238,11 @@ const inputClass =
 function OverviewTab({
   stats,
   diary,
+  onRefresh,
 }: {
   stats: Stats | null;
   diary: DiaryEntry[];
+  onRefresh: () => void;
 }) {
   const upcoming = [...diary]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -248,6 +250,12 @@ function OverviewTab({
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <span />
+        <button onClick={onRefresh} className="text-xs text-gray-500 hover:text-white flex items-center gap-1 transition-colors">
+          <RefreshCw className="w-3 h-3" /> Refresh
+        </button>
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard label="Total Barristers" value={stats?.totalBarristers ?? '—'} icon={Users} />
         <StatCard label="Active Barristers" value={stats?.activeBarristers ?? '—'} icon={Users} />
@@ -312,10 +320,18 @@ function BriefsTab({
   briefs,
   barristers,
   onRefresh,
+  searchBriefs,
+  setSearchBriefs,
+  filterBriefStatus,
+  setFilterBriefStatus,
 }: {
   briefs: Brief[];
   barristers: Barrister[];
   onRefresh: () => void;
+  searchBriefs: string;
+  setSearchBriefs: (v: string) => void;
+  filterBriefStatus: string;
+  setFilterBriefStatus: (v: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -326,6 +342,17 @@ function BriefsTab({
     courtName: '',
     feeAgreed: '',
     barristerId: '',
+  });
+
+  const q = searchBriefs.toLowerCase();
+  const filteredBriefs = briefs.filter((b) => {
+    const matchesSearch =
+      !q ||
+      b.clientName.toLowerCase().includes(q) ||
+      (b.briefRef ?? '').toLowerCase().includes(q) ||
+      b.matterType.toLowerCase().includes(q);
+    const matchesStatus = !filterBriefStatus || b.status === filterBriefStatus;
+    return matchesSearch && matchesStatus;
   });
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -486,11 +513,29 @@ function BriefsTab({
         </Card>
       )}
 
-      <SectionCard title={`All Briefs (${briefs.length})`}>
+      <SectionCard title={`All Briefs (${filteredBriefs.length}${filteredBriefs.length !== briefs.length ? ` of ${briefs.length}` : ''})`}>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <input type="search" placeholder="Search briefs…" value={searchBriefs}
+            onChange={e => setSearchBriefs(e.target.value)}
+            className="w-full sm:w-64 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#C9A64A]/50" />
+          <select value={filterBriefStatus} onChange={e => setFilterBriefStatus(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+            <option value="">All statuses</option>
+            <option value="instructions_received">Instructions Received</option>
+            <option value="brief_sent">Brief Sent</option>
+            <option value="acknowledged">Acknowledged</option>
+            <option value="hearing_date_set">Hearing Set</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
         {briefs.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
             <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No briefs yet. Add your first brief above.</p>
+          </div>
+        ) : filteredBriefs.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            <p className="text-sm">No briefs match your search.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -507,7 +552,7 @@ function BriefsTab({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {briefs.map((b) => (
+                {filteredBriefs.map((b) => (
                   <TableRow key={b.id} style={{ borderColor: BORDER }} className="hover:bg-white/[0.02]">
                     <TableCell className="font-mono text-xs" style={{ color: GOLD }}>
                       {b.briefRef}
@@ -545,9 +590,13 @@ function BriefsTab({
 function BарristersTab({
   barristers,
   onRefresh,
+  searchBarristers,
+  setSearchBarristers,
 }: {
   barristers: Barrister[];
   onRefresh: () => void;
+  searchBarristers: string;
+  setSearchBarristers: (v: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -557,6 +606,15 @@ function BарristersTab({
     phone: '',
     yearOfCall: '',
     specialisms: '',
+  });
+
+  const bq = searchBarristers.toLowerCase();
+  const filteredBarristers = barristers.filter((b) => {
+    if (!bq) return true;
+    return (
+      b.fullName.toLowerCase().includes(bq) ||
+      (b.specialisms ?? []).some((s) => s.toLowerCase().includes(bq))
+    );
   });
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -705,11 +763,20 @@ function BарristersTab({
         </Card>
       )}
 
-      <SectionCard title={`Roster (${barristers.length})`}>
+      <SectionCard title={`Roster (${filteredBarristers.length}${filteredBarristers.length !== barristers.length ? ` of ${barristers.length}` : ''})`}>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <input type="search" placeholder="Search barristers…" value={searchBarristers}
+            onChange={e => setSearchBarristers(e.target.value)}
+            className="w-full sm:w-64 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#C9A64A]/50" />
+        </div>
         {barristers.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
             <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No barristers yet. Add your first barrister above.</p>
+          </div>
+        ) : filteredBarristers.length === 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            <p className="text-sm">No barristers match your search.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -724,7 +791,7 @@ function BарristersTab({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {barristers.map((b) => (
+                {filteredBarristers.map((b) => (
                   <TableRow key={b.id} style={{ borderColor: BORDER }} className="hover:bg-white/[0.02]">
                     <TableCell className="font-mono text-xs" style={{ color: GOLD }}>
                       {b.chamberRef}
@@ -1075,6 +1142,11 @@ export default function ClerkDashboard() {
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
 
+  // Search / filter state
+  const [searchBriefs, setSearchBriefs] = useState('');
+  const [filterBriefStatus, setFilterBriefStatus] = useState('');
+  const [searchBarristers, setSearchBarristers] = useState('');
+
   async function fetchAll(showRefreshing = false) {
     if (showRefreshing) setRefreshing(true);
     else setLoading(true);
@@ -1215,13 +1287,26 @@ export default function ClerkDashboard() {
               />
             )}
             {activeTab === 'overview' && (
-              <OverviewTab stats={stats} diary={diary} />
+              <OverviewTab stats={stats} diary={diary} onRefresh={handleRefresh} />
             )}
             {activeTab === 'briefs' && (
-              <BriefsTab briefs={briefs} barristers={barristers} onRefresh={handleRefresh} />
+              <BriefsTab
+                briefs={briefs}
+                barristers={barristers}
+                onRefresh={handleRefresh}
+                searchBriefs={searchBriefs}
+                setSearchBriefs={setSearchBriefs}
+                filterBriefStatus={filterBriefStatus}
+                setFilterBriefStatus={setFilterBriefStatus}
+              />
             )}
             {activeTab === 'barristers' && (
-              <BарristersTab barristers={barristers} onRefresh={handleRefresh} />
+              <BарristersTab
+                barristers={barristers}
+                onRefresh={handleRefresh}
+                searchBarristers={searchBarristers}
+                setSearchBarristers={setSearchBarristers}
+              />
             )}
             {activeTab === 'fees' && (
               <FeesTab briefs={briefs} onRefresh={handleRefresh} />
