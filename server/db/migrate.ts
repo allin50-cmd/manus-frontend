@@ -21,7 +21,7 @@ if (!fs.existsSync('./drizzle')) {
 async function runMigration() {
   console.log('🔄 Starting database migration…');
 
-  const migrationClient = postgres(databaseUrl, { max: 1 });
+  const migrationClient = postgres(databaseUrl as string, { max: 1 });
   const db = drizzle(migrationClient);
 
   try {

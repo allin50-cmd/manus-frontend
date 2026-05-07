@@ -1,5 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import { rateLimit } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -31,7 +34,7 @@ const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
 // Stripe client – only initialised when key is present
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' }) : null;
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }) : null;
 
 // ============================================================================
 // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
@@ -93,13 +96,34 @@ app.post(
   }
 );
 
-// Middleware
+// Security & performance middleware
+app.use(helmet({
+  crossOriginEmbedderPolicy: false, // Allow SWA to embed API responses
+  contentSecurityPolicy: false,     // CSP is handled by staticwebapp.config.json
+}));
+app.use(compression());
+
 const allowedOrigins = process.env.APP_URL
   ? [process.env.APP_URL, 'http://localhost:5173', 'http://localhost:3000']
-  : true; // allow all in dev when APP_URL is not set
+  : true;
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Rate limiting — applied per-route below for granularity
+const apiLimiter = rateLimit({
+  windowMs: 60_000,   // 1 minute
+  max: 60,            // 60 req/min for general API
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+const formLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,            // 10 form submissions/min (leads, intake, contact, checkout)
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 
 // Logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -144,7 +168,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
  * Body: { companyNumber: string, companyName: string }
  * Returns: { url: string }
  */
-app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
+app.post('/api/stripe/checkout', formLimiter, async (req: Request, res: Response) => {
   if (!stripe) {
     return res.status(500).json({ error: 'Stripe not configured' });
   }
@@ -344,7 +368,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
  * POST /api/lead
  * Submit a demo booking lead
  */
-app.post('/api/lead', async (req: Request, res: Response) => {
+app.post('/api/lead', formLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, company, product, phone, message } = req.body;
 
@@ -417,7 +441,7 @@ app.get('/api/admin/leads', requireAdminToken, async (req: Request, res: Respons
  * POST /api/intake
  * Submit a client intake form
  */
-app.post('/api/intake', async (req: Request, res: Response) => {
+app.post('/api/intake', formLimiter, async (req: Request, res: Response) => {
   try {
     const {
       clientName,
@@ -500,7 +524,7 @@ app.get('/api/admin/intake-forms', requireAdminToken, async (req: Request, res: 
  * POST /api/compliance-bundle
  * Submit a compliance bundle request with REAL-TIME Companies House lookup
  */
-app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
+app.post('/api/compliance-bundle', formLimiter, async (req: Request, res: Response) => {
   try {
     const {
       companyName,
@@ -656,7 +680,7 @@ app.get('/api/admin/compliance-bundles', requireAdminToken, async (req: Request,
  * POST /api/contact
  * Submit a contact form
  */
-app.post('/api/contact', async (req: Request, res: Response) => {
+app.post('/api/contact', formLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 
