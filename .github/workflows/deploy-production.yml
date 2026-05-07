@@ -110,9 +110,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  run-migrations:
+    name: Run Database Migrations
+    needs: build-push-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
   deploy-api:
     name: Deploy API (Azure App Service)
-    needs: build-push-api
+    needs: [build-push-api, run-migrations]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'production' }}
     steps:
@@ -158,30 +179,9 @@ jobs:
           echo "API did not become healthy within 120s"
           exit 1
 
-  run-migrations:
-    name: Run Database Migrations
-    needs: deploy-api
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
   record-deployment:
     name: Record Deployment Status
-    needs: [deploy-frontend, run-migrations]
+    needs: [deploy-frontend, deploy-api]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -189,8 +189,8 @@ jobs:
         id: status
         run: |
           FRONTEND="${{ needs.deploy-frontend.result }}"
-          MIGRATIONS="${{ needs.run-migrations.result }}"
-          if [ "$FRONTEND" = "success" ] && [ "$MIGRATIONS" = "success" ]; then
+          API="${{ needs.deploy-api.result }}"
+          if [ "$FRONTEND" = "success" ] && [ "$API" = "success" ]; then
             echo "value=success" >> $GITHUB_OUTPUT
           else
             echo "value=failed" >> $GITHUB_OUTPUT
@@ -216,8 +216,9 @@ jobs:
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend (SWA) | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| API (App Service) | ${{ needs.run-migrations.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migrations | ${{ needs.deploy-api.result == 'success' && 'success' || 'see run-migrations job' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API (App Service) | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment:** ${{ inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment || 'prod' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY

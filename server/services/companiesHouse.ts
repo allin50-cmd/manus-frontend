@@ -212,8 +212,8 @@ export class CompaniesHouseService {
         throw new Error(`Failed to fetch filing history: ${response.status}`);
       }
 
-      const data = await response.json() as any;
-      const items = data.items || [];
+      const data = await response.json() as { items?: FilingHistoryItem[] };
+      const items = data.items ?? [];
       console.log(`📈 Filing history retrieved: ${items.length} filings`);
       return items;
     } catch (error) {
@@ -435,8 +435,8 @@ export class CompaniesHouseService {
 let _instance: CompaniesHouseService | null = null;
 
 export const companiesHouseService = new Proxy({} as CompaniesHouseService, {
-  get(_target, prop) {
+  get(_target, prop: keyof CompaniesHouseService) {
     if (!_instance) _instance = new CompaniesHouseService();
-    return (_instance as any)[prop];
+    return _instance[prop];
   },
 });
