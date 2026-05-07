@@ -16,8 +16,17 @@ import { companiesHouseService, CompaniesHouseService } from './services/compani
 // Load environment variables
 dotenv.config();
 
-// Fail fast if critical vars are missing
-const REQUIRED_ENV = ['DATABASE_URL', 'DEPLOY_RECORD_TOKEN'] as const;
+// Fail fast if any required environment variable is missing
+const REQUIRED_ENV = [
+  'DATABASE_URL',
+  'DEPLOY_RECORD_TOKEN',
+  'COMPANIES_HOUSE_API_KEY',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'STRIPE_PRICE_ID',
+  'APP_URL',
+] as const;
+
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
     console.error(`FATAL: missing required environment variable ${key}`);
@@ -30,11 +39,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
+const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN as string;
 
-// Stripe client – only initialised when key is present
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }) : null;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2023-10-16' });
 
 // ============================================================================
 // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
@@ -49,16 +56,8 @@ app.post(
   '/api/stripe/webhook',
   express.raw({ type: 'application/json' }),
   async (req: Request, res: Response) => {
-    if (!stripe) {
-      return res.status(500).json({ error: 'Stripe not configured' });
-    }
-
     const sig = req.headers['stripe-signature'] as string;
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      return res.status(500).json({ error: 'Stripe webhook secret not configured' });
-    }
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 
     let event: Stripe.Event;
     try {
@@ -169,10 +168,6 @@ app.get('/api/health', async (req: Request, res: Response) => {
  * Returns: { url: string }
  */
 app.post('/api/stripe/checkout', formLimiter, async (req: Request, res: Response) => {
-  if (!stripe) {
-    return res.status(503).json({ error: 'Payment service not configured' });
-  }
-
   const { companyNumber, companyName } = req.body;
 
   if (!companyNumber || !companyName) {
@@ -183,12 +178,8 @@ app.post('/api/stripe/checkout', formLimiter, async (req: Request, res: Response
     return res.status(400).json({ error: 'Company number or name too long' });
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID;
-  if (!priceId) {
-    return res.status(503).json({ error: 'Payment service not configured' });
-  }
-
-  const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+  const priceId = process.env.STRIPE_PRICE_ID as string;
+  const appUrl = process.env.APP_URL as string;
 
   try {
     const session = await stripe.checkout.sessions.create({
