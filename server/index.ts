@@ -9,12 +9,17 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import { db } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions, barristers, briefs, clerkNotes } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions, barristers, briefs } from './db/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 import { companiesHouseService } from './services/companiesHouse';
-import { runSalesAgent } from './services/salesAgent';
-import { sendAuditReady, sendAgentMessage } from './services/emailService';
 import { subscribe, unsubscribe, fire, listByEvent, type ZapierEvent } from './services/zapierWebhook';
+import { validateBody } from './middleware/validate.js';
+import {
+  LeadSchema, IntakeSchema, ContactSchema, AuditSignupSchema,
+  BarristerSchema, BriefSchema, NoteSchema,
+} from './schemas/index.js';
+import clerksRouter from './routes/clerks.js';
+import { fgQueue, type AuditJobData } from './queue/fgQueue.js';
 
 // Load environment variables
 dotenv.config();
@@ -141,14 +146,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// ── Input validation helpers ─────────────────────────────────────────────────
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-}
-function sanitise(val: unknown): string {
-  return String(val ?? '').trim().slice(0, 1000);
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 // ============================================================================
 // HEALTH CHECK ENDPOINT
@@ -372,25 +369,9 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
  * POST /api/lead
  * Submit a demo booking lead
  */
-app.post('/api/lead', async (req: Request, res: Response) => {
+app.post('/api/lead', submitLimiter, validateBody(LeadSchema), async (req: Request, res: Response) => {
   try {
-    const name = sanitise(req.body.name);
-    const email = sanitise(req.body.email);
-    const company = sanitise(req.body.company);
-    const product = sanitise(req.body.product);
-    const phone = sanitise(req.body.phone);
-    const message = sanitise(req.body.message);
-
-    if (!name || name.length > 255) {
-      return res.status(400).json({ ok: false, error: 'name is required and must be 255 characters or fewer' });
-    }
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ ok: false, error: 'A valid email address is required' });
-    }
-    const validProducts = ['vaultline', 'ultai', 'fineguard', 'law-clerks'];
-    if (product && !validProducts.includes(product)) {
-      return res.status(400).json({ ok: false, error: `product must be one of: ${validProducts.join(', ')}` });
-    }
+    const { name, email, company, product, phone, message } = req.body;
 
     // Generate unique lead ID
     const leadId = `LEAD-${Date.now()}`;
@@ -467,26 +448,9 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
  * POST /api/intake
  * Submit a client intake form
  */
-app.post('/api/intake', async (req: Request, res: Response) => {
+app.post('/api/intake', submitLimiter, validateBody(IntakeSchema), async (req: Request, res: Response) => {
   try {
-    const clientName = sanitise(req.body.clientName);
-    const clientEmail = sanitise(req.body.clientEmail);
-    const clientPhone = sanitise(req.body.clientPhone);
-    const matterType = sanitise(req.body.matterType);
-    const urgency = sanitise(req.body.urgency);
-    const description = sanitise(req.body.description);
-    const claimValue = sanitise(req.body.claimValue);
-
-    if (!clientName || clientName.length > 255) {
-      return res.status(400).json({ ok: false, error: 'clientName is required and must be 255 characters or fewer' });
-    }
-    if (!matterType) {
-      return res.status(400).json({ ok: false, error: 'matterType is required' });
-    }
-    const validUrgencies = ['low', 'medium', 'high', 'critical'];
-    if (!urgency || !validUrgencies.includes(urgency)) {
-      return res.status(400).json({ ok: false, error: `urgency must be one of: ${validUrgencies.join(', ')}` });
-    }
+    const { clientName, clientEmail, clientPhone, matterType, urgency, description, claimValue } = req.body;
 
     // Generate unique matter reference
     const matterRef = `MAT-${Date.now()}`;
@@ -709,22 +673,9 @@ app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => 
  * POST /api/contact
  * Submit a contact form
  */
-app.post('/api/contact', async (req: Request, res: Response) => {
+app.post('/api/contact', submitLimiter, validateBody(ContactSchema), async (req: Request, res: Response) => {
   try {
-    const name = sanitise(req.body.name);
-    const email = sanitise(req.body.email);
-    const subject = sanitise(req.body.subject);
-    const message = sanitise(req.body.message);
-
-    if (!name) {
-      return res.status(400).json({ ok: false, error: 'name is required' });
-    }
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ ok: false, error: 'A valid email address is required' });
-    }
-    if (!message) {
-      return res.status(400).json({ ok: false, error: 'message is required' });
-    }
+    const { name, email, subject, message } = req.body;
 
     // Generate unique ticket ID
     const ticketId = `TICKET-${Date.now()}`;
@@ -981,17 +932,11 @@ app.get('/api/zapier/subscriptions', async (req: Request, res: Response) => {
  * Creates an audit lead tenant, sends audit-ready email, and (in non-shadow
  * mode) runs the sales agent to determine the next best action.
  */
-app.post('/api/audit-signup', async (req: Request, res: Response) => {
+app.post('/api/audit-signup', submitLimiter, validateBody(AuditSignupSchema), async (req: Request, res: Response) => {
   try {
-    const email = sanitise(req.body.email);
-    const { name, chamberSize, painPoints } = req.body;
-
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ ok: false, error: 'A valid email address is required' });
-    }
+    const { email, name, chamberSize, painPoints } = req.body;
 
     const tenantId = crypto.randomUUID();
-    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
 
     const [auditLead] = await db
       .insert(auditLeads)
@@ -1006,54 +951,15 @@ app.post('/api/audit-signup', async (req: Request, res: Response) => {
 
     console.log(`📊 Audit signup: ${email} (tenant ${tenantId})`);
 
-    // Send audit-ready email immediately
-    await sendAuditReady(email, name ?? '', tenantId, appUrl);
-
-    // Fire Zapier trigger (non-blocking)
-    fire('new_audit_lead', {
-      id: auditLead.id,
-      tenantId,
+    const jobData: AuditJobData = {
+      tenantId: auditLead.tenantId,
       email,
-      name: name ?? null,
-      chamberSize: chamberSize ?? null,
-      painPoints: painPoints ?? [],
-      stage: 'signed_up',
-      createdAt: auditLead.createdAt,
-    }).catch((err) => console.error('[zapier] fire new_audit_lead error:', err));
-
-    // Run sales agent (shadow mode: log only; live mode: act on decision)
-    const agentMode = process.env.AGENT_MODE ?? 'shadow';
-
-    const decision = await runSalesAgent(auditLead).catch((err) => {
-      console.error('[salesAgent] error:', err);
-      return null;
-    });
-
-    if (decision) {
-      await db
-        .update(auditLeads)
-        .set({ agentDecision: JSON.stringify(decision) })
-        .where(eq(auditLeads.id, auditLead.id));
-
-      if (agentMode === 'shadow') {
-        console.log('[salesAgent] shadow decision:', decision);
-      } else if (decision.action === 'negotiate' || decision.action === 'close') {
-        await sendAgentMessage(email, 'Your chambers recovery plan', decision.message);
-        if (decision.action === 'close') {
-          fire('deal_closed', { email, priceMonthly: decision.priceMonthly, closedAt: new Date().toISOString() })
-            .catch((err) => console.error('[zapier] fire deal_closed error:', err));
-        }
-      } else if (decision.action === 'escalate') {
-        console.warn('[salesAgent] escalation needed for', email, ':', decision.reasoning);
-        fire('deal_escalated', {
-          email,
-          reason: decision.reasoning,
-          agentAction: 'escalate',
-          priceMonthly: decision.priceMonthly,
-          escalatedAt: new Date().toISOString(),
-        }).catch((err) => console.error('[zapier] fire deal_escalated error:', err));
-      }
-    }
+      companyName: name,
+      chamberSize,
+      painPoints: painPoints ? JSON.stringify(painPoints) : undefined,
+      leadId: auditLead.id,
+    };
+    await fgQueue.add('audit-signup', jobData);
 
     res.status(201).json({ ok: true, tenantId });
   } catch (error) {
@@ -1084,296 +990,8 @@ app.get('/api/admin/audit-leads', async (req: Request, res: Response) => {
 // LAW CLERKS API
 // ============================================================================
 
-// GET /api/clerks/stats — dashboard stats
-app.get('/api/clerks/stats', async (req: Request, res: Response) => {
-  try {
-    const [totalBarristersRow] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(barristers);
-
-    const [activeBarristersRow] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(barristers)
-      .where(eq(barristers.status, 'active'));
-
-    const [totalBriefsRow] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(briefs);
-
-    const [upcomingHearingsRow] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(briefs)
-      .where(sql`hearing_date >= NOW() AND hearing_date <= NOW() + INTERVAL '7 days'`);
-
-    const [outstandingFeesRow] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(briefs)
-      .where(sql`fee_status IN ('awaiting_negotiation', 'under_negotiation')`);
-
-    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
-    res.json({
-      totalBarristers: Number(totalBarristersRow.count),
-      activeBarristers: Number(activeBarristersRow.count),
-      totalBriefs: Number(totalBriefsRow.count),
-      upcomingHearings: Number(upcomingHearingsRow.count),
-      outstandingFees: Number(outstandingFeesRow.count),
-    });
-  } catch (error) {
-    console.error('Error fetching clerk stats:', error);
-    res.status(500).json({ error: 'Failed to fetch clerk stats' });
-  }
-});
-
-// GET /api/clerks/diary — upcoming hearings sorted by date
-app.get('/api/clerks/diary', async (req: Request, res: Response) => {
-  try {
-    const rows = await db
-      .select({
-        id: briefs.id,
-        briefRef: briefs.briefRef,
-        clientName: briefs.clientName,
-        matterType: briefs.matterType,
-        courtName: briefs.courtName,
-        hearingDate: briefs.hearingDate,
-        status: briefs.status,
-        barristerId: briefs.barristerId,
-        barristerName: barristers.fullName,
-      })
-      .from(briefs)
-      .leftJoin(barristers, eq(briefs.barristerId, barristers.id))
-      .where(sql`${briefs.hearingDate} >= NOW()`)
-      .orderBy(briefs.hearingDate);
-
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching clerk diary:', error);
-    res.status(500).json({ error: 'Failed to fetch diary' });
-  }
-});
-
-// POST /api/clerks/barristers — create a barrister
-app.post('/api/clerks/barristers', async (req: Request, res: Response) => {
-  try {
-    const chamberRef = `CHAM-${Date.now()}`;
-    const [barrister] = await db
-      .insert(barristers)
-      .values({ ...req.body, chamberRef })
-      .returning();
-
-    res.status(201).json(barrister);
-  } catch (error) {
-    console.error('Error creating barrister:', error);
-    res.status(500).json({ error: 'Failed to create barrister' });
-  }
-});
-
-// GET /api/clerks/barristers — list all barristers ordered by fullName
-app.get('/api/clerks/barristers', async (req: Request, res: Response) => {
-  try {
-    const all = await db
-      .select()
-      .from(barristers)
-      .orderBy(barristers.fullName);
-
-    res.json(all);
-  } catch (error) {
-    console.error('Error fetching barristers:', error);
-    res.status(500).json({ error: 'Failed to fetch barristers' });
-  }
-});
-
-// GET /api/clerks/barristers/:id — get one barrister
-app.get('/api/clerks/barristers/:id', async (req: Request, res: Response) => {
-  try {
-    const [barrister] = await db
-      .select()
-      .from(barristers)
-      .where(eq(barristers.id, req.params.id));
-
-    if (!barrister) {
-      return res.status(404).json({ error: 'Barrister not found' });
-    }
-
-    res.json(barrister);
-  } catch (error) {
-    console.error('Error fetching barrister:', error);
-    res.status(500).json({ error: 'Failed to fetch barrister' });
-  }
-});
-
-// PUT /api/clerks/barristers/:id — update a barrister
-app.put('/api/clerks/barristers/:id', async (req: Request, res: Response) => {
-  try {
-    const { status, specialisms, phone, email } = req.body;
-    const patch: Record<string, unknown> = {};
-    if (status !== undefined) patch.status = status;
-    if (specialisms !== undefined) patch.specialisms = specialisms;
-    if (phone !== undefined) patch.phone = phone;
-    if (email !== undefined) patch.email = email;
-
-    const [updated] = await db
-      .update(barristers)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .set(patch as any)
-      .where(eq(barristers.id, req.params.id))
-      .returning();
-
-    if (!updated) {
-      return res.status(404).json({ error: 'Barrister not found' });
-    }
-
-    res.json(updated);
-  } catch (error) {
-    console.error('Error updating barrister:', error);
-    res.status(500).json({ error: 'Failed to update barrister' });
-  }
-});
-
-// POST /api/clerks/briefs — create a brief
-app.post('/api/clerks/briefs', async (req: Request, res: Response) => {
-  try {
-    const briefRef = `BRIEF-${Date.now()}`;
-    const { hearingDate, barristerId, ...rest } = req.body;
-
-    const [brief] = await db
-      .insert(briefs)
-      .values({
-        ...rest,
-        briefRef,
-        hearingDate: hearingDate ? new Date(hearingDate) : null,
-        barristerId: barristerId || null,
-      })
-      .returning();
-
-    res.status(201).json(brief);
-  } catch (error) {
-    console.error('Error creating brief:', error);
-    res.status(500).json({ error: 'Failed to create brief' });
-  }
-});
-
-// GET /api/clerks/briefs — list all briefs with barrister name
-app.get('/api/clerks/briefs', async (req: Request, res: Response) => {
-  try {
-    const rows = await db
-      .select({
-        id: briefs.id,
-        briefRef: briefs.briefRef,
-        clientName: briefs.clientName,
-        matterType: briefs.matterType,
-        courtName: briefs.courtName,
-        hearingDate: briefs.hearingDate,
-        status: briefs.status,
-        feeStatus: briefs.feeStatus,
-        feeAgreed: briefs.feeAgreed,
-        notes: briefs.notes,
-        barristerId: briefs.barristerId,
-        barristerName: barristers.fullName,
-        createdAt: briefs.createdAt,
-      })
-      .from(briefs)
-      .leftJoin(barristers, eq(briefs.barristerId, barristers.id))
-      .orderBy(desc(briefs.createdAt));
-
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching briefs:', error);
-    res.status(500).json({ error: 'Failed to fetch briefs' });
-  }
-});
-
-// GET /api/clerks/briefs/:id — get one brief
-app.get('/api/clerks/briefs/:id', async (req: Request, res: Response) => {
-  try {
-    const [brief] = await db
-      .select()
-      .from(briefs)
-      .where(eq(briefs.id, req.params.id));
-
-    if (!brief) {
-      return res.status(404).json({ error: 'Brief not found' });
-    }
-
-    res.json(brief);
-  } catch (error) {
-    console.error('Error fetching brief:', error);
-    res.status(500).json({ error: 'Failed to fetch brief' });
-  }
-});
-
-// PUT /api/clerks/briefs/:id — update a brief
-app.put('/api/clerks/briefs/:id', async (req: Request, res: Response) => {
-  try {
-    const { status, feeStatus, feeAgreed, notes, hearingDate } = req.body;
-    const patch: Record<string, unknown> = {};
-    if (status !== undefined) patch.status = status;
-    if (feeStatus !== undefined) patch.feeStatus = feeStatus;
-    if (feeAgreed !== undefined) patch.feeAgreed = feeAgreed;
-    if (notes !== undefined) patch.notes = notes;
-    if (hearingDate !== undefined) patch.hearingDate = hearingDate ? new Date(hearingDate) : null;
-
-    const [updated] = await db
-      .update(briefs)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .set(patch as any)
-      .where(eq(briefs.id, req.params.id))
-      .returning();
-
-    if (!updated) {
-      return res.status(404).json({ error: 'Brief not found' });
-    }
-
-    res.json(updated);
-  } catch (error) {
-    console.error('Error updating brief:', error);
-    res.status(500).json({ error: 'Failed to update brief' });
-  }
-});
-
-// POST /api/clerks/notes — create a clerk note
-app.post('/api/clerks/notes', async (req: Request, res: Response) => {
-  try {
-    const noteRef = `NOTE-${Date.now()}`;
-    const { briefId, barristerId, ...rest } = req.body;
-
-    const [note] = await db
-      .insert(clerkNotes)
-      .values({
-        ...rest,
-        noteRef,
-        briefId: briefId || null,
-        barristerId: barristerId || null,
-      })
-      .returning();
-
-    res.status(201).json(note);
-  } catch (error) {
-    console.error('Error creating clerk note:', error);
-    res.status(500).json({ error: 'Failed to create clerk note' });
-  }
-});
-
-// GET /api/clerks/notes — list notes, optionally filtered by briefId or barristerId
-app.get('/api/clerks/notes', async (req: Request, res: Response) => {
-  try {
-    const { briefId, barristerId } = req.query;
-
-    let query = db.select().from(clerkNotes).$dynamic();
-
-    if (briefId) {
-      query = query.where(eq(clerkNotes.briefId, briefId as string));
-    } else if (barristerId) {
-      query = query.where(eq(clerkNotes.barristerId, barristerId as string));
-    }
-
-    const notes = await query.orderBy(desc(clerkNotes.createdAt));
-
-    res.json(notes);
-  } catch (error) {
-    console.error('Error fetching clerk notes:', error);
-    res.status(500).json({ error: 'Failed to fetch clerk notes' });
-  }
-});
+// Law Clerks routes
+app.use('/api/clerks', clerksRouter);
 
 // ============================================================================
 // DELETE ENDPOINTS & ADDITIONAL UTILITY ENDPOINTS
@@ -1404,22 +1022,6 @@ app.delete('/api/admin/contacts/:id', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting contact:', error);
     res.status(500).json({ error: 'Failed to delete contact' });
-  }
-});
-
-/**
- * GET /api/clerks/barristers/:id/briefs
- * Get all briefs for a specific barrister
- */
-app.get('/api/clerks/barristers/:id/briefs', async (req: Request, res: Response) => {
-  try {
-    const rows = await db.select().from(briefs)
-      .where(eq(briefs.barristerId, req.params.id))
-      .orderBy(desc(briefs.createdAt));
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching barrister briefs:', error);
-    res.status(500).json({ error: 'Failed to fetch barrister briefs' });
   }
 });
 
