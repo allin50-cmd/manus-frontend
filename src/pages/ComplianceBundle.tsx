@@ -46,6 +46,8 @@ interface ComplianceData {
 }
 
 export default function ComplianceBundle() {
+  useEffect(() => { document.title = 'Compliance Bundle — FineGuard'; }, []);
+
   const [, setLocation] = useLocation();
   const search = useSearch();
   const [loading, setLoading] = useState(false);

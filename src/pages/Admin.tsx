@@ -98,6 +98,8 @@ export default function Admin() {
 
   const adminHeaders = { 'X-Admin-Token': adminToken };
 
+  useEffect(() => { document.title = 'Admin — VaultLine Suite'; }, []);
+
   useEffect(() => {
     if (adminToken) fetchAllData();
     else setLoading(false);
@@ -246,14 +248,26 @@ export default function Admin() {
               <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
               <p className="text-gray-400">VaultLine Brand Suite Management</p>
             </div>
-            <Button
-              onClick={fetchAllData}
-              disabled={loading}
-              className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={fetchAllData}
+                disabled={loading}
+                className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                onClick={() => {
+                  localStorage.removeItem(ADMIN_TOKEN_KEY);
+                  setAdminToken('');
+                }}
+                variant="outline"
+                className="border-red-800 text-red-400 hover:bg-red-900/20"
+              >
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
 

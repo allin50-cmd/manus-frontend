@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function BookDemo() {
+  useEffect(() => { document.title = 'Book a Demo — VaultLine Suite'; }, []);
+
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

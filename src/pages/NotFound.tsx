@@ -1,8 +1,11 @@
+import { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Home, SearchX } from 'lucide-react';
 
 export default function NotFound() {
+  useEffect(() => { document.title = '404 — Page Not Found'; }, []);
+
   const [, setLocation] = useLocation();
 
   return (
