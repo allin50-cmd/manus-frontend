@@ -11,7 +11,7 @@ import Stripe from 'stripe';
 import { db, client } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
-import { companiesHouseService } from './services/companiesHouse';
+import { companiesHouseService, CompaniesHouseService } from './services/companiesHouse';
 
 // Load environment variables
 dotenv.config();
@@ -542,7 +542,7 @@ app.post('/api/compliance-bundle', formLimiter, async (req: Request, res: Respon
     }
 
     // Validate company number format
-    if (!companiesHouseService.validateCompanyNumber(companyNumber)) {
+    if (!CompaniesHouseService.validateCompanyNumber(companyNumber)) {
       return res.status(400).json({
         ok: false,
         error: 'Invalid company number format. Must be 8 digits or 2 letters + 6 digits.',
@@ -550,7 +550,7 @@ app.post('/api/compliance-bundle', formLimiter, async (req: Request, res: Respon
     }
 
     // Format company number
-    const formattedNumber = companiesHouseService.formatCompanyNumber(companyNumber);
+    const formattedNumber = CompaniesHouseService.formatCompanyNumber(companyNumber);
 
     // REAL-TIME: Fetch company profile from Companies House
     const companyProfile = await companiesHouseService.getCompanyProfile(formattedNumber);

@@ -419,20 +419,14 @@ export class CompaniesHouseService {
   /**
    * Validate company number format
    */
-  validateCompanyNumber(companyNumber: string): boolean {
-    // UK company numbers are typically 8 characters (with leading zeros)
-    // Can be 2 letters followed by 6 digits, or 8 digits
+  static validateCompanyNumber(companyNumber: string): boolean {
     const cleaned = companyNumber.replace(/\s/g, '').toUpperCase();
     return /^([A-Z]{2}\d{6}|\d{8})$/.test(cleaned);
   }
 
-  /**
-   * Format company number (add leading zeros if needed)
-   */
-  formatCompanyNumber(companyNumber: string): string {
+  static formatCompanyNumber(companyNumber: string): string {
     const cleaned = companyNumber.replace(/\s/g, '').toUpperCase();
 
-    // If it's all digits and less than 8 characters, pad with zeros
     if (/^\d+$/.test(cleaned) && cleaned.length < 8) {
       return cleaned.padStart(8, '0');
     }
