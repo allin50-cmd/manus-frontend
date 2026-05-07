@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /clerk-dashboard
+Disallow: /api/
+
+Sitemap: https://allin50.com/sitemap.xml

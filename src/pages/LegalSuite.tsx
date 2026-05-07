@@ -83,15 +83,30 @@ const workflow = [
   },
 ];
 
+const FALLBACK_STATS: Stats = {
+  totalBarristers: 0,
+  activeBarristers: 0,
+  totalBriefs: 0,
+  upcomingHearings: 0,
+  outstandingFees: 0,
+};
+
 export default function LegalSuite() {
   const [, setLocation] = useLocation();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/clerks/stats')
       .then(r => r.json())
-      .then(setStats)
-      .catch(() => null);
+      .then((data: Stats) => {
+        setStats(data);
+        setStatsLoading(false);
+      })
+      .catch(() => {
+        setStats(FALLBACK_STATS);
+        setStatsLoading(false);
+      });
   }, []);
 
   return (
@@ -132,15 +147,24 @@ export default function LegalSuite() {
       </section>
 
       {/* Live stats */}
-      {stats && (
-        <section className="border-y border-white/5 bg-[#0C0E16] px-6 py-8">
+      <section className="border-y border-white/5 bg-[#0C0E16] px-6 py-8">
+        {statsLoading ? (
+          <div className="mx-auto grid max-w-4xl grid-cols-2 gap-6 md:grid-cols-5">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="text-center space-y-2">
+                <div className="h-8 w-16 mx-auto rounded bg-white/5 animate-pulse" />
+                <div className="h-3 w-20 mx-auto rounded bg-white/5 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : (
           <div className="mx-auto grid max-w-4xl grid-cols-2 gap-6 md:grid-cols-5">
             {[
-              { label: 'Barristers', value: stats.totalBarristers },
-              { label: 'Active', value: stats.activeBarristers },
-              { label: 'Briefs', value: stats.totalBriefs },
-              { label: 'Hearings (7d)', value: stats.upcomingHearings },
-              { label: 'Outstanding Fees', value: stats.outstandingFees },
+              { label: 'Barristers', value: stats!.totalBarristers },
+              { label: 'Active', value: stats!.activeBarristers },
+              { label: 'Briefs', value: stats!.totalBriefs },
+              { label: 'Hearings (7d)', value: stats!.upcomingHearings },
+              { label: 'Outstanding Fees', value: stats!.outstandingFees },
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <div className="text-3xl font-bold text-[#C9A64A]">{value}</div>
@@ -148,8 +172,8 @@ export default function LegalSuite() {
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Products */}
       <section className="px-6 py-20">

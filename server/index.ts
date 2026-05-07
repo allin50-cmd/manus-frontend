@@ -1,5 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import compression from 'compression';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
@@ -22,6 +24,11 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(compression());
+app.use(helmet({
+  contentSecurityPolicy: false, // disabled — SPA serves its own CSP via static hosting
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(morgan('[:date[iso]] :method :url :status :res[content-length]b - :response-time ms'));
 const PORT = process.env.PORT || 3000;
 const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
@@ -1442,8 +1449,9 @@ app.get('*', (req: Request, res: Response) => {
 // ERROR HANDLING
 // ============================================================================
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
+// Global error handler
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
   res.status(500).json({ error: 'Internal server error' });
 });
 

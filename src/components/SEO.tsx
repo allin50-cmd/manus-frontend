@@ -22,6 +22,18 @@ export default function SEO({ title, description, canonical, ogImage }: SEOProps
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       {canonical && <link rel="canonical" href={canonical} />}
+      <script type="application/ld+json">{JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Allin50 Legal Suite",
+        "url": "https://allin50.com",
+        "description": "AI-powered legal technology platform for UK law firms and chambers.",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "London",
+          "addressCountry": "GB"
+        }
+      })}</script>
     </Helmet>
   );
 }

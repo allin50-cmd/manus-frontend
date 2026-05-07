@@ -18,6 +18,7 @@ export default function AuditLanding() {
   const [selectedPains, setSelectedPains] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function togglePain(p: string) {
     setSelectedPains(prev =>
@@ -25,8 +26,24 @@ export default function AuditLanding() {
     );
   }
 
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!email.trim()) {
+      errs.email = 'Work email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errs.email = 'Please enter a valid email address.';
+    }
+    return errs;
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
     setLoading(true);
 
     try {
@@ -110,10 +127,10 @@ export default function AuditLanding() {
                   type="email"
                   placeholder="you@chambers.co.uk"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
+                  onChange={e => { setEmail(e.target.value); if (errors.email) setErrors(prev => ({ ...prev, email: '' })); }}
                   className="border-white/20 bg-white/5 text-white placeholder:text-gray-500"
                 />
+                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
               </div>
             </div>
 
@@ -160,9 +177,14 @@ export default function AuditLanding() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 py-3 text-base font-semibold hover:bg-blue-500 disabled:opacity-60"
+              className={`w-full bg-blue-600 py-3 text-base font-semibold hover:bg-blue-500 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              {loading ? 'Generating your audit…' : 'Start Free Audit →'}
+              {loading ? (
+                <span className="flex items-center gap-2 justify-center">
+                  <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  Submitting…
+                </span>
+              ) : 'Start Free Audit →'}
             </Button>
 
             <p className="mt-3 text-center text-xs text-gray-500">

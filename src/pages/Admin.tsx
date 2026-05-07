@@ -242,6 +242,14 @@ export default function Admin() {
            (order[b.environment.toLowerCase() as keyof typeof order] || 3);
   });
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0F1014] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[#5A4BFF] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -483,7 +491,13 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {leads.map((lead) => (
+                      {leads.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <div className="text-center py-12 text-gray-600 text-sm">No records yet.</div>
+                          </TableCell>
+                        </TableRow>
+                      ) : leads.map((lead) => (
                         <TableRow key={lead.id} className="border-[#2A2D3A] hover:bg-[#1A1D28]">
                           <TableCell className="font-mono text-[#5A4BFF]">{lead.leadId}</TableCell>
                           <TableCell className="text-white">{lead.name}</TableCell>
@@ -531,7 +545,13 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {intakeForms.map((form) => (
+                      {intakeForms.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <div className="text-center py-12 text-gray-600 text-sm">No records yet.</div>
+                          </TableCell>
+                        </TableRow>
+                      ) : intakeForms.map((form) => (
                         <TableRow key={form.id} className="border-[#2A2D3A] hover:bg-[#1A1D28]">
                           <TableCell className="font-mono text-cyan-400">{form.matterRef}</TableCell>
                           <TableCell className="text-white">{form.clientName}</TableCell>
@@ -623,7 +643,13 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {contacts.map((contact) => (
+                      {contacts.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <div className="text-center py-12 text-gray-600 text-sm">No records yet.</div>
+                          </TableCell>
+                        </TableRow>
+                      ) : contacts.map((contact) => (
                         <TableRow key={contact.id} className="border-[#2A2D3A] hover:bg-[#1A1D28]">
                           <TableCell className="font-mono text-green-400">{contact.ticketId}</TableCell>
                           <TableCell className="text-white">{contact.name}</TableCell>

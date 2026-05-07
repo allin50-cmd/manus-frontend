@@ -18,6 +18,7 @@ export default function IntakeSheet() {
   const [matterRef, setMatterRef] = useState('');
   const [urgencyLevel, setUrgencyLevel] = useState('');
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -29,8 +30,31 @@ export default function IntakeSheet() {
     claimValue: '',
   });
 
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!formData.clientName.trim()) errs.clientName = 'Client name is required.';
+    if (!formData.clientEmail.trim()) {
+      errs.clientEmail = 'Client email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.clientEmail)) {
+      errs.clientEmail = 'Please enter a valid email address.';
+    }
+    if (!formData.matterType) errs.matterType = 'Matter type is required.';
+    if (!formData.description.trim()) {
+      errs.description = 'Matter description is required.';
+    } else if (formData.description.trim().length < 20) {
+      errs.description = 'Description must be at least 20 characters.';
+    }
+    return errs;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     setError('');
 
@@ -188,26 +212,27 @@ export default function IntakeSheet() {
                     </Label>
                     <Input
                       id="clientName"
-                      required
                       value={formData.clientName}
-                      onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                      onChange={(e) => { setFormData({ ...formData, clientName: e.target.value }); if (errors.clientName) setErrors(prev => ({ ...prev, clientName: '' })); }}
                       className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-cyan-500"
                       placeholder="Full legal name"
                     />
+                    {errors.clientName && <p className="text-red-400 text-xs mt-1">{errors.clientName}</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="clientEmail" className="text-gray-300">
-                      Client Email
+                      Client Email <span className="text-red-400">*</span>
                     </Label>
                     <Input
                       id="clientEmail"
                       type="email"
                       value={formData.clientEmail}
-                      onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
+                      onChange={(e) => { setFormData({ ...formData, clientEmail: e.target.value }); if (errors.clientEmail) setErrors(prev => ({ ...prev, clientEmail: '' })); }}
                       className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-cyan-500"
                       placeholder="client@example.com"
                     />
+                    {errors.clientEmail && <p className="text-red-400 text-xs mt-1">{errors.clientEmail}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -239,8 +264,7 @@ export default function IntakeSheet() {
                     </Label>
                     <Select
                       value={formData.matterType}
-                      onValueChange={(value) => setFormData({ ...formData, matterType: value })}
-                      required
+                      onValueChange={(value) => { setFormData({ ...formData, matterType: value }); if (errors.matterType) setErrors(prev => ({ ...prev, matterType: '' })); }}
                     >
                       <SelectTrigger className="bg-[#1A1D28] border-[#2A2D3A] text-white">
                         <SelectValue placeholder="Select matter type" />
@@ -257,6 +281,7 @@ export default function IntakeSheet() {
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                    {errors.matterType && <p className="text-red-400 text-xs mt-1">{errors.matterType}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -298,15 +323,16 @@ export default function IntakeSheet() {
               {/* Matter Description */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-gray-300">
-                  Matter Description
+                  Matter Description <span className="text-red-400">*</span>
                 </Label>
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, description: e.target.value }); if (errors.description) setErrors(prev => ({ ...prev, description: '' })); }}
                   className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-cyan-500 min-h-[150px]"
                   placeholder="Provide detailed information about the matter, key facts, timeline, and any other relevant details..."
                 />
+                {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description}</p>}
               </div>
 
               <div className="flex gap-3">
@@ -321,16 +347,14 @@ export default function IntakeSheet() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white disabled:opacity-50"
+                  className={`flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit Intake'
-                  )}
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      Submitting…
+                    </span>
+                  ) : 'Submit Intake'}
                 </Button>
               </div>
             </form>

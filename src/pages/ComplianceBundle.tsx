@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import MainNav from '@/components/MainNav';
+import SEO from '@/components/SEO';
 
 interface CompanyData {
   number: string;
@@ -54,6 +56,7 @@ export default function ComplianceBundle() {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [complianceData, setComplianceData] = useState<ComplianceData | null>(null);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [monitored, setMonitored] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -123,8 +126,30 @@ export default function ComplianceBundle() {
     }
   };
 
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!formData.companyName.trim()) errs.companyName = 'Company name is required.';
+    if (!formData.companyNumber.trim()) {
+      errs.companyNumber = 'Company number is required.';
+    } else if (formData.companyNumber.trim().length !== 8) {
+      errs.companyNumber = 'Company number must be exactly 8 characters.';
+    }
+    if (!formData.requestorEmail.trim()) {
+      errs.requestorEmail = 'Email address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.requestorEmail)) {
+      errs.requestorEmail = 'Please enter a valid email address.';
+    }
+    return errs;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     setError('');
 
@@ -212,7 +237,10 @@ export default function ComplianceBundle() {
 
   if (success && companyData && complianceData) {
     return (
-      <div className="min-h-screen bg-[#F8F8F8] py-8 px-4">
+      <div className="min-h-screen bg-[#F8F8F8]">
+        <SEO title="Compliance Bundle" description="Your Companies House compliance report — filing deadlines, overdue status, and automated monitoring for your company." />
+        <MainNav />
+        <div className="py-8 px-4">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <Card className="bg-white border-[#1A1A1A]/10">
@@ -435,12 +463,16 @@ export default function ComplianceBundle() {
             </Card>
           )}
         </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] py-12 px-4">
+    <div className="min-h-screen bg-[#F8F8F8]">
+      <SEO title="Compliance Bundle" description="Request a comprehensive Companies House compliance report. Get filing deadlines, overdue status, and automated monitoring for your company." />
+      <MainNav />
+      <div className="py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-[#1A1A1A] mb-4">Compliance Bundle Request</h1>
@@ -477,12 +509,12 @@ export default function ComplianceBundle() {
                   </Label>
                   <Input
                     id="companyName"
-                    required
                     value={formData.companyName}
-                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, companyName: e.target.value }); if (errors.companyName) setErrors(prev => ({ ...prev, companyName: '' })); }}
                     className="border-gray-300 focus:border-[#C9A64A] focus:ring-[#C9A64A]"
                     placeholder="Your Company Ltd"
                   />
+                  {errors.companyName && <p className="text-red-400 text-xs mt-1">{errors.companyName}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -491,16 +523,17 @@ export default function ComplianceBundle() {
                   </Label>
                   <Input
                     id="companyNumber"
-                    required
                     value={formData.companyNumber}
-                    onChange={(e) => setFormData({ ...formData, companyNumber: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, companyNumber: e.target.value }); if (errors.companyNumber) setErrors(prev => ({ ...prev, companyNumber: '' })); }}
                     className="border-gray-300 focus:border-[#C9A64A] focus:ring-[#C9A64A]"
                     placeholder="12345678"
                     maxLength={8}
                   />
-                  <p className="text-sm text-gray-500">
-                    8-digit company registration number
-                  </p>
+                  {errors.companyNumber ? (
+                    <p className="text-red-400 text-xs mt-1">{errors.companyNumber}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500">8-digit company registration number</p>
+                  )}
                 </div>
               </div>
 
@@ -526,16 +559,17 @@ export default function ComplianceBundle() {
 
                   <div className="space-y-2">
                     <Label htmlFor="requestorEmail" className="text-gray-700">
-                      Email Address
+                      Email Address <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="requestorEmail"
                       type="email"
                       value={formData.requestorEmail}
-                      onChange={(e) => setFormData({ ...formData, requestorEmail: e.target.value })}
+                      onChange={(e) => { setFormData({ ...formData, requestorEmail: e.target.value }); if (errors.requestorEmail) setErrors(prev => ({ ...prev, requestorEmail: '' })); }}
                       className="border-gray-300 focus:border-[#C9A64A] focus:ring-[#C9A64A]"
                       placeholder="john@company.co.uk"
                     />
+                    {errors.requestorEmail && <p className="text-red-400 text-xs mt-1">{errors.requestorEmail}</p>}
                   </div>
                 </div>
               </div>
@@ -602,16 +636,14 @@ export default function ComplianceBundle() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-[#C9A64A] hover:bg-[#B8954A] text-white disabled:opacity-50"
+                  className={`flex-1 bg-[#C9A64A] hover:bg-[#B8954A] text-white ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    'Request Bundle'
-                  )}
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      Submitting…
+                    </span>
+                  ) : 'Request Bundle'}
                 </Button>
               </div>
             </form>
@@ -621,6 +653,7 @@ export default function ComplianceBundle() {
         <p className="text-center text-gray-500 text-sm mt-6">
           Your information is secure and will only be used to generate your compliance bundle
         </p>
+      </div>
       </div>
     </div>
   );

@@ -22,9 +22,11 @@ import {
   X,
   ChevronLeft,
   TrendingUp,
+  Inbox,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
+import PageSkeleton from '@/components/PageSkeleton';
 
 const GOLD = '#C9A64A';
 const BG = '#0F1014';
@@ -486,7 +488,10 @@ function BriefsTab({
 
       <SectionCard title={`All Briefs (${briefs.length})`}>
         {briefs.length === 0 ? (
-          <p className="py-8 text-center text-gray-500 text-sm">No briefs yet. Create one above.</p>
+          <div className="text-center py-16 text-gray-500">
+            <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No briefs yet. Add your first brief above.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -702,7 +707,10 @@ function BарristersTab({
 
       <SectionCard title={`Roster (${barristers.length})`}>
         {barristers.length === 0 ? (
-          <p className="py-8 text-center text-gray-500 text-sm">No barristers yet. Add one above.</p>
+          <div className="text-center py-16 text-gray-500">
+            <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No barristers yet. Add your first barrister above.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -906,7 +914,10 @@ function IntakeQueueTab({
   return (
     <SectionCard title="Client Intake Queue" subtitle="Submissions from UltAi — convert to brief with one click">
       {forms.length === 0 ? (
-        <p className="py-12 text-center text-sm text-gray-500">No pending intake submissions.</p>
+        <div className="text-center py-16 text-gray-500">
+          <Inbox className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No pending intake submissions.</p>
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <Table>
@@ -1104,9 +1115,7 @@ export default function ClerkDashboard() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <RefreshCw className="h-8 w-8 animate-spin" style={{ color: GOLD }} />
-          </div>
+          <PageSkeleton />
         ) : (
           <>
             {activeTab === 'intake' && (

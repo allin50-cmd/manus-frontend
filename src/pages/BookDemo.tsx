@@ -18,6 +18,7 @@ export default function BookDemo() {
   const [success, setSuccess] = useState(false);
   const [leadId, setLeadId] = useState('');
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,8 +29,26 @@ export default function BookDemo() {
     message: '',
   });
 
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!formData.name.trim()) errs.name = 'Full name is required.';
+    if (!formData.email.trim()) {
+      errs.email = 'Email address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errs.email = 'Please enter a valid email address.';
+    }
+    if (!formData.company.trim()) errs.company = 'Company name is required.';
+    return errs;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     setError('');
 
@@ -159,12 +178,12 @@ export default function BookDemo() {
                   </Label>
                   <Input
                     id="name"
-                    required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (errors.name) setErrors(prev => ({ ...prev, name: '' })); }}
                     className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-[#5A4BFF]"
                     placeholder="John Doe"
                   />
+                  {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -174,27 +193,28 @@ export default function BookDemo() {
                   <Input
                     id="email"
                     type="email"
-                    required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors(prev => ({ ...prev, email: '' })); }}
                     className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-[#5A4BFF]"
                     placeholder="john@company.com"
                   />
+                  {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="company" className="text-gray-300">
-                    Company Name
+                    Company Name <span className="text-red-400">*</span>
                   </Label>
                   <Input
                     id="company"
                     value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    onChange={(e) => { setFormData({ ...formData, company: e.target.value }); if (errors.company) setErrors(prev => ({ ...prev, company: '' })); }}
                     className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-[#5A4BFF]"
                     placeholder="Acme Corporation"
                   />
+                  {errors.company && <p className="text-red-400 text-xs mt-1">{errors.company}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -257,16 +277,14 @@ export default function BookDemo() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white disabled:opacity-50"
+                  className={`flex-1 bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    'Book Demo'
-                  )}
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      Submitting…
+                    </span>
+                  ) : 'Book Demo'}
                 </Button>
               </div>
             </form>
