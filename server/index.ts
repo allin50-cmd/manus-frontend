@@ -169,10 +169,6 @@ app.get('/api/health', async (req: Request, res: Response) => {
  * Returns: { url: string }
  */
 app.post('/api/stripe/checkout', formLimiter, async (req: Request, res: Response) => {
-  if (!stripe) {
-    return res.status(500).json({ error: 'Stripe not configured' });
-  }
-
   const { companyNumber, companyName } = req.body;
 
   if (!companyNumber || !companyName) {
@@ -183,12 +179,20 @@ app.post('/api/stripe/checkout', formLimiter, async (req: Request, res: Response
     return res.status(400).json({ error: 'Company number or name too long' });
   }
 
+  const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+
+  // Demo mode — skip Stripe, go straight to success page
+  if (!stripe) {
+    console.log(`🎭 Demo checkout: ${companyNumber} (${companyName})`);
+    return res.json({
+      url: `${appUrl}/compliance-bundle?activated=1&company=${encodeURIComponent(companyNumber)}&demo=1`,
+    });
+  }
+
   const priceId = process.env.STRIPE_PRICE_ID;
   if (!priceId) {
     return res.status(500).json({ error: 'STRIPE_PRICE_ID not configured' });
   }
-
-  const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
 
   try {
     const session = await stripe.checkout.sessions.create({
