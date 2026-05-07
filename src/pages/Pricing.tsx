@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, ChevronDown, ChevronUp, Zap, Shield, FileText, BookOpen } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import MainNav from '@/components/MainNav';
 
 const PRODUCTS = [
   {
@@ -319,6 +320,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-[#0F1014] text-white">
+      <MainNav active="Pricing" />
 
       {/* Hero */}
       <section className="pt-24 pb-14 px-4 text-center">

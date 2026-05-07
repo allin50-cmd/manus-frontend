@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -21,6 +22,31 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
+
+// ── Rate limiting ────────────────────────────────────────────────────────────
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+const submitLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Submission rate limit exceeded. Please wait a moment.' },
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/lead', submitLimiter);
+app.use('/api/intake', submitLimiter);
+app.use('/api/contact', submitLimiter);
+app.use('/api/audit-signup', submitLimiter);
+app.use('/api/compliance-bundle', submitLimiter);
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Stripe client – only initialised when key is present
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;

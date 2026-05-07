@@ -1,6 +1,7 @@
 import { Lock, Cpu, Scale, MapPin, ArrowRight, TrendingUp, Users, FileCheck, Activity } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import MainNav from '@/components/MainNav';
 
 const STATS = [
   { value: '500+', label: 'Law Firms', icon: Users },
@@ -89,6 +90,7 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F1014] to-[#1A1D28] text-white">
+      <MainNav active="About" />
 
       {/* Hero */}
       <section className="pt-24 pb-20 px-4 text-center max-w-4xl mx-auto">

@@ -1,6 +1,7 @@
 import { ExternalLink, ArrowRight, Star } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import MainNav from '@/components/MainNav';
 
 const TEAM = [
   {
@@ -102,6 +103,7 @@ export default function Team() {
 
   return (
     <div className="min-h-screen bg-[#0F1014] text-white">
+      <MainNav active="Team" />
 
       {/* Hero */}
       <section className="pt-24 pb-16 px-4 text-center max-w-3xl mx-auto">

@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import MainNav from '@/components/MainNav';
 import {
   Shield,
   ArrowRight,
@@ -131,21 +132,7 @@ export default function FineGuard() {
 
   return (
     <div className="min-h-screen bg-[#F8F8F8] text-[#1A1A1A]">
-      {/* Nav */}
-      <nav className="bg-[#1A1A1A] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="w-7 h-7 text-[#C9A64A]" />
-            <span className="text-xl font-bold tracking-tight text-white">FineGuard</span>
-          </div>
-          <Button
-            onClick={() => setLocation('/compliance-bundle')}
-            className="bg-[#C9A64A] hover:bg-[#B8954A] text-white px-5 py-2 text-sm font-medium"
-          >
-            Get Bundle
-          </Button>
-        </div>
-      </nav>
+      <MainNav active="FineGuard" />
 
       {/* Hero */}
       <section className="max-w-7xl mx-auto px-6 pt-24 pb-20 text-center">

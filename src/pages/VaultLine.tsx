@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import MainNav from '@/components/MainNav';
 import {
   Lock,
   GitBranch,
@@ -104,21 +105,7 @@ export default function VaultLine() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] text-white">
-      {/* Nav */}
-      <nav className="border-b border-white/10 sticky top-0 z-50 backdrop-blur-md bg-[#0F1014]/80">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="w-7 h-7 text-[#5A4BFF]" />
-            <span className="text-xl font-bold tracking-tight">VaultLine Cloud</span>
-          </div>
-          <Button
-            onClick={() => setLocation('/book-demo')}
-            className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white px-5 py-2 text-sm font-medium"
-          >
-            Book Demo
-          </Button>
-        </div>
-      </nav>
+      <MainNav active="VaultLine" />
 
       {/* Hero */}
       <section className="max-w-7xl mx-auto px-6 pt-24 pb-20 text-center">
