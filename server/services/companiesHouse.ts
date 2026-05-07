@@ -119,58 +119,6 @@ export class CompaniesHouseService {
     this.apiKey = CH_API_KEY;
   }
 
-  private isDemoMode(): boolean {
-    return this.apiKey === 'demo';
-  }
-
-  private getDemoCompanyProfile(companyNumber: string): CompanyProfile {
-    const today = new Date();
-    const accountsDue = new Date(today);
-    accountsDue.setDate(today.getDate() + 45);
-    const csDue = new Date(today);
-    csDue.setDate(today.getDate() + 12);
-
-    return {
-      companyNumber,
-      companyName: 'DEMO COMPANY LIMITED',
-      companyStatus: 'active',
-      dateOfCreation: '2019-03-15',
-      jurisdiction: 'england-wales',
-      type: 'ltd',
-      hasBeenLiquidated: false,
-      hasInsolvencyHistory: false,
-      sicCodes: ['62012'],
-      registeredOfficeAddress: {
-        addressLine1: '1 Demo Street',
-        locality: 'London',
-        postalCode: 'EC1A 1AA',
-        country: 'United Kingdom',
-      },
-      accounts: {
-        nextAccounts: {
-          periodEndOn: '2025-03-31',
-          periodStartOn: '2024-04-01',
-          dueOn: accountsDue.toISOString().split('T')[0],
-          overdue: false,
-        },
-        lastAccounts: {
-          madeUpTo: '2024-03-31',
-          type: 'total-exemption-full',
-        },
-      },
-      confirmationStatement: {
-        nextDue: csDue.toISOString().split('T')[0],
-        nextMadeUpTo: csDue.toISOString().split('T')[0],
-        overdue: false,
-        lastMadeUpTo: '2024-03-14',
-      },
-      links: { self: `/company/${companyNumber}` },
-    };
-  }
-
-  /**
-   * Get authentication headers for Companies House API
-   */
   private getAuthHeaders() {
     return {
       'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
@@ -183,12 +131,6 @@ export class CompaniesHouseService {
    */
   async getCompanyProfile(companyNumber: string): Promise<CompanyProfile | null> {
     const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
-
-    if (this.isDemoMode()) {
-      console.log(`🎭 Demo mode: returning mock profile for ${cleanNumber}`);
-      return this.getDemoCompanyProfile(cleanNumber);
-    }
-
     const maxRetries = 3;
     let lastError: Error | null = null;
 
@@ -255,13 +197,6 @@ export class CompaniesHouseService {
    * Get filing history for a company
    */
   async getFilingHistory(companyNumber: string, limit: number = 20): Promise<FilingHistoryItem[]> {
-    if (this.isDemoMode()) {
-      return [
-        { description: 'Confirmation statement made', date: '2024-03-14', type: 'CS01', category: 'confirmation-statement' },
-        { description: 'Total exemption full accounts', date: '2023-12-20', type: 'AA', category: 'accounts' },
-      ] as FilingHistoryItem[];
-    }
-
     try {
       const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
       const response = await fetch(
