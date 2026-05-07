@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -96,15 +96,47 @@ export default function Admin() {
   );
   const [tokenInput, setTokenInput] = useState('');
 
-  const adminHeaders = { 'X-Admin-Token': adminToken };
-
   useEffect(() => { document.title = 'Admin — VaultLine Suite'; }, []);
+
+  const fetchAllData = useCallback(async () => {
+    const adminHeaders = { 'X-Admin-Token': adminToken };
+    setLoading(true);
+    try {
+      const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
+        fetch('/api/admin/leads', { headers: adminHeaders }),
+        fetch('/api/admin/intake-forms', { headers: adminHeaders }),
+        fetch('/api/admin/compliance-bundles', { headers: adminHeaders }),
+        fetch('/api/admin/contacts', { headers: adminHeaders }),
+        fetch('/api/deployments/status'),
+      ]);
+
+      if ([leadsRes, intakeRes, bundlesRes, contactsRes].some(r => r.status === 401)) {
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        setAdminToken('');
+        toast.error('Invalid admin token — please re-authenticate');
+        return;
+      }
+
+      if (leadsRes.ok) setLeads(await leadsRes.json());
+      if (intakeRes.ok) setIntakeForms(await intakeRes.json());
+      if (bundlesRes.ok) setComplianceBundles(await bundlesRes.json());
+      if (contactsRes.ok) setContacts(await contactsRes.json());
+      if (deploymentsRes.ok) {
+        const data = await deploymentsRes.json();
+        setDeployments(data.deployments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [adminToken]);
 
   useEffect(() => {
     if (adminToken) fetchAllData();
     else setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminToken]);
+  }, [fetchAllData, adminToken]);
 
   const handleTokenSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,40 +170,6 @@ export default function Admin() {
       </div>
     );
   }
-
-  const fetchAllData = async () => {
-    setLoading(true);
-    try {
-      const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
-        fetch('/api/admin/leads', { headers: adminHeaders }),
-        fetch('/api/admin/intake-forms', { headers: adminHeaders }),
-        fetch('/api/admin/compliance-bundles', { headers: adminHeaders }),
-        fetch('/api/admin/contacts', { headers: adminHeaders }),
-        fetch('/api/deployments/status'),
-      ]);
-
-      if ([leadsRes, intakeRes, bundlesRes, contactsRes].some(r => r.status === 401)) {
-        localStorage.removeItem(ADMIN_TOKEN_KEY);
-        setAdminToken('');
-        toast.error('Invalid admin token — please re-authenticate');
-        return;
-      }
-
-      if (leadsRes.ok) setLeads(await leadsRes.json());
-      if (intakeRes.ok) setIntakeForms(await intakeRes.json());
-      if (bundlesRes.ok) setComplianceBundles(await bundlesRes.json());
-      if (contactsRes.ok) setContacts(await contactsRes.json());
-      if (deploymentsRes.ok) {
-        const data = await deploymentsRes.json();
-        setDeployments(data.deployments || []);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();

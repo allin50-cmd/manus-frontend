@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useLocation } from 'wouter';
+import Nav from '@/components/Nav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -93,6 +94,7 @@ export default function IntakeSheet() {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10] flex items-center justify-center p-4">
+        <Nav />
         <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center">
@@ -146,6 +148,7 @@ export default function IntakeSheet() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10] py-12 px-4">
+      <Nav />
       <div className="max-w-3xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-white mb-4">Client Matter Intake Sheet</h1>
@@ -215,7 +218,7 @@ export default function IntakeSheet() {
                       value={formData.clientPhone}
                       onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
                       className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-cyan-500"
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+44 7700 900000"
                     />
                   </div>
                 </div>
@@ -284,7 +287,7 @@ export default function IntakeSheet() {
                       value={formData.claimValue}
                       onChange={(e) => setFormData({ ...formData, claimValue: e.target.value })}
                       className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-cyan-500"
-                      placeholder="$50,000 - $100,000"
+                      placeholder="£50,000 - £100,000"
                     />
                   </div>
                 </div>
@@ -321,7 +324,7 @@ export default function IntakeSheet() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
+                      Recording matter…
                     </>
                   ) : (
                     'Submit Intake'

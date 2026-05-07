@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useLocation } from 'wouter';
+import Nav from '@/components/Nav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -74,6 +75,7 @@ export default function BookDemo() {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] flex items-center justify-center p-4">
+        <Nav />
         <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
@@ -116,6 +118,7 @@ export default function BookDemo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-12 px-4">
+      <Nav />
       <div className="max-w-2xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-white mb-4">Book a Demo</h1>
@@ -195,7 +198,7 @@ export default function BookDemo() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-[#5A4BFF]"
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+44 7700 900000"
                   />
                 </div>
               </div>
@@ -250,7 +253,7 @@ export default function BookDemo() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
+                      Sending request…
                     </>
                   ) : (
                     'Book Demo'

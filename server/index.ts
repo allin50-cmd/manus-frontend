@@ -34,6 +34,23 @@ for (const key of REQUIRED_ENV) {
   }
 }
 
+const log = {
+  info: (msg: string, meta?: Record<string, unknown>) => {
+    if (process.env.NODE_ENV === 'production') {
+      process.stdout.write(JSON.stringify({ level: 'info', msg, ...meta, ts: new Date().toISOString() }) + '\n');
+    } else {
+      console.log(`${new Date().toISOString()} ${msg}`, meta ? JSON.stringify(meta) : '');
+    }
+  },
+  error: (msg: string, meta?: Record<string, unknown>) => {
+    if (process.env.NODE_ENV === 'production') {
+      process.stderr.write(JSON.stringify({ level: 'error', msg, ...meta, ts: new Date().toISOString() }) + '\n');
+    } else {
+      console.error(`${new Date().toISOString()} ${msg}`, meta ? JSON.stringify(meta) : '');
+    }
+  },
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -83,9 +100,9 @@ app.post(
             })
             .onConflictDoNothing();
 
-          console.log(`✅ Company monitored: ${companyName} (${companyNumber})`);
+          log.info('company.monitored', { companyName, companyNumber });
         } catch (err) {
-          console.error('Error persisting monitored company:', err);
+          log.error('company.monitor.failed', { error: String(err) });
           return res.status(500).json({ error: 'Database error' });
         }
       }
@@ -102,9 +119,10 @@ app.use(helmet({
 }));
 app.use(compression());
 
-const allowedOrigins = process.env.APP_URL
-  ? [process.env.APP_URL, 'http://localhost:5173', 'http://localhost:3000']
-  : true;
+const isProd = process.env.NODE_ENV === 'production';
+const allowedOrigins = isProd
+  ? [process.env.APP_URL as string]
+  : [process.env.APP_URL as string, 'http://localhost:5173', 'http://localhost:3000'];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -126,7 +144,7 @@ app.use('/api/', apiLimiter);
 
 // Logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  log.info('request', { method: req.method, path: req.path });
   next();
 });
 
@@ -143,17 +161,9 @@ app.get('/api/health', async (req: Request, res: Response) => {
     // Check database connection
     await db.select().from(deploymentStatus).limit(1);
 
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      database: 'connected',
-    });
+    res.json({ status: 'ok' });
   } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      database: 'disconnected',
-    });
+    res.status(503).json({ status: 'unhealthy' });
   }
 });
 
@@ -282,14 +292,14 @@ app.post('/api/deployments/record', async (req: Request, res: Response) => {
       })
       .returning();
 
-    console.log(`✅ Deployment recorded: ${environment} - ${status} - ${commit}`);
+    log.info('deployment.recorded', { environment, status, commit });
 
     res.status(201).json({
       success: true,
       id: deployment.id,
     });
   } catch (error) {
-    console.error('Error recording deployment:', error);
+    log.error('deployment.record.failed', { error: String(error) });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -390,7 +400,7 @@ app.post('/api/lead', formLimiter, async (req: Request, res: Response) => {
       })
       .returning();
 
-    console.log(`📧 New lead captured: ${name} - ${product || 'N/A'}`);
+    log.info('lead.captured', { name, product });
 
     res.status(201).json({
       ok: true,
@@ -398,7 +408,7 @@ app.post('/api/lead', formLimiter, async (req: Request, res: Response) => {
       leadId: lead.leadId,
     });
   } catch (error) {
-    console.error('Error creating lead:', error);
+    log.error('lead.create.failed', { error: String(error) });
     res.status(500).json({
       ok: false,
       error: 'Failed to save lead. Please try again.',
@@ -472,7 +482,7 @@ app.post('/api/intake', formLimiter, async (req: Request, res: Response) => {
       })
       .returning();
 
-    console.log(`📋 New intake form: ${clientName} - ${matterType}`);
+    log.info('intake.created', { clientName, matterType });
 
     res.status(201).json({
       ok: true,
@@ -481,7 +491,7 @@ app.post('/api/intake', formLimiter, async (req: Request, res: Response) => {
       urgency: intake.urgency,
     });
   } catch (error) {
-    console.error('Error creating intake form:', error);
+    log.error('intake.create.failed', { error: String(error) });
     res.status(500).json({
       ok: false,
       error: 'Failed to save intake form. Please try again.',
@@ -573,11 +583,7 @@ app.post('/api/compliance-bundle', formLimiter, async (req: Request, res: Respon
       })
       .returning();
 
-    console.log(`📦 Real-time compliance check: ${companyProfile.companyName} (${formattedNumber})`);
-    console.log(`   Status: ${complianceStatus.status.toUpperCase()}`);
-    console.log(`   Risk Level: ${complianceStatus.riskLevel.toUpperCase()}`);
-    console.log(`   Overdue Filings: ${complianceStatus.overdueFilings.length}`);
-    console.log(`   Upcoming Deadlines: ${complianceStatus.upcomingDeadlines.length}`);
+    log.info('compliance.checked', { company: companyProfile.companyName, status: complianceStatus.status, risk: complianceStatus.riskLevel });
 
     res.status(201).json({
       ok: true,
@@ -826,7 +832,7 @@ const server = app.listen(PORT, () => {
   console.log('  POST   /api/contact');
   console.log('  GET    /api/admin/contacts');
   console.log('  PATCH  /api/contacts/:id');
-  console.log('  GET    /health');
+  console.log('  GET    /api/health');
   console.log('');
 });
 

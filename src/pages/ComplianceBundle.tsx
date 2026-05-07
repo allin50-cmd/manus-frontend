@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useLocation, useSearch } from 'wouter';
+import Nav from '@/components/Nav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,6 +57,7 @@ export default function ComplianceBundle() {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [complianceData, setComplianceData] = useState<ComplianceData | null>(null);
   const [error, setError] = useState('');
+  const [companyNumberError, setCompanyNumberError] = useState('');
   const [monitored, setMonitored] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -129,6 +131,14 @@ export default function ComplianceBundle() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    const cn = formData.companyNumber.trim().toUpperCase();
+    if (!/^([A-Z]{2}\d{6}|\d{8})$/.test(cn)) {
+      setCompanyNumberError('Must be 8 digits or 2 letters + 6 digits (e.g. 12345678 or SC123456)');
+      setLoading(false);
+      return;
+    }
+    setCompanyNumberError('');
 
     try {
       const response = await fetch('/api/compliance-bundle', {
@@ -215,6 +225,7 @@ export default function ComplianceBundle() {
   if (success && companyData && complianceData) {
     return (
       <div className="min-h-screen bg-[#F8F8F8] py-8 px-4">
+        <Nav />
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <Card className="bg-white border-[#1A1A1A]/10">
@@ -443,6 +454,7 @@ export default function ComplianceBundle() {
 
   return (
     <div className="min-h-screen bg-[#F8F8F8] py-12 px-4">
+      <Nav />
       <div className="max-w-2xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-[#1A1A1A] mb-4">Compliance Bundle Request</h1>
@@ -498,11 +510,12 @@ export default function ComplianceBundle() {
                     onChange={(e) => setFormData({ ...formData, companyNumber: e.target.value })}
                     className="border-gray-300 focus:border-[#C9A64A] focus:ring-[#C9A64A]"
                     placeholder="12345678"
-                    maxLength={8}
+                    maxLength={10}
                   />
                   <p className="text-sm text-gray-500">
                     8-digit company registration number
                   </p>
+                  {companyNumberError && <p className="text-sm text-red-500 mt-1">{companyNumberError}</p>}
                 </div>
               </div>
 
@@ -609,7 +622,7 @@ export default function ComplianceBundle() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
+                      Looking up company…
                     </>
                   ) : (
                     'Request Bundle'
