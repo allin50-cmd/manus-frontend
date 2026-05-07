@@ -789,17 +789,42 @@ function FeesTab({ briefs, onRefresh }: { briefs: Brief[]; onRefresh: () => void
     }
   }
 
-  const total = outstanding.reduce((sum, b) => sum + (b.feeAgreed || 0), 0);
+  // KPI computations
+  const totalOutstanding = briefs
+    .filter((b) => b.feeStatus === 'pending' || b.feeStatus === 'invoiced')
+    .reduce((sum, b) => sum + (b.feeAgreed || 0), 0);
+
+  const recoveredThisMonth = briefs
+    .filter((b) => b.feeStatus === 'paid')
+    .reduce((sum, b) => sum + (b.feeAgreed || 0), 0);
+
+  const overdueCount = briefs.filter(
+    (b) => (b.feeStatus as string) === 'overdue'
+  ).length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Outstanding Fees</h2>
-        <div className="text-sm text-gray-400">
-          Total outstanding:{' '}
-          <span className="font-bold" style={{ color: GOLD }}>
-            {formatCurrency(total)}
-          </span>
+      <h2 className="text-lg font-semibold text-white">Outstanding Fees</h2>
+
+      {/* KPI summary strip */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Outstanding</p>
+          <p className="text-2xl font-bold" style={{ color: GOLD }}>
+            £{Number(totalOutstanding).toLocaleString('en-GB')}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Recovered This Month</p>
+          <p className="text-2xl font-bold" style={{ color: GOLD }}>
+            £{Number(recoveredThisMonth).toLocaleString('en-GB')}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Overdue</p>
+          <p className="text-2xl font-bold" style={{ color: GOLD }}>
+            {overdueCount}
+          </p>
         </div>
       </div>
 
@@ -853,49 +878,113 @@ function FeesTab({ briefs, onRefresh }: { briefs: Brief[]; onRefresh: () => void
 
 // ── Tab: Diary ─────────────────────────────────────────────────────────────────
 
-function DiaryTab({ diary }: { diary: DiaryEntry[] }) {
-  const sorted = [...diary].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+function DiaryTab({ briefs }: { briefs: Brief[] }) {
+  // Only briefs with a hearing date set
+  const withHearing = briefs
+    .filter((b) => !!b.hearingDate)
+    .sort((a, b) => new Date(a.hearingDate!).getTime() - new Date(b.hearingDate!).getTime());
+
+  // Week boundaries (start-of-day, Monday-based)
+  const now = new Date();
+  const todayStr = now.toDateString();
+
+  // Start of this week (Monday)
+  const dayOfWeek = now.getDay(); // 0=Sun … 6=Sat
+  const diffToMonday = (dayOfWeek + 6) % 7;
+  const startOfThisWeek = new Date(now);
+  startOfThisWeek.setHours(0, 0, 0, 0);
+  startOfThisWeek.setDate(now.getDate() - diffToMonday);
+
+  const startOfNextWeek = new Date(startOfThisWeek);
+  startOfNextWeek.setDate(startOfThisWeek.getDate() + 7);
+
+  const startOfLater = new Date(startOfNextWeek);
+  startOfLater.setDate(startOfNextWeek.getDate() + 7);
+
+  function weekBucket(dateStr: string): 'this' | 'next' | 'later' {
+    const d = new Date(dateStr);
+    if (d < startOfNextWeek) return 'this';
+    if (d < startOfLater) return 'next';
+    return 'later';
+  }
+
+  const thisWeek = withHearing.filter((b) => weekBucket(b.hearingDate!) === 'this');
+  const nextWeek = withHearing.filter((b) => weekBucket(b.hearingDate!) === 'next');
+  const later = withHearing.filter((b) => weekBucket(b.hearingDate!) === 'later');
+
+  function HearingCard({ brief }: { brief: Brief }) {
+    const d = new Date(brief.hearingDate!);
+    const isToday = d.toDateString() === todayStr;
+    const dayName = d.toLocaleDateString('en-GB', { weekday: 'short' });
+    const dayNum = d.getDate();
+    const month = d.toLocaleDateString('en-GB', { month: 'short' });
+
+    return (
+      <div className="flex items-start gap-4 p-4 rounded-xl border border-white/10 bg-white/5 hover:border-[#C9A64A]/30 transition-colors">
+        <div className="w-12 text-center shrink-0">
+          <div className="text-xs text-gray-500">{dayName}</div>
+          <div className="text-2xl font-bold text-white">{dayNum}</div>
+          <div className="text-xs text-gray-500">{month}</div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-medium text-white text-sm">{brief.clientName}</p>
+            {isToday && (
+              <span
+                className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                style={{ backgroundColor: `${GOLD}22`, color: GOLD, border: `1px solid ${GOLD}55` }}
+              >
+                Today
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {brief.barristerName || '—'} · {brief.matterType}
+          </p>
+          {brief.courtName && (
+            <p className="text-xs text-gray-500 mt-0.5">{brief.courtName}</p>
+          )}
+          <p className="text-xs mt-1" style={{ color: GOLD }}>
+            £{Number(brief.feeAgreed).toLocaleString('en-GB')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  function WeekSection({ label, items }: { label: string; items: Brief[] }) {
+    if (items.length === 0) return null;
+    return (
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</h3>
+        <div className="space-y-2">
+          {items.map((b) => (
+            <HearingCard key={b.id} brief={b} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-white">Diary & Court Dates</h2>
-      <SectionCard title={`Upcoming Hearings (${sorted.length})`}>
-        {sorted.length === 0 ? (
-          <p className="py-8 text-center text-gray-500 text-sm">No diary entries found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow style={{ borderColor: BORDER }}>
-                  {['Date', 'Brief Ref', 'Client', 'Court', 'Barrister', 'Matter'].map((h) => (
-                    <TableHead key={h} className="text-gray-500 text-xs">
-                      {h}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sorted.map((e) => (
-                  <TableRow key={e.id} style={{ borderColor: BORDER }} className="hover:bg-white/[0.02]">
-                    <TableCell className="text-white font-medium whitespace-nowrap">
-                      {formatDate(e.date)}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs" style={{ color: GOLD }}>
-                      {e.briefRef}
-                    </TableCell>
-                    <TableCell className="text-gray-300">{e.clientName}</TableCell>
-                    <TableCell className="text-gray-400">{e.courtName}</TableCell>
-                    <TableCell className="text-gray-400">{e.barristerName}</TableCell>
-                    <TableCell className="text-gray-400">{e.matterType}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </SectionCard>
+      <h2 className="text-lg font-semibold text-white">
+        Diary &amp; Court Dates
+        <span className="ml-2 text-sm font-normal text-gray-500">({withHearing.length} hearings)</span>
+      </h2>
+
+      {withHearing.length === 0 ? (
+        <div className="rounded-xl border border-white/10 bg-white/5 py-16 text-center">
+          <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30 text-gray-500" />
+          <p className="text-sm text-gray-500">No upcoming hearings.</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <WeekSection label="This Week" items={thisWeek} />
+          <WeekSection label="Next Week" items={nextWeek} />
+          <WeekSection label="Later" items={later} />
+        </div>
+      )}
     </div>
   );
 }
@@ -1137,7 +1226,7 @@ export default function ClerkDashboard() {
             {activeTab === 'fees' && (
               <FeesTab briefs={briefs} onRefresh={handleRefresh} />
             )}
-            {activeTab === 'diary' && <DiaryTab diary={diary} />}
+            {activeTab === 'diary' && <DiaryTab briefs={briefs} />}
           </>
         )}
       </div>

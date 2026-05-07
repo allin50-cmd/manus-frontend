@@ -22,6 +22,15 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ── Startup environment validation ───────────────────────────────────────────
+const REQUIRED_ENV = ['DATABASE_URL', 'COMPANIES_HOUSE_API_KEY'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length) {
+  console.error(`[STARTUP ERROR] Missing required environment variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const app = express();
 app.use(compression());
 app.use(helmet({
@@ -832,6 +841,23 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// VERSION ENDPOINT
+// ============================================================================
+
+/**
+ * GET /api/version
+ * Returns runtime version and environment info.
+ */
+app.get('/api/version', (_req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.json({
+    version: process.env.npm_package_version ?? '1.0.0',
+    env: process.env.NODE_ENV ?? 'production',
+    uptime: Math.floor(process.uptime()),
+  });
+});
+
+// ============================================================================
 // ZAPIER REST-HOOK ENDPOINTS
 // ============================================================================
 
@@ -1459,7 +1485,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // START SERVER
 // ============================================================================
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('');
   console.log('🚀 VaultLine Brand Suite Server');
   console.log('================================');
@@ -1496,3 +1522,21 @@ app.listen(PORT, () => {
   console.log('  GET    /api/clerks/notes');
   console.log('');
 });
+
+// ============================================================================
+// GRACEFUL SHUTDOWN
+// ============================================================================
+
+const shutdown = () => {
+  console.log('\n[SHUTDOWN] Gracefully closing server...');
+  server.close(() => {
+    console.log('[SHUTDOWN] Server closed.');
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.error('[SHUTDOWN] Force exit after timeout.');
+    process.exit(1);
+  }, 10_000);
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

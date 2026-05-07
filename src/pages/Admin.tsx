@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -25,9 +24,7 @@ import {
   ExternalLink,
   GitCommit,
   Calendar,
-  Zap,
-  BookOpen,
-  LayoutDashboard,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -88,67 +85,36 @@ interface Deployment {
   deployedAt: string;
 }
 
-interface SummaryStats {
-  totalLeads: number | null;
-  totalIntakes: number | null;
-  totalContacts: number | null;
-  activeZapierSubs: number | null;
-  totalBriefs: number | null;
+function exportCSV(rows: Record<string, unknown>[], filename: string) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const csv = [
+    headers.join(','),
+    ...rows.map(r => headers.map(h => JSON.stringify(r[h] ?? '')).join(','))
+  ].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function Admin() {
-  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
   const [complianceBundles, setComplianceBundles] = useState<ComplianceBundle[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('leads');
-  const [summaryStats, setSummaryStats] = useState<SummaryStats>({
-    totalLeads: null,
-    totalIntakes: null,
-    totalContacts: null,
-    activeZapierSubs: null,
-    totalBriefs: null,
-  });
+
+  const [searchLeads, setSearchLeads] = useState('');
+  const [filterProduct, setFilterProduct] = useState('');
+  const [searchIntakes, setSearchIntakes] = useState('');
+  const [searchContacts, setSearchContacts] = useState('');
 
   useEffect(() => {
     fetchAllData();
-    fetchSummaryStats();
   }, []);
-
-  const fetchSummaryStats = async () => {
-    const [leadsRes, intakeRes, contactsRes, zapierRes, briefsRes] = await Promise.allSettled([
-      fetch('/api/admin/leads'),
-      fetch('/api/admin/intake-forms'),
-      fetch('/api/admin/contacts'),
-      fetch('/api/zapier/subscriptions', { headers: { 'X-API-Key': 'admin-key' } }),
-      fetch('/api/clerks/briefs'),
-    ]);
-
-    const safeCount = async (result: PromiseSettledResult<Response>): Promise<number | null> => {
-      if (result.status === 'rejected') return null;
-      if (!result.value.ok) return null;
-      try {
-        const data = await result.value.json();
-        return Array.isArray(data) ? data.length : null;
-      } catch {
-        return null;
-      }
-    };
-
-    const [totalLeads, totalIntakes, totalContacts, activeZapierSubs, totalBriefs] =
-      await Promise.all([
-        safeCount(leadsRes),
-        safeCount(intakeRes),
-        safeCount(contactsRes),
-        safeCount(zapierRes),
-        safeCount(briefsRes),
-      ]);
-
-    setSummaryStats({ totalLeads, totalIntakes, totalContacts, activeZapierSubs, totalBriefs });
-  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -235,20 +201,38 @@ export default function Admin() {
     }
   };
 
+  // Filtered data for each tab
+  const filteredLeads = leads.filter(l => {
+    const q = searchLeads.toLowerCase();
+    const matchesSearch = !q ||
+      l.name.toLowerCase().includes(q) ||
+      l.email.toLowerCase().includes(q) ||
+      (l.company ?? '').toLowerCase().includes(q);
+    const matchesProduct = !filterProduct || l.product === filterProduct;
+    return matchesSearch && matchesProduct;
+  });
+
+  const filteredIntakes = intakeForms.filter(f => {
+    const q = searchIntakes.toLowerCase();
+    return !q ||
+      f.clientName.toLowerCase().includes(q) ||
+      f.clientEmail.toLowerCase().includes(q) ||
+      f.matterType.toLowerCase().includes(q);
+  });
+
+  const filteredContacts = contacts.filter(c => {
+    const q = searchContacts.toLowerCase();
+    return !q ||
+      c.name.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q);
+  });
+
   // Sort deployments by environment order
   const sortedDeployments = [...deployments].sort((a, b) => {
     const order = { prod: 0, production: 0, staging: 1, dev: 2, development: 2 };
     return (order[a.environment.toLowerCase() as keyof typeof order] || 3) -
            (order[b.environment.toLowerCase() as keyof typeof order] || 3);
   });
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0F1014] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#5A4BFF] border-t-transparent animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4">
@@ -269,66 +253,6 @@ export default function Admin() {
               Refresh
             </Button>
           </div>
-        </div>
-
-        {/* Summary Stats Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          {[
-            { label: 'Total Leads', value: summaryStats.totalLeads, icon: <Users className="w-4 h-4" /> },
-            { label: 'Total Intakes', value: summaryStats.totalIntakes, icon: <FileText className="w-4 h-4" /> },
-            { label: 'Total Contacts', value: summaryStats.totalContacts, icon: <MessageSquare className="w-4 h-4" /> },
-            { label: 'Zapier Subs', value: summaryStats.activeZapierSubs, icon: <Zap className="w-4 h-4" /> },
-            { label: 'Briefs', value: summaryStats.totalBriefs, icon: <BookOpen className="w-4 h-4" /> },
-          ].map(({ label, value, icon }) => (
-            <Card key={label} className="bg-[#1A1D28] border-white/10">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-xs font-medium text-gray-400 flex items-center gap-2">
-                  {icon}
-                  {label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="text-3xl font-bold text-[#C9A64A]">
-                  {value === null ? '—' : value}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          <Button
-            variant="outline"
-            className="border-[#2A2D3A] text-white hover:bg-[#1A1D28]"
-            onClick={() => setActiveTab('leads')}
-          >
-            <Users className="w-4 h-4 mr-2" />
-            View Leads
-          </Button>
-          <Button
-            variant="outline"
-            className="border-[#2A2D3A] text-white hover:bg-[#1A1D28]"
-            onClick={() => setActiveTab('intake')}
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            View Intakes
-          </Button>
-          <Button
-            variant="outline"
-            className="border-[#2A2D3A] text-white hover:bg-[#1A1D28]"
-            onClick={() => setActiveTab('contacts')}
-          >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            View Contacts
-          </Button>
-          <Button
-            className="bg-[#C9A64A] hover:bg-[#B8943A] text-black font-semibold"
-            onClick={() => navigate('/clerk-dashboard')}
-          >
-            <LayoutDashboard className="w-4 h-4 mr-2" />
-            Clerk Dashboard
-          </Button>
         </div>
 
         {/* Deployment Status Panel */}
@@ -448,7 +372,7 @@ export default function Admin() {
         </div>
 
         {/* Data Tables */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs defaultValue="leads" className="space-y-6">
           <TabsList className="bg-[#13151C] border border-[#2A2D3A]">
             <TabsTrigger value="leads" className="data-[state=active]:bg-[#5A4BFF]">
               <Users className="w-4 h-4 mr-2" />
@@ -478,6 +402,32 @@ export default function Admin() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <input
+                    type="search"
+                    placeholder="Search..."
+                    value={searchLeads}
+                    onChange={e => setSearchLeads(e.target.value)}
+                    className="w-full sm:w-72 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#5A4BFF]/50"
+                  />
+                  <select
+                    value={filterProduct}
+                    onChange={e => setFilterProduct(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5A4BFF]/50"
+                  >
+                    <option value="">All products</option>
+                    <option value="vaultline">VaultLine</option>
+                    <option value="ultai">UltAi</option>
+                    <option value="fineguard">FineGuard</option>
+                    <option value="law-clerks">Law Clerks</option>
+                  </select>
+                  <button
+                    onClick={() => exportCSV(filteredLeads as unknown as Record<string, unknown>[], 'leads.csv')}
+                    className="flex items-center gap-1.5 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -491,13 +441,7 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {leads.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6}>
-                            <div className="text-center py-12 text-gray-600 text-sm">No records yet.</div>
-                          </TableCell>
-                        </TableRow>
-                      ) : leads.map((lead) => (
+                      {filteredLeads.map((lead) => (
                         <TableRow key={lead.id} className="border-[#2A2D3A] hover:bg-[#1A1D28]">
                           <TableCell className="font-mono text-[#5A4BFF]">{lead.leadId}</TableCell>
                           <TableCell className="text-white">{lead.name}</TableCell>
@@ -532,6 +476,21 @@ export default function Admin() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <input
+                    type="search"
+                    placeholder="Search..."
+                    value={searchIntakes}
+                    onChange={e => setSearchIntakes(e.target.value)}
+                    className="w-full sm:w-72 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#5A4BFF]/50"
+                  />
+                  <button
+                    onClick={() => exportCSV(filteredIntakes as unknown as Record<string, unknown>[], 'intakes.csv')}
+                    className="flex items-center gap-1.5 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -545,13 +504,7 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {intakeForms.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6}>
-                            <div className="text-center py-12 text-gray-600 text-sm">No records yet.</div>
-                          </TableCell>
-                        </TableRow>
-                      ) : intakeForms.map((form) => (
+                      {filteredIntakes.map((form) => (
                         <TableRow key={form.id} className="border-[#2A2D3A] hover:bg-[#1A1D28]">
                           <TableCell className="font-mono text-cyan-400">{form.matterRef}</TableCell>
                           <TableCell className="text-white">{form.clientName}</TableCell>
@@ -630,6 +583,21 @@ export default function Admin() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <input
+                    type="search"
+                    placeholder="Search..."
+                    value={searchContacts}
+                    onChange={e => setSearchContacts(e.target.value)}
+                    className="w-full sm:w-72 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#5A4BFF]/50"
+                  />
+                  <button
+                    onClick={() => exportCSV(filteredContacts as unknown as Record<string, unknown>[], 'contacts.csv')}
+                    className="flex items-center gap-1.5 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export CSV
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -643,13 +611,7 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {contacts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6}>
-                            <div className="text-center py-12 text-gray-600 text-sm">No records yet.</div>
-                          </TableCell>
-                        </TableRow>
-                      ) : contacts.map((contact) => (
+                      {filteredContacts.map((contact) => (
                         <TableRow key={contact.id} className="border-[#2A2D3A] hover:bg-[#1A1D28]">
                           <TableCell className="font-mono text-green-400">{contact.ticketId}</TableCell>
                           <TableCell className="text-white">{contact.name}</TableCell>
