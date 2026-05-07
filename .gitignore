@@ -62,3 +62,4 @@ Thumbs.db
 *.key
 *.cert
 credentials.json
+.claude/
