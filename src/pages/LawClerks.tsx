@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import LegalNav from '@/components/LegalNav';
+import SEO from '@/components/SEO';
 import {
   FileText,
   Users,
@@ -80,6 +81,7 @@ export default function LawClerks() {
 
   return (
     <div className="min-h-screen bg-[#0B0F1A] text-white font-sans">
+      <SEO title="Law Clerks" description="AI-powered chambers management for barristers and clerks. Manage briefs, diary, fees, and barrister roster in one intelligent platform." />
       <LegalNav active="clerks" />
 
       {/* Hero */}

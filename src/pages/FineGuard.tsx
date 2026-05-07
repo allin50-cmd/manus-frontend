@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import MainNav from '@/components/MainNav';
+import SEO from '@/components/SEO';
 import {
   Shield,
   ArrowRight,
@@ -132,6 +133,7 @@ export default function FineGuard() {
 
   return (
     <div className="min-h-screen bg-[#F8F8F8] text-[#1A1A1A]">
+      <SEO title="FineGuard Compliance Cloud" description="Automated Companies House monitoring. Never miss a filing deadline again. Instant alerts for director changes, annual accounts, and PSC updates." />
       <MainNav active="FineGuard" />
 
       {/* Hero */}

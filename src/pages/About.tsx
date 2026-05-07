@@ -2,6 +2,7 @@ import { Lock, Cpu, Scale, MapPin, ArrowRight, TrendingUp, Users, FileCheck, Act
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import MainNav from '@/components/MainNav';
+import SEO from '@/components/SEO';
 
 const STATS = [
   { value: '500+', label: 'Law Firms', icon: Users },
@@ -90,6 +91,7 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0F1014] to-[#1A1D28] text-white">
+      <SEO title="About Us" description="Founded in London by ex-barristers and AI engineers. Building the future of legal technology for UK law firms and chambers." />
       <MainNav active="About" />
 
       {/* Hero */}

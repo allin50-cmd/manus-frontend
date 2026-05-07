@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,10 @@ import {
   Clock,
   ExternalLink,
   GitCommit,
-  Calendar
+  Calendar,
+  Zap,
+  BookOpen,
+  LayoutDashboard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,17 +88,67 @@ interface Deployment {
   deployedAt: string;
 }
 
+interface SummaryStats {
+  totalLeads: number | null;
+  totalIntakes: number | null;
+  totalContacts: number | null;
+  activeZapierSubs: number | null;
+  totalBriefs: number | null;
+}
+
 export default function Admin() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
   const [complianceBundles, setComplianceBundles] = useState<ComplianceBundle[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('leads');
+  const [summaryStats, setSummaryStats] = useState<SummaryStats>({
+    totalLeads: null,
+    totalIntakes: null,
+    totalContacts: null,
+    activeZapierSubs: null,
+    totalBriefs: null,
+  });
 
   useEffect(() => {
     fetchAllData();
+    fetchSummaryStats();
   }, []);
+
+  const fetchSummaryStats = async () => {
+    const [leadsRes, intakeRes, contactsRes, zapierRes, briefsRes] = await Promise.allSettled([
+      fetch('/api/admin/leads'),
+      fetch('/api/admin/intake-forms'),
+      fetch('/api/admin/contacts'),
+      fetch('/api/zapier/subscriptions', { headers: { 'X-API-Key': 'admin-key' } }),
+      fetch('/api/clerks/briefs'),
+    ]);
+
+    const safeCount = async (result: PromiseSettledResult<Response>): Promise<number | null> => {
+      if (result.status === 'rejected') return null;
+      if (!result.value.ok) return null;
+      try {
+        const data = await result.value.json();
+        return Array.isArray(data) ? data.length : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const [totalLeads, totalIntakes, totalContacts, activeZapierSubs, totalBriefs] =
+      await Promise.all([
+        safeCount(leadsRes),
+        safeCount(intakeRes),
+        safeCount(contactsRes),
+        safeCount(zapierRes),
+        safeCount(briefsRes),
+      ]);
+
+    setSummaryStats({ totalLeads, totalIntakes, totalContacts, activeZapierSubs, totalBriefs });
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -207,6 +261,66 @@ export default function Admin() {
               Refresh
             </Button>
           </div>
+        </div>
+
+        {/* Summary Stats Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+          {[
+            { label: 'Total Leads', value: summaryStats.totalLeads, icon: <Users className="w-4 h-4" /> },
+            { label: 'Total Intakes', value: summaryStats.totalIntakes, icon: <FileText className="w-4 h-4" /> },
+            { label: 'Total Contacts', value: summaryStats.totalContacts, icon: <MessageSquare className="w-4 h-4" /> },
+            { label: 'Zapier Subs', value: summaryStats.activeZapierSubs, icon: <Zap className="w-4 h-4" /> },
+            { label: 'Briefs', value: summaryStats.totalBriefs, icon: <BookOpen className="w-4 h-4" /> },
+          ].map(({ label, value, icon }) => (
+            <Card key={label} className="bg-[#1A1D28] border-white/10">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-xs font-medium text-gray-400 flex items-center gap-2">
+                  {icon}
+                  {label}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="text-3xl font-bold text-[#C9A64A]">
+                  {value === null ? '—' : value}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <Button
+            variant="outline"
+            className="border-[#2A2D3A] text-white hover:bg-[#1A1D28]"
+            onClick={() => setActiveTab('leads')}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            View Leads
+          </Button>
+          <Button
+            variant="outline"
+            className="border-[#2A2D3A] text-white hover:bg-[#1A1D28]"
+            onClick={() => setActiveTab('intake')}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            View Intakes
+          </Button>
+          <Button
+            variant="outline"
+            className="border-[#2A2D3A] text-white hover:bg-[#1A1D28]"
+            onClick={() => setActiveTab('contacts')}
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            View Contacts
+          </Button>
+          <Button
+            className="bg-[#C9A64A] hover:bg-[#B8943A] text-black font-semibold"
+            onClick={() => navigate('/clerk-dashboard')}
+          >
+            <LayoutDashboard className="w-4 h-4 mr-2" />
+            Clerk Dashboard
+          </Button>
         </div>
 
         {/* Deployment Status Panel */}
@@ -326,7 +440,7 @@ export default function Admin() {
         </div>
 
         {/* Data Tables */}
-        <Tabs defaultValue="leads" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-[#13151C] border border-[#2A2D3A]">
             <TabsTrigger value="leads" className="data-[state=active]:bg-[#5A4BFF]">
               <Users className="w-4 h-4 mr-2" />

@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import MainNav from '@/components/MainNav';
+import SEO from '@/components/SEO';
 import {
   Lock,
   GitBranch,
@@ -105,6 +106,7 @@ export default function VaultLine() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] text-white">
+      <SEO title="VaultLine Cloud" description="Enterprise-grade secure document storage with end-to-end encryption, version control, and full audit trails. SOC 2 Type II certified." />
       <MainNav active="VaultLine" />
 
       {/* Hero */}

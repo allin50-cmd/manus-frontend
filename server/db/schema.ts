@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -28,7 +28,11 @@ export const leads = pgTable('leads', {
   phone: varchar('phone', { length: 50 }),
   message: text('message'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('leads_email_idx').on(t.email),
+  index('leads_product_idx').on(t.product),
+  index('leads_created_at_idx').on(t.createdAt),
+]);
 
 /**
  * Client Intake Forms Table
@@ -45,7 +49,10 @@ export const intakeForms = pgTable('intake_forms', {
   description: text('description'),
   claimValue: varchar('claim_value', { length: 50 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('intake_forms_urgency_idx').on(t.urgency),
+  index('intake_forms_created_at_idx').on(t.createdAt),
+]);
 
 /**
  * Compliance Bundle Requests Table
@@ -76,7 +83,10 @@ export const contacts = pgTable('contacts', {
   message: text('message').notNull(),
   status: varchar('status', { length: 20 }).default('new').notNull(), // new, read, replied
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('contacts_status_idx').on(t.status),
+  index('contacts_created_at_idx').on(t.createdAt),
+]);
 
 /**
  * Monitored Companies Table
@@ -105,7 +115,11 @@ export const auditLeads = pgTable('audit_leads', {
   agentDecision: text('agent_decision'), // Last JSON decision from sales agent
   auditViewedAt: timestamp('audit_viewed_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('audit_leads_email_idx').on(t.email),
+  index('audit_leads_stage_idx').on(t.stage),
+  index('audit_leads_created_at_idx').on(t.createdAt),
+]);
 
 export type AuditLead = typeof auditLeads.$inferSelect;
 export type NewAuditLead = typeof auditLeads.$inferInsert;
@@ -120,7 +134,9 @@ export const zapierSubscriptions = pgTable('zapier_subscriptions', {
   event: varchar('event', { length: 100 }).notNull(), // new_audit_lead | new_lead | deal_escalated | deal_closed
   apiKey: varchar('api_key', { length: 255 }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('zapier_subscriptions_event_idx').on(t.event),
+]);
 
 export type ZapierSubscription = typeof zapierSubscriptions.$inferSelect;
 export type NewZapierSubscription = typeof zapierSubscriptions.$inferInsert;
@@ -137,7 +153,9 @@ export const barristers = pgTable('barristers', {
   status: varchar('status', { length: 20 }).default('active').notNull(), // active | inactive | silk
   specialisms: text('specialisms'), // JSON array
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('barristers_status_idx').on(t.status),
+]);
 
 export const briefs = pgTable('briefs', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -154,7 +172,12 @@ export const briefs = pgTable('briefs', {
   status: varchar('status', { length: 30 }).default('instructions_received').notNull(),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('briefs_status_idx').on(t.status),
+  index('briefs_fee_status_idx').on(t.feeStatus),
+  index('briefs_hearing_date_idx').on(t.hearingDate),
+  index('briefs_barrister_id_idx').on(t.barristerId),
+]);
 
 export const clerkNotes = pgTable('clerk_notes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -164,7 +187,10 @@ export const clerkNotes = pgTable('clerk_notes', {
   note: text('note').notNull(),
   createdBy: varchar('created_by', { length: 255 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('clerk_notes_brief_id_idx').on(t.briefId),
+  index('clerk_notes_barrister_id_idx').on(t.barristerId),
+]);
 
 export type Barrister = typeof barristers.$inferSelect;
 export type NewBarrister = typeof barristers.$inferInsert;

@@ -2,6 +2,7 @@ import { ExternalLink, ArrowRight, Star } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import MainNav from '@/components/MainNav';
+import SEO from '@/components/SEO';
 
 const TEAM = [
   {
@@ -103,6 +104,7 @@ export default function Team() {
 
   return (
     <div className="min-h-screen bg-[#0F1014] text-white">
+      <SEO title="Our Team" description="Meet the ex-barristers, engineers, and legal tech veterans behind the Allin50 Legal Suite." />
       <MainNav active="Team" />
 
       {/* Hero */}

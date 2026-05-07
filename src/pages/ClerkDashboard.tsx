@@ -24,6 +24,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import SEO from '@/components/SEO';
 
 const GOLD = '#C9A64A';
 const BG = '#0F1014';
@@ -1047,6 +1048,7 @@ export default function ClerkDashboard() {
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: BG, color: 'white' }}>
+      <SEO title="Clerk Dashboard" description="Law Clerks chambers management dashboard." />
       <h1 className="sr-only">Law Clerks — Chambers Management Dashboard</h1>
       {/* Top nav */}
       <nav

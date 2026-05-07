@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import LegalNav from '@/components/LegalNav';
+import SEO from '@/components/SEO';
 import {
   FileText,
   Brain,
@@ -120,6 +121,7 @@ export default function UltAi() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#0F1520] to-[#0B0C10] text-white">
+      <SEO title="UltAi Client Intake" description="AI-powered client matter intake for law firms. Eliminate paper, reduce admin time by 94%, and auto-classify matters in under 30 seconds." />
       <LegalNav active="intake" />
 
       {/* Hero */}

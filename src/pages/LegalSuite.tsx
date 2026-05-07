@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { FileText, Users, Shield, Lock, ArrowRight, Scale, CheckCircle } from 'lucide-react';
 import LegalNav from '@/components/LegalNav';
+import SEO from '@/components/SEO';
 
 interface Stats {
   totalBarristers: number;
@@ -95,6 +96,7 @@ export default function LegalSuite() {
 
   return (
     <div className="min-h-screen bg-[#080A10] text-white">
+      <SEO title="Legal Suite" description="The complete legal operations platform. Client intake, chambers management, compliance, and document security — unified in one suite." />
       <LegalNav active="hub" />
 
       {/* Hero */}

@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import MainNav from '@/components/MainNav';
+import SEO from '@/components/SEO';
 
 export default function BookDemo() {
   const [, setLocation] = useLocation();
@@ -71,49 +73,61 @@ export default function BookDemo() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-green-400" />
-            </div>
-            <CardTitle className="text-2xl text-white">Request Submitted!</CardTitle>
-            <CardDescription className="text-gray-400">
-              We've received your demo booking request
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-center">
-            <div className="p-4 bg-[#1A1D28] border border-[#2A2D3A] rounded-lg">
-              <p className="text-sm text-gray-400 mb-2">Your Reference ID</p>
-              <p className="text-lg font-mono text-[#5A4BFF] font-semibold">{leadId}</p>
-            </div>
-            <p className="text-gray-300">
-              Our team will contact you within 24 hours to schedule your personalized demo.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setSuccess(false)}
-                variant="outline"
-                className="flex-1 bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
-              >
-                Submit Another
-              </Button>
-              <Button
-                onClick={() => setLocation('/')}
-                className="flex-1 bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
+        <SEO title="Book a Demo" description="Book a free demo of the Allin50 Legal Suite. See FineGuard, VaultLine, UltAi, and Law Clerks in action." />
+        <MainNav />
+        <div className="flex items-center justify-center p-4 py-20">
+          <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-400" />
+              </div>
+              <CardTitle className="text-2xl text-white">Demo Booked!</CardTitle>
+              <CardDescription className="text-gray-400">
+                We've received your demo booking request
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-center">
+              {leadId && (
+                <div className="p-4 bg-[#1A1D28] border border-[#2A2D3A] rounded-lg">
+                  <p className="text-sm text-gray-400 mb-2">Your Reference ID</p>
+                  <p className="text-lg font-mono text-[#5A4BFF] font-semibold">{leadId}</p>
+                </div>
+              )}
+              <p className="text-gray-300">
+                You'll receive a calendar invite within 2 hours.
+              </p>
+              <p className="text-gray-400 text-sm">
+                A member of our team will also send a personalised prep guide.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={() => setSuccess(false)}
+                  variant="outline"
+                  className="flex-1 bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
+                >
+                  Submit Another
+                </Button>
+                <Button
+                  onClick={() => setLocation('/')}
+                  className="flex-1 bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Home
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
+      <SEO title="Book a Demo" description="Book a free demo of the Allin50 Legal Suite. See FineGuard, VaultLine, UltAi, and Law Clerks in action." />
+      <MainNav />
+      <div className="py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-white mb-4">Book a Demo</h1>
@@ -262,6 +276,7 @@ export default function BookDemo() {
         <p className="text-center text-gray-500 text-sm mt-6">
           By submitting this form, you agree to our terms of service and privacy policy
         </p>
+      </div>
       </div>
     </div>
   );

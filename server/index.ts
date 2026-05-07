@@ -123,6 +123,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// ── Input validation helpers ─────────────────────────────────────────────────
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+function sanitise(val: unknown): string {
+  return String(val ?? '').trim().slice(0, 1000);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ============================================================================
 // HEALTH CHECK ENDPOINT
 // ============================================================================
@@ -347,13 +356,22 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
  */
 app.post('/api/lead', async (req: Request, res: Response) => {
   try {
-    const { name, email, company, product, phone, message } = req.body;
+    const name = sanitise(req.body.name);
+    const email = sanitise(req.body.email);
+    const company = sanitise(req.body.company);
+    const product = sanitise(req.body.product);
+    const phone = sanitise(req.body.phone);
+    const message = sanitise(req.body.message);
 
-    if (!name || !email) {
-      return res.status(400).json({
-        ok: false,
-        error: 'Name and email are required',
-      });
+    if (!name || name.length > 255) {
+      return res.status(400).json({ ok: false, error: 'name is required and must be 255 characters or fewer' });
+    }
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ ok: false, error: 'A valid email address is required' });
+    }
+    const validProducts = ['vaultline', 'ultai', 'fineguard', 'law-clerks'];
+    if (product && !validProducts.includes(product)) {
+      return res.status(400).json({ ok: false, error: `product must be one of: ${validProducts.join(', ')}` });
     }
 
     // Generate unique lead ID
@@ -428,21 +446,23 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
  */
 app.post('/api/intake', async (req: Request, res: Response) => {
   try {
-    const {
-      clientName,
-      clientEmail,
-      clientPhone,
-      matterType,
-      urgency,
-      description,
-      claimValue
-    } = req.body;
+    const clientName = sanitise(req.body.clientName);
+    const clientEmail = sanitise(req.body.clientEmail);
+    const clientPhone = sanitise(req.body.clientPhone);
+    const matterType = sanitise(req.body.matterType);
+    const urgency = sanitise(req.body.urgency);
+    const description = sanitise(req.body.description);
+    const claimValue = sanitise(req.body.claimValue);
 
-    if (!clientName || !matterType || !urgency) {
-      return res.status(400).json({
-        ok: false,
-        error: 'Client name, matter type, and urgency are required',
-      });
+    if (!clientName || clientName.length > 255) {
+      return res.status(400).json({ ok: false, error: 'clientName is required and must be 255 characters or fewer' });
+    }
+    if (!matterType) {
+      return res.status(400).json({ ok: false, error: 'matterType is required' });
+    }
+    const validUrgencies = ['low', 'medium', 'high', 'critical'];
+    if (!urgency || !validUrgencies.includes(urgency)) {
+      return res.status(400).json({ ok: false, error: `urgency must be one of: ${validUrgencies.join(', ')}` });
     }
 
     // Generate unique matter reference
@@ -663,13 +683,19 @@ app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => 
  */
 app.post('/api/contact', async (req: Request, res: Response) => {
   try {
-    const { name, email, subject, message } = req.body;
+    const name = sanitise(req.body.name);
+    const email = sanitise(req.body.email);
+    const subject = sanitise(req.body.subject);
+    const message = sanitise(req.body.message);
 
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        ok: false,
-        error: 'Name, email, and message are required',
-      });
+    if (!name) {
+      return res.status(400).json({ ok: false, error: 'name is required' });
+    }
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ ok: false, error: 'A valid email address is required' });
+    }
+    if (!message) {
+      return res.status(400).json({ ok: false, error: 'message is required' });
     }
 
     // Generate unique ticket ID
@@ -906,10 +932,11 @@ app.get('/api/zapier/subscriptions', async (req: Request, res: Response) => {
  */
 app.post('/api/audit-signup', async (req: Request, res: Response) => {
   try {
-    const { email, name, chamberSize, painPoints } = req.body;
+    const email = sanitise(req.body.email);
+    const { name, chamberSize, painPoints } = req.body;
 
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ ok: false, error: 'email is required' });
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ ok: false, error: 'A valid email address is required' });
     }
 
     const tenantId = crypto.randomUUID();
@@ -1293,6 +1320,88 @@ app.get('/api/clerks/notes', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching clerk notes:', error);
     res.status(500).json({ error: 'Failed to fetch clerk notes' });
+  }
+});
+
+// ============================================================================
+// DELETE ENDPOINTS & ADDITIONAL UTILITY ENDPOINTS
+// ============================================================================
+
+/**
+ * DELETE /api/admin/leads/:id
+ * Delete a lead by ID
+ */
+app.delete('/api/admin/leads/:id', async (req: Request, res: Response) => {
+  try {
+    await db.delete(leads).where(eq(leads.id, req.params.id));
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting lead:', error);
+    res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
+/**
+ * DELETE /api/admin/contacts/:id
+ * Delete a contact by ID
+ */
+app.delete('/api/admin/contacts/:id', async (req: Request, res: Response) => {
+  try {
+    await db.delete(contacts).where(eq(contacts.id, req.params.id));
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting contact:', error);
+    res.status(500).json({ error: 'Failed to delete contact' });
+  }
+});
+
+/**
+ * GET /api/clerks/barristers/:id/briefs
+ * Get all briefs for a specific barrister
+ */
+app.get('/api/clerks/barristers/:id/briefs', async (req: Request, res: Response) => {
+  try {
+    const rows = await db.select().from(briefs)
+      .where(eq(briefs.barristerId, req.params.id))
+      .orderBy(desc(briefs.createdAt));
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching barrister briefs:', error);
+    res.status(500).json({ error: 'Failed to fetch barrister briefs' });
+  }
+});
+
+/**
+ * GET /api/stats
+ * Public summary stats endpoint (used by homepage)
+ * Returns counts: leads, intakeForms, barristers, briefs, contacts
+ */
+app.get('/api/stats', async (req: Request, res: Response) => {
+  try {
+    const [
+      [leadsRow],
+      [intakeFormsRow],
+      [barristersRow],
+      [briefsRow],
+      [contactsRow],
+    ] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(leads),
+      db.select({ count: sql<number>`count(*)` }).from(intakeForms),
+      db.select({ count: sql<number>`count(*)` }).from(barristers),
+      db.select({ count: sql<number>`count(*)` }).from(briefs),
+      db.select({ count: sql<number>`count(*)` }).from(contacts),
+    ]);
+
+    res.json({
+      leads: Number(leadsRow.count),
+      intakeForms: Number(intakeFormsRow.count),
+      barristers: Number(barristersRow.count),
+      briefs: Number(briefsRow.count),
+      contacts: Number(contactsRow.count),
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
 

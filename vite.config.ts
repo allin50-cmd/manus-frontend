@@ -11,5 +11,15 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['wouter'],
+          ui: ['lucide-react', 'sonner'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
   },
 });

@@ -3,6 +3,7 @@ import { Check, ChevronDown, ChevronUp, Zap, Shield, FileText, BookOpen } from '
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import MainNav from '@/components/MainNav';
+import SEO from '@/components/SEO';
 
 const PRODUCTS = [
   {
@@ -320,6 +321,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-[#0F1014] text-white">
+      <SEO title="Pricing" description="Simple, transparent pricing for FineGuard, VaultLine, UltAi, and Law Clerks. Monthly and annual plans for every practice size." />
       <MainNav active="Pricing" />
 
       {/* Hero */}
