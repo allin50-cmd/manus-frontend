@@ -81,6 +81,17 @@ interface DiaryEntry {
   matterType: string;
 }
 
+interface IntakeForm {
+  id: string;
+  matterRef: string;
+  clientName: string;
+  clientEmail: string | null;
+  matterType: string;
+  urgency: string;
+  description: string | null;
+  createdAt: string;
+}
+
 // ── Status helpers ─────────────────────────────────────────────────────────────
 
 const BRIEF_STATUS_ORDER: Brief['status'][] = [
@@ -189,11 +200,12 @@ function StatCard({
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <Card style={{ backgroundColor: CARD_BG, borderColor: BORDER }}>
       <CardHeader>
         <CardTitle className="text-white">{title}</CardTitle>
+        {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -879,17 +891,76 @@ function DiaryTab({ diary }: { diary: DiaryEntry[] }) {
   );
 }
 
+// ── Intake Queue Tab ───────────────────────────────────────────────────────────
+
+function IntakeQueueTab({
+  forms,
+  urgencyClass,
+  onConvert,
+}: {
+  forms: IntakeForm[];
+  urgencyClass: Record<string, string>;
+  onConvert: (f: IntakeForm) => void;
+}) {
+  return (
+    <SectionCard title="Client Intake Queue" subtitle="Submissions from UltAi — convert to brief with one click">
+      {forms.length === 0 ? (
+        <p className="py-12 text-center text-sm text-gray-500">No pending intake submissions.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow style={{ borderColor: BORDER }}>
+                <TableHead className="text-gray-400">Ref</TableHead>
+                <TableHead className="text-gray-400">Client</TableHead>
+                <TableHead className="text-gray-400">Matter Type</TableHead>
+                <TableHead className="text-gray-400">Urgency</TableHead>
+                <TableHead className="text-gray-400">Email</TableHead>
+                <TableHead className="text-gray-400">Description</TableHead>
+                <TableHead className="text-gray-400">Received</TableHead>
+                <TableHead className="text-gray-400">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {forms.map(f => (
+                <TableRow key={f.id} style={{ borderColor: BORDER }} className="hover:bg-white/[0.02]">
+                  <TableCell className="font-mono text-xs" style={{ color: GOLD }}>{f.matterRef}</TableCell>
+                  <TableCell className="font-medium text-white">{f.clientName}</TableCell>
+                  <TableCell className="text-gray-300">{f.matterType}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${urgencyClass[f.urgency] ?? urgencyClass.medium}`}>
+                      {f.urgency}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-400">{f.clientEmail ?? '—'}</TableCell>
+                  <TableCell className="max-w-xs truncate text-sm text-gray-400">
+                    {f.description ? f.description.slice(0, 60) + (f.description.length > 60 ? '…' : '') : '—'}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-gray-500">
+                    {new Date(f.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => onConvert(f)}
+                      className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:opacity-90"
+                      style={{ backgroundColor: GOLD, color: BG }}
+                    >
+                      → Convert to Brief
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'briefs' | 'barristers' | 'fees' | 'diary';
-
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'overview', label: 'Overview', icon: TrendingUp },
-  { id: 'briefs', label: 'Briefs', icon: FileText },
-  { id: 'barristers', label: 'Barristers', icon: Users },
-  { id: 'fees', label: 'Fees', icon: DollarSign },
-  { id: 'diary', label: 'Diary', icon: Calendar },
-];
+type Tab = 'overview' | 'intake' | 'briefs' | 'barristers' | 'fees' | 'diary';
 
 export default function ClerkDashboard() {
   const [, setLocation] = useLocation();
@@ -901,23 +972,26 @@ export default function ClerkDashboard() {
   const [barristers, setBarristers] = useState<Barrister[]>([]);
   const [briefs, setBriefs] = useState<Brief[]>([]);
   const [diary, setDiary] = useState<DiaryEntry[]>([]);
+  const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
 
   async function fetchAll(showRefreshing = false) {
     if (showRefreshing) setRefreshing(true);
     else setLoading(true);
 
     try {
-      const [statsRes, barristersRes, briefsRes, diaryRes] = await Promise.all([
+      const [statsRes, barristersRes, briefsRes, diaryRes, intakeRes] = await Promise.all([
         fetch('/api/clerks/stats'),
         fetch('/api/clerks/barristers'),
         fetch('/api/clerks/briefs'),
         fetch('/api/clerks/diary'),
+        fetch('/api/admin/intake-forms'),
       ]);
 
       if (statsRes.ok) setStats(await statsRes.json());
       if (barristersRes.ok) setBarristers(await barristersRes.json());
       if (briefsRes.ok) setBriefs(await briefsRes.json());
       if (diaryRes.ok) setDiary(await diaryRes.json());
+      if (intakeRes.ok) setIntakeForms(await intakeRes.json());
     } catch {
       toast.error('Failed to load dashboard data');
     } finally {
@@ -933,6 +1007,43 @@ export default function ClerkDashboard() {
   function handleRefresh() {
     fetchAll(true);
   }
+
+  async function convertIntakeToBrief(form: IntakeForm) {
+    try {
+      const res = await fetch('/api/clerks/briefs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName: form.clientName,
+          matterType: form.matterType,
+          solicitorFirm: '',
+          notes: form.description ?? '',
+        }),
+      });
+      if (!res.ok) throw new Error();
+      const brief = await res.json();
+      toast.success(`Brief created: ${brief.briefRef}`);
+      fetchAll(true);
+    } catch {
+      toast.error('Failed to create brief');
+    }
+  }
+
+  const urgencyClass: Record<string, string> = {
+    low: 'bg-gray-500/20 text-gray-400 border-gray-500/40',
+    medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
+    high: 'bg-orange-500/20 text-orange-400 border-orange-500/40',
+    critical: 'bg-red-500/20 text-red-400 border-red-500/40',
+  };
+
+  const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+    { id: 'overview', label: 'Overview', icon: TrendingUp },
+    { id: 'intake', label: `Intake Queue${intakeForms.length ? ` (${intakeForms.length})` : ''}`, icon: FileText },
+    { id: 'briefs', label: 'Briefs', icon: FileText },
+    { id: 'barristers', label: 'Barristers', icon: Users },
+    { id: 'fees', label: 'Fees', icon: DollarSign },
+    { id: 'diary', label: 'Diary', icon: Calendar },
+  ];
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: BG, color: 'white' }}>
@@ -996,6 +1107,13 @@ export default function ClerkDashboard() {
           </div>
         ) : (
           <>
+            {activeTab === 'intake' && (
+              <IntakeQueueTab
+                forms={intakeForms}
+                urgencyClass={urgencyClass}
+                onConvert={convertIntakeToBrief}
+              />
+            )}
             {activeTab === 'overview' && (
               <OverviewTab stats={stats} diary={diary} />
             )}

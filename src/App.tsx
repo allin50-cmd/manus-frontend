@@ -13,6 +13,7 @@ import Admin from './pages/Admin';
 import AuditLanding from './pages/AuditLanding';
 import LawClerks from './pages/LawClerks';
 import ClerkDashboard from './pages/ClerkDashboard';
+import LegalSuite from './pages/LegalSuite';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/intake-sheet" component={IntakeSheet} />
         <Route path="/admin" component={Admin} />
         <Route path="/audit" component={AuditLanding} />
+        <Route path="/legal" component={LegalSuite} />
         <Route path="/law-clerks" component={LawClerks} />
         <Route path="/clerk-dashboard" component={ClerkDashboard} />
         <Route component={NotFound} />

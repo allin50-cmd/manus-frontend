@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import LegalNav from '@/components/LegalNav';
 import {
   FileText,
   Brain,
@@ -119,23 +120,7 @@ export default function UltAi() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#0F1520] to-[#0B0C10] text-white">
-      {/* Nav */}
-      <nav className="border-b border-white/10 sticky top-0 z-50 backdrop-blur-md bg-[#0B0C10]/80">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
-              <Brain className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">UltAi</span>
-          </div>
-          <Button
-            onClick={() => setLocation('/intake-sheet')}
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-5 py-2 text-sm font-medium"
-          >
-            Try Free
-          </Button>
-        </div>
-      </nav>
+      <LegalNav active="intake" />
 
       {/* Hero */}
       <section className="max-w-7xl mx-auto px-6 pt-24 pb-20 text-center">
@@ -314,6 +299,24 @@ export default function UltAi() {
               </Button>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Legal Suite cross-link banner */}
+      <section className="border-y border-[#C9A64A]/20 bg-[#0A0C12] py-8 px-6">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-gray-300">
+              <span className="font-semibold text-[#C9A64A]">UltAi is part of the Legal Suite.</span>{' '}
+              Intake submissions automatically appear in your Law Clerks dashboard for seamless brief management.
+            </p>
+          </div>
+          <button
+            onClick={() => setLocation('/clerk-dashboard')}
+            className="flex-shrink-0 text-sm font-semibold text-[#C9A64A] hover:text-[#E0B96A] transition-colors whitespace-nowrap"
+          >
+            Open Clerk Dashboard →
+          </button>
         </div>
       </section>
 

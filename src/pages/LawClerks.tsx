@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import LegalNav from '@/components/LegalNav';
 import {
   FileText,
   Users,
@@ -79,24 +80,10 @@ export default function LawClerks() {
 
   return (
     <div className="min-h-screen bg-[#0B0F1A] text-white font-sans">
-      {/* Nav */}
-      <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/10 bg-[#0B0F1A]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-bold tracking-tight" style={{ color: GOLD }}>
-            Law Clerks
-          </span>
-          <Button
-            onClick={() => setLocation('/clerk-dashboard')}
-            className="text-sm font-semibold"
-            style={{ backgroundColor: GOLD, color: '#0B0F1A' }}
-          >
-            Dashboard <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </div>
-      </nav>
+      <LegalNav active="clerks" />
 
       {/* Hero */}
-      <section className="mx-auto max-w-4xl px-6 pt-40 pb-24 text-center">
+      <section className="mx-auto max-w-4xl px-6 pt-24 pb-24 text-center">
         <div
           className="mb-5 inline-block rounded-full px-4 py-1 text-xs font-semibold tracking-widest uppercase"
           style={{ backgroundColor: `${GOLD}20`, color: GOLD, border: `1px solid ${GOLD}40` }}
