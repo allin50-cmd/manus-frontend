@@ -84,13 +84,14 @@ export function reconcileRecoveredNode(
     };
   }
 
-  // Safety quarantine check
+  // Safety quarantine check — use QUARANTINE state so dashboard can distinguish from RED
   if (reconciledNode.confidence.safety < 60) {
     return {
       status: "QUARANTINED",
       node: {
         ...reconciledNode,
-        state: "RED",
+        state: "QUARANTINE",
+        cellId: "quarantine-cell",
         currentTask: "QUARANTINE_SAFE_HOLD",
         operatorResumeApproved: false,
       },

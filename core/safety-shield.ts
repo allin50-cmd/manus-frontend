@@ -9,7 +9,16 @@ export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecis
     return { decision: 'DENY', approvedAction: 'EMERGENCY_HOLD', reason: 'Safety shield denied action' };
   }
 
-  // 2. Recovery shield
+  // 2. Quarantine — connected but untrusted; all actions blocked for review
+  if (stateDecision.nextState === 'QUARANTINE') {
+    return {
+      decision: 'REQUEST_HUMAN_REVIEW',
+      approvedAction: 'HOLD_AND_REQUEST_REVIEW',
+      reason: 'Node quarantined; operator review and explicit clearance required before any action',
+    };
+  }
+
+  // 3. Recovery shield
   if (stateDecision.nextState === 'RECOVER') {
     return {
       decision: 'MODIFY',

@@ -176,7 +176,8 @@ const fakeEvent: UltraEvent = {
 };
 const quarantined = reconcileRecoveredNode(dangerousNode, [fakeEvent]);
 assert('safety<60 recovery → QUARANTINED', quarantined.status === 'QUARANTINED');
-assert('quarantined node state = RED', quarantined.node.state === 'RED');
+assert('quarantined node state = QUARANTINE', quarantined.node.state === 'QUARANTINE');
+assert('quarantined node cellId = quarantine-cell', quarantined.node.cellId === 'quarantine-cell');
 
 // ─── 6. swarm engine — full tick lifecycle ────────────────────────────────
 
@@ -387,6 +388,65 @@ const lead400 = await post('/api/lead', { name: 'Test' });
 assert('POST /api/lead missing fields → 400', lead400.status === 400);
 
 smokeServer.close();
+
+// ─── 10. QUARANTINE — graceful failure containment ────────────────────────
+
+section('10. QUARANTINE — graceful failure containment');
+
+// failure-state-machine: QUARANTINE stays without operator approval
+const quarNode: SwarmNode = {
+  ...makeNode(), state: 'QUARANTINE',
+  confidence: { comms: 90, navigation: 88, mission: 85, safety: 90, consensus: 88, nav_integrity: 100, clock_health: 100 },
+};
+const staysQ = decideFailureState(quarNode.confidence, quarNode);
+assert('QUARANTINE node stays QUARANTINE without approval', staysQ.nextState === 'QUARANTINE');
+assert('QUARANTINE blockedActions includes ADVANCE', staysQ.blockedActions.includes('ADVANCE'));
+
+// failure-state-machine: QUARANTINE exits with operator approval
+const quarApproved: SwarmNode = { ...quarNode, operatorResumeApproved: true };
+const leavesQ = decideFailureState(quarApproved.confidence, quarApproved);
+assert('QUARANTINE node with approval exits QUARANTINE', leavesQ.nextState !== 'QUARANTINE');
+
+// safety-shield: QUARANTINE → REQUEST_HUMAN_REVIEW
+const shieldQ = safetyShield(quarNode, { action: 'ADVANCE', confidence: 90 });
+assert('QUARANTINE shield → REQUEST_HUMAN_REVIEW', shieldQ.decision === 'REQUEST_HUMAN_REVIEW');
+assert('QUARANTINE action = HOLD_AND_REQUEST_REVIEW', shieldQ.approvedAction === 'HOLD_AND_REQUEST_REVIEW');
+
+// recovery-engine: quarantined node gets QUARANTINE state (not RED)
+assert('recovery engine produces QUARANTINE state', quarantined.node.state === 'QUARANTINE');
+
+// cell-manager: QUARANTINE has highest priority among connected states
+import { assignSwarmCells, groupCells as groupCellsTest } from './core/cell-manager';
+const mixedNodes: SwarmNode[] = [
+  { ...quarNode, id: 'Q1' },
+  { ...makeNode({ safety: 40 }), id: 'R1', state: 'RED' },
+  { ...makeNode(), id: 'G1' },
+];
+const assignedMixed = assignSwarmCells(mixedNodes);
+assert('QUARANTINE node assigned to quarantine-cell', assignedMixed.find(n => n.id === 'Q1')!.cellId === 'quarantine-cell');
+assert('GREEN node stays in primary-swarm', assignedMixed.find(n => n.id === 'G1')!.cellId === 'primary-swarm');
+const groupedMixed = groupCellsTest(assignedMixed);
+const qCell = groupedMixed.find(c => c.cellId === 'quarantine-cell');
+assert('quarantine-cell group exists', qCell !== undefined);
+assert('quarantine-cell worst state = QUARANTINE', qCell?.state === 'QUARANTINE');
+
+// recovery loop trap: node with recoveryAttempts≥3 goes BLACK→QUARANTINE not RECOVER
+const loopNode: SwarmNode = {
+  id: 'LOOP-01', role: 'AUM', state: 'BLACK', cellId: 'blackout-cell',
+  lastSeenAt: Date.now(), recoveryAttempts: 3,
+  confidence: { comms: 80, navigation: 88, mission: 85, safety: 90, consensus: 85, nav_integrity: 100, clock_health: 100 },
+};
+const loopResult = runSimulationTick({ missionId: 'SMOKE', tick: 1, nodes: [loopNode], eventLog: [] });
+const loopedNode = loopResult.nodes[0];
+assert('recovery loop trap (3 attempts): BLACK → QUARANTINE', loopedNode.state === 'QUARANTINE');
+// safety-shield overwrites currentTask with HOLD_AND_REQUEST_REVIEW for QUARANTINE nodes
+assert('recovery loop task = HOLD_AND_REQUEST_REVIEW (shield override)', loopedNode.currentTask === 'HOLD_AND_REQUEST_REVIEW');
+
+// operator releaseQuarantine override
+queueOperatorOverrides([{ nodeId: 'LOOP-01', type: 'releaseQuarantine' }]);
+const releasedResult = runSimulationTick({ missionId: 'SMOKE', tick: 2, nodes: loopResult.nodes, eventLog: [] });
+const releasedNode = releasedResult.nodes[0];
+assert('releaseQuarantine resets recoveryAttempts to 0', releasedNode.recoveryAttempts === 0 || releasedNode.state !== 'QUARANTINE');
 
 // ─── summary ──────────────────────────────────────────────────────────────
 

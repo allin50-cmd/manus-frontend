@@ -8,7 +8,8 @@ export interface CellGroup {
 }
 
 const STATE_PRIORITY: Record<FailureState, number> = {
-  BLACK: 5,
+  BLACK: 6,
+  QUARANTINE: 5,
   RED: 4,
   RECOVER: 3,
   AMBER: 2,
@@ -25,11 +26,12 @@ function worstState(states: FailureState[]): FailureState {
 export function assignSwarmCells(nodes: SwarmNode[]): SwarmNode[] {
   return nodes.map((node) => {
     const cellId =
-      node.state === 'GREEN'   ? 'primary-swarm'  :
-      node.state === 'AMBER'   ? 'degraded-cell'  :
-      node.state === 'RED'     ? 'safe-hold-cell' :
-      node.state === 'BLACK'   ? 'blackout-cell'  :
-                                 'recovery-cell';
+      node.state === 'GREEN'      ? 'primary-swarm'   :
+      node.state === 'AMBER'      ? 'degraded-cell'   :
+      node.state === 'RED'        ? 'safe-hold-cell'  :
+      node.state === 'BLACK'      ? 'blackout-cell'   :
+      node.state === 'QUARANTINE' ? 'quarantine-cell' :
+                                    'recovery-cell';
     return { ...node, cellId };
   });
 }

@@ -38,7 +38,21 @@ export function decideFailureState(
     };
   }
 
-  // 4. RECOVER state: stay until recovery completes
+  // 4. QUARANTINE state: connected but untrusted — stays until operator explicitly clears
+  if (current === 'QUARANTINE') {
+    if (currentNode.operatorResumeApproved) {
+      // fall through to normal checks; operator has cleared the quarantine
+    } else {
+      return {
+        nextState: 'QUARANTINE',
+        reason: 'Node quarantined; awaiting operator review and explicit clearance',
+        allowedActions: ['REQUEST_HUMAN_REVIEW', 'TELEMETRY_ONLY'],
+        blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'EVENT_BROADCAST'],
+      };
+    }
+  }
+
+  // 5. RECOVER state: stay until recovery completes
   if (current === 'RECOVER') {
     return {
       nextState: 'RECOVER',

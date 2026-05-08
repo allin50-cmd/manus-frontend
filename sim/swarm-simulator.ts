@@ -8,7 +8,7 @@ import { clampScore } from "../core/confidence-engine";
 // ─── override queue ──────────────────────────────────────────
 export type OperatorOverride = {
   nodeId: string;
-  type: "approveResume" | "forceSafeHold";
+  type: "approveResume" | "forceSafeHold" | "releaseQuarantine";
 };
 let pendingOverrides: OperatorOverride[] = [];
 export function queueOperatorOverrides(overrides: OperatorOverride[]) {
@@ -57,6 +57,7 @@ function createNode(id: string, role: SwarmNode["role"]): SwarmNode {
       nav_integrity: 100,
       clock_health: 100,
     },
+    recoveryAttempts: 0,
   };
 }
 
@@ -125,13 +126,20 @@ function applyRelayRecovery(nodes: SwarmNode[], tick: number): SwarmNode[] {
   });
 }
 
-// ─── BLACK → RECOVER transition ─────────────────────────────
+// ─── BLACK → RECOVER transition (with loop-trap detection) ──
 function applyBlackToRecover(nodes: SwarmNode[]): SwarmNode[] {
   return nodes.map((node) => {
     if (node.state !== "BLACK") return node;
     if (node.confidence.comms > 50 && node.confidence.consensus >= 30) {
-      trackBlackoutStart([node]); // ensure first time recorded
-      return { ...node, state: "RECOVER", cellId: "recovery-cell" };
+      const attempts = node.recoveryAttempts ?? 0;
+      // Recovery loop trap: too many failed cycles → QUARANTINE
+      if (attempts >= 3) {
+        return { ...node, state: "QUARANTINE", cellId: "quarantine-cell",
+                 currentTask: "RECOVERY_LOOP_QUARANTINE" };
+      }
+      trackBlackoutStart([node]);
+      return { ...node, state: "RECOVER", cellId: "recovery-cell",
+               recoveryAttempts: attempts + 1 };
     }
     return node;
   });
@@ -174,6 +182,9 @@ function applyOperatorOverrides(nodes: SwarmNode[]): SwarmNode[] {
         confidence: { ...node.confidence, safety: 0 },
         operatorResumeApproved: false,
       };
+    }
+    if (ov.type === "releaseQuarantine") {
+      return { ...node, operatorResumeApproved: true, recoveryAttempts: 0 };
     }
     return node;
   });

@@ -1,4 +1,4 @@
-export type FailureState = 'GREEN' | 'AMBER' | 'RED' | 'BLACK' | 'RECOVER';
+export type FailureState = 'GREEN' | 'AMBER' | 'RED' | 'BLACK' | 'RECOVER' | 'QUARANTINE';
 
 export interface ConfidenceScores {
   comms: number;
@@ -19,6 +19,7 @@ export interface SwarmNode {
   confidence: ConfidenceScores;
   currentTask?: string;
   operatorResumeApproved?: boolean;
+  recoveryAttempts?: number;  // increments each BLACK→RECOVER transition; ≥3 → QUARANTINE
 }
 
 export interface StateDecision {

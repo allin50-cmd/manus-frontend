@@ -51,6 +51,16 @@ const log = {
   },
 };
 
+// Prevent unhandled rejections from silently crashing workers
+process.on('unhandledRejection', (reason) => {
+  log.error('Unhandled promise rejection', { reason: String(reason) });
+});
+// Uncaught exceptions: log, flush, exit so the container restarts cleanly
+process.on('uncaughtException', (err) => {
+  log.error('Uncaught exception', { error: err.message, stack: err.stack });
+  process.exit(1);
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
