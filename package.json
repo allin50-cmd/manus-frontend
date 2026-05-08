@@ -25,6 +25,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
     "@azure/service-bus": "^7.9.5",
     "@azure/storage-blob": "^12.31.0",
     "@radix-ui/react-dialog": "^1.1.15",

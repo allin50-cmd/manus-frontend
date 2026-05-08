@@ -27,6 +27,8 @@ const Portal             = lazy(() => import('./pages/Portal'));
 const VaultDashboard     = lazy(() => import('./pages/VaultDashboard'));
 const UltAiDashboard     = lazy(() => import('./pages/UltAiDashboard'));
 const FineGuardDashboard = lazy(() => import('./pages/FineGuardDashboard'));
+const UltAiIntake        = lazy(() => import('./pages/UltAiIntake'));
+const UltAiResult        = lazy(() => import('./pages/UltAiResult'));
 const Settings           = lazy(() => import('./pages/Settings'));
 const NotFound           = lazy(() => import('./pages/NotFound'));
 
@@ -68,6 +70,8 @@ function Router() {
         <Route path="/portal" component={Portal} />
         <Route path="/vault-dashboard" component={VaultDashboard} />
         <Route path="/ultai-dashboard" component={UltAiDashboard} />
+        <Route path="/ultai-intake" component={UltAiIntake} />
+        <Route path="/ultai-analysis/:id" component={UltAiResult} />
         <Route path="/fineguard-dashboard" component={FineGuardDashboard} />
         <Route path="/settings" component={Settings} />
 

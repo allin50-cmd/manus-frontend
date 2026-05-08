@@ -1,8 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
-import { Brain, Search, ChevronRight, CheckCircle2, Clock, AlertCircle, TrendingUp, FileText, Shield, Calendar, Bell } from 'lucide-react';
+import { Brain, Search, ChevronRight, CheckCircle2, Clock, AlertCircle, TrendingUp, FileText, Shield, Calendar, Bell, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+
+// ── Live data types ───────────────────────────────────────────────────────────
+
+interface AnalysisSummary {
+  id: string;
+  fileName: string;
+  status: 'processing' | 'complete' | 'failed';
+  createdAt: string;
+  completedAt?: string;
+  riskScore: number | null;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical' | null;
+  riskFlagCount: number | null;
+  obligationCount: number | null;
+}
+
+function useAnalyses() {
+  const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/ultai/analyses');
+        const data = await res.json();
+        if (alive) setAnalyses(data.analyses ?? []);
+      } catch { /* ignore */ } finally {
+        if (alive) setLoading(false);
+      }
+      // Re-poll every 5s if any analysis is processing
+      if (alive) {
+        const anyProcessing = analyses.some((a) => a.status === 'processing');
+        if (anyProcessing) setTimeout(poll, 5000);
+      }
+    };
+    poll();
+    return () => { alive = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { analyses, loading };
+}
 
 // ── Stat Cards ──────────────────────────────────────────────────────────────
 
@@ -59,7 +101,7 @@ function buildConic(segments: { pct: number; color: string }[]) {
 
 // ── Recent Analyses ──────────────────────────────────────────────────────────
 
-const analyses = [
+const staticAnalyses = [
   { name: 'Services_Agreement_v3_FINAL.pdf', risk: 'High', score: 73, when: '2h ago' },
   { name: 'NDA_Harrington_Partners.docx', risk: 'Low', score: 18, when: '5h ago' },
   { name: 'SaaS_Licence_Meridian.pdf', risk: 'Medium', score: 51, when: 'Yesterday' },
@@ -140,6 +182,69 @@ const navTabs = ['Dashboard', 'Contracts', 'Obligations', 'Risk Register', 'Sett
 export default function UltAiDashboard() {
   const [query, setQuery] = useState('');
   const [activeTab] = useState('Dashboard');
+  const { analyses, loading: analysesLoading } = useAnalyses();
+
+  // Derive live stats from real analyses
+  const completed = analyses.filter((a) => a.status === 'complete');
+  const processing = analyses.filter((a) => a.status === 'processing');
+  const totalFlags = completed.reduce((s, a) => s + (a.riskFlagCount ?? 0), 0);
+  const totalObs = completed.reduce((s, a) => s + (a.obligationCount ?? 0), 0);
+
+  const liveStatCards = [
+    {
+      label: 'Contracts Analysed',
+      value: analysesLoading ? '—' : String(completed.length || statCards[0].value),
+      sub: processing.length > 0 ? `${processing.length} processing` : statCards[0].sub,
+      icon: FileText,
+      accent: '#00D4FF',
+    },
+    {
+      label: 'Risk Flags',
+      value: analysesLoading ? '—' : (totalFlags > 0 ? String(totalFlags) : statCards[1].value),
+      sub: statCards[1].sub,
+      icon: AlertCircle,
+      accent: '#EF4444',
+    },
+    {
+      label: 'Obligations Tracked',
+      value: analysesLoading ? '—' : (totalObs > 0 ? String(totalObs) : statCards[2].value),
+      sub: statCards[2].sub,
+      icon: Shield,
+      accent: '#7C3AED',
+    },
+    {
+      label: 'Expiring Soon',
+      value: statCards[3].value,
+      sub: statCards[3].sub,
+      icon: Calendar,
+      accent: '#F59E0B',
+    },
+  ];
+
+  // Live analyses for the recent list (fall back to static if none yet)
+  type AnalysisRow = { id?: string; name: string; risk: string; score: number; when: string };
+  const liveAnalyses: AnalysisRow[] =
+    completed.length > 0
+      ? completed.slice(0, 6).map((a): AnalysisRow => ({
+          id: a.id,
+          name: a.fileName,
+          risk:
+            a.riskLevel === 'critical' || a.riskLevel === 'high'
+              ? 'High'
+              : a.riskLevel === 'medium'
+              ? 'Medium'
+              : 'Low',
+          score: a.riskScore ?? 0,
+          when: a.completedAt
+            ? new Date(a.completedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+            : '—',
+        }))
+      : staticAnalyses.map((a): AnalysisRow => ({ name: a.name, risk: a.risk, score: a.score, when: a.when }));
+
+  // Also show processing items in queue
+  const liveQueue = processing.length > 0
+    ? processing.map((a) => ({ name: a.fileName, status: 'processing' as const }))
+    : queue;
 
   const conicGradient = buildConic(riskData);
 
@@ -181,14 +286,21 @@ export default function UltAiDashboard() {
 
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         {/* ── Page title ── */}
-        <div>
-          <h1 className="text-2xl font-bold">Contract Intelligence Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-400">AI-powered contract analysis and risk monitoring</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Contract Intelligence Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-400">AI-powered contract analysis and risk monitoring</p>
+          </div>
+          <Link href="/ultai-intake">
+            <Button className="rounded-xl bg-[#00D4FF] px-5 text-sm font-semibold text-black hover:bg-[#00bce8] shrink-0">
+              <Plus className="mr-2 h-4 w-4" /> Analyse Contract
+            </Button>
+          </Link>
         </div>
 
         {/* ── Row 1: Stat Cards ── */}
         <div className="grid grid-cols-4 gap-4">
-          {statCards.map(({ label, value, sub, icon: Icon, accent }) => (
+          {liveStatCards.map(({ label, value, sub, icon: Icon, accent }) => (
             <div
               key={label}
               className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"
@@ -256,36 +368,54 @@ export default function UltAiDashboard() {
 
           {/* Middle: Recent Analyses */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="mb-4 text-sm font-semibold text-gray-300">Recent Contract Analyses</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-300">Recent Contract Analyses</h2>
+              <Link href="/ultai-intake">
+                <button className="text-[10px] text-[#00D4FF] hover:underline">+ New</button>
+              </Link>
+            </div>
             <div className="space-y-3">
-              {analyses.map(({ name, risk, score, when }) => (
-                <div key={name} className="group cursor-pointer rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-colors hover:bg-white/[0.05]">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-white">{name}</p>
-                      <p className="mt-0.5 text-[10px] text-gray-500">{when}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <Badge className={`text-[10px] px-1.5 py-0 ${riskBadgeClass(risk)}`}>
-                        {risk}
-                      </Badge>
-                      <span className="text-xs font-semibold" style={{ color: scoreColor(score) }}>
-                        {score}/100
-                      </span>
-                    </div>
-                  </div>
-                  {/* Score bar */}
-                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${score}%`,
-                        background: scoreColor(score),
-                      }}
-                    />
-                  </div>
+              {analysesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 text-[#00D4FF] animate-spin" />
                 </div>
-              ))}
+              ) : liveAnalyses.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
+                  <FileText className="h-6 w-6 text-gray-700" />
+                  <p className="text-xs text-gray-600">No analyses yet</p>
+                  <Link href="/ultai-intake">
+                    <button className="text-xs text-[#00D4FF] hover:underline">Analyse your first contract →</button>
+                  </Link>
+                </div>
+              ) : liveAnalyses.map((item) => {
+                const { name, risk, score, when } = item as { id?: string; name: string; risk: string; score: number; when: string };
+                const inner = (
+                  <div className="group cursor-pointer rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-colors hover:bg-white/[0.05]">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-white">{name}</p>
+                        <p className="mt-0.5 text-[10px] text-gray-500">{when}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge className={`text-[10px] px-1.5 py-0 ${riskBadgeClass(risk)}`}>
+                          {risk}
+                        </Badge>
+                        <span className="text-xs font-semibold" style={{ color: scoreColor(score) }}>
+                          {score}/100
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, background: scoreColor(score) }} />
+                    </div>
+                  </div>
+                );
+                return (item as { id?: string }).id ? (
+                  <Link key={name} href={`/ultai-analysis/${(item as { id?: string }).id}`}>{inner}</Link>
+                ) : (
+                  <div key={name}>{inner}</div>
+                );
+              })}
             </div>
           </div>
 
@@ -298,7 +428,7 @@ export default function UltAiDashboard() {
                 <h2 className="text-sm font-semibold text-gray-300">AI Processing Queue</h2>
               </div>
               <div className="space-y-2">
-                {queue.map(({ name, status }) => (
+                {liveQueue.map(({ name, status }) => (
                   <div key={name} className="flex items-center gap-2.5 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
                     {status === 'done' && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-400" />}
                     {status === 'processing' && (

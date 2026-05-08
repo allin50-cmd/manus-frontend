@@ -12,6 +12,7 @@ import { db } from './db/index';
 import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
 import { getUserByOpenId, getTenantBySlug, setTenantContext } from './trpc/db';
+import { startAnalysis, getAnalysis, listAnalyses } from './services/ultaiAgent';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
 import { appRouter } from './trpc/routers';
 import { desc, eq } from 'drizzle-orm';
@@ -792,6 +793,53 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
     console.error('Error updating contact:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// ============================================================================
+// ULTAI CONTRACT INTELLIGENCE
+// ============================================================================
+
+/**
+ * POST /api/ultai/analyze
+ * Submit a contract for analysis by the UltAi agent.
+ * Returns immediately with an analysis ID; poll GET /api/ultai/analyses/:id for results.
+ */
+app.post('/api/ultai/analyze', writeLimiter, (req: Request, res: Response) => {
+  const { fileName, contractText } = req.body as { fileName?: string; contractText?: string };
+  if (!contractText || contractText.trim().length < 20) {
+    return res.status(400).json({ error: 'contractText is required (minimum 20 characters)' });
+  }
+  const id = startAnalysis(fileName || 'Untitled Contract', contractText.trim());
+  res.json({ id, status: 'processing' });
+});
+
+/**
+ * GET /api/ultai/analyses
+ * List all past analyses (most recent first).
+ */
+app.get('/api/ultai/analyses', (_req: Request, res: Response) => {
+  const all = listAnalyses().map(({ id, fileName, status, createdAt, completedAt, result }) => ({
+    id,
+    fileName,
+    status,
+    createdAt,
+    completedAt,
+    riskScore: result?.riskScore ?? null,
+    riskLevel: result?.riskLevel ?? null,
+    riskFlagCount: result?.riskFlags.length ?? null,
+    obligationCount: result?.obligations.length ?? null,
+  }));
+  res.json({ analyses: all });
+});
+
+/**
+ * GET /api/ultai/analyses/:id
+ * Get a single analysis including full result when complete.
+ */
+app.get('/api/ultai/analyses/:id', (req: Request, res: Response) => {
+  const record = getAnalysis(req.params.id);
+  if (!record) return res.status(404).json({ error: 'Analysis not found' });
+  res.json(record);
 });
 
 // ============================================================================
