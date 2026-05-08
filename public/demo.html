@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ClerkOS · Lunar Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          cyan: { DEFAULT: '#00D4FF' },
+          violet: { DEFAULT: '#7C3AED' },
+        }
+      }
+    }
+  }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js" defer></script>
+<style>
+  body { background: #0B0C10; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+  .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 0.75rem; }
+  input, select, textarea {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 0.5rem;
+    color: #fff;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: #00D4FF;
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.2);
+  }
+  select option { background: #1a1b20; }
+  .badge-open { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+  .badge-in_progress { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .badge-closed { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+  .badge-on_hold { background: rgba(100,116,139,0.2); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+  .risk-low { color: #34d399; }
+  .risk-med { color: #fbbf24; }
+  .risk-high { color: #f87171; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px);} to {opacity:1;transform:translateY(0);} }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+  .step-glow { box-shadow: 0 0 16px rgba(0,212,255,0.35); }
+</style>
+</head>
+<body x-data="app()" class="min-h-screen">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 border-b border-white/8 backdrop-blur-md" style="background:rgba(11,12,16,0.92)">
+  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <svg class="w-6 h-6" style="color:#00D4FF" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3c-4.97 4.97-4.97 9.97 0 13.5C16.97 12.97 16.97 7.97 12 3z"/>
+      </svg>
+      <span class="font-semibold text-sm tracking-tight">ClerkOS <span class="text-white/40">·</span> <span style="color:#00D4FF">Lunar Demo</span></span>
+    </div>
+    <nav class="flex items-center gap-1">
+      <template x-for="t in tabs" :key="t.id">
+        <button @click="tab=t.id"
+          :class="tab===t.id ? 'text-white border-b-2 border-[#00D4FF]' : 'text-white/50 hover:text-white/80'"
+          class="px-3 py-1 text-sm font-medium transition-colors pb-1" x-text="t.label"></button>
+      </template>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-8">
+
+<!-- TAB 1: Lunar Intake -->
+<div x-show="tab==='intake'" class="fade-in">
+  <h1 class="text-2xl font-bold mb-1">Lunar Intake Pipeline</h1>
+  <p class="text-white/50 text-sm mb-6">Submit a matter to run it through triage, gate, vault, and follow-up.</p>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Form -->
+    <div class="card p-6">
+      <h2 class="font-semibold mb-4 text-white/80">Client Intake Form</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs text-white/50 mb-1">Full Name</label>
+          <input type="text" x-model="form.name" placeholder="e.g. Sarah Mitchell" />
+        </div>
+        <div>
+          <label class="block text-xs text-white/50 mb-1">Email</label>
+          <input type="email" x-model="form.email" placeholder="client@example.com" />
+        </div>
+        <div>
+          <label class="block text-xs text-white/50 mb-1">Issue Type</label>
+          <select x-model="form.issueType">
+            <option value="">Select issue type…</option>
+            <option>Employment dispute</option>
+            <option>Housing/eviction</option>
+            <option>Family law/divorce</option>
+            <option>Contract dispute</option>
+            <option>Criminal defence</option>
+            <option>Debt/bankruptcy</option>
+            <option>Immigration</option>
+            <option>Personal injury</option>
+            <option>Fraud/financial crime</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-white/50 mb-1">Description</label>
+          <textarea x-model="form.description" rows="5" placeholder="Describe the legal matter in detail…"></textarea>
+        </div>
+        <button @click="runPipeline()"
+          :disabled="submitting"
+          class="w-full py-2.5 rounded-lg font-semibold text-sm transition-all"
+          :style="submitting ? 'background:#0a6b7f;color:#a0e8f4;cursor:not-allowed' : 'background:#00D4FF;color:#0B0C10;cursor:pointer'">
+          <span x-show="!submitting">Run Lunar Pipeline</span>
+          <span x-show="submitting" class="flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Processing…
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Pipeline Results -->
+    <div class="space-y-4">
+      <!-- Steps -->
+      <template x-for="(step, i) in pipelineSteps" :key="i">
+        <div class="card p-4 transition-all duration-300"
+          :class="activeStep===i ? 'step-glow border-[#00D4FF]/40' : activeStep>i ? 'opacity-90' : 'opacity-40'">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+              :style="activeStep>i ? 'background:#10B981;color:#fff' : activeStep===i ? 'background:#00D4FF;color:#0B0C10' : 'background:rgba(255,255,255,0.08);color:#fff'">
+              <span x-show="activeStep>i">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+              <span x-show="activeStep===i" class="spin">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke-width="2" opacity="0.25"/>
+                  <path stroke-linecap="round" stroke-width="2" d="M12 2a10 10 0 0110 10"/>
+                </svg>
+              </span>
+              <span x-show="activeStep<=i && activeStep!==i" x-text="i+1"></span>
+            </div>
+            <div>
+              <div class="font-semibold text-sm" x-text="step.name"></div>
+              <div class="text-xs text-white/40" x-text="step.desc"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Result Panel -->
+      <div x-show="result" class="card p-5 fade-in space-y-4">
+        <!-- Decision Banner -->
+        <div class="rounded-lg px-4 py-3 font-bold text-sm flex items-center gap-2"
+          :style="result && decisionStyle(result.decision)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span x-text="result && result.decision"></span>
+          <span class="ml-auto font-normal text-xs opacity-80" x-text="result && result.reason"></span>
+        </div>
+
+        <!-- Risk Gauge -->
+        <div class="flex items-center gap-5">
+          <div class="relative w-20 h-20 flex-shrink-0">
+            <div class="w-20 h-20 rounded-full" :style="result && gaugeStyle(result.riskScore)"></div>
+            <div class="absolute inset-2 rounded-full flex flex-col items-center justify-center" style="background:#0B0C10">
+              <span class="font-bold text-lg" x-text="result && result.riskScore"></span>
+              <span class="text-xs text-white/40">/100</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-sm font-semibold mb-1">Risk Score</div>
+            <div class="text-xs text-white/50 mb-2" x-text="result && 'Urgency: '+result.urgency"></div>
+            <div class="flex flex-wrap gap-1">
+              <template x-for="flag in (result ? result.flags : [])" :key="flag.word">
+                <span class="text-xs px-2 py-0.5 rounded-full font-mono"
+                  :style="flag.score>=25 ? 'background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.3)' : flag.score>=15 ? 'background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)' : 'background:rgba(0,212,255,0.1);color:#67e8f9;border:1px solid rgba(0,212,255,0.2)'"
+                  x-text="flag.word + ' +'+flag.score"></span>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- UltraCore Rules -->
+        <div>
+          <div class="text-xs text-white/50 mb-1 font-mono">UltraCore Rule Trace</div>
+          <div class="rounded-lg p-3 font-mono text-xs space-y-0.5" style="background:rgba(0,0,0,0.4)">
+            <template x-for="rule in (result ? result.rules : [])" :key="rule">
+              <div x-text="rule" :class="rule.startsWith('→') ? 'text-[#00D4FF]' : 'text-white/60'"></div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Vault Hash -->
+        <div class="rounded-lg p-3 flex items-center justify-between" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.25)">
+          <div>
+            <div class="text-xs text-purple-400 mb-0.5 font-semibold">VaultLine Hash · Persisted ✓</div>
+            <div class="font-mono text-xs text-white/70" x-text="result && result.hash"></div>
+          </div>
+          <button @click="copyHash()" class="ml-3 p-1.5 rounded-md transition-colors" style="background:rgba(124,58,237,0.2)">
+            <span x-show="!copied">
+              <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+              </svg>
+            </span>
+            <span x-show="copied">
+              <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+
+        <!-- Lola Message -->
+        <div class="rounded-lg p-4" style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15)">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-4 h-4" style="color:#00D4FF" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <span class="text-xs font-semibold" style="color:#00D4FF">Lola · AI Follow-up</span>
+          </div>
+          <p class="text-sm text-white/80" x-text="result && result.lola"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: Case Queue -->
+<div x-show="tab==='cases'" class="fade-in">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold mb-1">Case Queue</h1>
+      <p class="text-white/50 text-sm">Live matter management — transition states and review audit trails.</p>
+    </div>
+    <div class="flex gap-3">
+      <input type="text" x-model="caseSearch" placeholder="Search cases…" class="w-48 text-sm" />
+      <select x-model="caseStatusFilter" class="text-sm w-36">
+        <option value="all">All statuses</option>
+        <option value="open">Open</option>
+        <option value="in_progress">In Progress</option>
+        <option value="on_hold">On Hold</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-white/8 text-white/50 text-xs">
+          <th class="text-left px-4 py-3 font-medium">Ref</th>
+          <th class="text-left px-4 py-3 font-medium">Client</th>
+          <th class="text-left px-4 py-3 font-medium">Type</th>
+          <th class="text-left px-4 py-3 font-medium">Status</th>
+          <th class="text-left px-4 py-3 font-medium">Hearing</th>
+          <th class="text-left px-4 py-3 font-medium">Risk</th>
+          <th class="text-left px-4 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="c in filteredCases()" :key="c.ref">
+          <template>
+            <tr class="border-b border-white/5 hover:bg-white/3 transition-colors cursor-default">
+              <td class="px-4 py-3 font-mono text-xs text-white/70" x-text="c.ref"></td>
+              <td class="px-4 py-3 font-medium" x-text="c.client"></td>
+              <td class="px-4 py-3 text-white/70" x-text="c.type"></td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="'badge-'+c.status" x-text="c.status.replace('_',' ')"></span>
+              </td>
+              <td class="px-4 py-3 text-white/50" x-text="c.hearing || '—'"></td>
+              <td class="px-4 py-3 font-bold" :class="c.risk>=80 ? 'risk-high' : c.risk>=50 ? 'risk-med' : 'risk-low'" x-text="c.risk"></td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <button @click="toggleCase(c.ref)" class="text-xs px-2 py-1 rounded border border-white/15 text-white/70 hover:text-white hover:border-white/30 transition-colors">View</button>
+                  <button x-show="c.status!=='closed'" @click="openTransition(c)" class="text-xs px-2 py-1 rounded border transition-colors" style="border-color:rgba(0,212,255,0.3);color:#00D4FF" :hover="'border-[#00D4FF]'">Transition</button>
+                </div>
+              </td>
+            </tr>
+            <tr x-show="expandedCase===c.ref" class="bg-white/2">
+              <td colspan="7" class="px-6 py-4">
+                <div class="text-xs text-white/50 mb-2 font-semibold uppercase tracking-wider">Audit Trail</div>
+                <div class="space-y-2">
+                  <template x-for="ev in c.audit" :key="ev.ts">
+                    <div class="flex items-center gap-3 text-xs">
+                      <span class="text-white/30 font-mono w-36 flex-shrink-0" x-text="ev.ts"></span>
+                      <span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:'+ev.color"></span>
+                      <span class="text-white/70" x-text="ev.msg"></span>
+                    </div>
+                  </template>
+                </div>
+              </td>
+            </tr>
+          </template>
+        </template>
+      </tbody>
+    </table>
+    <div x-show="filteredCases().length===0" class="px-4 py-8 text-center text-white/40 text-sm">No cases match your filters.</div>
+  </div>
+
+  <!-- Transition Modal -->
+  <div x-show="transitionModal" @click.self="transitionModal=null"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+    style="background:rgba(0,0,0,0.7)">
+    <div x-show="transitionModal" class="card p-6 w-80 fade-in">
+      <h3 class="font-semibold mb-1" x-text="transitionModal && 'Transition: '+transitionModal.ref"></h3>
+      <p class="text-white/50 text-xs mb-4" x-text="transitionModal && 'Current: '+transitionModal.status"></p>
+      <div class="space-y-2">
+        <template x-for="opt in transitionOptions()" :key="opt">
+          <button @click="doTransition(opt)"
+            class="w-full text-left px-4 py-2.5 rounded-lg text-sm border border-white/10 hover:border-[#00D4FF]/40 hover:bg-[#00D4FF]/5 transition-colors capitalize"
+            x-text="opt.replace('_',' ')"></button>
+        </template>
+      </div>
+      <button @click="transitionModal=null" class="mt-4 w-full text-xs text-white/40 hover:text-white/70 transition-colors">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: Vault Audit -->
+<div x-show="tab==='vault'" class="fade-in">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold mb-1">Vault Audit Log</h1>
+      <p class="text-white/50 text-sm">Append-only tamper-evident event chain with cryptographic verification.</p>
+    </div>
+    <div class="flex gap-3">
+      <button @click="simulateVerify()" :disabled="verifying"
+        class="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+        :style="verifying ? 'background:#064e3b;color:#6ee7b7;cursor:not-allowed' : 'background:#10B981;color:#fff;cursor:pointer'">
+        <span x-show="!verifying">Verify Chain</span>
+        <span x-show="verifying" x-text="'Verifying… '+verifiedCount+'/10'"></span>
+      </button>
+      <button @click="simulateTamper()"
+        class="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+        style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);cursor:pointer">
+        Simulate Tamper
+      </button>
+    </div>
+  </div>
+
+  <div x-show="allVerified" class="mb-4 rounded-lg px-4 py-3 text-sm font-semibold fade-in" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3)">
+    ✓ All 10 events verified — chain integrity intact
+  </div>
+  <div x-show="tampered" class="mb-4 rounded-lg px-4 py-3 text-sm font-semibold fade-in" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)">
+    ⚠ Chain integrity violation at event #4 — hash mismatch detected
+  </div>
+
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-white/8 text-white/50 text-xs">
+          <th class="text-left px-4 py-3 font-medium w-10">#</th>
+          <th class="text-left px-4 py-3 font-medium">Time</th>
+          <th class="text-left px-4 py-3 font-medium">Event Type</th>
+          <th class="text-left px-4 py-3 font-medium">Intake / Case</th>
+          <th class="text-left px-4 py-3 font-medium">Hash</th>
+          <th class="text-left px-4 py-3 font-medium">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="(ev, i) in vaultEvents" :key="ev.id">
+          <tr class="border-b border-white/5 transition-colors duration-300"
+            :class="ev.verified ? 'bg-emerald-900/20' : (tampered && i===3) ? 'bg-red-900/20' : 'hover:bg-white/2'">
+            <td class="px-4 py-3 text-white/40 font-mono text-xs" x-text="ev.id"></td>
+            <td class="px-4 py-3 text-white/60 font-mono text-xs" x-text="ev.time"></td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <span x-html="ev.icon" class="w-4 h-4 text-white/60"></span>
+                <span class="text-xs" x-text="ev.type"></span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-white/70 text-xs" x-text="ev.entity"></td>
+            <td class="px-4 py-3 font-mono text-xs" :class="(tampered && i===3) ? 'text-red-400' : 'text-white/50'" x-text="ev.hash"></td>
+            <td class="px-4 py-3">
+              <span x-show="ev.verified" class="text-xs text-emerald-400 font-semibold">✓ Verified</span>
+              <span x-show="tampered && i===3 && !ev.verified" class="text-xs text-red-400 font-semibold">✗ Tampered</span>
+              <span x-show="!ev.verified && !(tampered && i===3)" class="text-xs text-white/30">Pending</span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB 4: Analytics -->
+<div x-show="tab==='analytics'" class="fade-in">
+  <h1 class="text-2xl font-bold mb-1">Analytics</h1>
+  <p class="text-white/50 text-sm mb-6">Platform-wide performance and intake statistics.</p>
+
+  <!-- Stat Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <template x-for="s in stats" :key="s.label">
+      <div class="card p-5">
+        <div class="text-xs text-white/40 mb-1" x-text="s.label"></div>
+        <div class="text-2xl font-bold mb-1" x-text="s.value"></div>
+        <div class="text-xs" :class="s.up ? 'text-emerald-400' : 'text-white/40'" x-text="s.sub"></div>
+      </div>
+    </template>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Bar Chart 1 -->
+    <div class="card p-5">
+      <h3 class="font-semibold text-sm mb-4">Intakes by Decision — Last 7 Days</h3>
+      <div class="space-y-3">
+        <template x-for="day in chartDays" :key="day.label">
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-white/40 w-8 flex-shrink-0" x-text="day.label"></span>
+            <div class="flex-1 flex h-6 rounded overflow-hidden gap-px">
+              <div :style="'width:'+day.allow+'%;background:#00D4FF'" class="transition-all duration-700"></div>
+              <div :style="'width:'+day.modify+'%;background:#F59E0B'" class="transition-all duration-700"></div>
+              <div :style="'width:'+day.escalate+'%;background:#EF4444'" class="transition-all duration-700"></div>
+              <div :style="'width:'+day.deny+'%;background:#374151'" class="transition-all duration-700"></div>
+            </div>
+            <span class="text-xs text-white/30 w-8 text-right" x-text="day.total"></span>
+          </div>
+        </template>
+      </div>
+      <div class="flex gap-4 mt-4">
+        <span class="flex items-center gap-1.5 text-xs text-white/50"><span class="w-3 h-3 rounded-sm inline-block" style="background:#00D4FF"></span>ALLOW</span>
+        <span class="flex items-center gap-1.5 text-xs text-white/50"><span class="w-3 h-3 rounded-sm inline-block" style="background:#F59E0B"></span>MODIFY</span>
+        <span class="flex items-center gap-1.5 text-xs text-white/50"><span class="w-3 h-3 rounded-sm inline-block" style="background:#EF4444"></span>ESCALATE</span>
+        <span class="flex items-center gap-1.5 text-xs text-white/50"><span class="w-3 h-3 rounded-sm inline-block" style="background:#374151"></span>DENY</span>
+      </div>
+    </div>
+
+    <!-- Bar Chart 2 -->
+    <div class="card p-5">
+      <h3 class="font-semibold text-sm mb-4">Risk Score Distribution</h3>
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-emerald-400">Low (0–49)</span>
+            <span class="text-white/50">56 cases · 38%</span>
+          </div>
+          <div class="h-5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06)">
+            <div class="h-full rounded-full transition-all duration-1000" style="width:38%;background:linear-gradient(90deg,#10B981,#34d399)"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-amber-400">Medium (50–79)</span>
+            <span class="text-white/50">52 cases · 35%</span>
+          </div>
+          <div class="h-5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06)">
+            <div class="h-full rounded-full transition-all duration-1000" style="width:35%;background:linear-gradient(90deg,#F59E0B,#fbbf24)"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-red-400">High (80–100)</span>
+            <span class="text-white/50">39 cases · 27%</span>
+          </div>
+          <div class="h-5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06)">
+            <div class="h-full rounded-full transition-all duration-1000" style="width:27%;background:linear-gradient(90deg,#EF4444,#f87171)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-6 pt-4 border-t border-white/8 grid grid-cols-3 gap-2 text-center">
+        <div><div class="text-lg font-bold text-emerald-400">38%</div><div class="text-xs text-white/40">Low risk</div></div>
+        <div><div class="text-lg font-bold text-amber-400">35%</div><div class="text-xs text-white/40">Medium risk</div></div>
+        <div><div class="text-lg font-bold text-red-400">27%</div><div class="text-xs text-white/40">High risk</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+function app() {
+  return {
+    tab: 'intake',
+    tabs: [
+      { id: 'intake', label: 'Lunar Intake' },
+      { id: 'cases', label: 'Case Queue' },
+      { id: 'vault', label: 'Vault Audit' },
+      { id: 'analytics', label: 'Analytics' },
+    ],
+    form: { name: '', email: '', issueType: '', description: '' },
+    submitting: false,
+    activeStep: -1,
+    result: null,
+    copied: false,
+    pipelineSteps: [
+      { name: 'Step 1 — Lunar Triage', desc: 'Keyword scan · risk scoring · urgency classification' },
+      { name: 'Step 2 — UltraCore Gate', desc: 'Rule engine · decision: ALLOW / MODIFY / ESCALATE / DENY' },
+      { name: 'Step 3 — VaultLine Audit', desc: 'SHA-256 hash · tamper-evident persistence' },
+      { name: 'Step 4 — Lola Follow-up', desc: 'Personalised AI message generation' },
+    ],
+
+    // Case Queue
+    caseSearch: '',
+    caseStatusFilter: 'all',
+    expandedCase: null,
+    transitionModal: null,
+    cases: [
+      { ref:'REF-2026-001', client:'Sarah Mitchell', type:'Employment', status:'in_progress', hearing:'14 May', risk:72, audit:[
+        {ts:'2026-05-01 09:12', color:'#00D4FF', msg:'Case created — Employment dispute intake submitted'},
+        {ts:'2026-05-02 14:33', color:'#F59E0B', msg:'Status transitioned: open → in_progress'},
+        {ts:'2026-05-06 10:05', color:'#7C3AED', msg:'Document uploaded — ET1 Form (approved for bundle)'},
+      ]},
+      { ref:'REF-2026-002', client:'James Porter', type:'Housing', status:'open', hearing:'18 May', risk:85, audit:[
+        {ts:'2026-05-02 11:00', color:'#00D4FF', msg:'Case created — Housing/eviction intake submitted'},
+        {ts:'2026-05-03 09:20', color:'#EF4444', msg:'Risk flagged: eviction + injunction keywords detected'},
+        {ts:'2026-05-04 15:45', color:'#F59E0B', msg:'Hearing scheduled — 18 May, Courtroom 3'},
+      ]},
+      { ref:'REF-2026-003', client:'Emma Clarke', type:'Criminal', status:'closed', hearing:null, risk:91, audit:[
+        {ts:'2026-04-10 08:30', color:'#00D4FF', msg:'Case created — Criminal defence intake'},
+        {ts:'2026-04-15 16:00', color:'#F59E0B', msg:'Status transitioned: open → in_progress'},
+        {ts:'2026-04-28 12:00', color:'#10B981', msg:'Status transitioned: in_progress → closed'},
+      ]},
+      { ref:'REF-2026-004', client:'David Wong', type:'Contract', status:'on_hold', hearing:'22 May', risk:34, audit:[
+        {ts:'2026-04-20 10:15', color:'#00D4FF', msg:'Case created — Contract dispute intake'},
+        {ts:'2026-04-22 14:00', color:'#94a3b8', msg:'Status transitioned: open → on_hold'},
+        {ts:'2026-05-01 11:30', color:'#F59E0B', msg:'Hearing rescheduled — 22 May, Courtroom 1'},
+      ]},
+      { ref:'REF-2026-005', client:'Priya Sharma', type:'Family', status:'in_progress', hearing:'15 May', risk:48, audit:[
+        {ts:'2026-05-03 09:00', color:'#00D4FF', msg:'Case created — Family law/divorce intake'},
+        {ts:'2026-05-04 13:10', color:'#F59E0B', msg:'Status transitioned: open → in_progress'},
+        {ts:'2026-05-05 16:30', color:'#7C3AED', msg:'Document uploaded — Divorce Petition'},
+      ]},
+      { ref:'REF-2026-006', client:'Tom Harris', type:'Debt', status:'open', hearing:null, risk:28, audit:[
+        {ts:'2026-05-05 14:00', color:'#00D4FF', msg:'Case created — Debt/bankruptcy intake'},
+        {ts:'2026-05-05 14:01', color:'#10B981', msg:'UltraCore gate: ALLOW (risk 28, low urgency)'},
+        {ts:'2026-05-06 09:15', color:'#7C3AED', msg:'Clerk allocated — J. Brennan assigned'},
+      ]},
+      { ref:'REF-2026-007', client:'Lisa Chen', type:'Fraud', status:'in_progress', hearing:'20 May', risk:95, audit:[
+        {ts:'2026-05-01 08:00', color:'#EF4444', msg:'Case created — Fraud/financial crime ESCALATED'},
+        {ts:'2026-05-01 08:02', color:'#EF4444', msg:'Senior solicitor notified (risk: 95/100)'},
+        {ts:'2026-05-02 10:00', color:'#F59E0B', msg:'Status transitioned: open → in_progress'},
+      ]},
+      { ref:'REF-2026-008', client:'Mark Taylor', type:'Immigration', status:'open', hearing:'25 May', risk:41, audit:[
+        {ts:'2026-05-06 11:00', color:'#00D4FF', msg:'Case created — Immigration intake submitted'},
+        {ts:'2026-05-06 11:05', color:'#10B981', msg:'UltraCore gate: MODIFY (risk 41, review needed)'},
+        {ts:'2026-05-07 09:30', color:'#F59E0B', msg:'Hearing scheduled — 25 May, Courtroom 2'},
+      ]},
+    ],
+
+    // Vault
+    verifying: false,
+    verifiedCount: 0,
+    allVerified: false,
+    tampered: false,
+    vaultEvents: [
+      { id:1, time:'2026-05-08 09:00:01', type:'intake.created', entity:'Sarah Mitchell', hash:'a3f2c1d9e8b7...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3c-4.97 4.97-4.97 9.97 0 13.5C16.97 12.97 16.97 7.97 12 3z"/></svg>', verified:false },
+      { id:2, time:'2026-05-08 09:02:14', type:'case.transition', entity:'REF-2026-001', hash:'b8d4e3f1a0c2...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>', verified:false },
+      { id:3, time:'2026-05-08 09:15:33', type:'document.uploaded', entity:'REF-2026-001', hash:'c9e5f4a2b1d3...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>', verified:false },
+      { id:4, time:'2026-05-08 09:31:07', type:'intake.status_changed', entity:'James Porter', hash:'d0f6a5b3c2e4...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>', verified:false },
+      { id:5, time:'2026-05-08 10:05:22', type:'bundle.generated', entity:'REF-2026-003', hash:'e1a7b6c4d3f5...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>', verified:false },
+      { id:6, time:'2026-05-08 10:18:45', type:'intake.created', entity:'Lisa Chen', hash:'f2b8c7d5e4a6...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3c-4.97 4.97-4.97 9.97 0 13.5C16.97 12.97 16.97 7.97 12 3z"/></svg>', verified:false },
+      { id:7, time:'2026-05-08 10:30:11', type:'case.transition', entity:'REF-2026-007', hash:'a3c9d8e6f5b7...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>', verified:false },
+      { id:8, time:'2026-05-08 11:00:03', type:'document.uploaded', entity:'REF-2026-005', hash:'b4d0e9f7a6c8...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>', verified:false },
+      { id:9, time:'2026-05-08 11:22:58', type:'intake.status_changed', entity:'Mark Taylor', hash:'c5e1f0a8b7d9...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>', verified:false },
+      { id:10, time:'2026-05-08 11:45:00', type:'bundle.generated', entity:'REF-2026-002', hash:'d6f2a1b9c8e0...', icon:'<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>', verified:false },
+    ],
+
+    // Analytics
+    stats: [
+      { label:'Total Intakes', value:'147', sub:'+12 this week', up:true },
+      { label:'ALLOW Rate', value:'61%', sub:'↑ 4% vs last week', up:true },
+      { label:'Escalations', value:'18', sub:'3 pending review', up:false },
+      { label:'Avg Risk Score', value:'54', sub:'High risk trend', up:false },
+      { label:'Matters Created', value:'89', sub:'Last: 2h ago', up:true },
+      { label:'Vault Events', value:'2,847', sub:'All verified ✓', up:true },
+    ],
+    chartDays: [
+      { label:'Mon', allow:55, modify:20, escalate:15, deny:10, total:22 },
+      { label:'Tue', allow:60, modify:18, escalate:12, deny:10, total:18 },
+      { label:'Wed', allow:50, modify:25, escalate:18, deny:7, total:25 },
+      { label:'Thu', allow:65, modify:15, escalate:13, deny:7, total:21 },
+      { label:'Fri', allow:58, modify:22, escalate:14, deny:6, total:24 },
+      { label:'Sat', allow:70, modify:15, escalate:10, deny:5, total:12 },
+      { label:'Sun', allow:62, modify:20, escalate:11, deny:7, total:15 },
+    ],
+
+    // ── Pipeline ──
+    lunarScore() {
+      const d = this.form.description.toLowerCase();
+      let score = 20;
+      const flags = [];
+      const rules = [
+        { words: ['court','tribunal','injunction','hearing','judgment'], score: 25 },
+        { words: ['deadline','urgent','today','tomorrow','expire'], score: 15 },
+        { words: ['eviction','repossession','arrest','criminal','custody','restraining'], score: 32 },
+        { words: ['fraud','threat','violence','harassment','discrimination','abuse'], score: 30 },
+        { words: ['bankruptcy','insolvency','debt'], score: 18 },
+        { words: ['divorce','employment','contract','dispute','damages'], score: 12 },
+      ];
+      for (const r of rules) {
+        for (const w of r.words) {
+          if (d.includes(w)) { score += r.score; flags.push({ word: w, score: r.score }); break; }
+        }
+      }
+      score = Math.min(100, score);
+      const urgency = score >= 80 ? 'critical' : score >= 50 ? 'high' : 'normal';
+      return { score, urgency, flags };
+    },
+
+    ultraCore(score, urgency) {
+      const rules = [];
+      let decision, reason;
+      if (!this.form.issueType) {
+        rules.push('RULE: no issueType → DENY'); decision='DENY'; reason='Missing issue type';
+      } else if (this.form.description.length < 10) {
+        rules.push('RULE: description < 10 chars → DENY'); decision='DENY'; reason='Insufficient description';
+      } else if (score >= 80) {
+        rules.push('RULE: riskScore ≥ 80 → ESCALATE'); decision='ESCALATE'; reason='Critical risk threshold';
+      } else if (urgency === 'critical') {
+        rules.push('RULE: urgency=critical → ESCALATE'); decision='ESCALATE'; reason='Critical urgency';
+      } else if (score >= 50) {
+        rules.push('RULE: riskScore ≥ 50 → MODIFY'); decision='MODIFY'; reason='Requires solicitor review';
+      } else if (urgency === 'high') {
+        rules.push('RULE: urgency=high → MODIFY'); decision='MODIFY'; reason='High urgency flagged';
+      } else {
+        rules.push('RULE: default → ALLOW'); decision='ALLOW'; reason='Low risk, auto-approved';
+      }
+      rules.push(`→ Decision: ${decision} (score:${score}, urgency:${urgency})`);
+      return { decision, reason, rules };
+    },
+
+    fakeHash(s) {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+      const hex = h.toString(16).padStart(8,'0');
+      const h2 = (h * 0x9e3779b9) >>> 0;
+      const hex2 = h2.toString(16).padStart(8,'0');
+      return (hex+hex2+hex.split('').reverse().join('')+hex2.split('').reverse().join('')).slice(0,64);
+    },
+
+    lolaMsg(decision, score) {
+      const first = (this.form.name || 'there').split(' ')[0];
+      const t = this.form.issueType || 'matter';
+      if (decision==='ESCALATE') return `Hi ${first}, your ${t} matter has been flagged as high priority (risk: ${score}/100). A senior solicitor has been notified and will contact you within the hour.`;
+      if (decision==='MODIFY') return `Hi ${first}, we've received your ${t} enquiry. Your matter scored ${score}/100 and requires a brief solicitor review. You'll hear back within 24 hours.`;
+      if (decision==='DENY') return `Hi ${first}, we weren't able to process your enquiry as submitted. Please complete all required fields and resubmit.`;
+      return `Hi ${first}, your ${t} intake has been successfully created (risk: ${score}/100). It's now queued for matter creation.`;
+    },
+
+    async runPipeline() {
+      this.result = null;
+      this.activeStep = -1;
+      this.submitting = true;
+      const delay = ms => new Promise(r => setTimeout(r, ms));
+
+      this.activeStep = 0; await delay(700);
+      const { score, urgency, flags } = this.lunarScore();
+
+      this.activeStep = 1; await delay(700);
+      const { decision, reason, rules } = this.ultraCore(score, urgency);
+
+      this.activeStep = 2; await delay(700);
+      const hash = this.fakeHash(this.form.name + this.form.description + Date.now());
+
+      this.activeStep = 3; await delay(700);
+      const lola = this.lolaMsg(decision, score);
+
+      this.activeStep = 4;
+      this.result = { riskScore: score, urgency, flags, decision, reason, rules, hash, lola };
+      this.submitting = false;
+    },
+
+    decisionStyle(d) {
+      if (d==='ESCALATE') return 'background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.3)';
+      if (d==='MODIFY') return 'background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)';
+      if (d==='DENY') return 'background:rgba(100,116,139,0.2);color:#94a3b8;border:1px solid rgba(100,116,139,0.3)';
+      return 'background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.3)';
+    },
+
+    gaugeStyle(score) {
+      const color = score>=80 ? '#EF4444' : score>=50 ? '#F59E0B' : '#10B981';
+      const deg = Math.round(score * 3.6);
+      return `background: conic-gradient(${color} ${deg}deg, rgba(255,255,255,0.08) ${deg}deg)`;
+    },
+
+    copyHash() {
+      if (this.result) {
+        navigator.clipboard.writeText(this.result.hash).catch(()=>{});
+        this.copied = true;
+        setTimeout(()=>{ this.copied=false; }, 2000);
+      }
+    },
+
+    // ── Cases ──
+    filteredCases() {
+      return this.cases.filter(c => {
+        const matchSearch = !this.caseSearch || c.ref.toLowerCase().includes(this.caseSearch.toLowerCase()) || c.client.toLowerCase().includes(this.caseSearch.toLowerCase()) || c.type.toLowerCase().includes(this.caseSearch.toLowerCase());
+        const matchStatus = this.caseStatusFilter==='all' || c.status===this.caseStatusFilter;
+        return matchSearch && matchStatus;
+      });
+    },
+
+    toggleCase(ref) {
+      this.expandedCase = this.expandedCase===ref ? null : ref;
+    },
+
+    openTransition(c) {
+      this.transitionModal = c;
+    },
+
+    transitionOptions() {
+      if (!this.transitionModal) return [];
+      const map = {
+        open: ['in_progress','on_hold','closed'],
+        in_progress: ['closed','on_hold','open'],
+        on_hold: ['open','in_progress','closed'],
+        closed: ['open'],
+      };
+      return map[this.transitionModal.status] || [];
+    },
+
+    doTransition(newStatus) {
+      if (!this.transitionModal) return;
+      const c = this.cases.find(x=>x.ref===this.transitionModal.ref);
+      if (c) {
+        c.audit.push({ ts: new Date().toISOString().replace('T',' ').slice(0,16), color:'#F59E0B', msg:`Status transitioned: ${c.status} → ${newStatus}` });
+        c.status = newStatus;
+      }
+      this.transitionModal = null;
+    },
+
+    // ── Vault ──
+    async simulateVerify() {
+      this.verifying = true;
+      this.allVerified = false;
+      this.tampered = false;
+      this.verifiedCount = 0;
+      for (let i=0; i<this.vaultEvents.length; i++) {
+        this.vaultEvents[i].verified = false;
+      }
+      for (let i=0; i<this.vaultEvents.length; i++) {
+        await new Promise(r=>setTimeout(r,150));
+        this.vaultEvents[i].verified = true;
+        this.verifiedCount = i+1;
+      }
+      this.verifying = false;
+      this.allVerified = true;
+    },
+
+    simulateTamper() {
+      this.allVerified = false;
+      for (const ev of this.vaultEvents) ev.verified = false;
+      this.verifiedCount = 0;
+      this.tampered = true;
+    },
+  };
+}
+</script>
+</body>
+</html>
