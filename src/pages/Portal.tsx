@@ -114,6 +114,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { label: 'Book Demo', icon: <MonitorPlay className="w-5 h-5" />, route: '/book-demo' },
   { label: 'Compliance Bundle', icon: <FileCheck className="w-5 h-5" />, route: '/compliance-bundle' },
   { label: 'Intake Form', icon: <ClipboardList className="w-5 h-5" />, route: '/intake' },
+  { label: 'Lunar Intake', icon: <Brain className="w-5 h-5" />, route: '/lunar-intake' },
 ];
 
 // ─── Activity feed ─────────────────────────────────────────────────────────────

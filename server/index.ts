@@ -13,6 +13,11 @@ import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, moni
 import { companiesHouseService } from './services/companiesHouse';
 import { getUserByOpenId, getTenantBySlug, setTenantContext } from './trpc/db';
 import { startAnalysis, getAnalysis, listAnalyses } from './services/ultaiAgent';
+import { lunarTriage } from './engine/lunar';
+import { ultraCoreGate } from './engine/ultracore';
+import { buildVaultEvent } from './engine/vaultline-audit';
+import { lolaFollowUp } from './engine/lola';
+import { intakeMatters, vaultEvents } from './db/schema';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
 import { appRouter } from './trpc/routers';
 import { desc, eq } from 'drizzle-orm';
@@ -791,6 +796,131 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
     res.json({ success: true, contact });
   } catch (error) {
     console.error('Error updating contact:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// LUNAR INTAKE ENGINE
+// Build order: Intake → Lunar Triage → UltraCore Gate → Matter → Vault → Lola
+// ============================================================================
+
+/**
+ * POST /api/lunar/intake
+ *
+ * Deterministic pipeline — runs synchronously, no AI required.
+ * 1. Lunar triage: keyword risk scoring
+ * 2. UltraCore gate: ALLOW / MODIFY / DENY / ESCALATE decision
+ * 3. VaultLine: SHA-256 audit hash
+ * 4. Lola: client follow-up message
+ * 5. Persist to DB (best-effort — works offline too)
+ */
+app.post('/api/lunar/intake', writeLimiter, async (req: Request, res: Response) => {
+  const { name, email, issueType, description } = req.body as {
+    name?: string;
+    email?: string;
+    issueType?: string;
+    description?: string;
+  };
+
+  // ── Step 1: Basic validation ──────────────────────────────────────────────
+  if (!name?.trim() || !email?.trim()) {
+    return res.status(400).json({ error: 'name and email are required' });
+  }
+
+  // ── Step 2: Lunar triage ──────────────────────────────────────────────────
+  const triage = lunarTriage(description ?? '');
+
+  // ── Step 3: UltraCore decision gate ──────────────────────────────────────
+  const gate = ultraCoreGate({
+    issueType: issueType ?? '',
+    urgency: triage.urgency,
+    riskScore: triage.riskScore,
+    description: description ?? '',
+  });
+
+  // ── Step 4: VaultLine audit hash ──────────────────────────────────────────
+  const eventPayload = {
+    name: name.trim(),
+    email: email.trim(),
+    issueType: issueType?.trim() ?? '',
+    description: description?.trim() ?? '',
+    triage,
+    gate,
+    timestamp: new Date().toISOString(),
+  };
+  const vaultEvent = buildVaultEvent('pending', 'intake.created', eventPayload);
+
+  // ── Step 5: Lola follow-up ────────────────────────────────────────────────
+  const lola = lolaFollowUp({
+    name: name.trim(),
+    issueType: issueType ?? '',
+    urgency: triage.urgency,
+    decision: gate.decision,
+    riskScore: triage.riskScore,
+  });
+
+  // ── Step 6: Persist (best-effort) ─────────────────────────────────────────
+  let intakeId: string | null = null;
+  try {
+    const dbConn = await import('./db/index').then((m) => m.db).catch(() => null);
+    if (dbConn) {
+      const [matter] = await dbConn
+        .insert(intakeMatters)
+        .values({
+          name: name.trim(),
+          email: email.trim(),
+          issueType: issueType?.trim() ?? '',
+          description: description?.trim() ?? '',
+          urgency: triage.urgency,
+          riskScore: triage.riskScore,
+          decision: gate.decision,
+          status: gate.decision === 'DENY' ? 'rejected' : 'pending',
+          lolaMessage: lola.message,
+        })
+        .returning({ id: intakeMatters.id });
+      intakeId = matter.id;
+
+      await dbConn.insert(vaultEvents).values({
+        intakeId,
+        eventType: vaultEvent.eventType,
+        payload: vaultEvent.payload as Record<string, unknown>,
+        hash: vaultEvent.hash,
+      });
+    }
+  } catch {
+    // DB not available — still return deterministic result
+  }
+
+  return res.json({
+    ok: true,
+    intakeId,
+    pipeline: {
+      step1_lunar: triage,
+      step2_ultracore: gate,
+      step3_vault: { hash: vaultEvent.hash, eventType: vaultEvent.eventType },
+      step4_lola: lola,
+    },
+  });
+});
+
+/**
+ * GET /api/lunar/intake/:id
+ * Retrieve a stored intake record by ID.
+ */
+app.get('/api/lunar/intake/:id', async (req: Request, res: Response) => {
+  try {
+    const dbConn = await import('./db/index').then((m) => m.db).catch(() => null);
+    if (!dbConn) return res.status(503).json({ error: 'Database not available' });
+    const { eq } = await import('drizzle-orm');
+    const [matter] = await dbConn
+      .select()
+      .from(intakeMatters)
+      .where(eq(intakeMatters.id, req.params.id))
+      .limit(1);
+    if (!matter) return res.status(404).json({ error: 'Not found' });
+    res.json(matter);
+  } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
 });

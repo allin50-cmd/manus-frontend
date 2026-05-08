@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, integer, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -108,3 +108,41 @@ export type NewContact = typeof contacts.$inferInsert;
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+// ── Lunar Intake Engine ───────────────────────────────────────────────────────
+
+/**
+ * Intake Matters
+ * One row per client submission through the Lunar → UltraCore pipeline.
+ */
+export const intakeMatters = pgTable('intake_matters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  issueType: varchar('issue_type', { length: 100 }).notNull(),
+  description: text('description').notNull(),
+  urgency: varchar('urgency', { length: 20 }).notNull(),        // normal | high | critical
+  riskScore: integer('risk_score').notNull(),
+  decision: varchar('decision', { length: 20 }).notNull(),       // ALLOW | MODIFY | DENY | ESCALATE
+  status: varchar('status', { length: 30 }).notNull().default('pending'), // pending | in_review | matter_created | rejected
+  lolaMessage: text('lola_message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
+ * Vault Events
+ * Append-only tamper-evident audit log (SHA-256 hash per event).
+ */
+export const vaultEvents = pgTable('vault_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  intakeId: uuid('intake_id').references(() => intakeMatters.id),
+  eventType: varchar('event_type', { length: 64 }).notNull(),
+  payload: jsonb('payload').notNull(),
+  hash: varchar('hash', { length: 64 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type IntakeMatter = typeof intakeMatters.$inferSelect;
+export type NewIntakeMatter = typeof intakeMatters.$inferInsert;
+export type VaultEvent = typeof vaultEvents.$inferSelect;
+export type NewVaultEvent = typeof vaultEvents.$inferInsert;

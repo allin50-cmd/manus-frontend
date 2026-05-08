@@ -31,6 +31,7 @@ const FineGuardDashboard = lazy(() => import('./pages/FineGuardDashboard'));
 const UltAiIntake        = lazy(() => import('./pages/UltAiIntake'));
 const UltAiResult        = lazy(() => import('./pages/UltAiResult'));
 const Settings           = lazy(() => import('./pages/Settings'));
+const LunarIntake        = lazy(() => import('./pages/LunarIntake'));
 const NotFound           = lazy(() => import('./pages/NotFound'));
 
 function PageSpinner() {
@@ -76,6 +77,7 @@ function Router() {
         <Route path="/ultai-analysis/:id" component={UltAiResult} />
         <Route path="/fineguard-dashboard" component={FineGuardDashboard} />
         <Route path="/settings" component={Settings} />
+        <Route path="/lunar-intake" component={LunarIntake} />
 
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
