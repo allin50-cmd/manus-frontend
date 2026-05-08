@@ -27,9 +27,16 @@ export function computeMissionHealth(nodes: SwarmNode[]): MissionStatus {
     ? Math.round((opOk.length / opNodes.length) * 100)
     : 100;
 
-  // Composite: ASRP is critical (40 pts), relay coverage 30 pts, ops ratio 30 pts
+  // Composite: ASRP is critical (40 pts), relay coverage 30 pts, ops ratio 30 pts.
+  // QUARANTINE nodes are actively compromised (not just absent) and apply an
+  // additional 4-pt penalty each so 3+ quarantined nodes push below NOMINAL.
   const asrpScore = asrpOnline ? 100 : 0;
-  const score = Math.round(asrpScore * 0.4 + relaysCoverage * 0.3 + operationalRatio * 0.3);
+  const quarantineCount = nodes.filter((n) => n.state === 'QUARANTINE').length;
+  const quarantinePenalty = quarantineCount * 4;
+  const score = Math.max(
+    0,
+    Math.round(asrpScore * 0.4 + relaysCoverage * 0.3 + operationalRatio * 0.3) - quarantinePenalty,
+  );
 
   let level: MissionStatusLevel;
   if (!asrpOnline) {
