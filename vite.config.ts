@@ -11,6 +11,30 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    sourcemap: 'hidden',
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // React core
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor-react';
+          }
+          // Radix UI components
+          if (id.includes('node_modules/@radix-ui/')) {
+            return 'vendor-radix';
+          }
+          // tRPC + TanStack Query
+          if (id.includes('node_modules/@trpc/') || id.includes('node_modules/@tanstack/')) {
+            return 'vendor-trpc';
+          }
+          // Lucide icons (large)
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'vendor-icons';
+          }
+        },
+      },
+    },
   },
   server: {
     proxy: {

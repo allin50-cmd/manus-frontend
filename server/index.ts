@@ -3,6 +3,8 @@ import compression from 'compression';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import Stripe from 'stripe';
 import { fileURLToPath } from 'url';
@@ -125,7 +127,19 @@ app.use(
 );
 
 // Middleware
+app.use(helmet({
+  contentSecurityPolicy: false,       // managed per-environment in staticwebapp.config.json
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(compression());
+
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many requests, please try again later.' },
+});
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
@@ -384,7 +398,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
  * POST /api/lead
  * Submit a demo booking lead
  */
-app.post('/api/lead', async (req: Request, res: Response) => {
+app.post('/api/lead', writeLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, company, product, phone, message } = req.body;
 
@@ -453,7 +467,7 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
  * POST /api/intake
  * Submit a client intake form
  */
-app.post('/api/intake', async (req: Request, res: Response) => {
+app.post('/api/intake', writeLimiter, async (req: Request, res: Response) => {
   try {
     const {
       clientName,
@@ -532,7 +546,7 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
  * POST /api/compliance-bundle
  * Submit a compliance bundle request with REAL-TIME Companies House lookup
  */
-app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
+app.post('/api/compliance-bundle', writeLimiter, async (req: Request, res: Response) => {
   try {
     const {
       companyName,
@@ -824,16 +838,28 @@ app.get('*', (req: Request, res: Response) => {
 // ERROR HANDLING
 // ============================================================================
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[server] Unhandled error:', err.message);
+  res.status(500).json({ ok: false, error: 'Internal server error' });
 });
 
 // ============================================================================
 // START SERVER
 // ============================================================================
 
-app.listen(PORT, () => {
+function shutdown(signal: string) {
+  console.log(`[server] ${signal} received — shutting down gracefully`);
+  server.close(() => {
+    console.log('[server] HTTP server closed');
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.error('[server] Forced shutdown after timeout');
+    process.exit(1);
+  }, 10_000);
+}
+
+const server = app.listen(PORT, () => {
   console.log('');
   console.log('🚀 VaultLine Brand Suite Server');
   console.log('================================');
@@ -856,3 +882,6 @@ app.listen(PORT, () => {
   console.log('  GET    /health');
   console.log('');
 });
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

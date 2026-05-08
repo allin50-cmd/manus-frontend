@@ -1,0 +1,12 @@
+{
+  "name": "VaultLine Brand Suite",
+  "short_name": "VaultLine",
+  "description": "Enterprise compliance and security infrastructure",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F1014",
+  "theme_color": "#5A4BFF",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
