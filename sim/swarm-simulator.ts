@@ -1,0 +1,241 @@
+import { SwarmNode } from "../core/types";
+import { UltraEvent } from "../core/event-log";
+import { runNodeCycle } from "../core/run-node-cycle";
+import { assignSwarmCells, groupCells } from "../core/cell-manager";
+import { reconcileRecoveredNode } from "../core/recovery-engine";
+import { clampScore } from "../core/confidence-engine";
+
+// ─── override queue ──────────────────────────────────────────
+export type OperatorOverride = {
+  nodeId: string;
+  type: "approveResume" | "forceSafeHold";
+};
+let pendingOverrides: OperatorOverride[] = [];
+export function queueOperatorOverrides(overrides: OperatorOverride[]) {
+  pendingOverrides = overrides;
+}
+
+// ─── blackout tracking ──────────────────────────────────────
+const nodeBlackoutStart = new Map<string, number>();
+
+export function trackBlackoutStart(nodes: SwarmNode[]): void {
+  for (const node of nodes) {
+    if (node.state === "BLACK" && !nodeBlackoutStart.has(node.id)) {
+      nodeBlackoutStart.set(node.id, Date.now());
+    }
+  }
+}
+
+// ─── simulation state ──────────────────────────────────────
+export function createInitialSwarm(): SwarmNode[] {
+  nodeBlackoutStart.clear();
+  return [
+    createNode("ASRP-01", "ASRP"),
+    createNode("AUM-01", "AUM"),
+    createNode("AUM-02", "AUM"),
+    createNode("AUM-03", "AUM"),
+    createNode("AUM-04", "AUM"),
+    createNode("AIR-RELAY-01", "AIR_RELAY"),
+    createNode("AIR-RELAY-02", "AIR_RELAY"),
+    createNode("SENSOR-01", "SENSOR"),
+  ];
+}
+
+function createNode(id: string, role: SwarmNode["role"]): SwarmNode {
+  return {
+    id,
+    role,
+    state: "GREEN",
+    cellId: "primary-swarm",
+    lastSeenAt: Date.now(),
+    confidence: {
+      comms: 95,
+      navigation: 92,
+      mission: 90,
+      safety: 96,
+      consensus: 94,
+      nav_integrity: 100,
+      clock_health: 100,
+    },
+  };
+}
+
+// ─── confidence manipulation ─────────────────────────────────
+export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode {
+  let confidence = { ...node.confidence };
+
+  // Existing scenarios
+  if (node.id === "AUM-02" && tick >= 2) {
+    confidence.comms -= 35;
+    confidence.consensus -= 40;
+  }
+  if (node.id === "AUM-03" && tick >= 3) {
+    confidence.safety -= 45;
+  }
+  if (node.id === "AIR-RELAY-01" && tick >= 4) {
+    confidence.comms += 20;
+    confidence.consensus += 25;
+  }
+
+  // Phase 1 — GNSS spoofing on AUM-04 (starts tick 6)
+  if (node.id === "AUM-04" && tick >= 6) {
+    confidence.navigation = Math.max(0, 92 - (tick - 5) * 20);   // 72 → 52 → 32 …
+    confidence.nav_integrity = Math.max(0, 100 - (tick - 6) * 25); // 75 → 50 → 25 …
+  }
+
+  // Phase 1 — Clock attack on SENSOR-01 (starts tick 7)
+  if (node.id === "SENSOR-01" && tick >= 7) {
+    confidence.clock_health = Math.max(0, 100 - (tick - 6) * 35); // 65 → 30 → 0 …
+  }
+
+  return {
+    ...node,
+    confidence: {
+      comms: clampScore(confidence.comms),
+      navigation: clampScore(confidence.navigation),
+      mission: clampScore(confidence.mission),
+      safety: clampScore(confidence.safety),
+      consensus: clampScore(confidence.consensus),
+      nav_integrity: clampScore(confidence.nav_integrity ?? 100),
+      clock_health: clampScore(confidence.clock_health ?? 100),
+    },
+  };
+}
+
+// ─── relay mesh recovery ─────────────────────────────────────
+function applyRelayRecovery(nodes: SwarmNode[], tick: number): SwarmNode[] {
+  const activeRelay = nodes.some(
+    (n) =>
+      n.role === "AIR_RELAY" &&
+      n.confidence.comms >= 80 &&
+      n.confidence.consensus >= 80
+  );
+  if (!activeRelay || tick < 4) return nodes;
+
+  return nodes.map((node) => {
+    if (node.state !== "BLACK" && node.state !== "AMBER") return node;
+    return {
+      ...node,
+      confidence: {
+        ...node.confidence,
+        comms: clampScore(node.confidence.comms + 25),
+        consensus: clampScore(node.confidence.consensus + 30),
+      },
+    };
+  });
+}
+
+// ─── BLACK → RECOVER transition ─────────────────────────────
+function applyBlackToRecover(nodes: SwarmNode[]): SwarmNode[] {
+  return nodes.map((node) => {
+    if (node.state !== "BLACK") return node;
+    if (node.confidence.comms > 50 && node.confidence.consensus >= 30) {
+      trackBlackoutStart([node]); // ensure first time recorded
+      return { ...node, state: "RECOVER", cellId: "recovery-cell" };
+    }
+    return node;
+  });
+}
+
+// ─── recovery engine integration ─────────────────────────────
+function recoverNodes(nodes: SwarmNode[], eventLog: UltraEvent[]): SwarmNode[] {
+  return nodes.map((node) => {
+    if (node.state !== "RECOVER") return node;
+
+    const disconnectTime = nodeBlackoutStart.get(node.id);
+    const eventsSinceDisconnect = eventLog.filter(
+      (e) =>
+        e.nodeId === node.id &&
+        (disconnectTime ? e.timestamp > disconnectTime : true)
+    );
+
+    const result = reconcileRecoveredNode(node, eventsSinceDisconnect);
+    if (result.status === "RECOVERED" || result.status === "QUARANTINED") {
+      nodeBlackoutStart.delete(node.id);
+    }
+    return result.node;
+  });
+}
+
+// ─── operator overrides ──────────────────────────────────────
+function applyOperatorOverrides(nodes: SwarmNode[]): SwarmNode[] {
+  if (pendingOverrides.length === 0) return nodes;
+  const overrideMap = new Map(pendingOverrides.map((o) => [o.nodeId, o]));
+  pendingOverrides = [];
+  return nodes.map((node) => {
+    const ov = overrideMap.get(node.id);
+    if (!ov) return node;
+    if (ov.type === "approveResume") {
+      return { ...node, operatorResumeApproved: true };
+    }
+    if (ov.type === "forceSafeHold") {
+      return {
+        ...node,
+        confidence: { ...node.confidence, safety: 0 },
+        operatorResumeApproved: false,
+      };
+    }
+    return node;
+  });
+}
+
+// ─── main tick ─────────────────────────────────────────────
+export type SimulationResult = {
+  tick: number;
+  nodes: SwarmNode[];
+  cells: ReturnType<typeof groupCells>;
+  eventLog: UltraEvent[];
+};
+
+export function runSimulationTick(input: {
+  missionId: string;
+  tick: number;
+  nodes: SwarmNode[];
+  eventLog: UltraEvent[];
+}): SimulationResult {
+  let eventLog = input.eventLog;
+
+  // 1. scenario degradation
+  const degradedNodes = input.nodes.map((n) => degradeNodeConfidence(n, input.tick));
+
+  // 2. relay mesh recovery
+  const relayRecoveredNodes = applyRelayRecovery(degradedNodes, input.tick);
+
+  // 3. operator overrides (from dashboard)
+  const overriddenNodes = applyOperatorOverrides(relayRecoveredNodes);
+
+  // 4. BLACK → RECOVER if conditions met
+  const preRecoveryNodes = applyBlackToRecover(overriddenNodes);
+
+  // 5. recovery replay for RECOVER nodes
+  const postRecoveryNodes = recoverNodes(preRecoveryNodes, eventLog);
+
+  // 6. safety shield loop
+  const updatedNodes = postRecoveryNodes.map((node) => {
+    const result = runNodeCycle({
+      missionId: input.missionId,
+      node,
+      aiRecommendation: {
+        action: "ADVANCE",
+        confidence: 82,
+      },
+      eventLog,
+    });
+    eventLog = result.eventLog;
+    return result.node;
+  });
+
+  // 7. track blackout start for any node now in BLACK
+  trackBlackoutStart(updatedNodes);
+
+  // 8. cell assignment
+  const assignedNodes = assignSwarmCells(updatedNodes);
+  const cells = groupCells(assignedNodes);
+
+  return {
+    tick: input.tick,
+    nodes: assignedNodes,
+    cells,
+    eventLog,
+  };
+}
