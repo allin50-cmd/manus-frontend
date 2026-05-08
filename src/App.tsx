@@ -8,6 +8,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 // Route-level code splitting — each page loads only when navigated to
 const Dashboard        = lazy(() => import('./pages/Dashboard'));
 const Cases            = lazy(() => import('./pages/Cases'));
+const CaseDetail       = lazy(() => import('./pages/CaseDetail'));
 const Hearings         = lazy(() => import('./pages/Hearings'));
 const Documents        = lazy(() => import('./pages/Documents'));
 const Queue            = lazy(() => import('./pages/Queue'));
@@ -47,6 +48,7 @@ function Router() {
         {/* ClerkOS app routes */}
         <Route path="/" component={Dashboard} />
         <Route path="/cases" component={Cases} />
+        <Route path="/cases/:id" component={CaseDetail} />
         <Route path="/hearings" component={Hearings} />
         <Route path="/documents" component={Documents} />
         <Route path="/queue" component={Queue} />

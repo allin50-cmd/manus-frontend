@@ -2,7 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { cases } from '../../drizzle/schema';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
-import { getAllCases, getCaseById, getDb, searchCases, writeAuditEvent } from '../db';
+import { getAllCases, getAuditEventsByCase, getCaseById, getDb, searchCases, writeAuditEvent } from '../db';
 import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
 const caseStatusEnum = z.enum(['open', 'in_progress', 'closed', 'on_hold']);
@@ -123,4 +123,8 @@ export const casesRouter = router({
   search: tenantProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ ctx, input }) => searchCases(input.query, ctx.tenantId)),
+
+  getAuditTrail: tenantProcedure
+    .input(z.object({ id: z.number() }))
+    .query(({ ctx, input }) => getAuditEventsByCase(input.id, ctx.tenantId)),
 });

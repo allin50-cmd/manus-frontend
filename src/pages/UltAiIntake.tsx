@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useLocation, Link } from 'wouter';
-import { Brain, ArrowLeft, FileText, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { Brain, ArrowLeft, FileText, Upload, Loader2, AlertCircle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+type Provider = 'gemini' | 'claude';
 
 const CONTRACT_TYPES = [
   'NDA / Confidentiality Agreement',
@@ -85,6 +87,7 @@ export default function UltAiIntake() {
   const [contractText, setContractText] = useState('');
   const [fileName, setFileName] = useState('');
   const [contractType, setContractType] = useState('');
+  const [provider, setProvider] = useState<Provider>('gemini');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,6 +119,7 @@ export default function UltAiIntake() {
         body: JSON.stringify({
           fileName: fileName || contractType || 'Contract',
           contractText: contractText.trim(),
+          provider,
         }),
       });
       const data = await res.json();
@@ -147,7 +151,9 @@ export default function UltAiIntake() {
             </div>
             <span className="font-bold tracking-tight">UltAi</span>
           </div>
-          <span className="ml-auto text-xs text-gray-500">Powered by Claude claude-sonnet-4-6</span>
+          <span className="ml-auto text-xs text-gray-500">
+          {provider === 'gemini' ? 'Powered by Gemini 1.5 Flash (free)' : 'Powered by Claude Sonnet 4.6'}
+        </span>
         </div>
       </header>
 
@@ -204,6 +210,49 @@ export default function UltAiIntake() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Provider selector */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-gray-400">AI Model</label>
+                <div className="flex gap-2">
+                  {([
+                    { id: 'gemini', label: 'Gemini 1.5 Flash', badge: 'Free', icon: Zap, color: '#00D4FF' },
+                    { id: 'claude', label: 'Claude Sonnet 4.6', badge: 'Paid', icon: Brain, color: '#7C3AED' },
+                  ] as const).map(({ id, label, badge, icon: Icon, color }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setProvider(id)}
+                      className={`flex flex-1 items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
+                        provider === id
+                          ? 'border-[var(--c)] bg-[var(--c)]/10 text-white'
+                          : 'border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20'
+                      }`}
+                      style={{ '--c': color } as React.CSSProperties}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" style={{ color: provider === id ? color : undefined }} />
+                      <span className="text-sm font-medium">{label}</span>
+                      <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        badge === 'Free'
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : 'bg-purple-500/20 text-purple-400'
+                      }`}>
+                        {badge}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {provider === 'gemini' && (
+                  <p className="mt-1.5 text-[11px] text-gray-600">
+                    Gemini 1.5 Flash — free tier, ~60 req/min. Requires <code className="text-[#00D4FF]">GEMINI_API_KEY</code>.
+                  </p>
+                )}
+                {provider === 'claude' && (
+                  <p className="mt-1.5 text-[11px] text-gray-600">
+                    Claude Sonnet 4.6 — agentic tool-use loop. Requires <code className="text-[#7C3AED]">ANTHROPIC_API_KEY</code>.
+                  </p>
+                )}
               </div>
 
               {/* Text area */}

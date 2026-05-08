@@ -210,6 +210,31 @@ export async function getAllocationsByClerk(clerkId: number, tenantId: string) {
     .where(and(eq(clerkAllocations.clerkId, clerkId), eq(clerkAllocations.tenantId, tenantId)));
 }
 
+export async function getAllocationsByCase(caseId: number, tenantId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(clerkAllocations)
+    .where(and(eq(clerkAllocations.caseId, caseId), eq(clerkAllocations.tenantId, tenantId)));
+}
+
+export async function getAuditEventsByCase(caseId: number, tenantId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.entityType, 'case'),
+        eq(auditEvents.entityId, caseId),
+        eq(auditEvents.tenantId, tenantId),
+      ),
+    )
+    .orderBy(auditEvents.createdAt);
+}
+
 // ─── Diary ───────────────────────────────────────────────────────────────────
 
 export async function getClerkDiaryByDate(clerkId: number, date: string, tenantId: string) {

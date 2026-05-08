@@ -7,8 +7,9 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { trpc } from '@/lib/trpc';
-import { Search, AlertCircle, Plus, ChevronRight, ArrowRight } from 'lucide-react';
+import { Search, AlertCircle, Plus, ChevronRight, ArrowRight, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'wouter';
 import { toast } from 'sonner';
 
 const STATUSES = ['all', 'open', 'in_progress', 'closed', 'on_hold'] as const;
@@ -429,7 +430,14 @@ export default function Cases() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <Link href={`/cases/${c.id}`} onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5">
+                            <ExternalLink className="w-3 h-3" /> Detail
+                          </span>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))

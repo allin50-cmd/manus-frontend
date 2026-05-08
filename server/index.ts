@@ -805,12 +805,17 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
  * Returns immediately with an analysis ID; poll GET /api/ultai/analyses/:id for results.
  */
 app.post('/api/ultai/analyze', writeLimiter, (req: Request, res: Response) => {
-  const { fileName, contractText } = req.body as { fileName?: string; contractText?: string };
+  const { fileName, contractText, provider } = req.body as {
+    fileName?: string;
+    contractText?: string;
+    provider?: string;
+  };
   if (!contractText || contractText.trim().length < 20) {
     return res.status(400).json({ error: 'contractText is required (minimum 20 characters)' });
   }
-  const id = startAnalysis(fileName || 'Untitled Contract', contractText.trim());
-  res.json({ id, status: 'processing' });
+  const resolvedProvider = provider === 'claude' ? 'claude' : 'gemini';
+  const id = startAnalysis(fileName || 'Untitled Contract', contractText.trim(), resolvedProvider);
+  res.json({ id, status: 'processing', provider: resolvedProvider });
 });
 
 /**

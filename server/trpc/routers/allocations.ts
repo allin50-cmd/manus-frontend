@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { clerkAllocations } from '../../drizzle/schema';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
-import { getAllocationsByClerk, getDb, getPendingAllocations, writeAuditEvent } from '../db';
+import { getAllocationsByCase, getAllocationsByClerk, getDb, getPendingAllocations, writeAuditEvent } from '../db';
 import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 
 const priorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
@@ -91,4 +91,8 @@ export const allocationsRouter = router({
   getByClerk: tenantProcedure
     .input(z.object({ clerkId: z.number() }))
     .query(async ({ ctx, input }) => getAllocationsByClerk(input.clerkId, ctx.tenantId)),
+
+  getByCase: tenantProcedure
+    .input(z.object({ caseId: z.number() }))
+    .query(({ ctx, input }) => getAllocationsByCase(input.caseId, ctx.tenantId)),
 });

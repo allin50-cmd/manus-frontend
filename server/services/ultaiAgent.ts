@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { randomUUID } from 'crypto';
+import { runGeminiAgent } from './geminiAgent.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -45,9 +46,12 @@ export interface AnalysisResult {
   recommendations: string[];
 }
 
+export type AnalysisProvider = 'claude' | 'gemini';
+
 export interface AnalysisRecord {
   id: string;
   fileName: string;
+  provider: AnalysisProvider;
   status: 'processing' | 'complete' | 'failed';
   result?: AnalysisResult;
   error?: string;
@@ -348,19 +352,24 @@ async function runAgent(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export function startAnalysis(fileName: string, contractText: string): string {
+export function startAnalysis(
+  fileName: string,
+  contractText: string,
+  provider: AnalysisProvider = 'gemini',
+): string {
   const id = randomUUID();
   const record: AnalysisRecord = {
     id,
     fileName: fileName || 'Untitled Contract',
+    provider,
     status: 'processing',
     createdAt: new Date().toISOString(),
-    agentLog: ['[start] Contract ingested — running UltAi agent…'],
+    agentLog: [`[start] Contract ingested — running UltAi agent (${provider})…`],
   };
   store.set(id, record);
 
-  // Run async, don't await
-  runAgent(record, contractText).catch((err) => {
+  const runner = provider === 'gemini' ? runGeminiAgent : runAgent;
+  runner(record, contractText).catch((err) => {
     record.status = 'failed';
     record.error = String(err);
     record.completedAt = new Date().toISOString();
