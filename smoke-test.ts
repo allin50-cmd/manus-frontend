@@ -221,14 +221,16 @@ assert('tick 3: AUM-03 → RED', aum03_t3.state === 'RED');
 assert('tick 3: AUM-02 task = LOCAL_FALLBACK', aum02_t3.currentTask === 'LOCAL_FALLBACK');
 assert('tick 3: AUM-03 task = EMERGENCY_HOLD', aum03_t3.currentTask === 'EMERGENCY_HOLD');
 
-// tick 7 — GNSS spoofing begins on AUM-04
+// ticks 4-7: relay recovery kicks in; AUM-03 auto-supervised at tick 6; AUM-04 GNSS spoofing
 for (let t = 4; t <= 7; t++) {
   r = runSimulationTick({ missionId: 'SMOKE-001', tick: t, nodes, eventLog });
   nodes = r.nodes; eventLog = r.eventLog;
 }
 const aum04_t7 = nodes.find(n => n.id === 'AUM-04')!;
+const aum03_t7 = nodes.find(n => n.id === 'AUM-03')!;
 assert('tick 7: AUM-04 GNSS spoofing → AMBER', aum04_t7.state === 'AMBER');
 assert('tick 7: AUM-04 nav_integrity degraded', (aum04_t7.confidence.nav_integrity ?? 100) < 100);
+assert('tick 7: AUM-03 exits RED via auto-supervisor (safety restored)', aum03_t7.state !== 'RED');
 
 // tick 8 — clock attack on SENSOR-01
 r = runSimulationTick({ missionId: 'SMOKE-001', tick: 8, nodes, eventLog });
@@ -250,12 +252,15 @@ assert('eventLog has ≥81 entries after 9 ticks', eventLog.length >= 81);
 const greenNodes = nodes.filter(n => n.state === 'GREEN');
 assert('GREEN nodes in primary-swarm', greenNodes.every(n => n.cellId === 'primary-swarm'));
 
-// operator override smoke: force ASRP-01 to safe hold
+// tick 10: AUM-04 nav_integrity=0 → QUARANTINE (confirmed GNSS spoofing)
+// and operator forceSafeHold on ASRP-01
 queueOperatorOverrides([{ nodeId: 'ASRP-01', type: 'forceSafeHold' }]);
 r = runSimulationTick({ missionId: 'SMOKE-001', tick: 10, nodes, eventLog });
 nodes = r.nodes; eventLog = r.eventLog;
-const asrp_t10 = nodes.find(n => n.id === 'ASRP-01')!;
+const asrp_t10  = nodes.find(n => n.id === 'ASRP-01')!;
+const aum04_t10 = nodes.find(n => n.id === 'AUM-04')!;
 assert('tick 10: operator forceSafeHold → RED or safety=0', asrp_t10.state === 'RED' || asrp_t10.confidence.safety === 0);
+assert('tick 10: AUM-04 nav_integrity=0 → QUARANTINE (confirmed GNSS spoofing)', aum04_t10.state === 'QUARANTINE');
 
 // ─── 7. degradeNodeConfidence — axis coverage ─────────────────────────────
 

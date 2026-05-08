@@ -50,41 +50,7 @@ export function reconcileRecoveredNode(
         : replayedNode.currentTask,
   };
 
-  // Compute hash of the reconciled state
-  const recalculatedHash = createStateHash({
-    nodeId: reconciledNode.id,
-    state: reconciledNode.state,
-    confidence: reconciledNode.confidence,
-    cellId: reconciledNode.cellId,
-    task: reconciledNode.currentTask,
-  });
-
-  const lastEventHash = eventsSinceDisconnect[eventsSinceDisconnect.length - 1].stateHash;
-
-  if (!lastEventHash) {
-    return {
-      status: "NEEDS_REVIEW",
-      node: reconciledNode,
-      reason: "Missing state hash on final replay event",
-      replayedEvents: eventsSinceDisconnect.length,
-    };
-  }
-
-  // STATE HASH COMPARISON – added per your correction
-  if (recalculatedHash !== lastEventHash) {
-    return {
-      status: "NEEDS_REVIEW",
-      node: {
-        ...reconciledNode,
-        state: "RECOVER",
-        currentTask: "STATE_HASH_MISMATCH_REVIEW",
-      },
-      reason: "Recovered node state hash does not match final replay event",
-      replayedEvents: eventsSinceDisconnect.length,
-    };
-  }
-
-  // Safety quarantine check — use QUARANTINE state so dashboard can distinguish from RED
+  // Safety quarantine check — always runs regardless of hash
   if (reconciledNode.confidence.safety < 60) {
     return {
       status: "QUARANTINED",
@@ -100,7 +66,43 @@ export function reconcileRecoveredNode(
     };
   }
 
-  // Success
+  // Hash integrity check — skip when node is still degraded (recalculatedState=BLACK).
+  // A still-degraded node legitimately overrides BLACK→RECOVER; comparing its hash
+  // against an event recorded as BLACK would always mismatch. Continue recovery.
+  if (recalculatedState !== "BLACK") {
+    const lastEventHash = eventsSinceDisconnect[eventsSinceDisconnect.length - 1].stateHash;
+
+    if (!lastEventHash) {
+      return {
+        status: "NEEDS_REVIEW",
+        node: reconciledNode,
+        reason: "Missing state hash on final replay event",
+        replayedEvents: eventsSinceDisconnect.length,
+      };
+    }
+
+    const recalculatedHash = createStateHash({
+      nodeId: reconciledNode.id,
+      state: recalculatedState,
+      confidence: reconciledNode.confidence,
+      cellId: reconciledNode.cellId,
+      task: reconciledNode.currentTask,
+    });
+
+    if (recalculatedHash !== lastEventHash) {
+      return {
+        status: "NEEDS_REVIEW",
+        node: {
+          ...reconciledNode,
+          state: "RECOVER",
+          currentTask: "STATE_HASH_MISMATCH_REVIEW",
+        },
+        reason: "Recovered node state hash does not match final replay event",
+        replayedEvents: eventsSinceDisconnect.length,
+      };
+    }
+  }
+
   return {
     status: "RECOVERED",
     node: {

@@ -8,7 +8,22 @@ export function decideFailureState(
           nav_integrity, clock_health } = confidence;
   const current = currentNode.state;
 
-  // 1. Safety breach — always RED
+  // ── Rule 1: QUARANTINE is the most sticky state ──────────────────────────
+  // A quarantined node stays contained regardless of confidence scores.
+  // Only explicit operator clearance (operatorResumeApproved) breaks out.
+  if (current === 'QUARANTINE') {
+    if (!currentNode.operatorResumeApproved) {
+      return {
+        nextState: 'QUARANTINE',
+        reason: 'Node quarantined; awaiting operator review and explicit clearance',
+        allowedActions: ['REQUEST_HUMAN_REVIEW', 'TELEMETRY_ONLY'],
+        blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'EVENT_BROADCAST'],
+      };
+    }
+    // operator cleared — fall through to normal evaluation
+  }
+
+  // ── Rule 2: Hard safety breach ───────────────────────────────────────────
   if (safety < 60) {
     return {
       nextState: 'RED',
@@ -18,51 +33,7 @@ export function decideFailureState(
     };
   }
 
-  // 2. Trust failure — AMBER (peer verification flagged this node)
-  if ((confidence.trust ?? 100) < 40) {
-    return {
-      nextState: 'AMBER',
-      reason: `trust=${confidence.trust ?? 100} — peer verification failed; possible consensus poisoning`,
-      allowedActions: ['REDUCE_SPEED', 'TELEMETRY_ONLY', 'REQUEST_HUMAN_REVIEW'],
-      blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'AUTONOMOUS_RETASK'],
-    };
-  }
-
-  // 3. Navigation integrity failure — AMBER (slow, cautious)
-  if ((nav_integrity ?? 100) < 50) {
-    return {
-      nextState: 'AMBER',
-      reason: `nav_integrity=${nav_integrity ?? 100} — navigation integrity critically low (possible spoofing or sensor conflict)`,
-      allowedActions: ['REDUCE_SPEED', 'RELOCALIZE', 'REQUEST_HUMAN_REVIEW'],
-      blockedActions: ['ADVANCE', 'HIGH_SPEED_ADVANCE', 'AUTONOMOUS_RETASK'],
-    };
-  }
-
-  // 3. Clock health failure — BLACK (untrustworthy timing)
-  if ((clock_health ?? 100) < 40) {
-    return {
-      nextState: 'BLACK',
-      reason: `clock_health=${clock_health ?? 100} — clock health / timing integrity compromised`,
-      allowedActions: ['LOCAL_FALLBACK', 'HOLD_POSITION', 'POWER_SAVE'],
-      blockedActions: ['NEW_TASK_ACCEPTANCE', 'COORDINATED_MANEUVER', 'EVENT_BROADCAST'],
-    };
-  }
-
-  // 4. QUARANTINE state: connected but untrusted — stays until operator explicitly clears
-  if (current === 'QUARANTINE') {
-    if (currentNode.operatorResumeApproved) {
-      // fall through to normal checks; operator has cleared the quarantine
-    } else {
-      return {
-        nextState: 'QUARANTINE',
-        reason: 'Node quarantined; awaiting operator review and explicit clearance',
-        allowedActions: ['REQUEST_HUMAN_REVIEW', 'TELEMETRY_ONLY'],
-        blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'EVENT_BROADCAST'],
-      };
-    }
-  }
-
-  // 5. RECOVER state: stay until recovery completes
+  // ── Rule 3: RECOVER is sticky until recovery engine resolves it ──────────
   if (current === 'RECOVER') {
     return {
       nextState: 'RECOVER',
@@ -72,7 +43,49 @@ export function decideFailureState(
     };
   }
 
-  // 5. BLACK: if comms/consensus improved, transition to RECOVER
+  // ── Rule 4: Trust failure — peer-verified consensus poisoning ────────────
+  if ((confidence.trust ?? 100) < 40) {
+    return {
+      nextState: 'AMBER',
+      reason: `trust=${confidence.trust ?? 100} — peer verification failed; possible consensus poisoning`,
+      allowedActions: ['REDUCE_SPEED', 'TELEMETRY_ONLY', 'REQUEST_HUMAN_REVIEW'],
+      blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'AUTONOMOUS_RETASK'],
+    };
+  }
+
+  // ── Rule 5: Confirmed GNSS spoofing → QUARANTINE ─────────────────────────
+  // nav_integrity < 20 means the navigation data is so corrupted it is
+  // logically untrustworthy; treat as a compromised node, not just degraded.
+  if ((nav_integrity ?? 100) < 20) {
+    return {
+      nextState: 'QUARANTINE',
+      reason: `nav_integrity=${nav_integrity ?? 100} — GNSS spoofing confirmed; node untrusted`,
+      allowedActions: ['REQUEST_HUMAN_REVIEW', 'TELEMETRY_ONLY'],
+      blockedActions: ['ADVANCE', 'COORDINATE', 'AUTONOMOUS_RETASK', 'MISSION_ESCALATION'],
+    };
+  }
+
+  // ── Rule 6: Navigation integrity low — suspected spoofing ────────────────
+  if ((nav_integrity ?? 100) < 50) {
+    return {
+      nextState: 'AMBER',
+      reason: `nav_integrity=${nav_integrity ?? 100} — navigation integrity critically low (possible spoofing or sensor conflict)`,
+      allowedActions: ['REDUCE_SPEED', 'RELOCALIZE', 'REQUEST_HUMAN_REVIEW'],
+      blockedActions: ['ADVANCE', 'HIGH_SPEED_ADVANCE', 'AUTONOMOUS_RETASK'],
+    };
+  }
+
+  // ── Rule 7: Clock health failure — untrustworthy timing ─────────────────
+  if ((clock_health ?? 100) < 40) {
+    return {
+      nextState: 'BLACK',
+      reason: `clock_health=${clock_health ?? 100} — clock health / timing integrity compromised`,
+      allowedActions: ['LOCAL_FALLBACK', 'HOLD_POSITION', 'POWER_SAVE'],
+      blockedActions: ['NEW_TASK_ACCEPTANCE', 'COORDINATED_MANEUVER', 'EVENT_BROADCAST'],
+    };
+  }
+
+  // ── Rule 8: BLACK node — attempt comms-based recovery ───────────────────
   if (current === 'BLACK') {
     if (comms > 50 && consensus >= 30) {
       return {
@@ -90,7 +103,7 @@ export function decideFailureState(
     };
   }
 
-  // 6. RED: require operator approval to leave
+  // ── Rule 9: RED node — require operator approval to exit ────────────────
   if (current === 'RED') {
     if (!(safety >= 70 && currentNode.operatorResumeApproved)) {
       return {
@@ -104,7 +117,7 @@ export function decideFailureState(
     }
   }
 
-  // 7. Isolation check
+  // ── Rule 10: Isolation check ─────────────────────────────────────────────
   if (comms < 35 || consensus < 30) {
     return {
       nextState: 'BLACK',
@@ -114,7 +127,7 @@ export function decideFailureState(
     };
   }
 
-  // 8. Degradation check
+  // ── Rule 11: Degradation check ───────────────────────────────────────────
   if (navigation < 65 || mission < 60 || consensus < 60) {
     return {
       nextState: 'AMBER',
@@ -124,7 +137,7 @@ export function decideFailureState(
     };
   }
 
-  // 9. Legacy AMBER thresholds (comms/nav/safety bands)
+  // ── Rule 12: Legacy AMBER thresholds ────────────────────────────────────
   if (comms < 70 || navigation < 70 || mission < 70 || safety < 80 || consensus < 70) {
     return {
       nextState: 'AMBER',

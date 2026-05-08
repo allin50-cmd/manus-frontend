@@ -13,12 +13,12 @@ export interface SwarmAlert {
 
 // Per-category cooldown: minimum ticks between repeated alerts for the same node+category
 const COOLDOWN_TICKS: Record<SwarmAlert['category'], number> = {
-  STATE_CHANGE: 1,
-  SPOOFING: 2,
-  CLOCK_ATTACK: 2,
-  QUARANTINE: 3,
-  MISSION_HEALTH: 3,
-  CONSENSUS_POISONING: 2,
+  STATE_CHANGE: 4,
+  SPOOFING: 3,
+  CLOCK_ATTACK: 3,
+  QUARANTINE: 5,
+  MISSION_HEALTH: 5,
+  CONSENSUS_POISONING: 3,
 };
 
 interface AlertKey { nodeId: string | null; category: SwarmAlert['category'] }

@@ -24,8 +24,8 @@ export function detectConsensusPoisoning(
   const consensusDeviation = node.confidence.consensus - avgPeerConsensus;
 
   // Poisoning signature: mission rising while peers fall + consensus diverging
-  const peersDegraded = avgPeerMission < 70 || avgPeerConsensus < 70;
-  const nodeAnomalouslyHigh = missionDeviation > 20 && node.confidence.mission > 85;
+  const peersDegraded = avgPeerMission < 78 || avgPeerConsensus < 78;
+  const nodeAnomalouslyHigh = missionDeviation > 12 && node.confidence.mission > 82;
 
   if (peersDegraded && nodeAnomalouslyHigh) {
     const suspicion = clampScore(50 + missionDeviation * 1.5 + Math.abs(consensusDeviation));

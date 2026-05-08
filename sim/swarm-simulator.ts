@@ -68,46 +68,66 @@ function createNode(id: string, role: SwarmNode["role"]): SwarmNode {
 }
 
 // ─── confidence manipulation ─────────────────────────────────
+// All degradation uses absolute tick-based formulas (not relative to current
+// node state) so scenarios are deterministic regardless of recovery history.
 export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode {
   const confidence = { ...node.confidence };
 
-  // AUM-02: comms/consensus drop at tick 2
-  if (node.id === "AUM-02" && tick >= 2) {
-    confidence.comms -= 35;
-    confidence.consensus -= 40;
+  // AUM-02: comms/consensus failure bounded to ticks 2-3.
+  // Relay mesh recovery (tick 4+) then naturally restores connectivity.
+  if (node.id === "AUM-02" && tick >= 2 && tick <= 3) {
+    confidence.comms     = clampScore(95 - (tick - 1) * 35); // t2:60, t3:25
+    confidence.consensus = clampScore(94 - (tick - 1) * 40); // t2:54, t3:14
   }
 
-  // AUM-03: safety dips ticks 3–5, recovers tick 6+
+  // AUM-03: safety dip ticks 3-5, full reset at tick 6+.
+  // Auto-supervisor clears the RED lock when safety returns to 80.
   if (node.id === "AUM-03") {
     if (tick >= 3 && tick <= 5) {
-      confidence.safety -= 45;
+      confidence.safety = clampScore(96 - (tick - 2) * 45); // t3:51, t4:6, t5:0
     } else if (tick >= 6) {
-      confidence.safety = Math.max(confidence.safety, 80);
+      confidence.safety = 80;
     }
   }
 
-  // AIR-RELAY-01: comms/consensus boost at tick 4
+  // AIR-RELAY-01: mesh relay boost (tick 4+)
   if (node.id === "AIR-RELAY-01" && tick >= 4) {
-    confidence.comms += 20;
-    confidence.consensus += 25;
+    confidence.comms     = clampScore(confidence.comms + 20);
+    confidence.consensus = clampScore(confidence.consensus + 25);
   }
 
-  // Phase 1 — GNSS spoofing on AUM-04 (starts tick 6)
-  if (node.id === "AUM-04" && tick >= 6) {
-    confidence.navigation  = Math.max(0, 92 - (tick - 5) * 20);    // 72 → 52 → 32 …
-    confidence.nav_integrity = Math.max(0, 100 - (tick - 6) * 25); // 75 → 50 → 25 …
+  // Phase 1 — GNSS spoofing on AUM-04 (ticks 6-15), hardware recovery (tick 16+).
+  // nav_integrity < 20 at tick 10 triggers QUARANTINE (confirmed spoofing rule).
+  if (node.id === "AUM-04") {
+    if (tick >= 6 && tick <= 15) {
+      confidence.navigation    = clampScore(92  - (tick - 5) * 20); // 72→52→32→12→0
+      confidence.nav_integrity = clampScore(100 - (tick - 6) * 25); // 75→50→25→0
+    } else if (tick >= 16) {
+      confidence.navigation    = clampScore((tick - 15) * 15);      // 15→30→45→60→75→90
+      confidence.nav_integrity = clampScore((tick - 15) * 20);      // 20→40→60→80→100
+    }
   }
 
-  // Phase 1 — Clock attack on SENSOR-01 (starts tick 7)
-  if (node.id === "SENSOR-01" && tick >= 7) {
-    confidence.clock_health = Math.max(0, 100 - (tick - 6) * 35);  // 65 → 30 → 0 …
+  // Phase 1 — Clock attack on SENSOR-01 (ticks 7-14), signal recovery (tick 15+).
+  // clock_health < 40 at tick 8 triggers BLACK → recovery loop → QUARANTINE.
+  if (node.id === "SENSOR-01") {
+    if (tick >= 7 && tick <= 14) {
+      confidence.clock_health = clampScore(100 - (tick - 6) * 35); // 65→30→0
+    } else if (tick >= 15) {
+      confidence.clock_health = clampScore((tick - 14) * 25);      // 25→50→75→100
+    }
   }
 
-  // Phase 2 — Consensus poisoning on AUM-05 (starts tick 8)
-  // Mission confidence rises suspiciously while other AUM peers degrade
-  if (node.id === "AUM-05" && tick >= 8) {
-    confidence.mission = Math.min(100, 90 + (tick - 7) * 5);       // 95 → 100 → 100 …
-    confidence.consensus = Math.min(100, 94 + (tick - 7) * 3);     // 97 → 100 → 100 …
+  // Phase 2 — Consensus poisoning on AUM-05 (tick 8+).
+  // Mission/consensus rise anomalously. ASRP detects and degrades trust (tick 9+).
+  if (node.id === "AUM-05") {
+    if (tick >= 8) {
+      confidence.mission   = 100;
+      confidence.consensus = 100;
+    }
+    if (tick >= 9) {
+      confidence.trust = clampScore(100 - (tick - 8) * 20); // 80→60→40→20→0
+    }
   }
 
   return {
@@ -123,6 +143,33 @@ export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode 
       trust:         clampScore(confidence.trust ?? 100),
     },
   };
+}
+
+// ─── auto-supervisor watchdog ────────────────────────────────
+// Simulates a background supervisory process that clears stale locks.
+// RED with restored safety → auto-approve resume.
+// QUARANTINE from nav/trust attack (recoveryAttempts=0) with all scores clear → release.
+// Recovery loop traps (recoveryAttempts ≥ 1) require human operator review.
+function applyAutoSupervisor(nodes: SwarmNode[]): SwarmNode[] {
+  return nodes.map((node) => {
+    if (node.state === "RED" && !node.operatorResumeApproved && node.confidence.safety >= 75) {
+      return { ...node, operatorResumeApproved: true };
+    }
+    if (
+      node.state === "QUARANTINE" &&
+      !node.operatorResumeApproved &&
+      (node.recoveryAttempts ?? 0) === 0 &&
+      node.confidence.safety                >= 65 &&
+      (node.confidence.nav_integrity ?? 100) >= 65 &&
+      (node.confidence.clock_health  ?? 100) >= 65 &&
+      (node.confidence.trust         ?? 100) >= 65 &&
+      node.confidence.comms                 >= 65 &&
+      node.confidence.consensus             >= 65
+    ) {
+      return { ...node, operatorResumeApproved: true, recoveryAttempts: 0 };
+    }
+    return node;
+  });
 }
 
 // ─── relay mesh recovery ─────────────────────────────────────
@@ -184,7 +231,7 @@ function recoverNodes(nodes: SwarmNode[], eventLog: UltraEvent[]): SwarmNode[] {
     const eventsSinceDisconnect = eventLog.filter(
       (e) =>
         e.nodeId === node.id &&
-        (disconnectTime ? e.timestamp > disconnectTime : true)
+        (disconnectTime ? e.timestamp >= disconnectTime : true)
     );
 
     const result = reconcileRecoveredNode(node, eventsSinceDisconnect);
@@ -247,16 +294,19 @@ export function runSimulationTick(input: {
   // 3. operator overrides (from dashboard)
   const overriddenNodes = applyOperatorOverrides(relayRecoveredNodes);
 
-  // 4. peer verification — detects consensus poisoning, adjusts trust
-  const verifiedNodes = applyPeerVerification(overriddenNodes);
+  // 4. auto-supervisor (clears stale RED/QUARANTINE locks when scores recover)
+  const supervisedNodes = applyAutoSupervisor(overriddenNodes);
 
-  // 5. BLACK → RECOVER if conditions met
+  // 5. peer verification — detects consensus poisoning, adjusts trust
+  const verifiedNodes = applyPeerVerification(supervisedNodes);
+
+  // 6. BLACK → RECOVER if conditions met
   const preRecoveryNodes = applyBlackToRecover(verifiedNodes);
 
-  // 6. recovery replay for RECOVER nodes
+  // 7. recovery replay for RECOVER nodes
   const postRecoveryNodes = recoverNodes(preRecoveryNodes, eventLog);
 
-  // 7. safety shield loop
+  // 8. safety shield loop
   const updatedNodes = postRecoveryNodes.map((node) => {
     const result = runNodeCycle({
       missionId: input.missionId,
@@ -271,17 +321,17 @@ export function runSimulationTick(input: {
     return result.node;
   });
 
-  // 8. track blackout start for any node now in BLACK
+  // 9. track blackout start for any node now in BLACK
   trackBlackoutStart(updatedNodes);
 
-  // 9. cell assignment
+  // 10. cell assignment
   const assignedNodes = assignSwarmCells(updatedNodes);
   const cells = groupCells(assignedNodes);
 
-  // 10. alert generation
+  // 11. alert generation
   const alerts = generateAlerts(assignedNodes, input.tick);
 
-  // 11. mission health
+  // 12. mission health
   const missionHealth = computeMissionHealth(assignedNodes);
 
   return {
