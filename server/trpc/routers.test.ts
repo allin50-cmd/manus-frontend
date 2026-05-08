@@ -760,3 +760,314 @@ describe("ClerkOS — Stress Test Suite", () => {
     });
   });
 });
+
+// ─── Pure engine unit tests ───────────────────────────────────────────────────
+
+import { lunarTriage } from '../engine/lunar';
+import { ultraCoreGate } from '../engine/ultracore';
+import { lolaFollowUp } from '../engine/lola';
+import { createVaultHash, buildVaultEvent, verifyVaultEvent } from '../engine/vaultline-audit';
+
+// ─── Lunar Engine ─────────────────────────────────────────────────────────────
+
+describe('Lunar Engine — lunarTriage', () => {
+  it('returns base score 20 and normal urgency for an empty description', () => {
+    const result = lunarTriage('');
+    expect(result.riskScore).toBe(20);
+    expect(result.urgency).toBe('normal');
+    expect(result.flags).toHaveLength(0);
+    expect(result.scoreBreakdown).toHaveLength(0);
+  });
+
+  it('returns normal urgency for a description with no matching keywords', () => {
+    const result = lunarTriage('I need some general advice about my situation');
+    expect(result.riskScore).toBe(20);
+    expect(result.urgency).toBe('normal');
+  });
+
+  it('adds the correct weight for a single matched keyword', () => {
+    // 'deadline' has weight 20 → base 20 + 20 = 40
+    const result = lunarTriage('I have a deadline next week');
+    expect(result.riskScore).toBe(40);
+    expect(result.urgency).toBe('normal');
+    expect(result.flags).toContain('deadline');
+    expect(result.scoreBreakdown).toContainEqual({ signal: 'deadline', weight: 20 });
+  });
+
+  it('accumulates weights from multiple matched keywords', () => {
+    // base(20) + 'court'(25) + 'urgent'(15) + 'hearing'(20) = 80
+    const result = lunarTriage('I have an urgent court hearing');
+    expect(result.riskScore).toBe(80);
+    expect(result.urgency).toBe('critical');
+    expect(result.flags).toContain('court');
+    expect(result.flags).toContain('urgent');
+  });
+
+  it('caps the score at 100 when keywords would push it above 100', () => {
+    // 'arrest' (40) + 'criminal' (40) + 'violence' (35) → 20 + 40 + 40 + 35 = 135, capped at 100
+    const result = lunarTriage('arrest criminal violence charges');
+    expect(result.riskScore).toBe(100);
+    expect(result.urgency).toBe('critical');
+  });
+
+  it('returns high urgency when riskScore is exactly 50', () => {
+    // 'court' (25) + 'hearing' (20) → 20 + 25 + 20 = 65 — let's find a combo that hits 50
+    // 'divorce' (15) + 'debt' (15) → 20 + 15 + 15 = 50
+    const result = lunarTriage('divorce and debt situation');
+    expect(result.riskScore).toBe(50);
+    expect(result.urgency).toBe('high');
+  });
+
+  it('returns critical urgency when riskScore is exactly 80', () => {
+    // 'arrest' (40) + 'fraud' (35) → 20 + 40 + 35 = 95 — too high
+    // 'injunction' (30) + 'eviction' (30) → 20 + 30 + 30 = 80
+    const result = lunarTriage('injunction and eviction order');
+    expect(result.riskScore).toBe(80);
+    expect(result.urgency).toBe('critical');
+  });
+
+  it('is case-insensitive when matching keywords', () => {
+    const lower = lunarTriage('court hearing today');
+    const upper = lunarTriage('COURT HEARING TODAY');
+    expect(lower.riskScore).toBe(upper.riskScore);
+    expect(lower.flags).toEqual(upper.flags);
+  });
+
+  it('includes all matched signals in scoreBreakdown', () => {
+    const result = lunarTriage('bankruptcy and debt repayment dispute');
+    const signals = result.scoreBreakdown.map((b) => b.signal);
+    expect(signals).toContain('bankruptcy');
+    expect(signals).toContain('debt');
+    expect(signals).toContain('repayment');
+    expect(signals).toContain('dispute');
+  });
+});
+
+// ─── UltraCore Gate ───────────────────────────────────────────────────────────
+
+describe('UltraCore Gate — ultraCoreGate', () => {
+  it('R1: ESCALATEs when riskScore is 80 or above', () => {
+    const result = ultraCoreGate({
+      issueType: 'Criminal',
+      urgency: 'normal',
+      riskScore: 80,
+      description: 'Detailed description of the matter',
+    });
+    expect(result.decision).toBe('ESCALATE');
+    expect(result.reason).toMatch(/80/);
+    expect(result.rules[0]).toMatch(/R1/);
+  });
+
+  it('R2: ESCALATEs when urgency is critical (and riskScore < 80)', () => {
+    const result = ultraCoreGate({
+      issueType: 'Employment',
+      urgency: 'critical',
+      riskScore: 60,
+      description: 'Detailed description of the matter',
+    });
+    expect(result.decision).toBe('ESCALATE');
+    expect(result.reason).toMatch(/critical/i);
+    expect(result.rules.some((r) => r.startsWith('R2'))).toBe(true);
+  });
+
+  it('R3: DENYs when issueType is an empty string', () => {
+    const result = ultraCoreGate({
+      issueType: '',
+      urgency: 'normal',
+      riskScore: 20,
+      description: 'Detailed description of the matter',
+    });
+    expect(result.decision).toBe('DENY');
+    expect(result.reason).toMatch(/issue type/i);
+  });
+
+  it('R3: DENYs when issueType is a single character (below minimum length)', () => {
+    const result = ultraCoreGate({
+      issueType: 'X',
+      urgency: 'normal',
+      riskScore: 20,
+      description: 'Detailed description of the matter',
+    });
+    expect(result.decision).toBe('DENY');
+    expect(result.reason).toMatch(/2 characters/i);
+  });
+
+  it('R4: DENYs when description length is less than 10 characters', () => {
+    const result = ultraCoreGate({
+      issueType: 'Employment',
+      urgency: 'normal',
+      riskScore: 20,
+      description: 'Short',
+    });
+    expect(result.decision).toBe('DENY');
+    expect(result.reason).toMatch(/too short/i);
+  });
+
+  it('R4: DENYs when description is absent', () => {
+    const result = ultraCoreGate({
+      issueType: 'Employment',
+      urgency: 'normal',
+      riskScore: 20,
+    });
+    expect(result.decision).toBe('DENY');
+    expect(result.reason).toMatch(/too short/i);
+  });
+
+  it('R5: MODIFYs when riskScore is 50 or above (and urgency is normal)', () => {
+    const result = ultraCoreGate({
+      issueType: 'Civil Dispute',
+      urgency: 'normal',
+      riskScore: 50,
+      description: 'Full description of the matter at hand',
+    });
+    expect(result.decision).toBe('MODIFY');
+    expect(result.reason).toMatch(/50\/100/);
+    expect(result.rules.some((r) => r.startsWith('R5'))).toBe(true);
+  });
+
+  it('R6: MODIFYs when urgency is high (and riskScore < 50)', () => {
+    const result = ultraCoreGate({
+      issueType: 'Employment',
+      urgency: 'high',
+      riskScore: 30,
+      description: 'Full description of the employment matter',
+    });
+    expect(result.decision).toBe('MODIFY');
+    expect(result.reason).toMatch(/high-urgency/i);
+    expect(result.rules.some((r) => r.startsWith('R6'))).toBe(true);
+  });
+
+  it('R7: ALLOWs standard intake when all checks pass', () => {
+    const result = ultraCoreGate({
+      issueType: 'Conveyancing',
+      urgency: 'normal',
+      riskScore: 20,
+      description: 'Looking to purchase a property and need legal advice',
+    });
+    expect(result.decision).toBe('ALLOW');
+    expect(result.reason).toMatch(/standard intake/i);
+    expect(result.rules.some((r) => r.startsWith('R7'))).toBe(true);
+  });
+
+  it('includes a rules audit trail that reflects evaluated rules', () => {
+    const result = ultraCoreGate({
+      issueType: 'Family',
+      urgency: 'normal',
+      riskScore: 20,
+      description: 'General family law advice required',
+    });
+    expect(result.rules.length).toBeGreaterThanOrEqual(7);
+    expect(result.rules[0]).toMatch(/^R1/);
+  });
+});
+
+// ─── Lola Follow-up Engine ────────────────────────────────────────────────────
+
+describe('Lola Engine — lolaFollowUp', () => {
+  const baseInput = {
+    name: 'Jane Smith',
+    issueType: 'Employment',
+    urgency: 'normal',
+    riskScore: 20,
+  };
+
+  it('returns urgent tone and 1-hour nextStep for ESCALATE decision', () => {
+    const result = lolaFollowUp({ ...baseInput, decision: 'ESCALATE', riskScore: 85 });
+    expect(result.tone).toBe('urgent');
+    expect(result.nextStep).toMatch(/1 hour/i);
+    expect(result.message).toMatch(/Jane/);
+    expect(result.message).toMatch(/85\/100/);
+  });
+
+  it('returns reassuring tone and 24-hour nextStep for MODIFY decision', () => {
+    const result = lolaFollowUp({ ...baseInput, decision: 'MODIFY', riskScore: 60 });
+    expect(result.tone).toBe('reassuring');
+    expect(result.nextStep).toMatch(/24 hours/i);
+    expect(result.message).toMatch(/Jane/);
+    expect(result.message).toMatch(/60\/100/);
+  });
+
+  it('returns rejection tone and resubmission nextStep for DENY decision', () => {
+    const result = lolaFollowUp({ ...baseInput, decision: 'DENY' });
+    expect(result.tone).toBe('rejection');
+    expect(result.nextStep).toMatch(/resubmission/i);
+    expect(result.message).toMatch(/Jane/);
+  });
+
+  it('returns standard tone and automated nextStep for ALLOW decision', () => {
+    const result = lolaFollowUp({ ...baseInput, decision: 'ALLOW', riskScore: 20 });
+    expect(result.tone).toBe('standard');
+    expect(result.nextStep).toMatch(/15 minutes/i);
+    expect(result.message).toMatch(/Jane/);
+    expect(result.message).toMatch(/20\/100/);
+  });
+
+  it('uses only the first name from a full name', () => {
+    const result = lolaFollowUp({ ...baseInput, name: 'Robert Johnson', decision: 'ALLOW' });
+    expect(result.message).toMatch(/Hi Robert/);
+    expect(result.message).not.toMatch(/Johnson/);
+  });
+});
+
+// ─── VaultLine Audit Engine ───────────────────────────────────────────────────
+
+describe('VaultLine Audit Engine', () => {
+  describe('createVaultHash', () => {
+    it('returns a 64-character hex string (SHA-256)', () => {
+      const hash = createVaultHash({ foo: 'bar' });
+      expect(hash).toHaveLength(64);
+      expect(hash).toMatch(/^[0-9a-f]+$/);
+    });
+
+    it('is deterministic — same input always produces the same hash', () => {
+      const payload = { intakeId: 'abc-123', eventType: 'INTAKE_CREATED', data: 42 };
+      expect(createVaultHash(payload)).toBe(createVaultHash(payload));
+    });
+
+    it('produces different hashes for different payloads', () => {
+      expect(createVaultHash({ a: 1 })).not.toBe(createVaultHash({ a: 2 }));
+    });
+  });
+
+  describe('buildVaultEvent', () => {
+    it('returns a VaultEvent with all required fields', () => {
+      const event = buildVaultEvent('intake-1', 'INTAKE_CREATED', { name: 'Alice' });
+      expect(event.intakeId).toBe('intake-1');
+      expect(event.eventType).toBe('INTAKE_CREATED');
+      expect(event.payload).toEqual({ name: 'Alice' });
+      expect(typeof event.hash).toBe('string');
+      expect(event.hash).toHaveLength(64);
+      expect(typeof event.createdAt).toBe('string');
+    });
+
+    it('produces an event that passes verifyVaultEvent', () => {
+      const event = buildVaultEvent('intake-2', 'DECISION_ALLOW', { score: 20 });
+      expect(verifyVaultEvent(event)).toBe(true);
+    });
+  });
+
+  describe('verifyVaultEvent', () => {
+    it('returns true for an unmodified event', () => {
+      const event = buildVaultEvent('intake-3', 'DECISION_ESCALATE', { riskScore: 85 });
+      expect(verifyVaultEvent(event)).toBe(true);
+    });
+
+    it('returns false when the payload has been tampered with', () => {
+      const event = buildVaultEvent('intake-4', 'DECISION_DENY', { reason: 'too short' });
+      const tampered = { ...event, payload: { reason: 'modified' } };
+      expect(verifyVaultEvent(tampered)).toBe(false);
+    });
+
+    it('returns false when the hash itself has been modified', () => {
+      const event = buildVaultEvent('intake-5', 'INTAKE_CREATED', { name: 'Bob' });
+      const tampered = { ...event, hash: 'a'.repeat(64) };
+      expect(verifyVaultEvent(tampered)).toBe(false);
+    });
+
+    it('returns false when the intakeId has been altered', () => {
+      const event = buildVaultEvent('intake-6', 'INTAKE_CREATED', { name: 'Carol' });
+      const tampered = { ...event, intakeId: 'intake-999' };
+      expect(verifyVaultEvent(tampered)).toBe(false);
+    });
+  });
+});

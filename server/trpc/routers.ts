@@ -6,6 +6,7 @@ import { dashboardRouter } from './routers/dashboard';
 import { diaryRouter } from './routers/diary';
 import { documentsRouter } from './routers/documents';
 import { hearingsRouter } from './routers/hearings';
+import { lunarRouter } from './routers/lunar';
 
 export const appRouter = router({
   auth: authRouter,
@@ -15,6 +16,7 @@ export const appRouter = router({
   allocations: allocationsRouter,
   diary: diaryRouter,
   dashboard: dashboardRouter,
+  lunar: lunarRouter,
 });
 
 export type AppRouter = typeof appRouter;
