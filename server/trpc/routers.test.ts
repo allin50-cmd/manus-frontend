@@ -643,4 +643,120 @@ describe("ClerkOS — Stress Test Suite", () => {
       expect(tenant?.id).toBe(ALPHA.id);
     });
   });
+
+  // ══════════════════════════════════════════════════════════════
+  // 11 · Engine — state machine invalid transitions
+  // ══════════════════════════════════════════════════════════════
+
+  describe("11 · Engine — invalid case transitions", () => {
+
+    it("closed → in_progress is rejected", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("closed") });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.transitionCase(1, "in_progress", 1, "admin-user");
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toMatch(/not permitted/i);
+    });
+
+    it("closed → on_hold is rejected", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("closed") });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.transitionCase(1, "on_hold", 1, "admin-user");
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toMatch(/not permitted/i);
+    });
+
+    it("open → open (same status) is rejected", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("open") });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.transitionCase(1, "open", 1, "admin-user");
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toMatch(/not permitted/i);
+    });
+
+    it("transition on missing case returns not-found error", async () => {
+      const db = makeEngineDb({ caseRow: null });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.transitionCase(99, "in_progress", 1, "admin-user");
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toMatch(/not found/i);
+    });
+
+    it("valid transition open → in_progress succeeds", async () => {
+      const updated = mkCase("in_progress");
+      const db = makeEngineDb({ caseRow: mkCase("open"), updatedRow: updated });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.transitionCase(1, "in_progress", 1, "admin-user");
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.status).toBe("in_progress");
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // 12 · Engine — bundle eligibility
+  // ══════════════════════════════════════════════════════════════
+
+  describe("12 · Engine — bundle eligibility", () => {
+
+    it("on_hold case is not eligible for bundle", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("on_hold"), docRows: [] });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.canGenerateBundle(1);
+      expect(result.eligible).toBe(false);
+      expect(result.reason).toMatch(/on hold/i);
+    });
+
+    it("case with no approved documents is not eligible", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("open"), docRows: [] });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.canGenerateBundle(1);
+      expect(result.eligible).toBe(false);
+      expect(result.reason).toMatch(/no documents/i);
+    });
+
+    it("case with approved documents is eligible", async () => {
+      const approvedDoc = { id: 10, caseId: 1, tenantId: ALPHA.id, approvedForBundle: 1 };
+      const db = makeEngineDb({ caseRow: mkCase("open"), docRows: [approvedDoc] });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.canGenerateBundle(1);
+      expect(result.eligible).toBe(true);
+    });
+
+    it("missing case returns not-eligible", async () => {
+      const db = makeEngineDb({ caseRow: null, docRows: [] });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.canGenerateBundle(99);
+      expect(result.eligible).toBe(false);
+      expect(result.reason).toMatch(/not found/i);
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // 13 · Engine — allocation validation
+  // ══════════════════════════════════════════════════════════════
+
+  describe("13 · Engine — allocation validation", () => {
+
+    it("cannot allocate to a closed case", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("closed") });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.validateAllocationAssignment(1, 2);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error).toMatch(/closed/i);
+    });
+
+    it("can allocate to an open case", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("open") });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.validateAllocationAssignment(1, 2);
+      expect(result.ok).toBe(true);
+    });
+
+    it("can allocate to an in_progress case", async () => {
+      const db = makeEngineDb({ caseRow: mkCase("in_progress") });
+      const engine = new ClerkOSEngine(db, ALPHA.id);
+      const result = await engine.validateAllocationAssignment(1, 2);
+      expect(result.ok).toBe(true);
+    });
+  });
 });

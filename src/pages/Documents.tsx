@@ -54,7 +54,7 @@ function UploadDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return toast.error('Select a file');
+    if (!file) { toast.error('Select a file'); return; }
     create.mutate({
       caseId,
       fileName: file.name,

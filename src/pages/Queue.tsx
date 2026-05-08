@@ -64,7 +64,7 @@ function CreateAllocationDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.caseId) return toast.error('Select a case');
+    if (!form.caseId) { toast.error('Select a case'); return; }
     create.mutate({
       caseId: Number(form.caseId),
       clerkId: Number(form.clerkId),
