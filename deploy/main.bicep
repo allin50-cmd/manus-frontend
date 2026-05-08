@@ -55,9 +55,15 @@ var dbAdminLogin       = '${appName}admin'
 // Log Analytics
 // =============================================================================
 
+var resourceTags = {
+  environment: environment
+  application: 'vaultline-brand-suite'
+}
+
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: logAnalyticsName
   location: location
+  tags: resourceTags
   properties: {
     sku: { name: 'PerGB2018' }
     retentionInDays: environment == 'prod' ? 90 : 30
@@ -72,6 +78,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   name: appInsightsName
   location: location
   kind: 'web'
+  tags: resourceTags
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalytics.id
@@ -87,6 +94,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
   location: location
+  tags: resourceTags
   properties: {
     sku: { family: 'A', name: 'standard' }
     tenantId: subscription().tenantId
@@ -137,6 +145,7 @@ resource kvSecretServiceBus 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
 resource pgServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview' = {
   name: pgServerName
   location: location
+  tags: resourceTags
   sku: {
     name: environment == 'prod' ? 'Standard_D4ds_v5' : 'Standard_B2ms'
     tier: environment == 'prod' ? 'GeneralPurpose' : 'Burstable'
@@ -189,6 +198,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
   location: location
   kind: 'StorageV2'
+  tags: resourceTags
   sku: { name: environment == 'prod' ? 'Standard_GRS' : 'Standard_LRS' }
   properties: {
     minimumTlsVersion: 'TLS1_2'
@@ -226,6 +236,7 @@ resource documentsContainer 'Microsoft.Storage/storageAccounts/blobServices/cont
 resource serviceBusNs 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
   name: serviceBusNsName
   location: location
+  tags: resourceTags
   sku: {
     name: environment == 'prod' ? 'Premium' : 'Standard'
     tier: environment == 'prod' ? 'Premium' : 'Standard'
@@ -262,6 +273,7 @@ resource tasksQueue 'Microsoft.ServiceBus/namespaces/queues@2022-10-01-preview' 
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: acrName
   location: location
+  tags: resourceTags
   sku: { name: environment == 'prod' ? 'Premium' : 'Basic' }
   properties: { adminUserEnabled: true }
 }
@@ -273,6 +285,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
 resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: containerAppEnvName
   location: location
+  tags: resourceTags
   properties: {
     appLogsConfiguration: {
       destination: 'log-analytics'
@@ -287,6 +300,7 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
 resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: containerAppName
   location: location
+  tags: resourceTags
   identity: { type: 'SystemAssigned' }
   properties: {
     managedEnvironmentId: containerAppEnv.id
@@ -353,6 +367,19 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             { name: 'AZURE_B2C_CLIENT_ID',               value: b2cClientId }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
             { name: 'DEFAULT_TENANT_SLUG',               value: initialTenantSlug }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/api/ping'
+                port: 3000
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 30
+              failureThreshold: 3
+            }
           ]
         }
       ]

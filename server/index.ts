@@ -1,4 +1,5 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
+import compression from 'compression';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -124,7 +125,29 @@ app.use(
 );
 
 // Middleware
-app.use(cors());
+app.use(compression());
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+}));
+
+app.use((_req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => res.setHeader('X-Response-Time', `${Date.now() - start}ms`));
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
