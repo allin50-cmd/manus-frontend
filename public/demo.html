@@ -49,6 +49,15 @@
   @keyframes fadeIn { from { opacity:0; transform:translateY(6px);} to {opacity:1;transform:translateY(0);} }
   .fade-in { animation: fadeIn 0.3s ease forwards; }
   .step-glow { box-shadow: 0 0 16px rgba(0,212,255,0.35); }
+  /* bottom nav safe area */
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0); }
+  /* hide scrollbar on tab strip */
+  .tab-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+  .tab-scroll::-webkit-scrollbar { display: none; }
+  /* touch-friendly tap targets */
+  @media (max-width: 639px) {
+    input, select, textarea { font-size: 16px; } /* prevent iOS zoom */
+  }
 </style>
 </head>
 <body x-data="app()" class="min-h-screen">
@@ -56,28 +65,39 @@
 <!-- Header -->
 <header class="sticky top-0 z-50 border-b border-white/8 backdrop-blur-md" style="background:rgba(11,12,16,0.92)">
   <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <svg class="w-6 h-6" style="color:#00D4FF" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <svg class="w-5 h-5 sm:w-6 sm:h-6" style="color:#00D4FF" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3c-4.97 4.97-4.97 9.97 0 13.5C16.97 12.97 16.97 7.97 12 3z"/>
       </svg>
-      <span class="font-semibold text-sm tracking-tight">ClerkOS <span class="text-white/40">·</span> <span style="color:#00D4FF">Lunar Demo</span></span>
+      <span class="font-semibold text-sm tracking-tight">ClerkOS <span class="text-white/40 hidden xs:inline">·</span> <span style="color:#00D4FF" class="hidden xs:inline">Lunar Demo</span></span>
     </div>
-    <nav class="flex items-center gap-1">
+    <!-- Desktop tabs (hidden on mobile — use bottom bar instead) -->
+    <nav class="hidden sm:flex items-center gap-1">
       <template x-for="t in tabs" :key="t.id">
         <button @click="tab=t.id"
           :class="tab===t.id ? 'text-white border-b-2 border-[#00D4FF]' : 'text-white/50 hover:text-white/80'"
           class="px-3 py-1 text-sm font-medium transition-colors pb-1" x-text="t.label"></button>
       </template>
     </nav>
+    <!-- Mobile: scrollable tab strip -->
+    <nav class="sm:hidden flex-1 ml-3 overflow-x-auto tab-scroll">
+      <div class="flex items-center gap-0.5 w-max">
+        <template x-for="t in tabs" :key="t.id">
+          <button @click="tab=t.id"
+            :class="tab===t.id ? 'text-white border-b-2 border-[#00D4FF]' : 'text-white/50'"
+            class="px-2.5 py-1 text-xs font-medium transition-colors pb-1 whitespace-nowrap" x-text="t.shortLabel || t.label"></button>
+        </template>
+      </div>
+    </nav>
   </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-4 py-8">
+<main class="max-w-7xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
 
 <!-- TAB 1: Lunar Intake -->
 <div x-show="tab==='intake'" class="fade-in">
-  <h1 class="text-2xl font-bold mb-1">Lunar Intake Pipeline</h1>
-  <p class="text-white/50 text-sm mb-6">Submit a matter to run it through triage, gate, vault, and follow-up.</p>
+  <h1 class="text-xl sm:text-2xl font-bold mb-1">Lunar Intake Pipeline</h1>
+  <p class="text-white/50 text-sm mb-4 sm:mb-6">Submit a matter to run it through triage, gate, vault, and follow-up.</p>
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Form -->
     <div class="card p-6">
@@ -203,7 +223,7 @@
         <div class="rounded-lg p-3 flex items-center justify-between" style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.25)">
           <div>
             <div class="text-xs text-purple-400 mb-0.5 font-semibold">VaultLine Hash · Persisted ✓</div>
-            <div class="font-mono text-xs text-white/70" x-text="result && result.hash"></div>
+            <div class="font-mono text-xs text-white/70 break-all" x-text="result && result.hash"></div>
           </div>
           <button @click="copyHash()" class="ml-3 p-1.5 rounded-md transition-colors" style="background:rgba(124,58,237,0.2)">
             <span x-show="!copied">
@@ -236,14 +256,16 @@
 
 <!-- TAB 2: Case Queue -->
 <div x-show="tab==='cases'" class="fade-in">
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold mb-1">Case Queue</h1>
-      <p class="text-white/50 text-sm">Live matter management — transition states and review audit trails.</p>
+  <div class="mb-4 sm:mb-6">
+    <div class="flex items-start justify-between mb-3 sm:mb-0">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold mb-0.5">Case Queue</h1>
+        <p class="text-white/50 text-sm hidden sm:block">Live matter management — transition states and review audit trails.</p>
+      </div>
     </div>
-    <div class="flex gap-3">
-      <input type="text" x-model="caseSearch" placeholder="Search cases…" class="w-48 text-sm" />
-      <select x-model="caseStatusFilter" class="text-sm w-36">
+    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-2 sm:mt-4 sm:items-center sm:justify-end">
+      <input type="text" x-model="caseSearch" placeholder="Search ref, client, type…" class="text-sm" />
+      <select x-model="caseStatusFilter" class="text-sm sm:w-36 flex-shrink-0">
         <option value="all">All statuses</option>
         <option value="open">Open</option>
         <option value="in_progress">In Progress</option>
@@ -253,7 +275,8 @@
     </div>
   </div>
 
-  <div class="card overflow-hidden">
+  <!-- Desktop table -->
+  <div class="card overflow-hidden hidden sm:block">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-white/8 text-white/50 text-xs">
@@ -281,7 +304,7 @@
               <td class="px-4 py-3">
                 <div class="flex gap-2">
                   <button @click="toggleCase(c.ref)" class="text-xs px-2 py-1 rounded border border-white/15 text-white/70 hover:text-white hover:border-white/30 transition-colors">View</button>
-                  <button x-show="c.status!=='closed'" @click="openTransition(c)" class="text-xs px-2 py-1 rounded border transition-colors" style="border-color:rgba(0,212,255,0.3);color:#00D4FF" :hover="'border-[#00D4FF]'">Transition</button>
+                  <button x-show="c.status!=='closed'" @click="openTransition(c)" class="text-xs px-2 py-1 rounded border transition-colors" style="border-color:rgba(0,212,255,0.3);color:#00D4FF">Transition</button>
                 </div>
               </td>
             </tr>
@@ -290,9 +313,9 @@
                 <div class="text-xs text-white/50 mb-2 font-semibold uppercase tracking-wider">Audit Trail</div>
                 <div class="space-y-2">
                   <template x-for="ev in c.audit" :key="ev.ts">
-                    <div class="flex items-center gap-3 text-xs">
-                      <span class="text-white/30 font-mono w-36 flex-shrink-0" x-text="ev.ts"></span>
-                      <span class="w-2 h-2 rounded-full flex-shrink-0" :style="'background:'+ev.color"></span>
+                    <div class="flex items-start gap-3 text-xs">
+                      <span class="text-white/30 font-mono flex-shrink-0 w-32" x-text="ev.ts"></span>
+                      <span class="w-2 h-2 rounded-full flex-shrink-0 mt-0.5" :style="'background:'+ev.color"></span>
                       <span class="text-white/70" x-text="ev.msg"></span>
                     </div>
                   </template>
@@ -306,41 +329,83 @@
     <div x-show="filteredCases().length===0" class="px-4 py-8 text-center text-white/40 text-sm">No cases match your filters.</div>
   </div>
 
+  <!-- Mobile card list -->
+  <div class="sm:hidden space-y-2">
+    <template x-for="c in filteredCases()" :key="c.ref+'m'">
+      <div class="card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="font-medium text-sm" x-text="c.client"></div>
+            <div class="font-mono text-xs text-white/40 mt-0.5" x-text="c.ref"></div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm" :class="c.risk>=80 ? 'risk-high' : c.risk>=50 ? 'risk-med' : 'risk-low'" x-text="c.risk"></span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="'badge-'+c.status" x-text="c.status.replace('_',' ')"></span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-white/40 mb-3">
+          <span x-text="c.type"></span>
+          <span x-show="c.hearing" x-text="'· '+c.hearing"></span>
+        </div>
+        <div class="flex gap-2">
+          <button @click="toggleCase(c.ref+'m')"
+            class="flex-1 py-2 text-xs rounded border border-white/15 text-white/70 transition-colors">
+            <span x-text="expandedCase===c.ref+'m' ? 'Hide trail' : 'View trail'"></span>
+          </button>
+          <button x-show="c.status!=='closed'" @click="openTransition(c)"
+            class="flex-1 py-2 text-xs rounded border transition-colors"
+            style="border-color:rgba(0,212,255,0.3);color:#00D4FF">Transition</button>
+        </div>
+        <div x-show="expandedCase===c.ref+'m'" class="mt-3 pt-3 border-t border-white/8 space-y-2">
+          <div class="text-xs text-white/50 font-semibold uppercase tracking-wider mb-1">Audit Trail</div>
+          <template x-for="ev in c.audit" :key="ev.ts">
+            <div class="flex items-start gap-2 text-xs">
+              <span class="w-2 h-2 rounded-full flex-shrink-0 mt-0.5" :style="'background:'+ev.color"></span>
+              <div>
+                <span class="text-white/30 font-mono block" x-text="ev.ts"></span>
+                <span class="text-white/70" x-text="ev.msg"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+    <div x-show="filteredCases().length===0" class="py-8 text-center text-white/40 text-sm">No cases match your filters.</div>
+  </div>
+
   <!-- Transition Modal -->
   <div x-show="transitionModal" @click.self="transitionModal=null"
-    class="fixed inset-0 z-50 flex items-center justify-center"
+    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
     style="background:rgba(0,0,0,0.7)">
-    <div x-show="transitionModal" class="card p-6 w-80 fade-in">
+    <div x-show="transitionModal" class="card p-6 w-full sm:w-80 max-w-lg fade-in rounded-b-none sm:rounded-b-xl mx-0 sm:mx-4">
       <h3 class="font-semibold mb-1" x-text="transitionModal && 'Transition: '+transitionModal.ref"></h3>
-      <p class="text-white/50 text-xs mb-4" x-text="transitionModal && 'Current: '+transitionModal.status"></p>
+      <p class="text-white/50 text-xs mb-4" x-text="transitionModal && 'Current status: '+transitionModal.status"></p>
       <div class="space-y-2">
         <template x-for="opt in transitionOptions()" :key="opt">
           <button @click="doTransition(opt)"
-            class="w-full text-left px-4 py-2.5 rounded-lg text-sm border border-white/10 hover:border-[#00D4FF]/40 hover:bg-[#00D4FF]/5 transition-colors capitalize"
+            class="w-full text-left px-4 py-3 rounded-lg text-sm border border-white/10 hover:border-[#00D4FF]/40 hover:bg-[#00D4FF]/5 transition-colors capitalize"
             x-text="opt.replace('_',' ')"></button>
         </template>
       </div>
-      <button @click="transitionModal=null" class="mt-4 w-full text-xs text-white/40 hover:text-white/70 transition-colors">Cancel</button>
+      <button @click="transitionModal=null" class="mt-4 w-full py-2 text-xs text-white/40 hover:text-white/70 transition-colors">Cancel</button>
     </div>
   </div>
 </div>
 
 <!-- TAB 3: Vault Audit -->
 <div x-show="tab==='vault'" class="fade-in">
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-2xl font-bold mb-1">Vault Audit Log</h1>
-      <p class="text-white/50 text-sm">Append-only tamper-evident event chain with cryptographic verification.</p>
-    </div>
-    <div class="flex gap-3">
+  <div class="mb-4 sm:mb-6">
+    <h1 class="text-xl sm:text-2xl font-bold mb-0.5">Vault Audit Log</h1>
+    <p class="text-white/50 text-sm hidden sm:block">Append-only tamper-evident event chain with cryptographic verification.</p>
+    <div class="flex gap-2 mt-3">
       <button @click="simulateVerify()" :disabled="verifying"
-        class="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+        class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all"
         :style="verifying ? 'background:#064e3b;color:#6ee7b7;cursor:not-allowed' : 'background:#10B981;color:#fff;cursor:pointer'">
         <span x-show="!verifying">Verify Chain</span>
         <span x-show="verifying" x-text="'Verifying… '+verifiedCount+'/10'"></span>
       </button>
       <button @click="simulateTamper()"
-        class="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+        class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all"
         style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);cursor:pointer">
         Simulate Tamper
       </button>
@@ -354,7 +419,8 @@
     ⚠ Chain integrity violation at event #4 — hash mismatch detected
   </div>
 
-  <div class="card overflow-hidden">
+  <!-- Desktop table -->
+  <div class="card overflow-hidden hidden sm:block">
     <table class="w-full text-sm">
       <thead>
         <tr class="border-b border-white/8 text-white/50 text-xs">
@@ -390,12 +456,36 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Mobile card list -->
+  <div class="sm:hidden space-y-2">
+    <template x-for="(ev, i) in vaultEvents" :key="ev.id+'mv'">
+      <div class="card px-4 py-3 transition-colors duration-300"
+        :class="ev.verified ? 'bg-emerald-900/20' : (tampered && i===3) ? 'bg-red-900/20' : ''">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-white/30 font-mono text-xs w-5" x-text="ev.id"></span>
+            <span x-html="ev.icon" class="w-4 h-4 text-white/50"></span>
+            <span class="text-xs font-medium" x-text="ev.type"></span>
+          </div>
+          <span x-show="ev.verified" class="text-xs text-emerald-400 font-semibold">✓ Verified</span>
+          <span x-show="tampered && i===3 && !ev.verified" class="text-xs text-red-400 font-semibold">✗ Tampered</span>
+          <span x-show="!ev.verified && !(tampered && i===3)" class="text-xs text-white/30">Pending</span>
+        </div>
+        <div class="pl-7 space-y-0.5">
+          <div class="text-xs text-white/60" x-text="ev.entity"></div>
+          <div class="font-mono text-xs break-all" :class="(tampered && i===3) ? 'text-red-400' : 'text-white/30'" x-text="ev.hash"></div>
+          <div class="text-xs text-white/25 font-mono" x-text="ev.time"></div>
+        </div>
+      </div>
+    </template>
+  </div>
 </div>
 
 <!-- TAB 4: Analytics -->
 <div x-show="tab==='analytics'" class="fade-in">
-  <h1 class="text-2xl font-bold mb-1">Analytics</h1>
-  <p class="text-white/50 text-sm mb-6">Platform-wide performance and intake statistics.</p>
+  <h1 class="text-xl sm:text-2xl font-bold mb-1">Analytics</h1>
+  <p class="text-white/50 text-sm mb-4 sm:mb-6">Platform-wide performance and intake statistics.</p>
 
   <!-- Stat Cards -->
   <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -482,10 +572,10 @@ function app() {
   return {
     tab: 'intake',
     tabs: [
-      { id: 'intake', label: 'Lunar Intake' },
-      { id: 'cases', label: 'Case Queue' },
-      { id: 'vault', label: 'Vault Audit' },
-      { id: 'analytics', label: 'Analytics' },
+      { id: 'intake',    label: 'Lunar Intake', shortLabel: 'Intake' },
+      { id: 'cases',     label: 'Case Queue',   shortLabel: 'Cases' },
+      { id: 'vault',     label: 'Vault Audit',  shortLabel: 'Vault' },
+      { id: 'analytics', label: 'Analytics',    shortLabel: 'Analytics' },
     ],
     form: { name: '', email: '', issueType: '', description: '' },
     submitting: false,
