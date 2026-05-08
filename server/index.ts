@@ -36,6 +36,16 @@ const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }) : null;
 
+// Wraps async Express handlers so thrown errors propagate to the error middleware.
+// Express 4 does not catch rejected promises from async route handlers.
+function asyncHandler(
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>,
+) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    fn(req, res, next).catch(next);
+  };
+}
+
 // ============================================================================
 // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
 // ============================================================================
@@ -191,7 +201,7 @@ app.get('/api/ping', (_req, res) => res.json({ ok: true, ts: Date.now() }));
  * GET /api/health
  * Health check endpoint
  */
-app.get('/api/health', async (req: Request, res: Response) => {
+app.get('/api/health', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Check database connection
     await db.select().from(deploymentStatus).limit(1);
@@ -208,7 +218,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
       database: 'disconnected',
     });
   }
-});
+}));
 
 // ============================================================================
 // STRIPE CHECKOUT API ENDPOINTS
@@ -220,7 +230,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
  * Body: { companyNumber: string, companyName: string }
  * Returns: { url: string }
  */
-app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
+app.post('/api/stripe/checkout', asyncHandler(async (req: Request, res: Response) => {
   if (!stripe) {
     return res.status(500).json({ error: 'Stripe not configured' });
   }
@@ -252,13 +262,13 @@ app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
     console.error('Stripe checkout session error:', err);
     res.status(500).json({ error: 'Failed to create checkout session' });
   }
-});
+}));
 
 /**
  * GET /api/protection-status?companyNumber=12345678
  * Returns whether a company is currently being monitored.
  */
-app.get('/api/protection-status', async (req: Request, res: Response) => {
+app.get('/api/protection-status', asyncHandler(async (req: Request, res: Response) => {
   const { companyNumber } = req.query;
 
   if (!companyNumber || typeof companyNumber !== 'string') {
@@ -277,7 +287,7 @@ app.get('/api/protection-status', async (req: Request, res: Response) => {
     console.error('Error checking protection status:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}));
 
 // ============================================================================
 // DEPLOYMENT TRACKING API ENDPOINTS
@@ -288,7 +298,7 @@ app.get('/api/protection-status', async (req: Request, res: Response) => {
  * Record a new deployment status
  * Requires X-DEPLOY-TOKEN header for authentication
  */
-app.post('/api/deployments/record', async (req: Request, res: Response) => {
+app.post('/api/deployments/record', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Check authentication
     const token = req.headers['x-deploy-token'];
@@ -340,14 +350,14 @@ app.post('/api/deployments/record', async (req: Request, res: Response) => {
     console.error('Error recording deployment:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}));
 
 /**
  * GET /api/deployments/status
  * Get latest deployment status for each environment
  * Public endpoint (no authentication required)
  */
-app.get('/api/deployments/status', async (req: Request, res: Response) => {
+app.get('/api/deployments/status', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Get all deployments ordered by date
     const allDeployments = await db
@@ -370,13 +380,13 @@ app.get('/api/deployments/status', async (req: Request, res: Response) => {
     console.error('Error fetching deployment status:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}));
 
 /**
  * GET /api/deployments/history
  * Get deployment history with optional filters
  */
-app.get('/api/deployments/history', async (req: Request, res: Response) => {
+app.get('/api/deployments/history', asyncHandler(async (req: Request, res: Response) => {
   try {
     const { environment, limit = '50' } = req.query;
 
@@ -394,7 +404,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
     console.error('Error fetching deployment history:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}));
 
 // ============================================================================
 // LEAD CAPTURE API ENDPOINTS
@@ -404,7 +414,7 @@ app.get('/api/deployments/history', async (req: Request, res: Response) => {
  * POST /api/lead
  * Submit a demo booking lead
  */
-app.post('/api/lead', writeLimiter, async (req: Request, res: Response) => {
+app.post('/api/lead', writeLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const { name, email, company, product, phone, message } = req.body;
 
@@ -445,13 +455,13 @@ app.post('/api/lead', writeLimiter, async (req: Request, res: Response) => {
       error: 'Failed to save lead. Please try again.',
     });
   }
-});
+}));
 
 /**
  * GET /api/admin/leads
  * Get all leads (admin endpoint)
  */
-app.get('/api/admin/leads', async (req: Request, res: Response) => {
+app.get('/api/admin/leads', asyncHandler(async (req: Request, res: Response) => {
   try {
     const allLeads = await db
       .select()
@@ -463,7 +473,7 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
     console.error('Error fetching leads:', error);
     res.status(500).json({ error: 'Failed to fetch leads' });
   }
-});
+}));
 
 // ============================================================================
 // INTAKE FORM API ENDPOINTS
@@ -473,7 +483,7 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
  * POST /api/intake
  * Submit a client intake form
  */
-app.post('/api/intake', writeLimiter, async (req: Request, res: Response) => {
+app.post('/api/intake', writeLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       clientName,
@@ -524,13 +534,13 @@ app.post('/api/intake', writeLimiter, async (req: Request, res: Response) => {
       error: 'Failed to save intake form. Please try again.',
     });
   }
-});
+}));
 
 /**
  * GET /api/admin/intake-forms
  * Get all intake forms (admin endpoint)
  */
-app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
+app.get('/api/admin/intake-forms', asyncHandler(async (req: Request, res: Response) => {
   try {
     const allForms = await db
       .select()
@@ -542,7 +552,7 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
     console.error('Error fetching intake forms:', error);
     res.status(500).json({ error: 'Failed to fetch intake forms' });
   }
-});
+}));
 
 // ============================================================================
 // COMPLIANCE BUNDLE API ENDPOINTS
@@ -552,7 +562,7 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
  * POST /api/compliance-bundle
  * Submit a compliance bundle request with REAL-TIME Companies House lookup
  */
-app.post('/api/compliance-bundle', writeLimiter, async (req: Request, res: Response) => {
+app.post('/api/compliance-bundle', writeLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
       companyName,
@@ -680,13 +690,13 @@ app.post('/api/compliance-bundle', writeLimiter, async (req: Request, res: Respo
       error: 'Failed to fetch company information. Please try again.',
     });
   }
-});
+}));
 
 /**
  * GET /api/admin/compliance-bundles
  * Get all compliance bundle requests (admin endpoint)
  */
-app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => {
+app.get('/api/admin/compliance-bundles', asyncHandler(async (req: Request, res: Response) => {
   try {
     const allBundles = await db
       .select()
@@ -698,7 +708,7 @@ app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => 
     console.error('Error fetching compliance bundles:', error);
     res.status(500).json({ error: 'Failed to fetch compliance bundles' });
   }
-});
+}));
 
 // ============================================================================
 // CONTACT FORM API ENDPOINTS
@@ -708,7 +718,7 @@ app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => 
  * POST /api/contact
  * Submit a contact form
  */
-app.post('/api/contact', async (req: Request, res: Response) => {
+app.post('/api/contact', asyncHandler(async (req: Request, res: Response) => {
   try {
     const { name, email, subject, message } = req.body;
 
@@ -748,13 +758,13 @@ app.post('/api/contact', async (req: Request, res: Response) => {
       error: 'Failed to save contact form. Please try again.',
     });
   }
-});
+}));
 
 /**
  * GET /api/admin/contacts
  * Get all contacts (admin endpoint)
  */
-app.get('/api/admin/contacts', async (req: Request, res: Response) => {
+app.get('/api/admin/contacts', asyncHandler(async (req: Request, res: Response) => {
   try {
     const allContacts = await db
       .select()
@@ -766,13 +776,13 @@ app.get('/api/admin/contacts', async (req: Request, res: Response) => {
     console.error('Error fetching contacts:', error);
     res.status(500).json({ error: 'Failed to fetch contacts' });
   }
-});
+}));
 
 /**
  * PATCH /api/contacts/:id
  * Update contact status
  */
-app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
+app.patch('/api/contacts/:id', asyncHandler(async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -798,7 +808,7 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
     console.error('Error updating contact:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}));
 
 // ============================================================================
 // LUNAR INTAKE ENGINE
@@ -815,7 +825,7 @@ app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
  * 4. Lola: client follow-up message
  * 5. Persist to DB (best-effort — works offline too)
  */
-app.post('/api/lunar/intake', writeLimiter, async (req: Request, res: Response) => {
+app.post('/api/lunar/intake', writeLimiter, asyncHandler(async (req: Request, res: Response) => {
   const { name, email, issueType, description } = req.body as {
     name?: string;
     email?: string;
@@ -902,13 +912,13 @@ app.post('/api/lunar/intake', writeLimiter, async (req: Request, res: Response) 
       step4_lola: lola,
     },
   });
-});
+}));
 
 /**
  * GET /api/lunar/intake/:id
  * Retrieve a stored intake record by ID.
  */
-app.get('/api/lunar/intake/:id', async (req: Request, res: Response) => {
+app.get('/api/lunar/intake/:id', asyncHandler(async (req: Request, res: Response) => {
   try {
     const dbConn = await import('./db/index').then((m) => m.db).catch(() => null);
     if (!dbConn) return res.status(503).json({ error: 'Database not available' });
@@ -923,7 +933,7 @@ app.get('/api/lunar/intake/:id', async (req: Request, res: Response) => {
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}));
 
 // ============================================================================
 // ULTAI CONTRACT INTELLIGENCE
@@ -985,7 +995,7 @@ app.get('/api/ultai/analyses/:id', (req: Request, res: Response) => {
  * GET /health
  * Health check endpoint
  */
-app.get('/health', async (req: Request, res: Response) => {
+app.get('/health', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Check database connection
     await db.select().from(deploymentStatus).limit(1);
@@ -1002,7 +1012,7 @@ app.get('/health', async (req: Request, res: Response) => {
       database: 'disconnected',
     });
   }
-});
+}));
 
 // ============================================================================
 // STATIC FILE SERVING & SPA FALLBACK
@@ -1022,8 +1032,14 @@ app.get('*', (req: Request, res: Response) => {
 // ============================================================================
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[server] Unhandled error:', err.message);
-  res.status(500).json({ ok: false, error: 'Internal server error' });
+  const status = (err as { status?: number; statusCode?: number }).status
+    ?? (err as { status?: number; statusCode?: number }).statusCode
+    ?? 500;
+  const message = status < 500 ? err.message : 'Internal server error';
+  console.error(`[server] ${status} error:`, err.message);
+  if (!res.headersSent) {
+    res.status(status).json({ ok: false, error: message });
+  }
 });
 
 // ============================================================================
@@ -1078,3 +1094,14 @@ const server = app.listen(PORT, () => {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT',  () => shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason: unknown) => {
+  console.error('[server] Unhandled promise rejection:', reason);
+  // Do NOT exit — log and continue; the request will timeout naturally
+});
+
+process.on('uncaughtException', (err: Error) => {
+  console.error('[server] Uncaught exception:', err);
+  // Uncaught exceptions leave the process in an undefined state — shut down
+  shutdown('uncaughtException');
+});

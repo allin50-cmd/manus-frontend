@@ -3,6 +3,7 @@ import React from 'react';
 interface Props {
   children: React.ReactNode;
   fallback?: React.ReactNode;
+  onReset?: () => void;
 }
 
 interface State {
@@ -37,7 +38,10 @@ export default class ErrorBoundary extends React.Component<Props, State> {
                 {this.state.error?.message ?? 'An unexpected error occurred.'}
               </p>
               <button
-                onClick={() => this.setState({ hasError: false })}
+                onClick={() => {
+                  this.setState({ hasError: false });
+                  this.props.onReset?.();
+                }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 Try again

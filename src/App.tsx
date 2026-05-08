@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch } from 'wouter';
+import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
 
@@ -46,47 +47,53 @@ function PageSpinner() {
 
 function Router() {
   return (
-    <Suspense fallback={<PageSpinner />}>
-      <Switch>
-        {/* ClerkOS app routes */}
-        <Route path="/" component={Dashboard} />
-        <Route path="/cases" component={Cases} />
-        <Route path="/cases/:id" component={CaseDetail} />
-        <Route path="/hearings" component={Hearings} />
-        <Route path="/documents" component={Documents} />
-        <Route path="/queue" component={Queue} />
-        <Route path="/diary" component={Diary} />
-        <Route path="/bundles" component={Bundles} />
-        <Route path="/legal" component={LegalDashboard} />
+    <QueryErrorResetBoundary>
+      {({ reset }) => (
+        <ErrorBoundary onReset={reset}>
+          <Suspense fallback={<PageSpinner />}>
+            <Switch>
+              {/* ClerkOS app routes */}
+              <Route path="/" component={Dashboard} />
+              <Route path="/cases" component={Cases} />
+              <Route path="/cases/:id" component={CaseDetail} />
+              <Route path="/hearings" component={Hearings} />
+              <Route path="/documents" component={Documents} />
+              <Route path="/queue" component={Queue} />
+              <Route path="/diary" component={Diary} />
+              <Route path="/bundles" component={Bundles} />
+              <Route path="/legal" component={LegalDashboard} />
 
-        {/* Marketing / product pages */}
-        <Route path="/vaultline" component={VaultLine} />
-        <Route path="/ultai" component={UltAi} />
-        <Route path="/fineguard" component={FineGuard} />
-        <Route path="/about" component={About} />
-        <Route path="/team" component={Team} />
-        <Route path="/pricing" component={Pricing} />
-        <Route path="/book-demo" component={BookDemo} />
-        <Route path="/intake" component={IntakeSheet} />
-        <Route path="/intake-sheet" component={IntakeSheet} />
-        <Route path="/compliance-bundle" component={ComplianceBundle} />
+              {/* Marketing / product pages */}
+              <Route path="/vaultline" component={VaultLine} />
+              <Route path="/ultai" component={UltAi} />
+              <Route path="/fineguard" component={FineGuard} />
+              <Route path="/about" component={About} />
+              <Route path="/team" component={Team} />
+              <Route path="/pricing" component={Pricing} />
+              <Route path="/book-demo" component={BookDemo} />
+              <Route path="/intake" component={IntakeSheet} />
+              <Route path="/intake-sheet" component={IntakeSheet} />
+              <Route path="/compliance-bundle" component={ComplianceBundle} />
 
-        {/* Product app dashboards + shared pages */}
-        <Route path="/portal" component={Portal} />
-        <Route path="/vault-dashboard" component={VaultDashboard} />
-        <Route path="/ultai-dashboard" component={UltAiDashboard} />
-        <Route path="/ultai-intake" component={UltAiIntake} />
-        <Route path="/ultai-analysis/:id" component={UltAiResult} />
-        <Route path="/fineguard-dashboard" component={FineGuardDashboard} />
-        <Route path="/settings" component={Settings} />
-        <Route path="/lunar-intake" component={LunarIntake} />
-        <Route path="/lunar-dashboard" component={LunarDashboard} />
-        <Route path="/admin" component={Admin} />
+              {/* Product app dashboards + shared pages */}
+              <Route path="/portal" component={Portal} />
+              <Route path="/vault-dashboard" component={VaultDashboard} />
+              <Route path="/ultai-dashboard" component={UltAiDashboard} />
+              <Route path="/ultai-intake" component={UltAiIntake} />
+              <Route path="/ultai-analysis/:id" component={UltAiResult} />
+              <Route path="/fineguard-dashboard" component={FineGuardDashboard} />
+              <Route path="/settings" component={Settings} />
+              <Route path="/lunar-intake" component={LunarIntake} />
+              <Route path="/lunar-dashboard" component={LunarDashboard} />
+              <Route path="/admin" component={Admin} />
 
-        <Route path="/404" component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </Suspense>
+              <Route path="/404" component={NotFound} />
+              <Route component={NotFound} />
+            </Switch>
+          </Suspense>
+        </ErrorBoundary>
+      )}
+    </QueryErrorResetBoundary>
   );
 }
 

@@ -232,7 +232,7 @@ export default function Bundles() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [tamperedMode, setTamperedMode] = useState(false);
 
-  const { data: cases = [] } = trpc.cases.list.useQuery(undefined, { retry: false });
+  const { data: cases = [], isError: casesError } = trpc.cases.list.useQuery(undefined, { retry: false });
 
   const loadChain = (caseId: number) => {
     setSelectedCaseId(caseId);
@@ -347,6 +347,9 @@ export default function Bundles() {
               ))}
               {!cases.length && <option value="1">Demo Case (no DB)</option>}
             </select>
+            {casesError && (
+              <p className="text-xs text-amber-400 mt-1">Unable to load cases — showing demo data</p>
+            )}
           </div>
 
           {events.length > 0 && (
