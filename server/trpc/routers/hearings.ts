@@ -84,7 +84,7 @@ export const hearingsRouter = router({
         .object({
           caseId: z.number().optional(),
           status: hearingStatusEnum.optional(),
-          limit: z.number().int().min(1).max(500).default(100),
+          limit: z.number().int().min(1).max(200).default(100),
           offset: z.number().int().min(0).default(0),
         })
         .optional(),

@@ -13,13 +13,13 @@ export const documentsRouter = router({
     .input(
       z.object({
         caseId: z.number(),
-        fileName: z.string().min(1),
-        fileUrl: z.string(),
-        fileType: z.string().min(1),
+        fileName: z.string().min(1).max(500),
+        fileUrl: z.string().url().max(2048),
+        fileType: z.string().min(1).max(100),
         fileSize: z.number().optional(),
-        documentType: z.string().min(1),
+        documentType: z.string().min(1).max(100),
         uploadedBy: z.number(),
-        contentHash: z.string().optional(),
+        contentHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -66,8 +66,16 @@ export const documentsRouter = router({
     }),
 
   getByCaseId: tenantProcedure
-    .input(z.object({ caseId: z.number() }))
-    .query(async ({ ctx, input }) => getDocumentsByCase(input.caseId, ctx.tenantId)),
+    .input(
+      z.object({
+        caseId: z.number(),
+        limit: z.number().int().min(1).max(200).default(50),
+        offset: z.number().int().min(0).default(0),
+      }),
+    )
+    .query(async ({ ctx, input }) =>
+      getDocumentsByCase(input.caseId, ctx.tenantId, input.limit, input.offset),
+    ),
 
   /**
    * Generate a short-lived SAS URL for direct client upload to Azure Blob Storage.

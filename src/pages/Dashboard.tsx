@@ -63,7 +63,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default function Dashboard() {
   const { data: stats, isLoading, error } = trpc.dashboard.stats.useQuery(undefined, {
-    retry: false,
+    retry: 1,
     refetchInterval: 30_000,
   });
 

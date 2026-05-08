@@ -24,7 +24,7 @@ export const diaryRouter = router({
         date: z.string().regex(dateRegex, 'Date must be YYYY-MM-DD'),
         hearingId: z.number().optional(),
         allocationId: z.number().optional(),
-        notes: z.string().optional(),
+        notes: z.string().max(5000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

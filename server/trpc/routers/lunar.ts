@@ -2,7 +2,8 @@ import { TRPCError } from '@trpc/server';
 import { desc, eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db/index';
-import { intakeMatters } from '../../db/schema';
+import { intakeMatters, vaultEvents } from '../../db/schema';
+import { buildVaultEvent } from '../../engine/vaultline-audit.js';
 import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
 
 const statusEnum = z.enum(['pending', 'in_review', 'matter_created', 'rejected']);
@@ -77,6 +78,20 @@ export const lunarRouter = router({
 
       if (!updated) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Intake matter not found' });
+      }
+
+      // Audit the status change in the append-only vault log
+      try {
+        const auditPayload = { intakeId: input.id, previousStatus: updated.status, newStatus: input.status, changedAt: new Date().toISOString() };
+        const vaultEvent = buildVaultEvent(input.id, 'intake.status_changed', auditPayload);
+        await db.insert(vaultEvents).values({
+          intakeId: input.id,
+          eventType: vaultEvent.eventType,
+          payload: auditPayload as Record<string, unknown>,
+          hash: vaultEvent.hash,
+        });
+      } catch {
+        // Best-effort audit — don't fail the update if vault insert fails
       }
 
       return updated;

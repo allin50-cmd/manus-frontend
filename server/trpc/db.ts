@@ -191,13 +191,15 @@ export async function getHearingsByCase(caseId: number, tenantId: string) {
 
 // ─── Documents ───────────────────────────────────────────────────────────────
 
-export async function getDocumentsByCase(caseId: number, tenantId: string) {
+export async function getDocumentsByCase(caseId: number, tenantId: string, limit = 50, offset = 0) {
   const db = await getDb();
   if (!db) return [];
   return db
     .select()
     .from(documents)
-    .where(and(eq(documents.caseId, caseId), eq(documents.tenantId, tenantId)));
+    .where(and(eq(documents.caseId, caseId), eq(documents.tenantId, tenantId)))
+    .limit(limit)
+    .offset(offset);
 }
 
 // ─── Allocations ─────────────────────────────────────────────────────────────

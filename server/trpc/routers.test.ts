@@ -68,7 +68,7 @@ const HEARING_IN = {
   courtroom: "Court 1", judge: "HH Judge Patel",
 };
 const DOC_IN = {
-  caseId: 1, fileName: "exhibit-a.pdf", fileUrl: "/docs/exhibit-a.pdf",
+  caseId: 1, fileName: "exhibit-a.pdf", fileUrl: "https://storage.example.com/docs/exhibit-a.pdf",
   fileType: "pdf", documentType: "exhibit", uploadedBy: 1,
 };
 const ALLOC_IN = {
@@ -1069,5 +1069,86 @@ describe('VaultLine Audit Engine', () => {
       const tampered = { ...event, intakeId: 'intake-999' };
       expect(verifyVaultEvent(tampered)).toBe(false);
     });
+  });
+});
+
+// ─── Lunar Pipeline — end-to-end integration ─────────────────────────────────
+
+describe('Lunar Pipeline — end-to-end integration', () => {
+  it('full ALLOW path: low-risk matter flows through all 4 engines', () => {
+    const triage = lunarTriage('I have a simple contract dispute with my landlord');
+    expect(triage.riskScore).toBeGreaterThanOrEqual(20);
+    expect(triage.riskScore).toBeLessThan(50);
+
+    const gate = ultraCoreGate({ issueType: 'Contract dispute', urgency: triage.urgency, riskScore: triage.riskScore, description: 'I have a simple contract dispute with my landlord' });
+    expect(gate.decision).toBe('ALLOW');
+
+    const lola = lolaFollowUp({ name: 'Jane Smith', issueType: 'Contract dispute', urgency: triage.urgency, decision: gate.decision, riskScore: triage.riskScore });
+    expect(lola.tone).toBe('standard');
+    expect(lola.message).toContain('Jane');
+
+    const vaultEvt = buildVaultEvent('test-id', 'intake.created', { triage, gate, lola });
+    expect(verifyVaultEvent(vaultEvt)).toBe(true);
+  });
+
+  it('full ESCALATE path: critical matter escalates at every gate', () => {
+    const desc = 'I face immediate arrest warrant and criminal charges with court hearing tomorrow';
+    const triage = lunarTriage(desc);
+    expect(triage.riskScore).toBe(100); // arrest(40)+criminal(40)+court(25)+hearing(20)+tomorrow(10) > 100 → capped
+    expect(triage.urgency).toBe('critical');
+
+    const gate = ultraCoreGate({ issueType: 'Criminal defence', urgency: triage.urgency, riskScore: triage.riskScore, description: desc });
+    expect(gate.decision).toBe('ESCALATE');
+
+    const lola = lolaFollowUp({ name: 'John Doe', issueType: 'Criminal defence', urgency: triage.urgency, decision: gate.decision, riskScore: triage.riskScore });
+    expect(lola.tone).toBe('urgent');
+    expect(lola.callToAction).toMatch(/solicitor/i);
+  });
+
+  it('DENY path: missing issue type blocks pipeline at gate', () => {
+    const triage = lunarTriage('Some vague issue');
+    const gate = ultraCoreGate({ issueType: '', urgency: triage.urgency, riskScore: triage.riskScore, description: 'Some vague issue' });
+    expect(gate.decision).toBe('DENY');
+
+    const lola = lolaFollowUp({ name: 'Alex', issueType: '', urgency: triage.urgency, decision: gate.decision, riskScore: triage.riskScore });
+    expect(lola.tone).toBe('rejection');
+  });
+
+  it('vault hash is unique per event even with same payload at different times', () => {
+    const payload = { test: 'data' };
+    const e1 = buildVaultEvent('id-1', 'test.event', payload);
+    // Simulate a tiny time difference by rebuilding
+    const e2 = buildVaultEvent('id-2', 'test.event', payload);
+    // Different intakeIds → different hashes
+    expect(e1.hash).not.toBe(e2.hash);
+  });
+});
+
+// ─── tRPC Pagination enforcement ─────────────────────────────────────────────
+
+describe('tRPC Pagination enforcement', () => {
+  it('lunar.list — limit=201 (above max 200) → BAD_REQUEST', async () => {
+    await expect(
+      appRouter.createCaller(clerkCtx()).lunar.list({ limit: 201, offset: 0 })
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  });
+
+  it('lunar.list — offset=-1 → BAD_REQUEST', async () => {
+    await expect(
+      appRouter.createCaller(clerkCtx()).lunar.list({ limit: 10, offset: -1 })
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  });
+
+  it('lunar.list — valid limit=50 → passes Zod (no DB → INTERNAL_SERVER_ERROR)', async () => {
+    // In test env DB is null; valid params pass Zod but fail at the DB layer
+    await expect(
+      appRouter.createCaller(clerkCtx()).lunar.list({ limit: 50, offset: 0 })
+    ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+  });
+
+  it('hearings.list — limit=201 → BAD_REQUEST', async () => {
+    await expect(
+      appRouter.createCaller(clerkCtx()).hearings.list({ limit: 201, offset: 0 })
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
   });
 });

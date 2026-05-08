@@ -1,6 +1,7 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
 import compression from 'compression';
 import cors from 'cors';
+import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
@@ -32,6 +33,24 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
+
+// ── Startup env validation ─────────────────────────────────────────────────
+const ENV_OPTIONAL = [
+  ['STRIPE_SECRET_KEY',           'Stripe payments disabled'],
+  ['STRIPE_WEBHOOK_SECRET',       'Stripe webhook disabled'],
+  ['STRIPE_PRICE_ID',             'Stripe checkout disabled'],
+  ['ANTHROPIC_API_KEY',           'UltAi AI analysis disabled'],
+  ['GEMINI_API_KEY',              'Gemini AI disabled'],
+  ['COMPANIES_HOUSE_API_KEY',     'Companies House lookup disabled'],
+  ['AZURE_SERVICE_BUS_CONNECTION_STRING', 'Service Bus queue disabled'],
+  ['DATABASE_URL',                'Running in demo mode (in-memory data)'],
+];
+for (const [key, note] of ENV_OPTIONAL) {
+  if (!process.env[key]) console.warn(`[env] ${key} not set — ${note}`);
+}
+if (!process.env.DEPLOY_RECORD_TOKEN) {
+  console.warn('[env] DEPLOY_RECORD_TOKEN not set — deployment recording endpoint unprotected');
+}
 
 // Stripe client – only initialised when key is present
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -195,6 +214,14 @@ const writeLimiter = rateLimit({
   message: { ok: false, error: 'Too many requests, please try again later.' },
 });
 
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many requests, please try again later.' },
+});
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
   : ['http://localhost:5173', 'http://localhost:3000'];
@@ -224,6 +251,12 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/trpc')) {
     console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   }
+  next();
+});
+
+// Attach a unique request ID to every request for log correlation
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('X-Request-Id', randomUUID());
   next();
 });
 
@@ -501,7 +534,7 @@ app.post('/api/lead', writeLimiter, asyncHandler(async (req: Request, res: Respo
  * GET /api/admin/leads
  * Get all leads (admin endpoint)
  */
-app.get('/api/admin/leads', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/leads', readLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allLeads = await db
       .select()
@@ -577,7 +610,7 @@ app.post('/api/intake', writeLimiter, asyncHandler(async (req: Request, res: Res
  * GET /api/admin/intake-forms
  * Get all intake forms (admin endpoint)
  */
-app.get('/api/admin/intake-forms', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/intake-forms', readLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allForms = await db
       .select()
@@ -733,7 +766,7 @@ app.post('/api/compliance-bundle', writeLimiter, asyncHandler(async (req: Reques
  * GET /api/admin/compliance-bundles
  * Get all compliance bundle requests (admin endpoint)
  */
-app.get('/api/admin/compliance-bundles', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/compliance-bundles', readLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allBundles = await db
       .select()
@@ -798,7 +831,7 @@ app.post('/api/contact', asyncHandler(async (req: Request, res: Response) => {
  * GET /api/admin/contacts
  * Get all contacts (admin endpoint)
  */
-app.get('/api/admin/contacts', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/contacts', readLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allContacts = await db
       .select()
@@ -947,7 +980,7 @@ app.post('/api/lunar/intake', writeLimiter, asyncHandler(async (req: Request, re
  * GET /api/lunar/intake/:id
  * Retrieve a stored intake record by ID.
  */
-app.get('/api/lunar/intake/:id', asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/lunar/intake/:id', readLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
     const dbConn = await import('./db/index').then((m) => m.db).catch(() => null);
     if (!dbConn) return res.status(503).json({ error: 'Database not available' });

@@ -11,6 +11,7 @@ if (databaseUrl) {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
+    connection: { statement_timeout: 30_000 },   // 30s — kills runaway queries
   });
 } else {
   console.warn(

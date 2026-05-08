@@ -17,6 +17,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     cssCodeSplit: true,
     assetsInlineLimit: 4096,
+    esbuildOptions: {
+      drop: ['console', 'debugger'],
+    },
     rollupOptions: {
       output: {
         manualChunks: (id) => {
