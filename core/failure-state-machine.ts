@@ -18,7 +18,17 @@ export function decideFailureState(
     };
   }
 
-  // 2. Navigation integrity failure — AMBER (slow, cautious)
+  // 2. Trust failure — AMBER (peer verification flagged this node)
+  if ((confidence.trust ?? 100) < 40) {
+    return {
+      nextState: 'AMBER',
+      reason: `trust=${confidence.trust ?? 100} — peer verification failed; possible consensus poisoning`,
+      allowedActions: ['REDUCE_SPEED', 'TELEMETRY_ONLY', 'REQUEST_HUMAN_REVIEW'],
+      blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'AUTONOMOUS_RETASK'],
+    };
+  }
+
+  // 3. Navigation integrity failure — AMBER (slow, cautious)
   if ((nav_integrity ?? 100) < 50) {
     return {
       nextState: 'AMBER',

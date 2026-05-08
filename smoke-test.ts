@@ -15,11 +15,14 @@ import { Server } from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { clampScore } from './core/confidence-engine';
+import { clampScore, calcSurvivalScore, survivalGrade } from './core/confidence-engine';
 import { decideFailureState } from './core/failure-state-machine';
 import { safetyShield } from './core/safety-shield';
 import { createStateHash } from './core/event-log';
 import { reconcileRecoveredNode } from './core/recovery-engine';
+import { detectConsensusPoisoning, applyPeerVerification } from './core/peer-verification';
+import { generateAlerts, clearAlertHistory } from './core/alert-engine';
+import { computeMissionHealth } from './core/mission-health';
 import {
   createInitialSwarm,
   runSimulationTick,
@@ -69,7 +72,7 @@ function makeNode(overrides: Partial<ConfidenceScores> = {}, state: SwarmNode['s
     id: 'TEST-01', role: 'AUM', state, cellId: 'primary-swarm', lastSeenAt: Date.now(),
     confidence: {
       comms: 95, navigation: 92, mission: 90, safety: 96, consensus: 94,
-      nav_integrity: 100, clock_health: 100,
+      nav_integrity: 100, clock_health: 100, trust: 100,
       ...overrides,
     },
   };
@@ -184,10 +187,11 @@ assert('quarantined node cellId = quarantine-cell', quarantined.node.cellId === 
 section('6. swarm-engine — multi-tick lifecycle');
 
 const swarm0 = createInitialSwarm();
-assert('initial swarm has 8 nodes', swarm0.length === 8);
+assert('initial swarm has 9 nodes', swarm0.length === 9);
 assert('all start GREEN', swarm0.every(n => n.state === 'GREEN'));
 assert('all have nav_integrity=100', swarm0.every(n => n.confidence.nav_integrity === 100));
 assert('all have clock_health=100', swarm0.every(n => n.confidence.clock_health === 100));
+assert('all have trust=100', swarm0.every(n => n.confidence.trust === 100));
 
 let nodes = createInitialSwarm();
 let eventLog: UltraEvent[] = [];
@@ -196,7 +200,10 @@ let eventLog: UltraEvent[] = [];
 let r = runSimulationTick({ missionId: 'SMOKE-001', tick: 1, nodes, eventLog });
 nodes = r.nodes; eventLog = r.eventLog;
 assert('tick 1: all GREEN', nodes.every(n => n.state === 'GREEN'));
-assert('tick 1: eventLog has 8 entries', eventLog.length === 8);
+assert('tick 1: eventLog has 9 entries', eventLog.length === 9);
+assert('tick 1: missionHealth returned', r.missionHealth !== undefined);
+assert('tick 1: missionHealth NOMINAL at start', r.missionHealth.level === 'NOMINAL');
+assert('tick 1: alerts array returned', Array.isArray(r.alerts));
 
 // tick 2 — AUM-02 starts degrading
 r = runSimulationTick({ missionId: 'SMOKE-001', tick: 2, nodes, eventLog });
@@ -236,8 +243,8 @@ nodes = r.nodes; eventLog = r.eventLog;
 const aum04_t9 = nodes.find(n => n.id === 'AUM-04')!;
 assert('tick 9: AUM-04 spoofing → HOLD_AND_REQUEST_OPERATOR', aum04_t9.currentTask === 'HOLD_AND_REQUEST_OPERATOR');
 
-// event log growth: 9 ticks × 8 nodes = 72 events minimum
-assert('eventLog has ≥72 entries after 9 ticks', eventLog.length >= 72);
+// event log growth: 9 ticks × 9 nodes = 81 events minimum
+assert('eventLog has ≥81 entries after 9 ticks', eventLog.length >= 81);
 
 // cells: all non-GREEN nodes in non-primary cells
 const greenNodes = nodes.filter(n => n.state === 'GREEN');
@@ -447,6 +454,138 @@ queueOperatorOverrides([{ nodeId: 'LOOP-01', type: 'releaseQuarantine' }]);
 const releasedResult = runSimulationTick({ missionId: 'SMOKE', tick: 2, nodes: loopResult.nodes, eventLog: [] });
 const releasedNode = releasedResult.nodes[0];
 assert('releaseQuarantine resets recoveryAttempts to 0', releasedNode.recoveryAttempts === 0 || releasedNode.state !== 'QUARANTINE');
+
+// ─── 11. survival score & peer verification ───────────────────────────────
+
+section('11. survival score + peer verification');
+
+// calcSurvivalScore nominal
+const nominalScores: ConfidenceScores = {
+  comms: 95, navigation: 92, mission: 90, safety: 96, consensus: 94,
+  nav_integrity: 100, clock_health: 100, trust: 100,
+};
+const nomScore = calcSurvivalScore(nominalScores);
+assert('nominal survival score ≥ 80', nomScore >= 80);
+assert('nominal survival grade = GREEN', survivalGrade(nomScore) === 'GREEN');
+
+// degraded scores
+const degradedScores: ConfidenceScores = {
+  comms: 60, navigation: 60, mission: 60, safety: 65, consensus: 60,
+  nav_integrity: 55, clock_health: 55, trust: 55,
+};
+const degScore = calcSurvivalScore(degradedScores);
+assert('degraded survival score < 80', degScore < 80);
+assert('degraded survival grade not GREEN', survivalGrade(degScore) !== 'GREEN');
+
+// critical scores
+const critScores: ConfidenceScores = {
+  comms: 20, navigation: 20, mission: 20, safety: 30, consensus: 20,
+  nav_integrity: 10, clock_health: 10, trust: 10,
+};
+const critScore = calcSurvivalScore(critScores);
+assert('critical survival score < 40', critScore < 40);
+assert('critical survival grade = CRITICAL', survivalGrade(critScore) === 'CRITICAL');
+
+// trust<40 → AMBER in failure-state-machine
+const trustBreached = decideFailureState(
+  { ...nominalScores, trust: 30 },
+  makeNode({ trust: 30 }),
+);
+assert('trust<40 → AMBER (consensus poisoning)', trustBreached.nextState === 'AMBER');
+assert('trust<40 reason mentions trust', trustBreached.reason.includes('trust'));
+
+// peer verification: detect consensus poisoning
+const poisonedNode: SwarmNode = {
+  id: 'AUM-05', role: 'AUM', state: 'GREEN', cellId: 'primary-swarm', lastSeenAt: Date.now(),
+  confidence: { comms: 95, navigation: 92, mission: 98, safety: 96, consensus: 99, nav_integrity: 100, clock_health: 100, trust: 100 },
+};
+const degradedPeers: SwarmNode[] = [
+  { id: 'AUM-01', role: 'AUM', state: 'AMBER', cellId: 'degraded-cell', lastSeenAt: Date.now(),
+    confidence: { comms: 60, navigation: 60, mission: 62, safety: 70, consensus: 62, nav_integrity: 90, clock_health: 90, trust: 90 } },
+  { id: 'AUM-02', role: 'AUM', state: 'AMBER', cellId: 'degraded-cell', lastSeenAt: Date.now(),
+    confidence: { comms: 58, navigation: 58, mission: 60, safety: 68, consensus: 60, nav_integrity: 88, clock_health: 88, trust: 88 } },
+  { id: 'AUM-03', role: 'AUM', state: 'AMBER', cellId: 'degraded-cell', lastSeenAt: Date.now(),
+    confidence: { comms: 62, navigation: 62, mission: 63, safety: 72, consensus: 63, nav_integrity: 91, clock_health: 91, trust: 91 } },
+];
+const poisonResult = detectConsensusPoisoning(poisonedNode, [poisonedNode, ...degradedPeers]);
+assert('consensus poisoning detected: suspicion > 0', poisonResult.suspicionScore > 0);
+assert('consensus poisoning: suspicion ≥ 50', poisonResult.suspicionScore >= 50);
+
+// applyPeerVerification degrades trust on suspicious node
+const verifiedSwarm = applyPeerVerification([poisonedNode, ...degradedPeers]);
+const verifiedPoisoned = verifiedSwarm.find(n => n.id === 'AUM-05')!;
+assert('peer verification degrades trust on poisoned node', (verifiedPoisoned.confidence.trust ?? 100) < 100);
+
+// ─── 12. alerts + mission health ──────────────────────────────────────────
+
+section('12. alerts + mission health');
+
+clearAlertHistory();
+
+// generateAlerts: QUARANTINE triggers CRITICAL alert
+const quarAlertNodes: SwarmNode[] = [
+  { id: 'Q-01', role: 'AUM', state: 'QUARANTINE', cellId: 'quarantine-cell', lastSeenAt: Date.now(),
+    confidence: nominalScores },
+];
+const quarAlerts = generateAlerts(quarAlertNodes, 5);
+assert('QUARANTINE node generates CRITICAL alert', quarAlerts.some(a => a.severity === 'CRITICAL' && a.category === 'QUARANTINE'));
+
+clearAlertHistory();
+
+// generateAlerts: nav_integrity<50 triggers SPOOFING alert
+const spoofAlertNodes: SwarmNode[] = [
+  { id: 'S-01', role: 'AUM', state: 'AMBER', cellId: 'degraded-cell', lastSeenAt: Date.now(),
+    confidence: { ...nominalScores, nav_integrity: 30 } },
+];
+const spoofAlerts = generateAlerts(spoofAlertNodes, 6);
+assert('nav_integrity<50 generates SPOOFING alert', spoofAlerts.some(a => a.category === 'SPOOFING'));
+
+clearAlertHistory();
+
+// generateAlerts: clock_health<40 triggers CLOCK_ATTACK alert
+const clockAlertNodes: SwarmNode[] = [
+  { id: 'C-01', role: 'SENSOR', state: 'BLACK', cellId: 'blackout-cell', lastSeenAt: Date.now(),
+    confidence: { ...nominalScores, clock_health: 20 } },
+];
+const clockAlerts = generateAlerts(clockAlertNodes, 7);
+assert('clock_health<40 generates CLOCK_ATTACK alert', clockAlerts.some(a => a.category === 'CLOCK_ATTACK'));
+
+clearAlertHistory();
+
+// alert cooldown: same node/category twice in 1 tick should not double-fire
+const dupAlerts1 = generateAlerts(quarAlertNodes, 10);
+const dupAlerts2 = generateAlerts(quarAlertNodes, 10);
+assert('alert cooldown prevents duplicate within same tick', dupAlerts2.filter(a => a.category === 'QUARANTINE').length === 0);
+
+clearAlertHistory();
+
+// computeMissionHealth: nominal swarm → NOMINAL
+const healthySwarm = createInitialSwarm();
+const mh1 = computeMissionHealth(healthySwarm);
+assert('healthy swarm → NOMINAL mission health', mh1.level === 'NOMINAL');
+assert('healthy swarm: asrpOnline = true', mh1.asrpOnline === true);
+assert('healthy swarm: score ≥ 80', mh1.score >= 80);
+
+// computeMissionHealth: ASRP offline → FAILED
+const noAsrp = healthySwarm.map(n =>
+  n.role === 'ASRP' ? { ...n, state: 'BLACK' as const } : n
+);
+const mh2 = computeMissionHealth(noAsrp);
+assert('ASRP BLACK → FAILED mission health', mh2.level === 'FAILED');
+assert('ASRP offline: asrpOnline = false', mh2.asrpOnline === false);
+
+// computeMissionHealth: relays down → DEGRADED/CRITICAL
+const noRelays = healthySwarm.map(n =>
+  n.role === 'AIR_RELAY' ? { ...n, state: 'BLACK' as const } : n
+);
+const mh3 = computeMissionHealth(noRelays);
+assert('relays BLACK → relaysCoverage = 0', mh3.relaysCoverage === 0);
+assert('relays BLACK → DEGRADED or CRITICAL', mh3.level === 'DEGRADED' || mh3.level === 'CRITICAL');
+
+// runSimulationTick returns alerts and missionHealth in result
+const freshR = runSimulationTick({ missionId: 'SMOKE', tick: 1, nodes: createInitialSwarm(), eventLog: [] });
+assert('runSimulationTick.alerts is array', Array.isArray(freshR.alerts));
+assert('runSimulationTick.missionHealth is object', typeof freshR.missionHealth === 'object');
 
 // ─── summary ──────────────────────────────────────────────────────────────
 

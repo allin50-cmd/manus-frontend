@@ -8,6 +8,7 @@ export interface ConfidenceScores {
   consensus: number;
   nav_integrity?: number;  // 0–100; low = possible spoofing or sensor conflict
   clock_health?: number;   // 0–100; low = timing corruption / loss of sync
+  trust?: number;          // 0–100; peer-verified trustworthiness; low = consensus poisoning suspect
 }
 
 export interface SwarmNode {

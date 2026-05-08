@@ -4,6 +4,9 @@ import { runNodeCycle } from "../core/run-node-cycle";
 import { assignSwarmCells, groupCells } from "../core/cell-manager";
 import { reconcileRecoveredNode } from "../core/recovery-engine";
 import { clampScore } from "../core/confidence-engine";
+import { applyPeerVerification } from "../core/peer-verification";
+import { generateAlerts, clearAlertHistory, SwarmAlert } from "../core/alert-engine";
+import { computeMissionHealth, MissionStatus } from "../core/mission-health";
 
 // ─── override queue ──────────────────────────────────────────
 export type OperatorOverride = {
@@ -29,15 +32,17 @@ export function trackBlackoutStart(nodes: SwarmNode[]): void {
 // ─── simulation state ──────────────────────────────────────
 export function createInitialSwarm(): SwarmNode[] {
   nodeBlackoutStart.clear();
+  clearAlertHistory();
   return [
-    createNode("ASRP-01", "ASRP"),
-    createNode("AUM-01", "AUM"),
-    createNode("AUM-02", "AUM"),
-    createNode("AUM-03", "AUM"),
-    createNode("AUM-04", "AUM"),
+    createNode("ASRP-01",      "ASRP"),
+    createNode("AUM-01",       "AUM"),
+    createNode("AUM-02",       "AUM"),
+    createNode("AUM-03",       "AUM"),
+    createNode("AUM-04",       "AUM"),
+    createNode("AUM-05",       "AUM"),
     createNode("AIR-RELAY-01", "AIR_RELAY"),
     createNode("AIR-RELAY-02", "AIR_RELAY"),
-    createNode("SENSOR-01", "SENSOR"),
+    createNode("SENSOR-01",    "SENSOR"),
   ];
 }
 
@@ -56,6 +61,7 @@ function createNode(id: string, role: SwarmNode["role"]): SwarmNode {
       consensus: 94,
       nav_integrity: 100,
       clock_health: 100,
+      trust: 100,
     },
     recoveryAttempts: 0,
   };
@@ -65,14 +71,22 @@ function createNode(id: string, role: SwarmNode["role"]): SwarmNode {
 export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode {
   const confidence = { ...node.confidence };
 
-  // Existing scenarios
+  // AUM-02: comms/consensus drop at tick 2
   if (node.id === "AUM-02" && tick >= 2) {
     confidence.comms -= 35;
     confidence.consensus -= 40;
   }
-  if (node.id === "AUM-03" && tick >= 3) {
-    confidence.safety -= 45;
+
+  // AUM-03: safety dips ticks 3–5, recovers tick 6+
+  if (node.id === "AUM-03") {
+    if (tick >= 3 && tick <= 5) {
+      confidence.safety -= 45;
+    } else if (tick >= 6) {
+      confidence.safety = Math.max(confidence.safety, 80);
+    }
   }
+
+  // AIR-RELAY-01: comms/consensus boost at tick 4
   if (node.id === "AIR-RELAY-01" && tick >= 4) {
     confidence.comms += 20;
     confidence.consensus += 25;
@@ -80,25 +94,33 @@ export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode 
 
   // Phase 1 — GNSS spoofing on AUM-04 (starts tick 6)
   if (node.id === "AUM-04" && tick >= 6) {
-    confidence.navigation = Math.max(0, 92 - (tick - 5) * 20);   // 72 → 52 → 32 …
+    confidence.navigation  = Math.max(0, 92 - (tick - 5) * 20);    // 72 → 52 → 32 …
     confidence.nav_integrity = Math.max(0, 100 - (tick - 6) * 25); // 75 → 50 → 25 …
   }
 
   // Phase 1 — Clock attack on SENSOR-01 (starts tick 7)
   if (node.id === "SENSOR-01" && tick >= 7) {
-    confidence.clock_health = Math.max(0, 100 - (tick - 6) * 35); // 65 → 30 → 0 …
+    confidence.clock_health = Math.max(0, 100 - (tick - 6) * 35);  // 65 → 30 → 0 …
+  }
+
+  // Phase 2 — Consensus poisoning on AUM-05 (starts tick 8)
+  // Mission confidence rises suspiciously while other AUM peers degrade
+  if (node.id === "AUM-05" && tick >= 8) {
+    confidence.mission = Math.min(100, 90 + (tick - 7) * 5);       // 95 → 100 → 100 …
+    confidence.consensus = Math.min(100, 94 + (tick - 7) * 3);     // 97 → 100 → 100 …
   }
 
   return {
     ...node,
     confidence: {
-      comms: clampScore(confidence.comms),
-      navigation: clampScore(confidence.navigation),
-      mission: clampScore(confidence.mission),
-      safety: clampScore(confidence.safety),
-      consensus: clampScore(confidence.consensus),
+      comms:         clampScore(confidence.comms),
+      navigation:    clampScore(confidence.navigation),
+      mission:       clampScore(confidence.mission),
+      safety:        clampScore(confidence.safety),
+      consensus:     clampScore(confidence.consensus),
       nav_integrity: clampScore(confidence.nav_integrity ?? 100),
-      clock_health: clampScore(confidence.clock_health ?? 100),
+      clock_health:  clampScore(confidence.clock_health ?? 100),
+      trust:         clampScore(confidence.trust ?? 100),
     },
   };
 }
@@ -119,7 +141,7 @@ function applyRelayRecovery(nodes: SwarmNode[], tick: number): SwarmNode[] {
       ...node,
       confidence: {
         ...node.confidence,
-        comms: clampScore(node.confidence.comms + 25),
+        comms:     clampScore(node.confidence.comms + 25),
         consensus: clampScore(node.confidence.consensus + 30),
       },
     };
@@ -134,12 +156,20 @@ function applyBlackToRecover(nodes: SwarmNode[]): SwarmNode[] {
       const attempts = node.recoveryAttempts ?? 0;
       // Recovery loop trap: too many failed cycles → QUARANTINE
       if (attempts >= 3) {
-        return { ...node, state: "QUARANTINE", cellId: "quarantine-cell",
-                 currentTask: "RECOVERY_LOOP_QUARANTINE" };
+        return {
+          ...node,
+          state: "QUARANTINE",
+          cellId: "quarantine-cell",
+          currentTask: "RECOVERY_LOOP_QUARANTINE",
+        };
       }
       trackBlackoutStart([node]);
-      return { ...node, state: "RECOVER", cellId: "recovery-cell",
-               recoveryAttempts: attempts + 1 };
+      return {
+        ...node,
+        state: "RECOVER",
+        cellId: "recovery-cell",
+        recoveryAttempts: attempts + 1,
+      };
     }
     return node;
   });
@@ -196,6 +226,8 @@ export type SimulationResult = {
   nodes: SwarmNode[];
   cells: ReturnType<typeof groupCells>;
   eventLog: UltraEvent[];
+  alerts: SwarmAlert[];
+  missionHealth: MissionStatus;
 };
 
 export function runSimulationTick(input: {
@@ -215,13 +247,16 @@ export function runSimulationTick(input: {
   // 3. operator overrides (from dashboard)
   const overriddenNodes = applyOperatorOverrides(relayRecoveredNodes);
 
-  // 4. BLACK → RECOVER if conditions met
-  const preRecoveryNodes = applyBlackToRecover(overriddenNodes);
+  // 4. peer verification — detects consensus poisoning, adjusts trust
+  const verifiedNodes = applyPeerVerification(overriddenNodes);
 
-  // 5. recovery replay for RECOVER nodes
+  // 5. BLACK → RECOVER if conditions met
+  const preRecoveryNodes = applyBlackToRecover(verifiedNodes);
+
+  // 6. recovery replay for RECOVER nodes
   const postRecoveryNodes = recoverNodes(preRecoveryNodes, eventLog);
 
-  // 6. safety shield loop
+  // 7. safety shield loop
   const updatedNodes = postRecoveryNodes.map((node) => {
     const result = runNodeCycle({
       missionId: input.missionId,
@@ -236,17 +271,25 @@ export function runSimulationTick(input: {
     return result.node;
   });
 
-  // 7. track blackout start for any node now in BLACK
+  // 8. track blackout start for any node now in BLACK
   trackBlackoutStart(updatedNodes);
 
-  // 8. cell assignment
+  // 9. cell assignment
   const assignedNodes = assignSwarmCells(updatedNodes);
   const cells = groupCells(assignedNodes);
+
+  // 10. alert generation
+  const alerts = generateAlerts(assignedNodes, input.tick);
+
+  // 11. mission health
+  const missionHealth = computeMissionHealth(assignedNodes);
 
   return {
     tick: input.tick,
     nodes: assignedNodes,
     cells,
     eventLog,
+    alerts,
+    missionHealth,
   };
 }

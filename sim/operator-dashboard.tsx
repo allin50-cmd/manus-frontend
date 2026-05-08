@@ -8,6 +8,9 @@ import {
 import { groupCells } from "../core/cell-manager";
 import { UltraEvent } from "../core/event-log";
 import { SwarmNode, FailureState } from "../core/types";
+import { calcSurvivalScore, survivalGrade } from "../core/confidence-engine";
+import { SwarmAlert } from "../core/alert-engine";
+import { MissionStatus } from "../core/mission-health";
 
 const STATE_COLORS: Record<FailureState, string> = {
   GREEN:      "bg-green-500",
@@ -16,6 +19,19 @@ const STATE_COLORS: Record<FailureState, string> = {
   BLACK:      "bg-neutral-800 border border-white/20",
   RECOVER:    "bg-cyan-600",
   QUARANTINE: "bg-purple-600",
+};
+
+const MISSION_COLORS: Record<string, string> = {
+  NOMINAL:  "border-green-500/40 bg-green-950/30",
+  DEGRADED: "border-amber-500/40 bg-amber-950/30",
+  CRITICAL: "border-red-500/40 bg-red-950/30",
+  FAILED:   "border-red-700/60 bg-red-950/50",
+};
+
+const ALERT_COLORS: Record<string, string> = {
+  INFO:     "border-blue-500/30 bg-blue-950/20",
+  WARNING:  "border-amber-500/30 bg-amber-950/20",
+  CRITICAL: "border-red-500/40 bg-red-950/30",
 };
 
 function confidenceColor(value: number, red: number, amber: number): string {
@@ -67,6 +83,8 @@ export default function OperatorDashboard() {
   const [eventLog, setEventLog] = useState<UltraEvent[]>([]);
   const [running, setRunning] = useState(false);
   const [overrides, setOverrides] = useState<OperatorOverride[]>([]);
+  const [alerts, setAlerts] = useState<SwarmAlert[]>([]);
+  const [missionHealth, setMissionHealth] = useState<MissionStatus | null>(null);
 
   const advance = useCallback(() => {
     setTick((prevTick) => {
@@ -80,6 +98,8 @@ export default function OperatorDashboard() {
       });
       setNodes(result.nodes);
       setEventLog(result.eventLog);
+      setAlerts((prev) => [...result.alerts, ...prev].slice(0, 50));
+      setMissionHealth(result.missionHealth);
       setOverrides([]);
       return nextTick;
     });
@@ -96,6 +116,8 @@ export default function OperatorDashboard() {
     setTick(0);
     setNodes(createInitialSwarm());
     setEventLog([]);
+    setAlerts([]);
+    setMissionHealth(null);
     setOverrides([]);
     queueOperatorOverrides([]);
   };
@@ -114,7 +136,7 @@ export default function OperatorDashboard() {
   return (
     <SimErrorBoundary>
       <main className="min-h-screen bg-gray-950 text-white p-6 font-mono">
-        <header className="flex justify-between items-center mb-6">
+        <header className="flex justify-between items-center mb-4">
           <div>
             <p className="text-sm text-cyan-300 tracking-widest">ULTRACORE CONTROL</p>
             <h1 className="text-3xl font-bold">Graceful Failure Operator Dashboard</h1>
@@ -133,8 +155,26 @@ export default function OperatorDashboard() {
           </div>
         </header>
 
+        {/* Mission health banner */}
+        {missionHealth && (
+          <section className={`border rounded-xl p-4 mb-4 ${MISSION_COLORS[missionHealth.level] ?? "border-white/10"}`}>
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-xs uppercase tracking-wider text-gray-400">Mission Status</span>
+                <p className="text-xl font-bold">{missionHealth.level}</p>
+                <p className="text-sm text-gray-300">{missionHealth.summary}</p>
+              </div>
+              <div className="text-right space-y-1 text-xs text-gray-400">
+                <div>Composite score: <span className="text-white font-bold">{missionHealth.score}</span></div>
+                <div>Relay coverage: <span className="text-white">{missionHealth.relaysCoverage}%</span></div>
+                <div>Ops ratio: <span className="text-white">{missionHealth.operationalRatio}%</span></div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* State summary — 6 states */}
-        <section className="grid grid-cols-6 gap-3 mb-6">
+        <section className="grid grid-cols-6 gap-3 mb-4">
           {(["GREEN", "AMBER", "RED", "BLACK", "RECOVER", "QUARANTINE"] as FailureState[]).map((state) => {
             const count = nodes.filter((n) => n.state === state).length;
             return (
@@ -166,8 +206,33 @@ export default function OperatorDashboard() {
             </div>
           </div>
 
-          {/* Cells & events */}
+          {/* Right column: alerts, cells, events */}
           <div className="space-y-4">
+
+            {/* Active alerts */}
+            {alerts.length > 0 && (
+              <>
+                <h2 className="text-xl font-semibold">Active Alerts</h2>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {alerts.slice(0, 10).map((alert) => (
+                    <div
+                      key={alert.alertId}
+                      className={`border rounded-xl p-3 text-xs ${ALERT_COLORS[alert.severity] ?? "border-white/10"}`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={`font-bold uppercase ${alert.severity === 'CRITICAL' ? 'text-red-400' : alert.severity === 'WARNING' ? 'text-amber-400' : 'text-blue-400'}`}>
+                          {alert.severity}
+                        </span>
+                        <span className="text-gray-500">t={alert.tick}</span>
+                      </div>
+                      <p className="text-gray-300">{alert.message}</p>
+                      <p className="text-gray-500 mt-0.5">{alert.category}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             <h2 className="text-xl font-semibold">Cells</h2>
             <div className="space-y-3">
               {cells.map((cell) => (
@@ -228,14 +293,43 @@ function NodeCard({
 }) {
   const stateBg = STATE_COLORS[node.state] ?? "bg-gray-700";
   const isDark = node.state === "BLACK" || node.state === "QUARANTINE";
+  const survScore = calcSurvivalScore(node.confidence);
+  const grade = survivalGrade(survScore);
+  const gradeColor =
+    grade === "GREEN"    ? "text-green-400" :
+    grade === "AMBER"    ? "text-amber-400" :
+    grade === "RED"      ? "text-red-400"   :
+                           "text-red-600";
+
   return (
     <div className={`border border-white/10 rounded-xl p-4 ${isDark ? "bg-gray-900" : "bg-gray-900/30"}`}>
       <div className="flex justify-between items-start mb-2">
         <div>
           <p className="font-semibold">{node.id}</p>
           <p className="text-xs text-gray-400">{node.role} · {node.cellId}</p>
+          {(node.recoveryAttempts ?? 0) > 0 && (
+            <p className="text-xs text-amber-400">Recovery attempts: {node.recoveryAttempts}</p>
+          )}
         </div>
-        <span className={`px-2 py-0.5 rounded text-xs font-bold ${stateBg}`}>{node.state}</span>
+        <div className="text-right space-y-1">
+          <span className={`px-2 py-0.5 rounded text-xs font-bold block ${stateBg}`}>{node.state}</span>
+          <span className={`text-xs font-mono ${gradeColor}`}>SVR {survScore} · {grade}</span>
+        </div>
+      </div>
+
+      {/* Survival score bar */}
+      <div className="mb-2">
+        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full ${
+              grade === "GREEN" ? "bg-green-400" :
+              grade === "AMBER" ? "bg-amber-400" :
+              grade === "RED"   ? "bg-red-500"   :
+                                  "bg-red-700"
+            }`}
+            style={{ width: `${survScore}%` }}
+          />
+        </div>
       </div>
 
       <ConfidenceBar label="Comms"     value={node.confidence.comms}       red={35} amber={70} />
@@ -244,10 +338,13 @@ function NodeCard({
       <ConfidenceBar label="Safety"    value={node.confidence.safety}       red={60} amber={80} />
       <ConfidenceBar label="Consensus" value={node.confidence.consensus}    red={30} amber={70} />
       {node.confidence.nav_integrity !== undefined && (
-        <ConfidenceBar label="Nav-I" value={node.confidence.nav_integrity}  red={40} amber={70} />
+        <ConfidenceBar label="Nav-I"   value={node.confidence.nav_integrity}  red={40} amber={70} />
       )}
       {node.confidence.clock_health !== undefined && (
-        <ConfidenceBar label="Clock" value={node.confidence.clock_health}   red={40} amber={70} />
+        <ConfidenceBar label="Clock"   value={node.confidence.clock_health}   red={40} amber={70} />
+      )}
+      {node.confidence.trust !== undefined && (
+        <ConfidenceBar label="Trust"   value={node.confidence.trust}          red={40} amber={70} />
       )}
 
       <div className="flex justify-between items-center mt-3 text-xs">
