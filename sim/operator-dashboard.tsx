@@ -1,11 +1,10 @@
-"use client";
 import React, { useEffect, useState, useCallback } from "react";
 import {
   createInitialSwarm,
   runSimulationTick,
   queueOperatorOverrides,
   OperatorOverride,
-} from "../sim/swarm-simulator";
+} from "./swarm-simulator";
 import { groupCells } from "../core/cell-manager";
 import { UltraEvent } from "../core/event-log";
 import { SwarmNode, FailureState } from "../core/types";
