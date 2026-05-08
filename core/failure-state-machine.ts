@@ -43,7 +43,19 @@ export function decideFailureState(
     };
   }
 
-  // ── Rule 4: Trust failure — peer-verified consensus poisoning ────────────
+  // ── Rule 4a: Confirmed consensus poisoning — trust critically low → QUARANTINE
+  // trust < 10 means the node's mission data is definitively untrustworthy.
+  // Analogous to nav_integrity < 20 for GNSS: suspected < threshold vs confirmed < floor.
+  if ((confidence.trust ?? 100) < 10) {
+    return {
+      nextState: 'QUARANTINE',
+      reason: `trust=${confidence.trust ?? 100} — consensus poisoning confirmed; node definitively untrusted`,
+      allowedActions: ['REQUEST_HUMAN_REVIEW', 'TELEMETRY_ONLY'],
+      blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'AUTONOMOUS_RETASK', 'EVENT_BROADCAST'],
+    };
+  }
+
+  // ── Rule 4b: Suspected consensus poisoning — trust degraded → AMBER ──────
   if ((confidence.trust ?? 100) < 40) {
     return {
       nextState: 'AMBER',

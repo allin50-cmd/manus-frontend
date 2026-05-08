@@ -119,14 +119,18 @@ export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode 
   }
 
   // Phase 2 — Consensus poisoning on AUM-05 (tick 8+).
-  // Mission/consensus rise anomalously. ASRP detects and degrades trust (tick 9+).
+  // Mission/consensus rise anomalously while peers degrade.
+  // ASRP detects and flags trust (tick 9+) → AMBER at tick 12 → QUARANTINE at tick 13.
+  // Tick 18+: ASRP intervention clears the poisoning; trust recovers → auto-supervisor releases.
   if (node.id === "AUM-05") {
     if (tick >= 8) {
       confidence.mission   = 100;
       confidence.consensus = 100;
     }
-    if (tick >= 9) {
+    if (tick >= 9 && tick <= 17) {
       confidence.trust = clampScore(100 - (tick - 8) * 20); // 80→60→40→20→0
+    } else if (tick >= 18) {
+      confidence.trust = clampScore((tick - 17) * 20);      // 20→40→60→80→100
     }
   }
 
@@ -261,7 +265,13 @@ function applyOperatorOverrides(nodes: SwarmNode[]): SwarmNode[] {
       };
     }
     if (ov.type === "releaseQuarantine") {
-      return { ...node, operatorResumeApproved: true, recoveryAttempts: 0 };
+      return {
+        ...node,
+        operatorResumeApproved: true,
+        recoveryAttempts: 0,
+        // Operator attestation: restore baseline trust so trust<10 rule doesn't immediately re-quarantine
+        confidence: { ...node.confidence, trust: Math.max(node.confidence.trust ?? 0, 50) },
+      };
     }
     return node;
   });
