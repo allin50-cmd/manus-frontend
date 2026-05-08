@@ -64,7 +64,7 @@ export const contacts = pgTable('contacts', {
   email: varchar('email', { length: 255 }).notNull(),
   subject: varchar('subject', { length: 255 }),
   message: text('message').notNull(),
-  status: varchar('status', { length: 20 }).default('new').notNull(),
+  status: varchar('status', { length: 20 }).default('new').notNull(), // new, read, replied
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [
   index('contacts_status_idx').on(t.status),
@@ -91,3 +91,24 @@ export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+/**
+ * Companies House Portfolio Table
+ * Persists the firm's monitored company portfolio.
+ * complianceData stores the JSON-encoded response from the CH service, refreshed on every sync.
+ */
+export const chPortfolio = pgTable('ch_portfolio', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyNumber: varchar('company_number', { length: 20 }).notNull().unique(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  serviceType: varchar('service_type', { length: 100 }),
+  complianceStatus: varchar('compliance_status', { length: 20 }).default('pending').notNull(), // overdue | due_soon | compliant | pending
+  complianceData: text('compliance_data'), // JSON string — full ComplianceStatus from CH service
+  addedAt: timestamp('added_at').defaultNow().notNull(),
+  lastSynced: timestamp('last_synced'),
+});
+
+// ── Inferred types ────────────────────────────────────────────────────────────
+
+export type ChPortfolioEntry = typeof chPortfolio.$inferSelect;
+export type NewChPortfolioEntry = typeof chPortfolio.$inferInsert;

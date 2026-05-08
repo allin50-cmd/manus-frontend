@@ -9,7 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import { db, client } from './db/index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies } from './db/schema';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, chPortfolio } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { companiesHouseService, CompaniesHouseService } from './services/companiesHouse';
 
@@ -789,6 +789,307 @@ app.patch('/api/contacts/:id', requireAdminToken, async (req: Request, res: Resp
 
 
 // ============================================================================
+// COMPANIES HOUSE PORTFOLIO API
+// ============================================================================
+
+// Sync is a heavy operation (one CH API round-trip per portfolio company).
+// Tighter limit than the default apiLimiter to prevent quota exhaustion.
+const chSyncLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 5,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { ok: false, error: 'Too many sync requests. Please wait a minute.' },
+});
+
+/**
+ * Maps CH compliance status to the portfolio status field.
+ * Uses the overall CH status first; falls back to days-until-due for 'warning' triage.
+ */
+function toPortfolioStatus(chStatus: string, daysUntilDue: number): string {
+  if (chStatus === 'overdue') return 'overdue';
+  if (chStatus === 'warning' || daysUntilDue <= 14) return 'due_soon';
+  return 'compliant';
+}
+
+/**
+ * GET /api/ch/search?q=...
+ * Live company search against Companies House API. Admin-only.
+ */
+app.get('/api/ch/search', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const q = ((req.query.q as string) ?? '').trim();
+    if (!q || q.length < 2) {
+      return res.status(400).json({ ok: false, error: 'Query must be at least 2 characters' });
+    }
+    const results = await companiesHouseService.searchCompanies(q, 10);
+    res.json({ ok: true, results });
+  } catch (error) {
+    console.error('CH search error:', error);
+    if (error instanceof Error && error.message.includes('API key')) {
+      return res.status(503).json({ ok: false, error: 'Companies House API key not configured' });
+    }
+    res.status(500).json({ ok: false, error: 'Search failed. Please try again.' });
+  }
+});
+
+/**
+ * GET /api/ch/company/:number
+ * Full company profile + compliance status + officers + PSC from live CH API. Admin-only.
+ */
+app.get('/api/ch/company/:number', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const number = CompaniesHouseService.formatCompanyNumber(req.params.number);
+    if (!CompaniesHouseService.validateCompanyNumber(number)) {
+      return res.status(400).json({ ok: false, error: 'Invalid company number format' });
+    }
+
+    const [profile, compliance, officers, pscs] = await Promise.all([
+      companiesHouseService.getCompanyProfile(number),
+      companiesHouseService.getComplianceStatus(number),
+      companiesHouseService.getOfficers(number),
+      companiesHouseService.getPSC(number),
+    ]);
+
+    if (!profile) return res.status(404).json({ ok: false, error: 'Company not found' });
+
+    res.json({ ok: true, profile, compliance, officers, pscs });
+  } catch (error) {
+    console.error('CH company lookup error:', error);
+    res.status(500).json({ ok: false, error: 'Company lookup failed. Please try again.' });
+  }
+});
+
+/**
+ * GET /api/ch/portfolio
+ * Returns the firm's monitored portfolio with cached compliance data. Admin-only.
+ */
+app.get('/api/ch/portfolio', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const entries = await db.select().from(chPortfolio).orderBy(chPortfolio.addedAt);
+
+    const portfolio = entries.map((e) => {
+      let complianceData: unknown = null;
+      try {
+        complianceData = e.complianceData ? JSON.parse(e.complianceData) : null;
+      } catch {
+        // Stored JSON is malformed — return null rather than crashing the request
+        complianceData = null;
+      }
+      return { ...e, complianceData };
+    });
+
+    res.json({ ok: true, portfolio });
+  } catch (error) {
+    console.error('CH portfolio fetch error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to load portfolio' });
+  }
+});
+
+/**
+ * POST /api/ch/portfolio
+ * Add a company to the monitored portfolio. Admin-only.
+ * Body: { companyNumber: string, serviceType?: string }
+ */
+app.post('/api/ch/portfolio', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const { companyNumber, serviceType } = req.body as { companyNumber?: string; serviceType?: string };
+
+    if (!companyNumber) {
+      return res.status(400).json({ ok: false, error: 'companyNumber is required' });
+    }
+
+    const formatted = CompaniesHouseService.formatCompanyNumber(companyNumber);
+    if (!CompaniesHouseService.validateCompanyNumber(formatted)) {
+      return res.status(400).json({ ok: false, error: 'Invalid company number format' });
+    }
+
+    const profile = await companiesHouseService.getCompanyProfile(formatted);
+    if (!profile) {
+      return res.status(404).json({ ok: false, error: 'Company not found in Companies House register' });
+    }
+
+    const compliance = await companiesHouseService.getComplianceStatus(formatted);
+    const minDays = Math.min(
+      compliance.accountsStatus.daysUntilDue,
+      compliance.confirmationStatementStatus.daysUntilDue,
+    );
+    const portfolioStatus = toPortfolioStatus(compliance.status, minDays);
+
+    const existing = await db
+      .select()
+      .from(chPortfolio)
+      .where(eq(chPortfolio.companyNumber, formatted))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(chPortfolio)
+        .set({
+          companyName: profile.companyName,
+          serviceType: serviceType ?? existing[0].serviceType,
+          complianceStatus: portfolioStatus,
+          complianceData: JSON.stringify(compliance),
+          lastSynced: new Date(),
+        })
+        .where(eq(chPortfolio.companyNumber, formatted));
+
+      return res.json({
+        ok: true,
+        message: 'Company already in portfolio — compliance data refreshed',
+        companyName: profile.companyName,
+      });
+    }
+
+    const [entry] = await db
+      .insert(chPortfolio)
+      .values({
+        companyNumber: formatted,
+        companyName: profile.companyName,
+        serviceType: serviceType ?? null,
+        complianceStatus: portfolioStatus,
+        complianceData: JSON.stringify(compliance),
+        lastSynced: new Date(),
+      })
+      .returning();
+
+    console.log(`Added to portfolio: ${profile.companyName} (${formatted}) — ${portfolioStatus}`);
+    res.status(201).json({ ok: true, message: `${profile.companyName} added to portfolio`, entry });
+  } catch (error) {
+    console.error('CH add portfolio error:', error);
+    if (error instanceof Error && error.message.includes('API key')) {
+      return res.status(503).json({ ok: false, error: 'Companies House API key not configured' });
+    }
+    res.status(500).json({ ok: false, error: 'Failed to add company to portfolio' });
+  }
+});
+
+/**
+ * DELETE /api/ch/portfolio/:number
+ * Remove a company from the monitored portfolio. Admin-only.
+ */
+app.delete('/api/ch/portfolio/:number', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const number = CompaniesHouseService.formatCompanyNumber(req.params.number);
+    if (!CompaniesHouseService.validateCompanyNumber(number)) {
+      return res.status(400).json({ ok: false, error: 'Invalid company number format' });
+    }
+
+    const deleted = await db
+      .delete(chPortfolio)
+      .where(eq(chPortfolio.companyNumber, number))
+      .returning();
+
+    if (deleted.length === 0) {
+      return res.status(404).json({ ok: false, error: 'Company not found in portfolio' });
+    }
+
+    console.log(`Removed from portfolio: ${number}`);
+    res.json({ ok: true, message: 'Company removed from portfolio' });
+  } catch (error) {
+    console.error('CH remove portfolio error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to remove company' });
+  }
+});
+
+/**
+ * PATCH /api/ch/portfolio/:number
+ * Update metadata for a portfolio entry. Admin-only.
+ * Only updates fields explicitly present in the request body.
+ */
+app.patch('/api/ch/portfolio/:number', requireAdminToken, async (req: Request, res: Response) => {
+  try {
+    const number = CompaniesHouseService.formatCompanyNumber(req.params.number);
+    if (!CompaniesHouseService.validateCompanyNumber(number)) {
+      return res.status(400).json({ ok: false, error: 'Invalid company number format' });
+    }
+
+    const body = req.body as Record<string, unknown>;
+    if (!('serviceType' in body)) {
+      return res.status(400).json({ ok: false, error: 'No updatable fields provided' });
+    }
+
+    const serviceType = typeof body.serviceType === 'string' ? body.serviceType : null;
+
+    const [updated] = await db
+      .update(chPortfolio)
+      .set({ serviceType })
+      .where(eq(chPortfolio.companyNumber, number))
+      .returning();
+
+    if (!updated) return res.status(404).json({ ok: false, error: 'Company not found in portfolio' });
+    res.json({ ok: true, entry: updated });
+  } catch (error) {
+    console.error('CH update portfolio error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to update entry' });
+  }
+});
+
+/**
+ * POST /api/ch/portfolio/sync
+ * Re-sync compliance data for all portfolio companies from live CH API. Admin-only.
+ */
+app.post('/api/ch/portfolio/sync', requireAdminToken, chSyncLimiter, async (req: Request, res: Response) => {
+  try {
+    const entries = await db.select().from(chPortfolio);
+
+    if (entries.length === 0) {
+      return res.json({ ok: true, synced: 0, message: 'Portfolio is empty' });
+    }
+
+    let synced = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    // Batch size of 3 to respect CH API rate limits
+    const batchSize = 3;
+    for (let i = 0; i < entries.length; i += batchSize) {
+      const batch = entries.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(async (entry) => {
+          try {
+            const [profile, compliance] = await Promise.all([
+              companiesHouseService.getCompanyProfile(entry.companyNumber),
+              companiesHouseService.getComplianceStatus(entry.companyNumber),
+            ]);
+
+            if (!profile) { failed++; return; }
+
+            const minDays = Math.min(
+              compliance.accountsStatus.daysUntilDue,
+              compliance.confirmationStatementStatus.daysUntilDue,
+            );
+
+            await db
+              .update(chPortfolio)
+              .set({
+                companyName: profile.companyName,
+                complianceStatus: toPortfolioStatus(compliance.status, minDays),
+                complianceData: JSON.stringify(compliance),
+                lastSynced: new Date(),
+              })
+              .where(eq(chPortfolio.companyNumber, entry.companyNumber));
+
+            synced++;
+          } catch (err) {
+            failed++;
+            errors.push(`${entry.companyNumber}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+        }),
+      );
+      if (i + batchSize < entries.length) {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+
+    res.json({ ok: true, synced, failed, total: entries.length, errors });
+  } catch (error) {
+    console.error('CH sync error:', error);
+    res.status(500).json({ ok: false, error: 'Sync failed' });
+  }
+});
+
+// ============================================================================
 // STATIC FILE SERVING & SPA FALLBACK
 // ============================================================================
 
@@ -813,7 +1114,7 @@ app.get('*', (req: Request, res: Response) => {
 // ERROR HANDLING
 // ============================================================================
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
@@ -842,6 +1143,13 @@ const server = app.listen(PORT, () => {
   console.log('  POST   /api/contact');
   console.log('  GET    /api/admin/contacts');
   console.log('  PATCH  /api/contacts/:id');
+  console.log('  GET    /api/ch/search       (admin)');
+  console.log('  GET    /api/ch/company/:n   (admin)');
+  console.log('  GET    /api/ch/portfolio    (admin)');
+  console.log('  POST   /api/ch/portfolio    (admin)');
+  console.log('  DELETE /api/ch/portfolio/:n (admin)');
+  console.log('  PATCH  /api/ch/portfolio/:n (admin)');
+  console.log('  POST   /api/ch/portfolio/sync (admin)');
   console.log('  GET    /api/health');
   console.log('');
 });

@@ -109,6 +109,66 @@ interface FilingDeadline {
   penaltyRisk?: number;
 }
 
+// ── Public types ─────────────────────────────────────────────────────────────
+
+export interface SearchResult {
+  companyNumber: string;
+  companyName: string;
+  companyStatus: string;
+  companyType: string;
+  dateOfCreation: string | null;
+  address: string | null;
+}
+
+export interface Officer {
+  name: string;
+  role: string;
+  appointedOn: string | null;
+  dateOfBirth: string | null;
+  nationality: string | null;
+}
+
+export interface PSCEntry {
+  name: string;
+  naturesOfControl: string[];
+  notifiedOn: string | null;
+  nationality: string | null;
+}
+
+// ── Raw CH API shapes (internal) ──────────────────────────────────────────────
+
+interface RawSearchItem {
+  company_number: string;
+  title: string;
+  company_status?: string;
+  company_type?: string;
+  date_of_creation?: string;
+  address?: {
+    address_line_1?: string;
+    locality?: string;
+    postal_code?: string;
+  };
+}
+
+interface RawOfficerItem {
+  name: string;
+  officer_role: string;
+  appointed_on?: string;
+  resigned_on?: string;
+  nationality?: string;
+  date_of_birth?: { month: number; year: number };
+}
+
+interface RawPSCItem {
+  name: string;
+  natures_of_control?: string[];
+  notified_on?: string;
+  ceased_on?: string;
+  nationality?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export class CompaniesHouseService {
   private apiKey: string;
 
@@ -411,6 +471,90 @@ export class CompaniesHouseService {
     }
 
     return response.body as unknown as NodeJS.ReadableStream;
+  }
+
+  /**
+   * Search Companies House by name or company number.
+   */
+  async searchCompanies(query: string, limit = 10): Promise<SearchResult[]> {
+    const url = `${CH_API_BASE}/search/companies?q=${encodeURIComponent(query)}&items_per_page=${limit}`;
+    const response = await fetch(url, { headers: this.getAuthHeaders() });
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Invalid Companies House API key');
+      throw new Error(`CH search error: ${response.status}`);
+    }
+
+    const data = await response.json() as { items?: RawSearchItem[] };
+    return (data.items ?? []).map((item) => ({
+      companyNumber: item.company_number,
+      companyName: item.title,
+      companyStatus: item.company_status ?? 'unknown',
+      companyType: item.company_type ?? 'unknown',
+      dateOfCreation: item.date_of_creation ?? null,
+      address: item.address
+        ? [item.address.address_line_1, item.address.locality, item.address.postal_code]
+            .filter(Boolean)
+            .join(', ')
+        : null,
+    }));
+  }
+
+  /**
+   * Get active officers (directors) for a company.
+   * Returns [] only for 404 (company not found); propagates all other errors.
+   */
+  async getOfficers(companyNumber: string): Promise<Officer[]> {
+    const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
+    const response = await fetch(
+      `${CH_API_BASE}/company/${cleanNumber}/officers?items_per_page=50`,
+      { headers: this.getAuthHeaders() },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) return [];
+      throw new Error(`CH officers error: ${response.status}`);
+    }
+
+    const data = await response.json() as { items?: RawOfficerItem[] };
+    return (data.items ?? [])
+      .filter((o) => !o.resigned_on)
+      .map((o) => ({
+        name: o.name,
+        role: o.officer_role,
+        appointedOn: o.appointed_on ?? null,
+        dateOfBirth: o.date_of_birth
+          ? `${o.date_of_birth.month}/${o.date_of_birth.year}`
+          : null,
+        nationality: o.nationality ?? null,
+      }));
+  }
+
+  /**
+   * Get active Persons with Significant Control for a company.
+   * Returns [] only for 404; propagates all other errors.
+   */
+  async getPSC(companyNumber: string): Promise<PSCEntry[]> {
+    const cleanNumber = companyNumber.replace(/\s/g, '').toUpperCase();
+    const response = await fetch(
+      `${CH_API_BASE}/company/${cleanNumber}/persons-with-significant-control`,
+      { headers: this.getAuthHeaders() },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) return [];
+      throw new Error(`CH PSC error: ${response.status}`);
+    }
+
+    const data = await response.json() as { items?: RawPSCItem[] };
+    return (data.items ?? [])
+      .filter((p) => !p.ceased_on)
+      .map((p) => ({
+        name: p.name,
+        naturesOfControl: p.natures_of_control ?? [],
+        notifiedOn: p.notified_on ?? null,
+        nationality: p.nationality ?? null,
+      }));
   }
 
   /**
