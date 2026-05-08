@@ -142,9 +142,9 @@ export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode 
       mission:       clampScore(confidence.mission),
       safety:        clampScore(confidence.safety),
       consensus:     clampScore(confidence.consensus),
-      nav_integrity: clampScore(confidence.nav_integrity ?? 100),
-      clock_health:  clampScore(confidence.clock_health ?? 100),
-      trust:         clampScore(confidence.trust ?? 100),
+      nav_integrity: clampScore(confidence.nav_integrity),
+      clock_health:  clampScore(confidence.clock_health),
+      trust:         clampScore(confidence.trust),
     },
   };
 }
@@ -163,12 +163,12 @@ function applyAutoSupervisor(nodes: SwarmNode[]): SwarmNode[] {
       node.state === "QUARANTINE" &&
       !node.operatorResumeApproved &&
       (node.recoveryAttempts ?? 0) === 0 &&
-      node.confidence.safety                >= 65 &&
-      (node.confidence.nav_integrity ?? 100) >= 65 &&
-      (node.confidence.clock_health  ?? 100) >= 65 &&
-      (node.confidence.trust         ?? 100) >= 65 &&
-      node.confidence.comms                 >= 65 &&
-      node.confidence.consensus             >= 65
+      node.confidence.safety        >= 65 &&
+      node.confidence.nav_integrity >= 65 &&
+      node.confidence.clock_health  >= 65 &&
+      node.confidence.trust         >= 65 &&
+      node.confidence.comms         >= 65 &&
+      node.confidence.consensus     >= 65
     ) {
       return { ...node, operatorResumeApproved: true, recoveryAttempts: 0 };
     }
@@ -204,7 +204,7 @@ function applyBlackToRecover(nodes: SwarmNode[]): SwarmNode[] {
   return nodes.map((node) => {
     if (node.state !== "BLACK") return node;
     if (node.confidence.comms > 50 && node.confidence.consensus >= 30) {
-      const attempts = node.recoveryAttempts ?? 0;
+      const attempts = node.recoveryAttempts ?? 0;  // optional field; default 0
       // Recovery loop trap: too many failed cycles → QUARANTINE
       if (attempts >= 3) {
         return {
@@ -270,7 +270,7 @@ function applyOperatorOverrides(nodes: SwarmNode[]): SwarmNode[] {
         operatorResumeApproved: true,
         recoveryAttempts: 0,
         // Operator attestation: restore baseline trust so trust<10 rule doesn't immediately re-quarantine
-        confidence: { ...node.confidence, trust: Math.max(node.confidence.trust ?? 0, 50) },
+        confidence: { ...node.confidence, trust: Math.max(node.confidence.trust, 50) },
       };
     }
     return node;

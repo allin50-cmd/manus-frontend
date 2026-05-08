@@ -7,11 +7,14 @@ export interface PeerVerificationResult {
   reason: string;
 }
 
+// swarmNodes is the full active (non-BLACK, non-QUARANTINE) node list.
+// Using the whole swarm (not just cell-mates) is intentional: ASRP and relays
+// act as trust anchors across all cells.
 export function detectConsensusPoisoning(
   node: SwarmNode,
-  cellNodes: SwarmNode[],
+  swarmNodes: SwarmNode[],
 ): PeerVerificationResult {
-  const peers = cellNodes.filter((n) => n.id !== node.id && n.state !== 'BLACK' && n.state !== 'QUARANTINE');
+  const peers = swarmNodes.filter((n) => n.id !== node.id && n.state !== 'BLACK' && n.state !== 'QUARANTINE');
   if (peers.length < 2) {
     return { nodeId: node.id, suspicionScore: 0, reason: 'Insufficient peers for comparison' };
   }
@@ -49,13 +52,12 @@ export function applyPeerVerification(nodes: SwarmNode[]): SwarmNode[] {
     if (result.suspicionScore < 50) return node;
 
     // High suspicion: degrade trust score
-    const currentTrust = node.confidence.trust ?? 100;
     const penalty = Math.floor(result.suspicionScore * 0.5);
     return {
       ...node,
       confidence: {
         ...node.confidence,
-        trust: clampScore(currentTrust - penalty),
+        trust: clampScore(node.confidence.trust - penalty),
       },
     };
   });

@@ -5,7 +5,7 @@ export function decideFailureState(
   currentNode: SwarmNode,
 ): StateDecision {
   const { comms, navigation, mission, safety, consensus,
-          nav_integrity, clock_health } = confidence;
+          nav_integrity, clock_health, trust } = confidence;
   const current = currentNode.state;
 
   // ── Rule 1: QUARANTINE is the most sticky state ──────────────────────────
@@ -46,20 +46,20 @@ export function decideFailureState(
   // ── Rule 4a: Confirmed consensus poisoning — trust critically low → QUARANTINE
   // trust < 10 means the node's mission data is definitively untrustworthy.
   // Analogous to nav_integrity < 20 for GNSS: suspected < threshold vs confirmed < floor.
-  if ((confidence.trust ?? 100) < 10) {
+  if (trust < 10) {
     return {
       nextState: 'QUARANTINE',
-      reason: `trust=${confidence.trust ?? 100} — consensus poisoning confirmed; node definitively untrusted`,
+      reason: `trust=${trust} — consensus poisoning confirmed; node definitively untrusted`,
       allowedActions: ['REQUEST_HUMAN_REVIEW', 'TELEMETRY_ONLY'],
       blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'AUTONOMOUS_RETASK', 'EVENT_BROADCAST'],
     };
   }
 
   // ── Rule 4b: Suspected consensus poisoning — trust degraded → AMBER ──────
-  if ((confidence.trust ?? 100) < 40) {
+  if (trust < 40) {
     return {
       nextState: 'AMBER',
-      reason: `trust=${confidence.trust ?? 100} — peer verification failed; possible consensus poisoning`,
+      reason: `trust=${trust} — peer verification failed; possible consensus poisoning`,
       allowedActions: ['REDUCE_SPEED', 'TELEMETRY_ONLY', 'REQUEST_HUMAN_REVIEW'],
       blockedActions: ['ADVANCE', 'COORDINATE', 'MISSION_ESCALATION', 'AUTONOMOUS_RETASK'],
     };
@@ -68,30 +68,30 @@ export function decideFailureState(
   // ── Rule 5: Confirmed GNSS spoofing → QUARANTINE ─────────────────────────
   // nav_integrity < 20 means the navigation data is so corrupted it is
   // logically untrustworthy; treat as a compromised node, not just degraded.
-  if ((nav_integrity ?? 100) < 20) {
+  if (nav_integrity < 20) {
     return {
       nextState: 'QUARANTINE',
-      reason: `nav_integrity=${nav_integrity ?? 100} — GNSS spoofing confirmed; node untrusted`,
+      reason: `nav_integrity=${nav_integrity} — GNSS spoofing confirmed; node untrusted`,
       allowedActions: ['REQUEST_HUMAN_REVIEW', 'TELEMETRY_ONLY'],
       blockedActions: ['ADVANCE', 'COORDINATE', 'AUTONOMOUS_RETASK', 'MISSION_ESCALATION'],
     };
   }
 
   // ── Rule 6: Navigation integrity low — suspected spoofing ────────────────
-  if ((nav_integrity ?? 100) < 50) {
+  if (nav_integrity < 50) {
     return {
       nextState: 'AMBER',
-      reason: `nav_integrity=${nav_integrity ?? 100} — navigation integrity critically low (possible spoofing or sensor conflict)`,
+      reason: `nav_integrity=${nav_integrity} — navigation integrity critically low (possible spoofing or sensor conflict)`,
       allowedActions: ['REDUCE_SPEED', 'RELOCALIZE', 'REQUEST_HUMAN_REVIEW'],
       blockedActions: ['ADVANCE', 'HIGH_SPEED_ADVANCE', 'AUTONOMOUS_RETASK'],
     };
   }
 
   // ── Rule 7: Clock health failure — untrustworthy timing ─────────────────
-  if ((clock_health ?? 100) < 40) {
+  if (clock_health < 40) {
     return {
       nextState: 'BLACK',
-      reason: `clock_health=${clock_health ?? 100} — clock health / timing integrity compromised`,
+      reason: `clock_health=${clock_health} — clock health / timing integrity compromised`,
       allowedActions: ['LOCAL_FALLBACK', 'HOLD_POSITION', 'POWER_SAVE'],
       blockedActions: ['NEW_TASK_ACCEPTANCE', 'COORDINATED_MANEUVER', 'EVENT_BROADCAST'],
     };
@@ -149,7 +149,7 @@ export function decideFailureState(
     };
   }
 
-  // ── Rule 12: Legacy AMBER thresholds ────────────────────────────────────
+  // ── Rule 12: AMBER thresholds ────────────────────────────────────────────
   if (comms < 70 || navigation < 70 || mission < 70 || safety < 80 || consensus < 70) {
     return {
       nextState: 'AMBER',

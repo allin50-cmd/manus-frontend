@@ -158,7 +158,7 @@ section('5. recovery-engine');
 
 const recoverNode: SwarmNode = {
   id: 'AUM-02', role: 'AUM', state: 'RECOVER', cellId: 'recovery-cell', lastSeenAt: Date.now(),
-  confidence: { comms: 80, navigation: 85, mission: 88, safety: 90, consensus: 85, nav_integrity: 100, clock_health: 100 },
+  confidence: { comms: 80, navigation: 85, mission: 88, safety: 90, consensus: 85, nav_integrity: 100, clock_health: 100, trust: 100 },
 };
 
 // No events → NEEDS_REVIEW
@@ -408,7 +408,7 @@ section('10. QUARANTINE — graceful failure containment');
 // failure-state-machine: QUARANTINE stays without operator approval
 const quarNode: SwarmNode = {
   ...makeNode(), state: 'QUARANTINE',
-  confidence: { comms: 90, navigation: 88, mission: 85, safety: 90, consensus: 88, nav_integrity: 100, clock_health: 100 },
+  confidence: { comms: 90, navigation: 88, mission: 85, safety: 90, consensus: 88, nav_integrity: 100, clock_health: 100, trust: 100 },
 };
 const staysQ = decideFailureState(quarNode.confidence, quarNode);
 assert('QUARANTINE node stays QUARANTINE without approval', staysQ.nextState === 'QUARANTINE');
@@ -446,7 +446,7 @@ assert('quarantine-cell worst state = QUARANTINE', qCell?.state === 'QUARANTINE'
 const loopNode: SwarmNode = {
   id: 'LOOP-01', role: 'AUM', state: 'BLACK', cellId: 'blackout-cell',
   lastSeenAt: Date.now(), recoveryAttempts: 3,
-  confidence: { comms: 80, navigation: 88, mission: 85, safety: 90, consensus: 85, nav_integrity: 100, clock_health: 100 },
+  confidence: { comms: 80, navigation: 88, mission: 85, safety: 90, consensus: 85, nav_integrity: 100, clock_health: 100, trust: 100 },
 };
 const loopResult = runSimulationTick({ missionId: 'SMOKE', tick: 1, nodes: [loopNode], eventLog: [] });
 const loopedNode = loopResult.nodes[0];

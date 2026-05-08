@@ -1,8 +1,14 @@
-import { AIRecommendation, ShieldDecision, SwarmNode } from './types';
+import { AIRecommendation, ShieldDecision, StateDecision, SwarmNode } from './types';
 import { decideFailureState } from './failure-state-machine';
 
-export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecision {
-  const stateDecision = decideFailureState(node.confidence, node);
+// Accepts an optional pre-computed stateDecision to avoid a redundant FSM call
+// when the caller (runNodeCycle) already has the result.
+export function safetyShield(
+  node: SwarmNode,
+  ai: AIRecommendation,
+  stateDecision?: StateDecision,
+): ShieldDecision {
+  const decision = stateDecision ?? decideFailureState(node.confidence, node);
 
   // 1. Hard safety block
   if (node.confidence.safety < 60) {
@@ -10,7 +16,7 @@ export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecis
   }
 
   // 2. Quarantine — connected but untrusted; all actions blocked for review
-  if (stateDecision.nextState === 'QUARANTINE') {
+  if (decision.nextState === 'QUARANTINE') {
     return {
       decision: 'REQUEST_HUMAN_REVIEW',
       approvedAction: 'HOLD_AND_REQUEST_REVIEW',
@@ -19,7 +25,7 @@ export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecis
   }
 
   // 3. Recovery shield
-  if (stateDecision.nextState === 'RECOVER') {
+  if (decision.nextState === 'RECOVER') {
     return {
       decision: 'MODIFY',
       approvedAction: 'REPLAY_EVENTS_AND_VERIFY_HASH',
@@ -27,8 +33,8 @@ export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecis
     };
   }
 
-  // 3. Navigation integrity / spoofing alert
-  if ((node.confidence.nav_integrity ?? 100) < 40) {
+  // 4. Navigation integrity / spoofing alert
+  if (node.confidence.nav_integrity < 40) {
     return {
       decision: 'REQUEST_HUMAN_REVIEW',
       approvedAction: 'HOLD_AND_REQUEST_OPERATOR',
@@ -36,8 +42,8 @@ export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecis
     };
   }
 
-  // 4. Isolation / timing
-  if (stateDecision.nextState === 'BLACK') {
+  // 5. Isolation / timing
+  if (decision.nextState === 'BLACK') {
     return {
       decision: 'MODIFY',
       approvedAction: 'LOCAL_FALLBACK',
@@ -45,8 +51,8 @@ export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecis
     };
   }
 
-  // 5. Degradation
-  if (stateDecision.nextState === 'AMBER') {
+  // 6. Degradation
+  if (decision.nextState === 'AMBER') {
     return {
       decision: 'MODIFY',
       approvedAction: 'REDUCE_SPEED_AND_RELOCALIZE',
@@ -54,16 +60,16 @@ export function safetyShield(node: SwarmNode, ai: AIRecommendation): ShieldDecis
     };
   }
 
-  // 6. RED awaiting operator approval
-  if (stateDecision.nextState === 'RED') {
+  // 7. RED awaiting operator approval
+  if (decision.nextState === 'RED') {
     return {
       decision: 'MODIFY',
       approvedAction: 'AWAIT_OPERATOR_APPROVAL',
-      reason: stateDecision.reason,
+      reason: decision.reason,
     };
   }
 
-  // 7. Low AI confidence
+  // 8. Low AI confidence
   if (ai.confidence < 75) {
     return {
       decision: 'REQUEST_HUMAN_REVIEW',

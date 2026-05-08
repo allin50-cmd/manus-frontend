@@ -66,14 +66,13 @@ export function generateAlerts(nodes: SwarmNode[], tick: number): SwarmAlert[] {
     }
 
     // GNSS / spoofing alerts
-    const navI = node.confidence.nav_integrity ?? 100;
-    if (navI < 50) {
+    if (node.confidence.nav_integrity < 50) {
       const k: AlertKey = { nodeId: node.id, category: 'SPOOFING' };
       if (canAlert(k, tick)) {
-        const severity: AlertSeverity = navI < 25 ? 'CRITICAL' : 'WARNING';
+        const severity: AlertSeverity = node.confidence.nav_integrity < 25 ? 'CRITICAL' : 'WARNING';
         alerts.push({
           alertId: nextId(), tick, severity, nodeId: node.id,
-          message: `${node.id} nav_integrity=${navI} — possible GNSS spoofing`,
+          message: `${node.id} nav_integrity=${node.confidence.nav_integrity} — possible GNSS spoofing`,
           category: 'SPOOFING',
         });
         recordAlert(k, tick);
@@ -81,14 +80,13 @@ export function generateAlerts(nodes: SwarmNode[], tick: number): SwarmAlert[] {
     }
 
     // Clock attack alerts
-    const clkH = node.confidence.clock_health ?? 100;
-    if (clkH < 40) {
+    if (node.confidence.clock_health < 40) {
       const k: AlertKey = { nodeId: node.id, category: 'CLOCK_ATTACK' };
       if (canAlert(k, tick)) {
-        const severity: AlertSeverity = clkH < 15 ? 'CRITICAL' : 'WARNING';
+        const severity: AlertSeverity = node.confidence.clock_health < 15 ? 'CRITICAL' : 'WARNING';
         alerts.push({
           alertId: nextId(), tick, severity, nodeId: node.id,
-          message: `${node.id} clock_health=${clkH} — timing attack / sync loss`,
+          message: `${node.id} clock_health=${node.confidence.clock_health} — timing attack / sync loss`,
           category: 'CLOCK_ATTACK',
         });
         recordAlert(k, tick);
@@ -96,13 +94,12 @@ export function generateAlerts(nodes: SwarmNode[], tick: number): SwarmAlert[] {
     }
 
     // Consensus poisoning via trust score
-    const trust = node.confidence.trust ?? 100;
-    if (trust < 50) {
+    if (node.confidence.trust < 50) {
       const k: AlertKey = { nodeId: node.id, category: 'CONSENSUS_POISONING' };
       if (canAlert(k, tick)) {
         alerts.push({
           alertId: nextId(), tick, severity: 'WARNING', nodeId: node.id,
-          message: `${node.id} trust=${trust} — consensus poisoning suspected`,
+          message: `${node.id} trust=${node.confidence.trust} — consensus poisoning suspected`,
           category: 'CONSENSUS_POISONING',
         });
         recordAlert(k, tick);

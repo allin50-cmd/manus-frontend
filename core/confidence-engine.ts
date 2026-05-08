@@ -4,15 +4,18 @@ export function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+// Weights sum to 1.00. Consensus is included because it captures the node's
+// ability to coordinate — a node that can't agree with peers is mission-degraded.
 export function calcSurvivalScore(c: ConfidenceScores): number {
   return clampScore(
-    c.safety * 0.25 +
-    c.comms * 0.15 +
-    c.navigation * 0.10 +
-    (c.nav_integrity ?? 100) * 0.15 +
-    (c.clock_health ?? 100) * 0.15 +
-    (c.trust ?? 100) * 0.15 +
-    c.mission * 0.05,
+    c.safety        * 0.25 +
+    c.comms         * 0.15 +
+    c.navigation    * 0.08 +
+    c.nav_integrity * 0.12 +
+    c.clock_health  * 0.12 +
+    c.trust         * 0.13 +
+    c.consensus     * 0.10 +
+    c.mission       * 0.05,
   );
 }
 

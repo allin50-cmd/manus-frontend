@@ -3,6 +3,10 @@ import { UltraEvent, createStateHash } from './event-log';
 import { decideFailureState } from './failure-state-machine';
 import { safetyShield } from './safety-shield';
 
+// Monotonic counter for deterministic event IDs within a session.
+let _eventSeq = 0;
+export function resetEventSequence(): void { _eventSeq = 0; }
+
 export function runNodeCycle(params: {
   missionId: string;
   node: SwarmNode;
@@ -10,8 +14,10 @@ export function runNodeCycle(params: {
   eventLog: UltraEvent[];
 }): { node: SwarmNode; eventLog: UltraEvent[] } {
   const { node, eventLog } = params;
+
+  // Compute FSM decision once; pass it to safetyShield to avoid a second FSM call.
   const stateDecision = decideFailureState(node.confidence, node);
-  const shield = safetyShield(node, params.aiRecommendation);
+  const shield = safetyShield(node, params.aiRecommendation, stateDecision);
 
   const updatedNode: SwarmNode = {
     ...node,
@@ -29,11 +35,12 @@ export function runNodeCycle(params: {
     task: updatedNode.currentTask,
   });
 
+  const now = Date.now();
   const event: UltraEvent = {
-    eventId: `${node.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    eventId: `${node.id}-${now}-${String(++_eventSeq).padStart(6, '0')}`,
     nodeId: node.id,
     missionId: params.missionId,
-    timestamp: Date.now(),
+    timestamp: now,
     previousState: node.state,
     nextState: stateDecision.nextState,
     confidenceBefore: node.confidence,

@@ -6,9 +6,9 @@ export interface ConfidenceScores {
   mission: number;
   safety: number;
   consensus: number;
-  nav_integrity?: number;  // 0–100; low = possible spoofing or sensor conflict
-  clock_health?: number;   // 0–100; low = timing corruption / loss of sync
-  trust?: number;          // 0–100; peer-verified trustworthiness; low = consensus poisoning suspect
+  nav_integrity: number;  // 0–100; low = possible spoofing or sensor conflict
+  clock_health: number;   // 0–100; low = timing corruption / loss of sync
+  trust: number;          // 0–100; peer-verified trustworthiness; low = consensus poisoning suspect
 }
 
 export interface SwarmNode {
@@ -20,7 +20,7 @@ export interface SwarmNode {
   confidence: ConfidenceScores;
   currentTask?: string;
   operatorResumeApproved?: boolean;
-  recoveryAttempts?: number;  // increments each BLACK→RECOVER transition; ≥3 → QUARANTINE
+  recoveryAttempts?: number;  // 0–N; increments each BLACK→RECOVER cycle; ≥3 locks into QUARANTINE
 }
 
 export interface StateDecision {
