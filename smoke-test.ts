@@ -11,7 +11,7 @@
  *   6. Build artefacts – dist/index.html exists and references hashed assets
  */
 
-import { createServer, Server } from 'http';
+import { Server } from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -303,37 +303,35 @@ process.env.STRIPE_WEBHOOK_SECRET = 'whsec_smoke000000000000';
 process.env.STRIPE_PRICE_ID    = 'price_smoke000';
 process.env.APP_URL            = 'http://localhost:19876';
 
-// Dynamically import the server module after env is set
-// We build a minimal express app mirroring the routing shape without DB deps
-import express from 'express';
+import express, { Request, Response } from 'express';
 
 const smokeApp = express();
 smokeApp.use(express.json());
 
-// Replicate the routes we want to smoke without real DB/Stripe
-smokeApp.get('/api/health', (_req: Request, res: any) => res.status(503).json({ status: 'unhealthy' }));
-smokeApp.post('/api/stripe/checkout', (req: any, res: any) => {
-  const { companyNumber, companyName } = req.body;
+// Minimal stub routes — mirror real API shape without DB or Stripe
+smokeApp.get('/api/health', (_req: Request, res: Response) => res.status(503).json({ status: 'unhealthy' }));
+smokeApp.post('/api/stripe/checkout', (req: Request, res: Response) => {
+  const { companyNumber, companyName } = req.body as { companyNumber?: string; companyName?: string };
   if (!companyNumber || !companyName) return res.status(400).json({ error: 'companyNumber and companyName are required' });
   if (companyNumber.length > 20 || companyName.length > 255) return res.status(400).json({ error: 'Company number or name too long' });
-  return res.status(500).json({ error: 'Failed to create checkout session' }); // Stripe not configured
+  return res.status(500).json({ error: 'Failed to create checkout session' });
 });
-smokeApp.get('/api/protection-status', (req: any, res: any) => {
+smokeApp.get('/api/protection-status', (req: Request, res: Response) => {
   if (!req.query.companyNumber) return res.status(400).json({ error: 'companyNumber query param is required' });
   return res.status(500).json({ error: 'Internal server error' });
 });
-smokeApp.post('/api/deployments/record', (req: any, res: any) => {
+smokeApp.post('/api/deployments/record', (req: Request, res: Response) => {
   const token = req.headers['x-deploy-token'];
   if (token !== process.env.DEPLOY_RECORD_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
   return res.status(503).json({ error: 'DB unavailable in smoke' });
 });
-smokeApp.get('/api/admin/leads', (req: any, res: any) => {
+smokeApp.get('/api/admin/leads', (req: Request, res: Response) => {
   const token = req.headers['x-admin-token'];
   if (token !== process.env.DEPLOY_RECORD_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
   return res.status(503).json({ error: 'DB unavailable in smoke' });
 });
-smokeApp.post('/api/lead', (req: any, res: any) => {
-  const { name, email, company } = req.body;
+smokeApp.post('/api/lead', (req: Request, res: Response) => {
+  const { name, email, company } = req.body as { name?: string; email?: string; company?: string };
   if (!name || !email || !company) return res.status(400).json({ error: 'name, email, and company are required' });
   return res.status(503).json({ error: 'DB unavailable in smoke' });
 });
