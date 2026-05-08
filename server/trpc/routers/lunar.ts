@@ -13,6 +13,8 @@ export const lunarRouter = router({
       z
         .object({
           status: statusEnum.optional(),
+          limit: z.number().int().min(1).max(200).default(50),
+          offset: z.number().int().min(0).default(0),
         })
         .optional(),
     )
@@ -27,7 +29,14 @@ export const lunarRouter = router({
             .from(intakeMatters)
             .where(and(...conditions))
             .orderBy(desc(intakeMatters.createdAt))
-        : await db.select().from(intakeMatters).orderBy(desc(intakeMatters.createdAt));
+            .limit(input?.limit ?? 50)
+            .offset(input?.offset ?? 0)
+        : await db
+            .select()
+            .from(intakeMatters)
+            .orderBy(desc(intakeMatters.createdAt))
+            .limit(input?.limit ?? 50)
+            .offset(input?.offset ?? 0);
 
       return rows;
     }),

@@ -84,14 +84,21 @@ export const hearingsRouter = router({
         .object({
           caseId: z.number().optional(),
           status: hearingStatusEnum.optional(),
+          limit: z.number().int().min(1).max(500).default(100),
+          offset: z.number().int().min(0).default(0),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      if (input?.caseId) return getHearingsByCase(input.caseId, ctx.tenantId);
+      const limit = input?.limit ?? 100;
+      const offset = input?.offset ?? 0;
+      if (input?.caseId) {
+        const rows = await getHearingsByCase(input.caseId, ctx.tenantId);
+        return rows.slice(offset, offset + limit);
+      }
       const all = await getAllHearings(ctx.tenantId);
-      if (input?.status) return all.filter((h) => h.status === input.status);
-      return all;
+      const filtered = input?.status ? all.filter((h) => h.status === input.status) : all;
+      return filtered.slice(offset, offset + limit);
     }),
 
   getByCaseId: tenantProcedure

@@ -13,35 +13,27 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: 'hidden',
     target: 'es2020',
+    minify: 'esbuild',
+    chunkSizeWarningLimit: 600,
+    cssCodeSplit: true,
+    assetsInlineLimit: 4096,
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // React core
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-            return 'vendor-react';
-          }
-          // Radix UI components
-          if (id.includes('node_modules/@radix-ui/')) {
-            return 'vendor-radix';
-          }
-          // tRPC + TanStack Query
-          if (id.includes('node_modules/@trpc/') || id.includes('node_modules/@tanstack/')) {
-            return 'vendor-trpc';
-          }
-          // Lucide icons (large)
-          if (id.includes('node_modules/lucide-react/')) {
-            return 'vendor-icons';
-          }
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'vendor-react';
+          if (id.includes('node_modules/@radix-ui/')) return 'vendor-radix';
+          if (id.includes('node_modules/@trpc/') || id.includes('node_modules/@tanstack/')) return 'vendor-trpc';
+          if (id.includes('node_modules/lucide-react/')) return 'vendor-icons';
+          if (id.includes('node_modules/wouter/')) return 'vendor-router';
+          if (id.includes('node_modules/zod/')) return 'vendor-zod';
         },
       },
     },
   },
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      '/trpc': { target: 'http://localhost:3000', changeOrigin: true },
     },
   },
 });

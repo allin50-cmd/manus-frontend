@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import type { InsertAuditEvent, InsertUser } from '../drizzle/schema';
@@ -151,15 +151,25 @@ export async function getAllCases(tenantId: string) {
 }
 
 export async function searchCases(query: string, tenantId: string) {
-  const all = await getAllCases(tenantId);
-  const q = query.toLowerCase();
-  return all.filter(
-    (c) =>
-      c.referenceNumber.toLowerCase().includes(q) ||
-      c.title.toLowerCase().includes(q) ||
-      c.plaintiff.toLowerCase().includes(q) ||
-      c.defendant.toLowerCase().includes(q),
-  );
+  const db = await getDb();
+  if (!db) return [];
+  const term = `%${query}%`;
+  return db
+    .select()
+    .from(cases)
+    .where(
+      and(
+        eq(cases.tenantId, tenantId),
+        or(
+          ilike(cases.referenceNumber, term),
+          ilike(cases.title, term),
+          ilike(cases.plaintiff, term),
+          ilike(cases.defendant, term),
+        ),
+      ),
+    )
+    .limit(50)
+    .orderBy(desc(cases.createdAt));
 }
 
 // ─── Hearings ────────────────────────────────────────────────────────────────

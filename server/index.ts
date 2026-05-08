@@ -8,6 +8,7 @@ import { rateLimit } from 'express-rate-limit';
 import path from 'path';
 import Stripe from 'stripe';
 import { fileURLToPath } from 'url';
+import { z } from 'zod';
 import { db } from './db/index';
 import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
@@ -45,6 +46,43 @@ function asyncHandler(
     fn(req, res, next).catch(next);
   };
 }
+
+// ============================================================================
+// ZOD VALIDATION SCHEMAS
+// ============================================================================
+
+const leadSchema = z.object({
+  name: z.string().min(1).max(255).trim(),
+  email: z.string().email().max(255).trim(),
+  company: z.string().max(255).trim().optional(),
+  product: z.enum(['vaultline', 'ultai', 'fineguard']).optional(),
+  phone: z.string().max(50).trim().optional(),
+  message: z.string().max(2000).trim().optional(),
+});
+
+const intakeSchema = z.object({
+  clientName: z.string().min(1).max(255).trim(),
+  clientEmail: z.string().email().max(255).trim().optional(),
+  clientPhone: z.string().max(50).trim().optional(),
+  matterType: z.string().min(1).max(100).trim(),
+  urgency: z.enum(['low', 'medium', 'high', 'critical']),
+  description: z.string().max(5000).trim().optional(),
+  claimValue: z.string().max(50).trim().optional(),
+});
+
+const contactSchema = z.object({
+  name: z.string().min(1).max(255).trim(),
+  email: z.string().email().max(255).trim(),
+  subject: z.string().max(255).trim().optional(),
+  message: z.string().min(1).max(5000).trim(),
+});
+
+const lunarIntakeSchema = z.object({
+  name: z.string().min(1).max(255).trim(),
+  email: z.string().email().max(255).trim(),
+  issueType: z.string().min(2).max(100).trim(),
+  description: z.string().min(10).max(10000).trim(),
+});
 
 // ============================================================================
 // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
@@ -182,8 +220,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Logging middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/trpc')) {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  }
   next();
 });
 
@@ -206,6 +246,7 @@ app.get('/api/health', asyncHandler(async (req: Request, res: Response) => {
     // Check database connection
     await db.select().from(deploymentStatus).limit(1);
 
+    res.setHeader('Cache-Control', 'no-cache');
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -375,6 +416,7 @@ app.get('/api/deployments/status', asyncHandler(async (req: Request, res: Respon
 
     const deployments = Array.from(latestDeployments.values());
 
+    res.setHeader('Cache-Control', 'public, max-age=30');
     res.json({ deployments });
   } catch (error) {
     console.error('Error fetching deployment status:', error);
@@ -399,6 +441,7 @@ app.get('/api/deployments/history', asyncHandler(async (req: Request, res: Respo
       .orderBy(desc(deploymentStatus.deployedAt))
       .limit(parseInt(limit as string));
 
+    res.setHeader('Cache-Control', 'public, max-age=60');
     return res.json({ deployments });
   } catch (error) {
     console.error('Error fetching deployment history:', error);
@@ -416,14 +459,11 @@ app.get('/api/deployments/history', asyncHandler(async (req: Request, res: Respo
  */
 app.post('/api/lead', writeLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { name, email, company, product, phone, message } = req.body;
-
-    if (!name || !email) {
-      return res.status(400).json({
-        ok: false,
-        error: 'Name and email are required',
-      });
+    const parsed = leadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' });
     }
+    const { name, email, company, product, phone, message } = parsed.data;
 
     // Generate unique lead ID
     const leadId = `LEAD-${Date.now()}`;
@@ -485,6 +525,10 @@ app.get('/api/admin/leads', asyncHandler(async (req: Request, res: Response) => 
  */
 app.post('/api/intake', writeLimiter, asyncHandler(async (req: Request, res: Response) => {
   try {
+    const parsed = intakeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' });
+    }
     const {
       clientName,
       clientEmail,
@@ -493,14 +537,7 @@ app.post('/api/intake', writeLimiter, asyncHandler(async (req: Request, res: Res
       urgency,
       description,
       claimValue
-    } = req.body;
-
-    if (!clientName || !matterType || !urgency) {
-      return res.status(400).json({
-        ok: false,
-        error: 'Client name, matter type, and urgency are required',
-      });
-    }
+    } = parsed.data;
 
     // Generate unique matter reference
     const matterRef = `MAT-${Date.now()}`;
@@ -720,14 +757,11 @@ app.get('/api/admin/compliance-bundles', asyncHandler(async (req: Request, res: 
  */
 app.post('/api/contact', asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { name, email, subject, message } = req.body;
-
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        ok: false,
-        error: 'Name, email, and message are required',
-      });
+    const parsed = contactSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' });
     }
+    const { name, email, subject, message } = parsed.data;
 
     // Generate unique ticket ID
     const ticketId = `TICKET-${Date.now()}`;
@@ -826,35 +860,30 @@ app.patch('/api/contacts/:id', asyncHandler(async (req: Request, res: Response) 
  * 5. Persist to DB (best-effort — works offline too)
  */
 app.post('/api/lunar/intake', writeLimiter, asyncHandler(async (req: Request, res: Response) => {
-  const { name, email, issueType, description } = req.body as {
-    name?: string;
-    email?: string;
-    issueType?: string;
-    description?: string;
-  };
-
   // ── Step 1: Basic validation ──────────────────────────────────────────────
-  if (!name?.trim() || !email?.trim()) {
-    return res.status(400).json({ error: 'name and email are required' });
+  const parsed = lunarIntakeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' });
   }
+  const { name, email, issueType, description } = parsed.data;
 
   // ── Step 2: Lunar triage ──────────────────────────────────────────────────
-  const triage = lunarTriage(description ?? '');
+  const triage = lunarTriage(description);
 
   // ── Step 3: UltraCore decision gate ──────────────────────────────────────
   const gate = ultraCoreGate({
-    issueType: issueType ?? '',
+    issueType,
     urgency: triage.urgency,
     riskScore: triage.riskScore,
-    description: description ?? '',
+    description,
   });
 
   // ── Step 4: VaultLine audit hash ──────────────────────────────────────────
   const eventPayload = {
-    name: name.trim(),
-    email: email.trim(),
-    issueType: issueType?.trim() ?? '',
-    description: description?.trim() ?? '',
+    name,
+    email,
+    issueType,
+    description,
     triage,
     gate,
     timestamp: new Date().toISOString(),
@@ -863,8 +892,8 @@ app.post('/api/lunar/intake', writeLimiter, asyncHandler(async (req: Request, re
 
   // ── Step 5: Lola follow-up ────────────────────────────────────────────────
   const lola = lolaFollowUp({
-    name: name.trim(),
-    issueType: issueType ?? '',
+    name,
+    issueType,
     urgency: triage.urgency,
     decision: gate.decision,
     riskScore: triage.riskScore,
@@ -878,10 +907,10 @@ app.post('/api/lunar/intake', writeLimiter, asyncHandler(async (req: Request, re
       const [matter] = await dbConn
         .insert(intakeMatters)
         .values({
-          name: name.trim(),
-          email: email.trim(),
-          issueType: issueType?.trim() ?? '',
-          description: description?.trim() ?? '',
+          name,
+          email,
+          issueType,
+          description,
           urgency: triage.urgency,
           riskScore: triage.riskScore,
           decision: gate.decision,

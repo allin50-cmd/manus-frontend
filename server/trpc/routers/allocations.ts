@@ -86,7 +86,21 @@ export const allocationsRouter = router({
       return updated;
     }),
 
-  getPending: adminProcedure.query(({ ctx }) => getPendingAllocations(ctx.tenantId)),
+  getPending: adminProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().int().min(1).max(500).default(100),
+          offset: z.number().int().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const rows = await getPendingAllocations(ctx.tenantId);
+      const offset = input?.offset ?? 0;
+      const limit = input?.limit ?? 100;
+      return rows.slice(offset, offset + limit);
+    }),
 
   getByClerk: tenantProcedure
     .input(z.object({ clerkId: z.number() }))

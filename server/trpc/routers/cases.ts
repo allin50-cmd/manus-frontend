@@ -8,14 +8,14 @@ import { ClerkOSEngine } from '../../engine/clerkOS.engine';
 const caseStatusEnum = z.enum(['open', 'in_progress', 'closed', 'on_hold']);
 
 const createInput = z.object({
-  referenceNumber: z.string().min(1),
-  title: z.string().min(1),
-  caseType: z.string().min(1),
-  plaintiff: z.string().min(1),
-  defendant: z.string().min(1),
+  referenceNumber: z.string().min(1).max(100),
+  title: z.string().min(1).max(255),
+  caseType: z.string().min(1).max(255),
+  plaintiff: z.string().min(1).max(255),
+  defendant: z.string().min(1).max(255),
   status: caseStatusEnum.optional().default('open'),
-  judge: z.string().optional(),
-  description: z.string().optional(),
+  judge: z.string().min(1).max(255).optional(),
+  description: z.string().min(1).max(5000).optional(),
 });
 
 export const casesRouter = router({
@@ -52,10 +52,10 @@ export const casesRouter = router({
     .input(
       z.object({
         id: z.number(),
-        title: z.string().optional(),
+        title: z.string().min(1).max(255).optional(),
         status: caseStatusEnum.optional(),
-        judge: z.string().optional(),
-        description: z.string().optional(),
+        judge: z.string().min(1).max(255).optional(),
+        description: z.string().min(1).max(5000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -103,8 +103,8 @@ export const casesRouter = router({
       z
         .object({
           status: caseStatusEnum.optional(),
-          limit: z.number().min(1).max(200).optional().default(50),
-          offset: z.number().min(0).optional().default(0),
+          limit: z.number().int().min(1).max(200).default(100),
+          offset: z.number().int().min(0).default(0),
         })
         .optional(),
     )
@@ -112,7 +112,7 @@ export const casesRouter = router({
       const all = await getAllCases(ctx.tenantId);
       const filtered = input?.status ? all.filter((c) => c.status === input.status) : all;
       const offset = input?.offset ?? 0;
-      const limit = input?.limit ?? 50;
+      const limit = input?.limit ?? 100;
       return filtered.slice(offset, offset + limit);
     }),
 
@@ -122,7 +122,10 @@ export const casesRouter = router({
 
   search: tenantProcedure
     .input(z.object({ query: z.string().min(1) }))
-    .query(async ({ ctx, input }) => searchCases(input.query, ctx.tenantId)),
+    .query(async ({ ctx, input }) => {
+      const results = await searchCases(input.query, ctx.tenantId);
+      return results.slice(0, 50);
+    }),
 
   getAuditTrail: tenantProcedure
     .input(z.object({ id: z.number() }))
