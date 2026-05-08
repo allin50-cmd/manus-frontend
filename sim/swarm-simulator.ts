@@ -62,7 +62,7 @@ function createNode(id: string, role: SwarmNode["role"]): SwarmNode {
 
 // ─── confidence manipulation ─────────────────────────────────
 export function degradeNodeConfidence(node: SwarmNode, tick: number): SwarmNode {
-  let confidence = { ...node.confidence };
+  const confidence = { ...node.confidence };
 
   // Existing scenarios
   if (node.id === "AUM-02" && tick >= 2) {

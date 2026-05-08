@@ -1,4 +1,4 @@
-import { ConfidenceScores, FailureState, StateDecision, SwarmNode } from './types';
+import { ConfidenceScores, StateDecision, SwarmNode } from './types';
 
 export function decideFailureState(
   confidence: ConfidenceScores,
