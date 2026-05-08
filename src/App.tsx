@@ -22,8 +22,13 @@ const Team             = lazy(() => import('./pages/Team'));
 const Pricing          = lazy(() => import('./pages/Pricing'));
 const BookDemo         = lazy(() => import('./pages/BookDemo'));
 const IntakeSheet      = lazy(() => import('./pages/IntakeSheet'));
-const ComplianceBundle = lazy(() => import('./pages/ComplianceBundle'));
-const NotFound         = lazy(() => import('./pages/NotFound'));
+const ComplianceBundle   = lazy(() => import('./pages/ComplianceBundle'));
+const Portal             = lazy(() => import('./pages/Portal'));
+const VaultDashboard     = lazy(() => import('./pages/VaultDashboard'));
+const UltAiDashboard     = lazy(() => import('./pages/UltAiDashboard'));
+const FineGuardDashboard = lazy(() => import('./pages/FineGuardDashboard'));
+const Settings           = lazy(() => import('./pages/Settings'));
+const NotFound           = lazy(() => import('./pages/NotFound'));
 
 function PageSpinner() {
   return (
@@ -58,6 +63,13 @@ function Router() {
         <Route path="/intake" component={IntakeSheet} />
         <Route path="/intake-sheet" component={IntakeSheet} />
         <Route path="/compliance-bundle" component={ComplianceBundle} />
+
+        {/* Product app dashboards + shared pages */}
+        <Route path="/portal" component={Portal} />
+        <Route path="/vault-dashboard" component={VaultDashboard} />
+        <Route path="/ultai-dashboard" component={UltAiDashboard} />
+        <Route path="/fineguard-dashboard" component={FineGuardDashboard} />
+        <Route path="/settings" component={Settings} />
 
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
