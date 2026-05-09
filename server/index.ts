@@ -927,6 +927,7 @@ app.post('/api/lunar/intake', writeLimiter, asyncHandler(async (req: Request, re
     urgency: triage.urgency,
     riskScore: triage.riskScore,
     description,
+    flagCount: triage.flags.length,
   });
 
   // ── Step 4: VaultLine audit hash ──────────────────────────────────────────

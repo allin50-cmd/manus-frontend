@@ -14,12 +14,13 @@ import {
   Check,
   Scale,
   FileText,
+  UserCheck,
 } from 'lucide-react';
 import { Link } from 'wouter';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Decision = 'ALLOW' | 'MODIFY' | 'DENY' | 'ESCALATE';
+type Decision = 'ALLOW' | 'MODIFY' | 'DENY' | 'ESCALATE' | 'REFER_TO_SPECIALIST';
 
 interface PipelineResult {
   ok: boolean;
@@ -35,6 +36,8 @@ interface PipelineResult {
       decision: Decision;
       reason: string;
       rules: string[];
+      confidence: number;
+      recommendedActions: string[];
     };
     step3_vault: {
       hash: string;
@@ -79,6 +82,13 @@ const DECISION_STYLES: Record<Decision, { bg: string; border: string; text: stri
     text: 'text-red-300',
     icon: AlertTriangle,
     label: 'Escalated — immediate human review',
+  },
+  REFER_TO_SPECIALIST: {
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-500/40',
+    text: 'text-violet-400',
+    icon: UserCheck,
+    label: 'Referred — specialist assessment required',
   },
 };
 
@@ -408,12 +418,20 @@ export default function LunarIntake() {
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-[#7C3AED]" />
                     <p className="text-sm font-semibold text-gray-300">Step 2 — UltraCore Gate</p>
+                    <span className="ml-auto text-[10px] text-violet-400">confidence {result.pipeline.step2_ultracore.confidence}%</span>
                   </div>
                   <div className="space-y-1">
                     {result.pipeline.step2_ultracore.rules.map((rule, i) => (
                       <p key={i} className="font-mono text-[10px] text-gray-500">{rule}</p>
                     ))}
                   </div>
+                  {result.pipeline.step2_ultracore.recommendedActions.length > 0 && (
+                    <div className="mt-2 space-y-1 border-t border-white/10 pt-2">
+                      {result.pipeline.step2_ultracore.recommendedActions.map((action, i) => (
+                        <p key={i} className="text-[10px] text-violet-300">→ {action}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* ── Step 3: VaultLine hash ── */}
