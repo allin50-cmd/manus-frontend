@@ -1076,14 +1076,14 @@ describe('VaultLine Audit Engine', () => {
 
 describe('Lunar Pipeline — end-to-end integration', () => {
   it('full ALLOW path: low-risk matter flows through all 4 engines', () => {
-    const triage = lunarTriage('I have a simple contract dispute with my landlord');
+    const triage = lunarTriage('I need help reviewing an agreement');
     expect(triage.riskScore).toBeGreaterThanOrEqual(20);
     expect(triage.riskScore).toBeLessThan(50);
 
-    const gate = ultraCoreGate({ issueType: 'Contract dispute', urgency: triage.urgency, riskScore: triage.riskScore, description: 'I have a simple contract dispute with my landlord' });
+    const gate = ultraCoreGate({ issueType: 'Contract review', urgency: triage.urgency, riskScore: triage.riskScore, description: 'I need help reviewing an agreement', flagCount: triage.flags.length });
     expect(gate.decision).toBe('ALLOW');
 
-    const lola = lolaFollowUp({ name: 'Jane Smith', issueType: 'Contract dispute', urgency: triage.urgency, decision: gate.decision, riskScore: triage.riskScore });
+    const lola = lolaFollowUp({ name: 'Jane Smith', issueType: 'Contract review', urgency: triage.urgency, decision: gate.decision, riskScore: triage.riskScore });
     expect(lola.tone).toBe('standard');
     expect(lola.message).toContain('Jane');
 
