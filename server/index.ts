@@ -1103,6 +1103,10 @@ app.get('/health', asyncHandler(async (req: Request, res: Response) => {
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
+// Serve public/ directory (demo HTML files etc.) before SPA fallback
+const publicPath = path.join(__dirname, '../public');
+app.use(express.static(publicPath));
+
 // SPA fallback - serve index.html for all other routes
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(distPath, 'index.html'));
