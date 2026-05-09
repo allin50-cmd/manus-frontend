@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClerkOS — Court Case Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#3b82f6', dark: '#2563eb' },
+            surface: { DEFAULT: '#0f172a', card: '#1e293b', border: '#334155' },
+          }
+        }
+      }
+    }
+  </script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak]{display:none!important}
+    *{box-sizing:border-box}
+    body{background:#0f172a;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:#475569}
+    .sidebar-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:14px;font-weight:500;color:#94a3b8;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+    .sidebar-link:hover{background:#1e293b;color:#e2e8f0}
+    .sidebar-link.active{background:#1e40af20;color:#60a5fa;border-left:2px solid #3b82f6;padding-left:10px}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:none;outline:none}
+    .btn-primary{background:#3b82f6;color:#fff}
+    .btn-primary:hover{background:#2563eb}
+    .btn-secondary{background:#1e293b;color:#cbd5e1;border:1px solid #334155}
+    .btn-secondary:hover{background:#334155}
+    .btn-danger{background:#dc262620;color:#f87171;border:1px solid #dc262640}
+    .btn-danger:hover{background:#dc262630}
+    .btn-sm{padding:4px 10px;font-size:12px}
+    .btn-xs{padding:2px 8px;font-size:11px}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px}
+    .input{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:14px;outline:none;transition:border-color .15s}
+    .input:focus{border-color:#3b82f6}
+    .input::placeholder{color:#475569}
+    select.input option{background:#1e293b}
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{padding:10px 14px;text-align:left;color:#64748b;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #334155;white-space:nowrap}
+    td{padding:10px 14px;border-bottom:1px solid #1e293b;vertical-align:middle;color:#cbd5e1}
+    tr:hover td{background:#1e293b40}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+    .modal-bg{position:fixed;inset:0;background:#00000080;backdrop-filter:blur(4px);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+    .label{display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+    .risk-bar{height:6px;border-radius:3px;background:#334155;overflow:hidden}
+    .stat-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:18px 20px}
+    .tab-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;color:#64748b;background:none}
+    .tab-btn.active{background:#1e40af20;color:#60a5fa}
+    .tab-btn:hover:not(.active){color:#94a3b8;background:#1e293b50}
+    .toast-enter{animation:slideIn .25s ease}
+    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+    .pipeline-step{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid #334155;transition:all .3s}
+    .pipeline-step.active{border-color:#3b82f6;background:#1e40af10}
+    .pipeline-step.done{border-color:#10b98160;background:#10b98108}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#475569;text-align:center;gap:8px}
+    .divider{border:none;border-top:1px solid #334155;margin:16px 0}
+  </style>
+</head>
+<body class="h-full" x-data="clerkos()" x-init="init()" x-cloak>
+
+<!-- ── Toast notifications ──────────────────────────────────────────────── -->
+<div class="fixed top-4 right-4 z-[100] flex flex-col gap-2" style="min-width:280px;max-width:360px">
+  <template x-for="t in toasts" :key="t.id">
+    <div class="toast-enter flex items-start gap-3 rounded-xl border px-4 py-3 shadow-2xl"
+         :class="t.type==='error' ? 'bg-red-950 border-red-800 text-red-200' : 'bg-slate-800 border-slate-600 text-slate-100'">
+      <span x-text="t.type==='error'?'✕':'✓'" class="mt-0.5 font-bold flex-shrink-0"
+            :class="t.type==='error'?'text-red-400':'text-emerald-400'"></span>
+      <span class="text-sm flex-1" x-text="t.msg"></span>
+      <button @click="toasts=toasts.filter(x=>x.id!==t.id)" class="text-slate-500 hover:text-slate-300 flex-shrink-0">✕</button>
+    </div>
+  </template>
+</div>
+
+<!-- ── Layout ──────────────────────────────────────────────────────────── -->
+<div class="flex h-full min-h-screen">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div x-show="sidebarOpen && isMobile" @click="sidebarOpen=false"
+       class="fixed inset-0 bg-black/50 z-30 lg:hidden"></div>
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+  <aside class="fixed top-0 left-0 h-full z-40 flex flex-col transition-transform duration-200"
+         style="width:240px;background:#0f172a;border-right:1px solid #1e293b"
+         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background:#1e40af">
+        <svg class="h-5 w-5 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M3 6l9-3 9 3v6c0 5.25-3.75 9.75-9 11.25C6.75 21.75 3 17.25 3 12V6z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-sm font-bold text-white tracking-tight">ClerkOS</div>
+        <div class="text-[10px] text-slate-500 uppercase tracking-wider">Core Engine v1.1</div>
+      </div>
+      <button @click="sidebarOpen=false" class="ml-auto lg:hidden text-slate-500 hover:text-white">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Tenant badge -->
+    <div class="px-5 py-3 border-b border-slate-800">
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] uppercase tracking-wider text-slate-600">Tenant</span>
+        <span class="badge" style="background:#1e40af20;color:#60a5fa;border:1px solid #3b82f630" x-text="tenant.toUpperCase()"></span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <div class="text-[10px] uppercase tracking-wider text-slate-600 px-3 mb-2">ClerkOS</div>
+      <template x-for="item in navItems" :key="item.id">
+        <button class="sidebar-link" :class="page===item.id && 'active'" @click="navigate(item.id)">
+          <span class="text-base" x-text="item.icon"></span>
+          <span x-text="item.label"></span>
+          <template x-if="item.id==='queue' && queue.list.length>0">
+            <span class="ml-auto badge" style="background:#dc262620;color:#f87171;font-size:10px" x-text="queue.list.length"></span>
+          </template>
+        </button>
+      </template>
+      <div class="text-[10px] uppercase tracking-wider text-slate-600 px-3 mt-4 mb-2">Lunar Engine</div>
+      <template x-for="item in lunarNavItems" :key="item.id">
+        <button class="sidebar-link" :class="page===item.id && 'active'" @click="navigate(item.id)">
+          <span class="text-base" x-text="item.icon"></span>
+          <span x-text="item.label"></span>
+        </button>
+      </template>
+    </nav>
+
+    <!-- User -->
+    <div class="px-4 py-4 border-t border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold" style="background:#1e40af;color:#93c5fd"
+             x-text="userName.split(' ').map(n=>n[0]).join('').slice(0,2)"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-white truncate" x-text="userName"></div>
+          <div class="text-[11px] text-slate-500">Admin · Senior Clerk</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ──────────────────────────────────────────────────────────── -->
+  <div class="flex-1 flex flex-col min-w-0" style="margin-left:0" :style="'margin-left:' + (isMobile ? '0' : '240px')">
+
+    <!-- Top bar -->
+    <header class="sticky top-0 z-20 flex items-center gap-4 px-5 py-3 border-b border-slate-800" style="background:#0f172a">
+      <button @click="sidebarOpen=!sidebarOpen" class="text-slate-400 hover:text-white lg:hidden">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="flex-1 text-sm font-semibold text-white capitalize" x-text="pageTitle()"></div>
+      <div class="text-xs text-slate-500" x-text="fmtDate(new Date())"></div>
+      <div class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold cursor-pointer"
+           style="background:#1e40af;color:#93c5fd" x-text="userName.split(' ').map(n=>n[0]).join('').slice(0,2)"
+           @click="navigate('settings')"></div>
+    </header>
+
+    <!-- Page content -->
+    <main class="flex-1 overflow-y-auto p-5">
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- DASHBOARD PAGE                                                   -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='dashboard'">
+        <!-- Loading -->
+        <div x-show="dash.loading" class="flex items-center gap-3 text-slate-500 py-8">
+          <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Loading dashboard...
+        </div>
+
+        <!-- Error -->
+        <div x-show="dash.error" class="rounded-xl border border-red-800 bg-red-950/30 p-4 text-sm text-red-300" x-text="dash.error"></div>
+
+        <!-- Stats -->
+        <div x-show="dash.stats" class="space-y-5">
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+            <template x-for="(s,i) in statCards()" :key="i">
+              <div class="stat-card">
+                <div class="text-xs text-slate-500 font-semibold uppercase tracking-wide" x-text="s.label"></div>
+                <div class="mt-2 text-2xl font-bold text-white" x-text="s.value"></div>
+              </div>
+            </template>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Recent Cases -->
+            <div class="card">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-white">Recent Cases</h3>
+                <button class="btn btn-sm btn-secondary" @click="navigate('cases')">View all →</button>
+              </div>
+              <div class="space-y-2">
+                <template x-if="dash.stats && dash.stats.recentCases.length===0">
+                  <p class="text-slate-500 text-sm text-center py-4">No cases yet</p>
+                </template>
+                <template x-for="c in (dash.stats?.recentCases||[]).slice(0,6)" :key="c.id">
+                  <div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-700/30 cursor-pointer transition-colors"
+                       @click="openCaseDetail(c.id)">
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-medium text-white truncate" x-text="c.title"></div>
+                      <div class="text-xs text-slate-500 mt-0.5" x-text="c.referenceNumber"></div>
+                    </div>
+                    <span class="badge ml-3 flex-shrink-0" :class="statusColor(c.status)" x-text="displayStatus(c.status)"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Upcoming Hearings -->
+            <div class="card">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-white">Upcoming Hearings</h3>
+                <button class="btn btn-sm btn-secondary" @click="navigate('hearings')">View all →</button>
+              </div>
+              <div class="space-y-2">
+                <template x-if="dash.stats && dash.stats.upcomingHearings.length===0">
+                  <p class="text-slate-500 text-sm text-center py-4">No upcoming hearings</p>
+                </template>
+                <template x-for="h in (dash.stats?.upcomingHearings||[]).slice(0,5)" :key="h.id">
+                  <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-700/50">
+                    <div class="flex-shrink-0 text-center" style="min-width:44px">
+                      <div class="text-xs text-slate-500" x-text="h.hearingDate ? new Date(h.hearingDate+'T00:00').toLocaleDateString('en-GB',{month:'short'}) : ''"></div>
+                      <div class="text-lg font-bold text-white leading-none" x-text="h.hearingDate ? new Date(h.hearingDate+'T00:00').getDate() : ''"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm font-medium text-white truncate" x-text="h.courtroom"></div>
+                      <div class="text-xs text-slate-500" x-text="h.hearingTime + (h.judge ? ' · ' + h.judge : '')"></div>
+                    </div>
+                    <template x-if="isToday(h.hearingDate)">
+                      <span class="badge" style="background:#dc262620;color:#fca5a5">TODAY</span>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="card">
+            <h3 class="text-sm font-semibold text-white mb-4">Quick Actions</h3>
+            <div class="flex flex-wrap gap-3">
+              <button class="btn btn-primary" @click="newCase.open=true;navigate('cases')">＋ New Case</button>
+              <button class="btn btn-secondary" @click="navigate('hearings');$nextTick(()=>newHearing.open=true)">📅 Schedule Hearing</button>
+              <button class="btn btn-secondary" @click="navigate('documents')">📄 Manage Documents</button>
+              <button class="btn btn-secondary" @click="navigate('queue')">📋 View Queue</button>
+              <button class="btn btn-secondary" @click="navigate('lunar-intake')">🔬 Lunar Intake</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- CASES PAGE                                                       -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='cases'">
+        <div class="page-header">
+          <div class="flex flex-wrap gap-2">
+            <template x-for="s in ['all','open','in_progress','on_hold','closed']" :key="s">
+              <button class="btn btn-sm" :class="cases.statusFilter===s?'btn-primary':'btn-secondary'"
+                      @click="cases.statusFilter=s;loadCases()" x-text="s==='all'?'All':displayStatus(s)"></button>
+            </template>
+          </div>
+          <div class="flex gap-2">
+            <input class="input" style="max-width:220px" placeholder="Search cases…" x-model.debounce.400ms="cases.search"
+                   @input="searchCases()" />
+            <button class="btn btn-primary" @click="newCase.open=true;resetNewCase()">＋ New Case</button>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div x-show="cases.loading" class="flex items-center gap-2 text-slate-500 py-8">
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Loading…
+        </div>
+
+        <div x-show="!cases.loading" class="card p-0 overflow-hidden">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Reference</th><th>Title</th><th>Type</th><th>Plaintiff</th>
+                  <th>Defendant</th><th>Judge</th><th>Status</th><th>Created</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="c in (cases.searchResults ?? cases.list)" :key="c.id">
+                  <tr>
+                    <td class="font-mono text-xs text-blue-400" x-text="c.referenceNumber"></td>
+                    <td class="font-medium text-white max-w-xs">
+                      <div class="truncate" x-text="c.title"></div>
+                    </td>
+                    <td><span class="badge" style="background:#1e40af20;color:#93c5fd;border:1px solid #3b82f630" x-text="c.caseType"></span></td>
+                    <td class="text-slate-300" x-text="c.plaintiff"></td>
+                    <td class="text-slate-300" x-text="c.defendant"></td>
+                    <td class="text-slate-400 text-xs" x-text="c.judge||'—'"></td>
+                    <td><span class="badge" :class="statusColor(c.status)" x-text="displayStatus(c.status)"></span></td>
+                    <td class="text-slate-500 text-xs" x-text="fmtDate(c.createdAt)"></td>
+                    <td>
+                      <button class="btn btn-xs btn-secondary" @click="openCaseDetail(c.id)">Open →</button>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="(cases.searchResults??cases.list).length===0 && !cases.loading">
+                  <tr><td colspan="9"><div class="empty-state">📁<span>No cases found</span></div></td></tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- CASE DETAIL PAGE                                                 -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='case-detail'">
+        <div class="mb-4">
+          <button class="btn btn-secondary btn-sm" @click="navigate('cases')">← Back to Cases</button>
+        </div>
+
+        <div x-show="caseDetail.loading" class="flex items-center gap-2 text-slate-500 py-8">
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Loading case…
+        </div>
+
+        <div x-show="!caseDetail.loading && caseDetail.kase">
+          <!-- Header -->
+          <div class="card mb-4">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="font-mono text-sm text-blue-400" x-text="caseDetail.kase?.referenceNumber"></span>
+                  <span class="badge" :class="statusColor(caseDetail.kase?.status)" x-text="displayStatus(caseDetail.kase?.status)"></span>
+                  <span class="badge" style="background:#1e40af20;color:#93c5fd;border:1px solid #3b82f630" x-text="caseDetail.kase?.caseType"></span>
+                </div>
+                <h2 class="text-lg font-bold text-white mt-2" x-text="caseDetail.kase?.title"></h2>
+                <div class="mt-1 flex flex-wrap gap-4 text-sm text-slate-400">
+                  <span>Plaintiff: <span class="text-white" x-text="caseDetail.kase?.plaintiff"></span></span>
+                  <span>Defendant: <span class="text-white" x-text="caseDetail.kase?.defendant"></span></span>
+                  <span x-show="caseDetail.kase?.judge">Judge: <span class="text-white" x-text="caseDetail.kase?.judge"></span></span>
+                </div>
+              </div>
+              <!-- Transition buttons -->
+              <div class="flex flex-wrap gap-2">
+                <template x-for="s in (validTransitions[caseDetail.kase?.status]||[])" :key="s">
+                  <button class="btn btn-sm btn-secondary" @click="doTransition(s)" x-text="'→ ' + displayStatus(s)"></button>
+                </template>
+              </div>
+            </div>
+            <template x-if="caseDetail.kase?.description">
+              <p class="mt-3 text-sm text-slate-400 border-t border-slate-700 pt-3" x-text="caseDetail.kase?.description"></p>
+            </template>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex gap-1 mb-4 border-b border-slate-700 pb-1">
+            <template x-for="t in ['overview','hearings','documents','audit']" :key="t">
+              <button class="tab-btn" :class="caseDetail.tab===t && 'active'" @click="caseDetail.tab=t"
+                      x-text="t.charAt(0).toUpperCase()+t.slice(1)"></button>
+            </template>
+          </div>
+
+          <!-- Tab: Overview -->
+          <div x-show="caseDetail.tab==='overview'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card">
+              <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">Case Information</h4>
+              <dl class="space-y-2">
+                <template x-for="row in caseInfoRows()" :key="row.label">
+                  <div class="flex items-start gap-3">
+                    <dt class="text-xs text-slate-500 w-28 flex-shrink-0 pt-0.5" x-text="row.label"></dt>
+                    <dd class="text-sm text-slate-200 flex-1" x-text="row.value"></dd>
+                  </div>
+                </template>
+              </dl>
+            </div>
+            <div class="card">
+              <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">Summary</h4>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="text-center p-3 rounded-lg bg-slate-800">
+                  <div class="text-xl font-bold text-white" x-text="caseDetail.hearings.length"></div>
+                  <div class="text-xs text-slate-500">Hearings</div>
+                </div>
+                <div class="text-center p-3 rounded-lg bg-slate-800">
+                  <div class="text-xl font-bold text-white" x-text="caseDetail.documents.length"></div>
+                  <div class="text-xs text-slate-500">Documents</div>
+                </div>
+                <div class="text-center p-3 rounded-lg bg-slate-800">
+                  <div class="text-xl font-bold text-white" x-text="caseDetail.audit.length"></div>
+                  <div class="text-xs text-slate-500">Events</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Hearings -->
+          <div x-show="caseDetail.tab==='hearings'" class="card p-0 overflow-hidden">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Date</th><th>Time</th><th>Courtroom</th><th>Judge</th><th>Status</th><th>Notes</th></tr></thead>
+                <tbody>
+                  <template x-for="h in caseDetail.hearings" :key="h.id">
+                    <tr>
+                      <td class="font-medium text-white">
+                        <span x-text="fmtDate(h.hearingDate+'T00:00')"></span>
+                        <template x-if="isToday(h.hearingDate)">
+                          <span class="badge ml-2" style="background:#dc262620;color:#fca5a5">TODAY</span>
+                        </template>
+                      </td>
+                      <td x-text="h.hearingTime"></td>
+                      <td x-text="h.courtroom"></td>
+                      <td x-text="h.judge||'—'"></td>
+                      <td><span class="badge" :class="statusColor(h.status)" x-text="displayStatus(h.status)"></span></td>
+                      <td class="text-slate-400 text-xs max-w-xs"><div class="truncate" x-text="h.notes||'—'"></div></td>
+                    </tr>
+                  </template>
+                  <template x-if="caseDetail.hearings.length===0">
+                    <tr><td colspan="6"><div class="empty-state">📅<span>No hearings scheduled</span></div></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Documents -->
+          <div x-show="caseDetail.tab==='documents'" class="card p-0 overflow-hidden">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>File Name</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Bundle</th></tr></thead>
+                <tbody>
+                  <template x-for="d in caseDetail.documents" :key="d.id">
+                    <tr>
+                      <td class="font-medium text-white" x-text="d.filename||d.fileName||'—'"></td>
+                      <td class="text-xs text-slate-400" x-text="d.fileType||d.documentType||'—'"></td>
+                      <td class="text-xs text-slate-400" x-text="fmtBytes(d.fileSize)"></td>
+                      <td class="text-xs text-slate-400" x-text="fmtDate(d.createdAt)"></td>
+                      <td>
+                        <span class="badge" :class="d.approvedForBundle||d.approved_for_bundle ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700 text-slate-500'"
+                              x-text="(d.approvedForBundle||d.approved_for_bundle) ? '✓ Approved' : 'Pending'"></span>
+                      </td>
+                    </tr>
+                  </template>
+                  <template x-if="caseDetail.documents.length===0">
+                    <tr><td colspan="5"><div class="empty-state">📄<span>No documents uploaded</span></div></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Audit -->
+          <div x-show="caseDetail.tab==='audit'" class="card">
+            <div class="space-y-3">
+              <template x-for="e in caseDetail.audit" :key="e.id">
+                <div class="flex items-start gap-3">
+                  <div class="flex-shrink-0 w-2 h-2 rounded-full mt-2" style="background:#3b82f6"></div>
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="text-sm font-medium text-white capitalize" x-text="e.action"></span>
+                      <span class="text-xs text-slate-500" x-text="'by ' + (e.actorOpenId || 'system')"></span>
+                      <span class="text-xs text-slate-600" x-text="fmtDateTime(e.createdAt)"></span>
+                    </div>
+                    <template x-if="e.prevState || e.nextState">
+                      <div class="mt-1 text-xs text-slate-500">
+                        <template x-if="e.prevState"><span x-text="e.prevState + ' → '"></span></template>
+                        <span x-text="e.nextState||''"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template x-if="caseDetail.audit.length===0">
+                <div class="empty-state">📝<span>No audit events</span></div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- HEARINGS PAGE                                                    -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='hearings'">
+        <div class="page-header">
+          <div class="flex flex-wrap gap-2">
+            <template x-for="s in ['all','scheduled','completed','postponed','cancelled']" :key="s">
+              <button class="btn btn-sm" :class="hearings.statusFilter===s?'btn-primary':'btn-secondary'"
+                      @click="hearings.statusFilter=s;loadHearings()" x-text="s==='all'?'All':displayStatus(s)"></button>
+            </template>
+          </div>
+          <button class="btn btn-primary" @click="newHearing.open=true;resetNewHearing()">＋ Schedule Hearing</button>
+        </div>
+
+        <div x-show="hearings.loading" class="flex items-center gap-2 text-slate-500 py-8">
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Loading…
+        </div>
+
+        <div x-show="!hearings.loading" class="card p-0 overflow-hidden">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Time</th><th>Courtroom</th><th>Judge</th><th>Status</th><th>Notes</th><th>Case</th></tr></thead>
+              <tbody>
+                <template x-for="h in sortedHearings()" :key="h.id">
+                  <tr>
+                    <td class="font-medium text-white">
+                      <span x-text="fmtDate(h.hearingDate+'T00:00')"></span>
+                      <template x-if="isToday(h.hearingDate)">
+                        <span class="badge ml-1" style="background:#dc262620;color:#fca5a5;font-size:10px">TODAY</span>
+                      </template>
+                      <template x-if="isPast(h.hearingDate) && h.status==='scheduled'">
+                        <span class="badge ml-1" style="background:#92400e30;color:#fbbf24;font-size:10px">OVERDUE</span>
+                      </template>
+                    </td>
+                    <td x-text="h.hearingTime"></td>
+                    <td x-text="h.courtroom"></td>
+                    <td x-text="h.judge||'—'"></td>
+                    <td><span class="badge" :class="statusColor(h.status)" x-text="displayStatus(h.status)"></span></td>
+                    <td class="text-slate-400 text-xs max-w-xs"><div class="truncate" x-text="h.notes||'—'"></div></td>
+                    <td class="text-xs text-blue-400 font-mono" x-text="'Case #'+h.caseId"></td>
+                  </tr>
+                </template>
+                <template x-if="hearings.list.length===0 && !hearings.loading">
+                  <tr><td colspan="7"><div class="empty-state">📅<span>No hearings found</span></div></td></tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- DOCUMENTS PAGE                                                   -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='documents'">
+        <div class="page-header">
+          <div class="flex items-center gap-3">
+            <label class="label mb-0 whitespace-nowrap">Select Case</label>
+            <select class="input" style="max-width:320px" x-model="docs.caseId" @change="loadDocuments()">
+              <option value="">— Choose a case —</option>
+              <template x-for="c in docCases" :key="c.id">
+                <option :value="c.id" x-text="c.referenceNumber + ' · ' + c.title"></option>
+              </template>
+            </select>
+          </div>
+          <button class="btn btn-primary" :disabled="!docs.caseId" @click="newDoc.open=true">＋ Add Document</button>
+        </div>
+
+        <template x-if="docs.caseId && docs.list.length>0">
+          <div class="mb-3 text-sm text-slate-400">
+            <span class="text-white font-medium" x-text="docs.list.filter(d=>d.approvedForBundle||d.approved_for_bundle).length"></span>
+            of <span x-text="docs.list.length"></span> approved for bundle
+          </div>
+        </template>
+
+        <div x-show="docs.loading" class="flex items-center gap-2 text-slate-500 py-8">
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Loading…
+        </div>
+
+        <template x-if="!docs.caseId">
+          <div class="empty-state card" style="padding:40px">📁<span class="text-slate-500">Select a case to view documents</span></div>
+        </template>
+
+        <div x-show="docs.caseId && !docs.loading" class="card p-0 overflow-hidden">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>File Name</th><th>File Type</th><th>Document Type</th><th>Size</th><th>Uploaded</th><th>Bundle</th></tr></thead>
+              <tbody>
+                <template x-for="d in docs.list" :key="d.id">
+                  <tr>
+                    <td class="font-medium text-white" x-text="d.filename||d.fileName||'—'"></td>
+                    <td class="text-xs text-slate-400" x-text="d.fileType||'—'"></td>
+                    <td class="text-xs text-slate-400" x-text="d.documentType||'—'"></td>
+                    <td class="text-xs text-slate-400" x-text="fmtBytes(d.fileSize)"></td>
+                    <td class="text-xs text-slate-400" x-text="fmtDate(d.createdAt)"></td>
+                    <td>
+                      <button class="btn btn-xs" :class="(d.approvedForBundle||d.approved_for_bundle)?'btn-secondary':'btn-primary'"
+                              @click="toggleBundle(d)"
+                              x-text="(d.approvedForBundle||d.approved_for_bundle)?'✓ In Bundle':'Add to Bundle'"></button>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="docs.list.length===0 && !docs.loading && docs.caseId">
+                  <tr><td colspan="6"><div class="empty-state">📄<span>No documents for this case</span></div></td></tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- QUEUE PAGE                                                       -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='queue'">
+        <div class="page-header">
+          <div class="text-sm text-slate-400">
+            <span class="text-white font-semibold" x-text="queue.list.length"></span> pending tasks
+          </div>
+          <button class="btn btn-primary" @click="newAlloc.open=true;resetNewAlloc()">＋ Add Task</button>
+        </div>
+
+        <div x-show="queue.loading" class="flex items-center gap-2 text-slate-500 py-8">
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Loading…
+        </div>
+
+        <div x-show="!queue.loading" class="space-y-4">
+          <template x-for="priority in ['urgent','high','medium','low']" :key="priority">
+            <template x-if="queue.list.filter(a=>a.priority===priority).length>0">
+              <div class="card">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="badge" :class="priorityColor(priority)" x-text="priority.toUpperCase()"></span>
+                  <span class="text-xs text-slate-500" x-text="queue.list.filter(a=>a.priority===priority).length + ' tasks'"></span>
+                </div>
+                <div class="space-y-2">
+                  <template x-for="a in queue.list.filter(a=>a.priority===priority)" :key="a.id">
+                    <div class="flex items-start gap-3 p-3 rounded-lg border border-slate-700/50 bg-slate-800/30">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="text-sm font-medium text-white" x-text="a.taskType"></span>
+                          <span class="badge" :class="statusColor(a.status)" x-text="displayStatus(a.status)"></span>
+                          <template x-if="a.dueDate && isPast(a.dueDate) && a.status!=='completed'">
+                            <span class="badge" style="background:#dc262620;color:#fca5a5">OVERDUE</span>
+                          </template>
+                        </div>
+                        <div class="mt-1 flex items-center gap-3 text-xs text-slate-500">
+                          <span x-text="'Case #' + a.caseId"></span>
+                          <template x-if="a.dueDate">
+                            <span :class="isPast(a.dueDate)&&a.status!=='completed'?'text-red-400':''" x-text="'Due: ' + fmtDate(a.dueDate)"></span>
+                          </template>
+                          <template x-if="a.notes">
+                            <span class="truncate max-w-xs" x-text="a.notes"></span>
+                          </template>
+                        </div>
+                      </div>
+                      <div class="flex gap-1 flex-shrink-0">
+                        <template x-if="a.status==='pending'">
+                          <button class="btn btn-xs btn-secondary" @click="updateAlloc(a.id,'in_progress')">Start</button>
+                        </template>
+                        <template x-if="a.status!=='completed'">
+                          <button class="btn btn-xs btn-primary" @click="updateAlloc(a.id,'completed')">Done ✓</button>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </template>
+          <template x-if="queue.list.length===0 && !queue.loading">
+            <div class="empty-state card">📋<span>No pending tasks</span></div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- LUNAR INTAKE PAGE                                                -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='lunar-intake'">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+          <!-- Form -->
+          <div class="card space-y-4">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background:#1e40af20">
+                🧠
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-white">Lunar Intake Pipeline</div>
+                <div class="text-xs text-slate-500">4-engine deterministic triage</div>
+              </div>
+            </div>
+
+            <div>
+              <label class="label">Client Name</label>
+              <input class="input" x-model="lunarForm.name" placeholder="Full name" />
+            </div>
+            <div>
+              <label class="label">Email Address</label>
+              <input class="input" type="email" x-model="lunarForm.email" placeholder="client@example.com" />
+            </div>
+            <div>
+              <label class="label">Legal Issue Type</label>
+              <select class="input" x-model="lunarForm.issueType">
+                <option value="">— Select issue type —</option>
+                <option>Housing</option>
+                <option>Employment</option>
+                <option>Family</option>
+                <option>Criminal</option>
+                <option>Contract</option>
+                <option>Immigration</option>
+                <option>Asylum</option>
+                <option>Debt &amp; Insolvency</option>
+                <option>Civil Dispute</option>
+                <option>Personal Injury</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Description</label>
+              <textarea class="input" rows="5" x-model="lunarForm.description"
+                        placeholder="Describe the legal issue in detail…" style="resize:vertical"></textarea>
+            </div>
+
+            <button class="btn btn-primary w-full justify-center py-3"
+                    :disabled="lunarSubmitting || !lunarForm.name || !lunarForm.email || !lunarForm.issueType || lunarForm.description.length < 10"
+                    @click="submitLunarIntake()">
+              <template x-if="lunarSubmitting">
+                <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              </template>
+              <span x-text="lunarSubmitting ? 'Processing…' : 'Run Intake Pipeline'"></span>
+            </button>
+
+            <div x-show="lunarError" class="rounded-lg border border-red-800 bg-red-950/30 p-3 text-sm text-red-300" x-text="lunarError"></div>
+
+            <!-- Pipeline steps progress -->
+            <div x-show="lunarSubmitting || lunarStep >= 0" class="space-y-2 mt-2">
+              <template x-for="(s,i) in lunarSteps" :key="i">
+                <div class="pipeline-step" :class="lunarStep > i ? 'done' : lunarStep === i ? 'active' : ''">
+                  <span class="text-base" x-text="lunarStep > i ? '✓' : s.icon"></span>
+                  <div class="flex-1">
+                    <div class="text-xs font-semibold" :class="lunarStep > i ? 'text-emerald-400' : lunarStep === i ? 'text-blue-300' : 'text-slate-500'"
+                         x-text="s.label"></div>
+                    <div class="text-[10px] text-slate-600" x-text="s.desc"></div>
+                  </div>
+                  <template x-if="lunarStep === i && lunarSubmitting">
+                    <svg class="animate-spin h-3 w-3 text-blue-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <div class="space-y-4">
+            <template x-if="!lunarResult && lunarStep < 0">
+              <div class="card" style="min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#475569;text-align:center;gap:8px">
+                <span style="font-size:32px">⚖️</span>
+                <div class="text-sm font-medium text-slate-500">Pipeline results appear here</div>
+                <div class="text-xs text-slate-600">Submit an intake form to run Lunar → UltraCore → VaultLine → Lola</div>
+              </div>
+            </template>
+
+            <template x-if="lunarResult">
+              <!-- Decision banner -->
+              <div class="card" :class="decisionCardClass(lunarResult.pipeline.step2_ultracore.decision)">
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl" x-text="decisionIcon(lunarResult.pipeline.step2_ultracore.decision)"></span>
+                    <div>
+                      <div class="text-xl font-bold text-white" x-text="lunarResult.pipeline.step2_ultracore.decision"></div>
+                      <div class="text-xs text-slate-400" x-text="lunarResult.pipeline.step2_ultracore.reason"></div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold" :class="riskColor(lunarResult.pipeline.step1_lunar.riskScore)"
+                         x-text="lunarResult.pipeline.step1_lunar.riskScore + '/100'"></div>
+                    <div class="text-xs text-slate-500">Risk Score</div>
+                  </div>
+                </div>
+                <div class="mt-3 risk-bar">
+                  <div class="h-full rounded-full transition-all duration-700"
+                       :style="'width:'+lunarResult.pipeline.step1_lunar.riskScore+'%;background:'+(lunarResult.pipeline.step1_lunar.riskScore>=80?'#ef4444':lunarResult.pipeline.step1_lunar.riskScore>=50?'#f59e0b':'#10b981')"></div>
+                </div>
+                <div class="mt-2 text-xs" :class="urgencyBadgeClass(lunarResult.pipeline.step1_lunar.urgency)"
+                     x-text="'Urgency: ' + lunarResult.pipeline.step1_lunar.urgency.toUpperCase()"></div>
+              </div>
+
+              <!-- Step 1: Lunar -->
+              <div class="card" style="border-color:#3b82f630">
+                <div class="flex items-center gap-2 mb-3">
+                  <span>🧠</span>
+                  <span class="text-sm font-semibold text-slate-300">Step 1 — Lunar Triage</span>
+                  <span class="ml-auto text-xs text-slate-500" x-text="lunarResult.pipeline.step1_lunar.flags.length + ' signals'"></span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <template x-for="flag in lunarResult.pipeline.step1_lunar.flags" :key="flag">
+                    <span class="badge" style="background:#1e40af20;color:#93c5fd;border:1px solid #3b82f630">
+                      <span x-text="flag"></span>
+                      <span class="opacity-60 ml-1" x-text="'+' + (lunarResult.pipeline.step1_lunar.scoreBreakdown.find(s=>s.signal===flag)?.weight||0)"></span>
+                    </span>
+                  </template>
+                  <template x-if="lunarResult.pipeline.step1_lunar.flags.length===0">
+                    <span class="text-xs text-slate-500">No risk signals — base score 20</span>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Step 2: UltraCore -->
+              <div class="card" style="border-color:#7c3aed30">
+                <div class="flex items-center gap-2 mb-3">
+                  <span>⚡</span>
+                  <span class="text-sm font-semibold text-slate-300">Step 2 — UltraCore Gate</span>
+                  <span class="ml-auto text-xs text-violet-400" x-text="'confidence ' + lunarResult.pipeline.step2_ultracore.confidence + '%'"></span>
+                </div>
+                <div class="space-y-1 font-mono">
+                  <template x-for="(rule,i) in lunarResult.pipeline.step2_ultracore.rules" :key="i">
+                    <div class="text-[10px] text-slate-500" x-text="rule"></div>
+                  </template>
+                </div>
+                <template x-if="lunarResult.pipeline.step2_ultracore.recommendedActions?.length">
+                  <div class="mt-2 pt-2 border-t border-slate-700 space-y-1">
+                    <template x-for="a in lunarResult.pipeline.step2_ultracore.recommendedActions" :key="a">
+                      <div class="text-[10px] text-violet-300">→ <span x-text="a"></span></div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Step 3: VaultLine -->
+              <div class="card" style="border-color:#10b98130">
+                <div class="flex items-center gap-2 mb-2">
+                  <span>🔒</span>
+                  <span class="text-sm font-semibold text-slate-300">Step 3 — VaultLine Audit</span>
+                  <template x-if="lunarResult.intakeId">
+                    <span class="ml-auto text-xs text-emerald-400">Persisted ✓</span>
+                  </template>
+                </div>
+                <div class="font-mono text-[10px] text-slate-500 break-all bg-slate-900 rounded p-2 cursor-pointer"
+                     x-text="lunarResult.pipeline.step3_vault.hash"
+                     @click="copyHash(lunarResult.pipeline.step3_vault.hash)"></div>
+                <div class="mt-1 text-[10px] text-slate-600">SHA-256 · tamper-evident · click to copy</div>
+              </div>
+
+              <!-- Step 4: Lola -->
+              <div class="card" style="border-color:#f59e0b30">
+                <div class="flex items-center gap-2 mb-2">
+                  <span>💬</span>
+                  <span class="text-sm font-semibold text-slate-300">Step 4 — Lola Follow-up</span>
+                </div>
+                <p class="text-sm text-slate-300 leading-relaxed" x-text="lunarResult.pipeline.step4_lola.message"></p>
+                <div class="mt-2 rounded-lg px-3 py-2" style="background:#f59e0b10">
+                  <span class="text-xs text-amber-300">→ <span x-text="lunarResult.pipeline.step4_lola.nextStep"></span></span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- LUNAR QUEUE PAGE                                                 -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='lunar-queue'">
+        <div class="page-header">
+          <div class="flex gap-2 flex-wrap">
+            <template x-for="s in [{v:'',l:'All'},{v:'pending',l:'Pending'},{v:'in_review',l:'In Review'},{v:'matter_created',l:'Matter Created'},{v:'rejected',l:'Rejected'}]" :key="s.v">
+              <button class="btn btn-sm" :class="lunarQueue.statusFilter===s.v?'btn-primary':'btn-secondary'"
+                      @click="lunarQueue.statusFilter=s.v;loadLunarQueue()" x-text="s.l"></button>
+            </template>
+          </div>
+          <button class="btn btn-secondary btn-sm" @click="loadLunarQueue()">↻ Refresh</button>
+        </div>
+
+        <div x-show="lunarQueue.loading" class="flex items-center gap-2 text-slate-500 py-8">
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+          Loading…
+        </div>
+
+        <div x-show="!lunarQueue.loading">
+          <template x-if="lunarQueue.error">
+            <div class="rounded-xl border border-amber-800 bg-amber-950/20 p-4 text-sm text-amber-300 mb-4" x-text="'Note: ' + lunarQueue.error"></div>
+          </template>
+          <div class="card p-0 overflow-hidden">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Client</th><th>Issue Type</th><th>Decision</th><th>Risk</th><th>Urgency</th><th>Status</th><th>Received</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <template x-for="row in lunarQueue.list" :key="row.id">
+                    <tr>
+                      <td>
+                        <div class="text-sm font-medium text-white" x-text="row.name"></div>
+                        <div class="text-xs text-slate-500" x-text="row.email"></div>
+                      </td>
+                      <td class="text-slate-300" x-text="row.issueType"></td>
+                      <td>
+                        <span class="badge" :class="decisionColor(row.decision)" x-text="row.decision||'—'"></span>
+                      </td>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <div class="risk-bar" style="width:60px">
+                            <div class="h-full rounded-full" :style="'width:'+row.riskScore+'%;background:'+(row.riskScore>=80?'#ef4444':row.riskScore>=50?'#f59e0b':'#10b981')"></div>
+                          </div>
+                          <span class="text-xs" :class="riskColor(row.riskScore)" x-text="row.riskScore"></span>
+                        </div>
+                      </td>
+                      <td><span class="badge" :class="urgencyColor(row.urgency)" x-text="row.urgency||'—'"></span></td>
+                      <td><span class="badge" :class="statusColor(row.status)" x-text="displayStatus(row.status)"></span></td>
+                      <td class="text-xs text-slate-500" x-text="fmtDate(row.createdAt)"></td>
+                      <td>
+                        <div class="flex gap-1">
+                          <select class="input btn-xs" style="width:auto;padding:3px 6px;font-size:11px" @change="updateIntakeStatus(row.id,$event.target.value)">
+                            <option value="" disabled selected>Update…</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_review">In Review</option>
+                            <option value="matter_created">Matter Created</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                  <template x-if="lunarQueue.list.length===0 && !lunarQueue.loading">
+                    <tr><td colspan="8"><div class="empty-state">🔬<span>No intake records found</span></div></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- SETTINGS PAGE                                                    -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div x-show="page==='settings'">
+        <div class="flex gap-1 mb-5 border-b border-slate-700 pb-1">
+          <template x-for="t in ['profile','security','notifications','connection']" :key="t">
+            <button class="tab-btn" :class="settings.tab===t && 'active'" @click="settings.tab=t"
+                    x-text="t.charAt(0).toUpperCase()+t.slice(1)"></button>
+          </template>
+        </div>
+
+        <!-- Profile -->
+        <div x-show="settings.tab==='profile'" class="card max-w-xl space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Full Name</label>
+              <input class="input" x-model="settings.profile.name" />
+            </div>
+            <div>
+              <label class="label">Email</label>
+              <input class="input" type="email" x-model="settings.profile.email" />
+            </div>
+            <div>
+              <label class="label">Job Title</label>
+              <input class="input" x-model="settings.profile.title" />
+            </div>
+            <div>
+              <label class="label">Organisation</label>
+              <input class="input" x-model="settings.profile.org" />
+            </div>
+            <div>
+              <label class="label">Timezone</label>
+              <select class="input" x-model="settings.profile.timezone">
+                <option>Europe/London</option><option>Europe/Dublin</option><option>UTC</option>
+                <option>America/New_York</option><option>America/Chicago</option><option>America/Los_Angeles</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Language</label>
+              <select class="input" x-model="settings.profile.lang">
+                <option>English (UK)</option><option>English (US)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="label">Open ID (dev)</label>
+            <input class="input" x-model="openId" @change="localStorage.setItem('clerk-open-id',openId)" />
+          </div>
+          <div>
+            <label class="label">Tenant Slug (dev)</label>
+            <input class="input" x-model="tenant" @change="localStorage.setItem('clerk-tenant',tenant)" />
+          </div>
+          <button class="btn btn-primary" @click="saveProfile()">Save Changes</button>
+        </div>
+
+        <!-- Security -->
+        <div x-show="settings.tab==='security'" class="max-w-xl space-y-4">
+          <div class="card space-y-3">
+            <h3 class="text-sm font-semibold text-white">Authentication</h3>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800">
+              <div>
+                <div class="text-sm font-medium text-white">Password</div>
+                <div class="text-xs text-slate-500">Last changed 30 days ago</div>
+              </div>
+              <button class="btn btn-secondary btn-sm">Change Password</button>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800">
+              <div>
+                <div class="text-sm font-medium text-white">Two-Factor Authentication</div>
+                <div class="text-xs text-slate-500">Authenticator app configured</div>
+              </div>
+              <span class="badge" style="background:#10b98120;color:#6ee7b7;border:1px solid #10b98140">Enabled</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3 class="text-sm font-semibold text-white mb-3">Active Sessions</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Device</th><th>Location</th><th>Last Active</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td class="text-white">Chrome · macOS</td><td class="text-slate-400">London, UK</td><td class="text-slate-400">Now</td><td><span class="badge" style="background:#10b98120;color:#6ee7b7">Current</span></td></tr>
+                  <tr><td class="text-white">Safari · iPhone</td><td class="text-slate-400">London, UK</td><td class="text-slate-400">2h ago</td><td><button class="btn btn-xs btn-danger">Revoke</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div x-show="settings.tab==='notifications'" class="card max-w-xl space-y-3">
+          <h3 class="text-sm font-semibold text-white mb-1">Email Notifications</h3>
+          <template x-for="n in settings.notifications" :key="n.key">
+            <div class="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
+              <div>
+                <div class="text-sm text-white" x-text="n.label"></div>
+                <div class="text-xs text-slate-500" x-text="n.desc"></div>
+              </div>
+              <button class="relative inline-flex h-6 w-11 rounded-full transition-colors"
+                      :class="n.enabled ? 'bg-blue-600' : 'bg-slate-600'"
+                      @click="n.enabled=!n.enabled">
+                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform mt-0.5"
+                      :class="n.enabled ? 'translate-x-5' : 'translate-x-0.5'"></span>
+              </button>
+            </div>
+          </template>
+        </div>
+
+        <!-- Connection -->
+        <div x-show="settings.tab==='connection'" class="card max-w-xl space-y-4">
+          <h3 class="text-sm font-semibold text-white">API Connection</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800">
+              <div>
+                <div class="text-xs text-slate-500 mb-1">Server Status</div>
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-2 rounded-full" :class="apiStatus.ok ? 'bg-emerald-400' : 'bg-red-400'"></div>
+                  <span class="text-sm text-white" x-text="apiStatus.ok ? 'Connected' : 'Disconnected'"></span>
+                </div>
+              </div>
+              <button class="btn btn-secondary btn-sm" @click="checkApiStatus()">Test</button>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800">
+              <div class="text-xs text-slate-500 mb-1">tRPC Endpoint</div>
+              <code class="text-xs text-blue-300">/api/trpc/*</code>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800">
+              <div class="text-xs text-slate-500 mb-1">Auth Header (dev)</div>
+              <code class="text-xs text-slate-300" x-text="'x-user-open-id: ' + openId"></code>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800">
+              <div class="text-xs text-slate-500 mb-1">Tenant Header</div>
+              <code class="text-xs text-slate-300" x-text="'x-tenant: ' + tenant"></code>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800">
+              <div class="text-xs text-slate-500 mb-1">Mode</div>
+              <span class="badge" style="background:#10b98120;color:#6ee7b7" x-text="apiStatus.mode||'—'"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- MODALS                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+<!-- New Case Modal -->
+<div x-show="newCase.open" class="modal-bg" @click.self="newCase.open=false">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-base font-semibold text-white">New Case</h2>
+      <button class="text-slate-500 hover:text-white" @click="newCase.open=false">✕</button>
+    </div>
+    <form @submit.prevent="createCase()" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Reference Number</label>
+          <input class="input" required x-model="newCase.referenceNumber" placeholder="REF-2026-001" />
+        </div>
+        <div>
+          <label class="label">Case Type</label>
+          <select class="input" x-model="newCase.caseType">
+            <option>Employment</option><option>Housing</option><option>Criminal</option>
+            <option>Family</option><option>Contract</option><option>Civil</option>
+            <option>Administrative</option><option>Immigration</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="label">Case Title</label>
+        <input class="input" required x-model="newCase.title" placeholder="Smith v Jones Ltd" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Plaintiff</label>
+          <input class="input" required x-model="newCase.plaintiff" placeholder="Full name" />
+        </div>
+        <div>
+          <label class="label">Defendant</label>
+          <input class="input" required x-model="newCase.defendant" placeholder="Full name or company" />
+        </div>
+      </div>
+      <div>
+        <label class="label">Judge (optional)</label>
+        <input class="input" x-model="newCase.judge" placeholder="HHJ Thompson" />
+      </div>
+      <div>
+        <label class="label">Description (optional)</label>
+        <textarea class="input" rows="3" x-model="newCase.description" placeholder="Brief description of the matter…" style="resize:vertical"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="submit" class="btn btn-primary flex-1 justify-center" :disabled="newCase.saving">
+          <template x-if="newCase.saving"><svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg></template>
+          <span x-text="newCase.saving ? 'Creating…' : 'Create Case'"></span>
+        </button>
+        <button type="button" class="btn btn-secondary" @click="newCase.open=false">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- New Hearing Modal -->
+<div x-show="newHearing.open" class="modal-bg" @click.self="newHearing.open=false">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-base font-semibold text-white">Schedule Hearing</h2>
+      <button class="text-slate-500 hover:text-white" @click="newHearing.open=false">✕</button>
+    </div>
+    <form @submit.prevent="createHearing()" class="space-y-4">
+      <div>
+        <label class="label">Case</label>
+        <select class="input" required x-model="newHearing.caseId">
+          <option value="">— Select case —</option>
+          <template x-for="c in hearingCases" :key="c.id">
+            <option :value="c.id" x-text="c.referenceNumber + ' · ' + c.title"></option>
+          </template>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Date</label>
+          <input class="input" type="date" required x-model="newHearing.hearingDate" />
+        </div>
+        <div>
+          <label class="label">Time</label>
+          <input class="input" type="time" required x-model="newHearing.hearingTime" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Courtroom</label>
+          <input class="input" required x-model="newHearing.courtroom" placeholder="Room 3A" />
+        </div>
+        <div>
+          <label class="label">Judge</label>
+          <input class="input" required x-model="newHearing.judge" placeholder="Judge Williams" />
+        </div>
+      </div>
+      <div>
+        <label class="label">Notes (optional)</label>
+        <textarea class="input" rows="2" x-model="newHearing.notes" placeholder="Preliminary hearing — disclosure review" style="resize:vertical"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="submit" class="btn btn-primary flex-1 justify-center" :disabled="newHearing.saving">
+          <span x-text="newHearing.saving ? 'Scheduling…' : 'Schedule Hearing'"></span>
+        </button>
+        <button type="button" class="btn btn-secondary" @click="newHearing.open=false">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- New Task Modal -->
+<div x-show="newAlloc.open" class="modal-bg" @click.self="newAlloc.open=false">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-base font-semibold text-white">New Task</h2>
+      <button class="text-slate-500 hover:text-white" @click="newAlloc.open=false">✕</button>
+    </div>
+    <form @submit.prevent="createAlloc()" class="space-y-4">
+      <div>
+        <label class="label">Case</label>
+        <select class="input" required x-model="newAlloc.caseId">
+          <option value="">— Select case —</option>
+          <template x-for="c in allocCases" :key="c.id">
+            <option :value="c.id" x-text="c.referenceNumber + ' · ' + c.title"></option>
+          </template>
+        </select>
+      </div>
+      <div>
+        <label class="label">Task Description</label>
+        <input class="input" required x-model="newAlloc.taskType" placeholder="Prepare witness statements" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label">Priority</label>
+          <select class="input" x-model="newAlloc.priority">
+            <option value="low">Low</option><option value="medium" selected>Medium</option>
+            <option value="high">High</option><option value="urgent">Urgent</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Due Date (optional)</label>
+          <input class="input" type="date" x-model="newAlloc.dueDate" />
+        </div>
+      </div>
+      <div>
+        <label class="label">Notes (optional)</label>
+        <textarea class="input" rows="2" x-model="newAlloc.notes" style="resize:vertical"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="submit" class="btn btn-primary flex-1 justify-center" :disabled="newAlloc.saving">
+          <span x-text="newAlloc.saving ? 'Creating…' : 'Create Task'"></span>
+        </button>
+        <button type="button" class="btn btn-secondary" @click="newAlloc.open=false">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ALPINE.JS APP                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+function clerkos() {
+  return {
+    // ── Navigation ─────────────────────────────────────────────────────────
+    page: 'dashboard',
+    sidebarOpen: window.innerWidth >= 1024,
+    isMobile: window.innerWidth < 1024,
+
+    navItems: [
+      {id:'dashboard', label:'Dashboard', icon:'🏠'},
+      {id:'cases',     label:'Cases',     icon:'⚖️'},
+      {id:'hearings',  label:'Hearings',  icon:'🔨'},
+      {id:'documents', label:'Documents', icon:'📄'},
+      {id:'queue',     label:'Queue',     icon:'📋'},
+      {id:'settings',  label:'Settings',  icon:'⚙️'},
+    ],
+    lunarNavItems: [
+      {id:'lunar-intake', label:'Intake Pipeline', icon:'🧠'},
+      {id:'lunar-queue',  label:'Intake Queue',    icon:'🔬'},
+    ],
+
+    // ── Auth ───────────────────────────────────────────────────────────────
+    openId: localStorage.getItem('clerk-open-id') || 'admin-user',
+    tenant: localStorage.getItem('clerk-tenant') || 'alpha',
+    userName: localStorage.getItem('clerk-name') || 'Patricia Chen',
+
+    // ── Toast ──────────────────────────────────────────────────────────────
+    toasts: [],
+    toast(msg, type='success') {
+      const t = {id: Date.now() + Math.random(), msg, type};
+      this.toasts.push(t);
+      setTimeout(() => { this.toasts = this.toasts.filter(x => x.id !== t.id); }, 4000);
+    },
+
+    // ── API Helpers ────────────────────────────────────────────────────────
+    headers() {
+      return {'x-user-open-id': this.openId, 'x-tenant': this.tenant};
+    },
+    async q(proc, input) {
+      const qs = input !== undefined
+        ? '?input=' + encodeURIComponent(JSON.stringify(input))
+        : '';
+      const r = await fetch('/api/trpc/' + proc + qs, {headers: this.headers()});
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || 'API error');
+      return d.result.data;
+    },
+    async m(proc, input) {
+      const r = await fetch('/api/trpc/' + proc, {
+        method: 'POST',
+        headers: {...this.headers(), 'Content-Type': 'application/json'},
+        body: JSON.stringify(input),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message || 'API error');
+      return d.result.data;
+    },
+
+    // ── Dashboard ──────────────────────────────────────────────────────────
+    dash: {stats: null, loading: false, error: null},
+    async loadDash() {
+      this.dash.loading = true; this.dash.error = null;
+      try { this.dash.stats = await this.q('dashboard.stats'); }
+      catch(e) { this.dash.error = e.message; }
+      finally { this.dash.loading = false; }
+    },
+    statCards() {
+      if (!this.dash.stats) return [];
+      const s = this.dash.stats;
+      return [
+        {label:'Total Cases',   value:s.totalCases},
+        {label:'Active',        value:s.activeCases},
+        {label:'Closed',        value:s.closedCases},
+        {label:'Hearings',      value:s.pendingHearings},
+        {label:'Today',         value:s.todayHearings},
+        {label:'Queue',         value:s.pendingAllocations},
+      ];
+    },
+
+    // ── Cases ──────────────────────────────────────────────────────────────
+    cases: {list:[], loading:false, error:null, statusFilter:'all', search:'', searchResults:null},
+    newCase: {open:false, referenceNumber:'', title:'', caseType:'Employment', plaintiff:'', defendant:'', judge:'', description:'', saving:false},
+
+    async loadCases() {
+      this.cases.loading = true; this.cases.error = null;
+      try {
+        const input = this.cases.statusFilter !== 'all' ? {status: this.cases.statusFilter} : undefined;
+        this.cases.list = await this.q('cases.list', input);
+      } catch(e) { this.cases.error = e.message; }
+      finally { this.cases.loading = false; }
+    },
+    async searchCases() {
+      if (this.cases.search.trim().length < 2) { this.cases.searchResults = null; return; }
+      try { this.cases.searchResults = await this.q('cases.search', {query: this.cases.search}); }
+      catch(e) { this.cases.searchResults = null; }
+    },
+    resetNewCase() {
+      Object.assign(this.newCase, {referenceNumber:'', title:'', caseType:'Employment', plaintiff:'', defendant:'', judge:'', description:'', saving:false});
+    },
+    async createCase() {
+      this.newCase.saving = true;
+      try {
+        const c = await this.m('cases.create', {
+          referenceNumber: this.newCase.referenceNumber,
+          title: this.newCase.title,
+          caseType: this.newCase.caseType,
+          plaintiff: this.newCase.plaintiff,
+          defendant: this.newCase.defendant,
+          judge: this.newCase.judge || undefined,
+          description: this.newCase.description || undefined,
+        });
+        this.newCase.open = false;
+        await this.loadCases();
+        this.toast('Case created: ' + c.referenceNumber);
+      } catch(e) { this.toast(e.message, 'error'); }
+      finally { this.newCase.saving = false; }
+    },
+    async transitionCase(id, status) {
+      try { await this.m('cases.transition', {id, status}); await this.loadCases(); this.toast('Status updated'); }
+      catch(e) { this.toast(e.message, 'error'); }
+    },
+
+    // ── Case Detail ────────────────────────────────────────────────────────
+    caseDetail: {caseId:null, tab:'overview', kase:null, hearings:[], documents:[], audit:[], loading:false, error:null},
+    async openCaseDetail(id) {
+      this.caseDetail = {caseId:id, tab:'overview', kase:null, hearings:[], documents:[], audit:[], loading:true, error:null};
+      this.page = 'case-detail';
+      try {
+        const [kase, hearings, documents, audit] = await Promise.all([
+          this.q('cases.getById', {id}),
+          this.q('hearings.getByCaseId', {caseId:id}),
+          this.q('documents.getByCaseId', {caseId:id}),
+          this.q('cases.getAuditTrail', {id}),
+        ]);
+        Object.assign(this.caseDetail, {kase, hearings, documents, audit});
+      } catch(e) { this.caseDetail.error = e.message; }
+      finally { this.caseDetail.loading = false; }
+    },
+    async doTransition(status) {
+      try {
+        await this.m('cases.transition', {id: this.caseDetail.caseId, status});
+        this.caseDetail.kase = await this.q('cases.getById', {id: this.caseDetail.caseId});
+        this.toast('Status → ' + this.displayStatus(status));
+      } catch(e) { this.toast(e.message, 'error'); }
+    },
+    caseInfoRows() {
+      const k = this.caseDetail.kase;
+      if (!k) return [];
+      return [
+        {label:'Reference',  value:k.referenceNumber},
+        {label:'Type',       value:k.caseType},
+        {label:'Status',     value:this.displayStatus(k.status)},
+        {label:'Plaintiff',  value:k.plaintiff},
+        {label:'Defendant',  value:k.defendant},
+        {label:'Judge',      value:k.judge||'—'},
+        {label:'Filed',      value:this.fmtDate(k.createdAt)},
+        {label:'Updated',    value:this.fmtDate(k.updatedAt)},
+      ];
+    },
+    validTransitions: {
+      open:        ['in_progress','on_hold','closed'],
+      in_progress: ['closed','on_hold','open'],
+      on_hold:     ['open','in_progress','closed'],
+      closed:      ['open'],
+    },
+
+    // ── Hearings ───────────────────────────────────────────────────────────
+    hearings: {list:[], loading:false, error:null, statusFilter:'all'},
+    newHearing: {open:false, caseId:'', hearingDate:'', hearingTime:'', courtroom:'', judge:'', notes:'', saving:false},
+    hearingCases: [],
+    async loadHearings() {
+      this.hearings.loading = true;
+      try {
+        const input = this.hearings.statusFilter !== 'all' ? {status: this.hearings.statusFilter} : undefined;
+        this.hearings.list = await this.q('hearings.list', input);
+      } catch(e) { this.hearings.error = e.message; }
+      finally { this.hearings.loading = false; }
+    },
+    resetNewHearing() {
+      Object.assign(this.newHearing, {caseId:'', hearingDate:'', hearingTime:'09:30', courtroom:'', judge:'', notes:'', saving:false});
+    },
+    async createHearing() {
+      this.newHearing.saving = true;
+      try {
+        await this.m('hearings.create', {
+          caseId: parseInt(this.newHearing.caseId),
+          hearingDate: this.newHearing.hearingDate,
+          hearingTime: this.newHearing.hearingTime,
+          courtroom: this.newHearing.courtroom,
+          judge: this.newHearing.judge,
+          notes: this.newHearing.notes || undefined,
+        });
+        this.newHearing.open = false;
+        await this.loadHearings();
+        this.toast('Hearing scheduled');
+      } catch(e) { this.toast(e.message, 'error'); }
+      finally { this.newHearing.saving = false; }
+    },
+    sortedHearings() {
+      const today = new Date().toISOString().split('T')[0];
+      return [...this.hearings.list].sort((a,b) => {
+        if (a.hearingDate === today && b.hearingDate !== today) return -1;
+        if (b.hearingDate === today && a.hearingDate !== today) return 1;
+        return a.hearingDate > b.hearingDate ? 1 : -1;
+      });
+    },
+
+    // ── Documents ──────────────────────────────────────────────────────────
+    docs: {list:[], loading:false, error:null, caseId:''},
+    docCases: [],
+    newDoc: {open:false, saving:false},
+    async loadDocuments() {
+      if (!this.docs.caseId) return;
+      this.docs.loading = true;
+      try { this.docs.list = await this.q('documents.getByCaseId', {caseId: parseInt(this.docs.caseId)}); }
+      catch(e) { this.docs.error = e.message; }
+      finally { this.docs.loading = false; }
+    },
+    async toggleBundle(doc) {
+      const cur = doc.approvedForBundle || doc.approved_for_bundle;
+      try {
+        await this.m('documents.approveForBundle', {id: doc.id, approved: cur ? 0 : 1});
+        await this.loadDocuments();
+        this.toast(cur ? 'Removed from bundle' : 'Approved for bundle');
+      } catch(e) { this.toast(e.message, 'error'); }
+    },
+
+    // ── Queue ──────────────────────────────────────────────────────────────
+    queue: {list:[], loading:false, error:null},
+    newAlloc: {open:false, caseId:'', taskType:'', priority:'medium', dueDate:'', notes:'', saving:false},
+    allocCases: [],
+    async loadQueue() {
+      this.queue.loading = true;
+      try { this.queue.list = await this.q('allocations.getPending'); }
+      catch(e) { this.queue.error = e.message; }
+      finally { this.queue.loading = false; }
+    },
+    resetNewAlloc() {
+      Object.assign(this.newAlloc, {caseId:'', taskType:'', priority:'medium', dueDate:'', notes:'', saving:false});
+    },
+    async createAlloc() {
+      this.newAlloc.saving = true;
+      try {
+        await this.m('allocations.create', {
+          caseId: parseInt(this.newAlloc.caseId),
+          clerkId: 1,
+          taskType: this.newAlloc.taskType,
+          priority: this.newAlloc.priority,
+          dueDate: this.newAlloc.dueDate || undefined,
+          notes: this.newAlloc.notes || undefined,
+        });
+        this.newAlloc.open = false;
+        await this.loadQueue();
+        this.toast('Task created');
+      } catch(e) { this.toast(e.message, 'error'); }
+      finally { this.newAlloc.saving = false; }
+    },
+    async updateAlloc(id, status) {
+      try { await this.m('allocations.update', {id, status}); await this.loadQueue(); this.toast('Task updated'); }
+      catch(e) { this.toast(e.message, 'error'); }
+    },
+
+    // ── Lunar Intake ───────────────────────────────────────────────────────
+    lunarForm: {name:'', email:'', issueType:'', description:''},
+    lunarResult: null,
+    lunarError: null,
+    lunarSubmitting: false,
+    lunarStep: -1,
+    lunarSteps: [
+      {icon:'🧠', label:'Lunar Triage',   desc:'Keyword risk scoring + NLP'},
+      {icon:'⚡', label:'UltraCore Gate',  desc:'Deterministic decision rules'},
+      {icon:'🔒', label:'VaultLine Audit', desc:'SHA-256 tamper-evident hash'},
+      {icon:'💬', label:'Lola Follow-up',  desc:'Client communication draft'},
+      {icon:'✅', label:'Complete',        desc:'Pipeline finished'},
+    ],
+    async submitLunarIntake() {
+      this.lunarResult = null; this.lunarError = null;
+      this.lunarSubmitting = true; this.lunarStep = 0;
+      const timers = [700,1400,2100,2800].map((d,i) => setTimeout(()=>this.lunarStep=i+1, d));
+      try {
+        const res = await fetch('/api/lunar/intake', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(this.lunarForm),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Submission failed');
+        timers.forEach(clearTimeout);
+        this.lunarStep = 5;
+        this.lunarResult = data;
+      } catch(e) {
+        timers.forEach(clearTimeout);
+        this.lunarStep = -1;
+        this.lunarError = e.message;
+      } finally { this.lunarSubmitting = false; }
+    },
+    decisionCardClass(d) {
+      const m = {ALLOW:'border-emerald-600/40',MODIFY:'border-amber-600/40',DENY:'border-red-600/40',ESCALATE:'border-red-400/60',REFER_TO_SPECIALIST:'border-violet-500/40'};
+      return m[d] || '';
+    },
+    decisionIcon(d) {
+      const m = {ALLOW:'✅',MODIFY:'⚠️',DENY:'❌',ESCALATE:'🚨',REFER_TO_SPECIALIST:'👤'};
+      return m[d] || '❓';
+    },
+    async copyHash(hash) {
+      try { await navigator.clipboard.writeText(hash); this.toast('Hash copied to clipboard'); }
+      catch { this.toast('Copy failed', 'error'); }
+    },
+
+    // ── Lunar Queue ────────────────────────────────────────────────────────
+    lunarQueue: {list:[], loading:false, error:null, statusFilter:''},
+    async loadLunarQueue() {
+      this.lunarQueue.loading = true; this.lunarQueue.error = null;
+      try {
+        const input = this.lunarQueue.statusFilter ? {status: this.lunarQueue.statusFilter} : undefined;
+        this.lunarQueue.list = await this.q('lunar.list', input);
+      } catch(e) { this.lunarQueue.error = e.message; this.lunarQueue.list = []; }
+      finally { this.lunarQueue.loading = false; }
+    },
+    async updateIntakeStatus(id, status) {
+      if (!status) return;
+      try { await this.m('lunar.updateStatus', {id, status}); await this.loadLunarQueue(); this.toast('Status updated'); }
+      catch(e) { this.toast(e.message, 'error'); }
+    },
+
+    // ── Settings ───────────────────────────────────────────────────────────
+    settings: {
+      tab: 'profile',
+      profile: {name:'Patricia Chen', email:'patricia.chen@alphalaw.co.uk', title:'Senior Clerk', org:'Alpha Law LLP', timezone:'Europe/London', lang:'English (UK)'},
+      notifications: [
+        {key:'case_status',   label:'Case Status Changes',  desc:'Notified when case status is updated', enabled:true},
+        {key:'hearings',      label:'New Hearings',          desc:'Notified when hearings are scheduled', enabled:true},
+        {key:'bundles',       label:'Bundle Complete',        desc:'Notified when a bundle is generated',  enabled:false},
+        {key:'compliance',    label:'Compliance Alerts',     desc:'Critical compliance notifications',     enabled:true},
+        {key:'digest',        label:'Weekly Digest',          desc:'Weekly summary of activity',           enabled:false},
+        {key:'maintenance',   label:'Maintenance Notices',   desc:'System maintenance notifications',      enabled:true},
+      ],
+    },
+    apiStatus: {ok:false, mode:''},
+    async checkApiStatus() {
+      try {
+        const d = await this.q('dashboard.stats');
+        this.apiStatus = {ok:true, mode:'Demo (no DB)'};
+        this.toast('API connected');
+      } catch(e) {
+        this.apiStatus = {ok:false, mode:'Disconnected'};
+        this.toast('API error: ' + e.message, 'error');
+      }
+    },
+    saveProfile() {
+      localStorage.setItem('clerk-name', this.settings.profile.name);
+      this.userName = this.settings.profile.name;
+      this.toast('Profile saved');
+    },
+
+    // ── Utility ────────────────────────────────────────────────────────────
+    fmtDate(d) {
+      if (!d) return '—';
+      try { return new Date(d).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}); }
+      catch { return '—'; }
+    },
+    fmtDateTime(d) {
+      if (!d) return '—';
+      try { return new Date(d).toLocaleString('en-GB', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}); }
+      catch { return '—'; }
+    },
+    fmtBytes(b) {
+      if (!b) return '—';
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+      return (b/1048576).toFixed(1) + ' MB';
+    },
+    isToday(d) {
+      if (!d) return false;
+      try { return new Date(d+'T00:00').toDateString() === new Date().toDateString(); }
+      catch { return false; }
+    },
+    isPast(d) {
+      if (!d) return false;
+      try { return new Date(d) < new Date(); }
+      catch { return false; }
+    },
+    statusColor(s) {
+      const m = {
+        open:           'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        in_progress:    'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        on_hold:        'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        closed:         'bg-slate-500/20 text-slate-400 border-slate-500/30',
+        scheduled:      'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        completed:      'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        postponed:      'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        cancelled:      'bg-red-500/20 text-red-400 border-red-500/30',
+        pending:        'bg-amber-500/20 text-amber-300 border-amber-500/30',
+        in_review:      'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        matter_created: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        rejected:       'bg-red-500/20 text-red-400 border-red-500/30',
+      };
+      return (m[s] || 'bg-slate-500/20 text-slate-400 border-slate-500/30') + ' border';
+    },
+    decisionColor(d) {
+      const m = {ALLOW:'bg-emerald-500/20 text-emerald-300',MODIFY:'bg-amber-500/20 text-amber-300',DENY:'bg-red-500/20 text-red-400',ESCALATE:'bg-red-900/40 text-red-300',REFER_TO_SPECIALIST:'bg-violet-500/20 text-violet-300'};
+      return m[d] || 'bg-slate-500/20 text-slate-400';
+    },
+    urgencyColor(u) {
+      const m = {critical:'bg-red-500/20 text-red-300',high:'bg-amber-500/20 text-amber-300',normal:'bg-slate-500/20 text-slate-400'};
+      return m[u] || 'bg-slate-500/20 text-slate-400';
+    },
+    urgencyBadgeClass(u) {
+      const m = {critical:'text-red-400',high:'text-amber-400',normal:'text-slate-500'};
+      return m[u] || 'text-slate-500';
+    },
+    priorityColor(p) {
+      const m = {urgent:'bg-red-500/20 text-red-300 border border-red-500/30',high:'bg-orange-500/20 text-orange-300 border border-orange-500/30',medium:'bg-amber-500/20 text-amber-300 border border-amber-500/30',low:'bg-slate-500/20 text-slate-400 border border-slate-500/30'};
+      return m[p] || 'bg-slate-500/20 text-slate-400';
+    },
+    riskColor(score) {
+      if (score >= 80) return 'text-red-400';
+      if (score >= 50) return 'text-amber-400';
+      return 'text-emerald-400';
+    },
+    displayStatus(s) {
+      if (!s) return '—';
+      return s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    },
+    pageTitle() {
+      const titles = {
+        dashboard:'Dashboard', cases:'Cases', 'case-detail':'Case Detail',
+        hearings:'Hearings', documents:'Documents', queue:'Task Queue',
+        'lunar-intake':'Lunar Intake Pipeline', 'lunar-queue':'Lunar Intake Queue',
+        settings:'Settings',
+      };
+      return titles[this.page] || this.page;
+    },
+
+    // ── Init & Navigate ─────────────────────────────────────────────────────
+    async navigate(pg) {
+      if (pg === this.page && pg !== 'case-detail') {
+        if (this.isMobile) this.sidebarOpen = false;
+        return;
+      }
+      this.page = pg;
+      if (pg === 'dashboard')     await this.loadDash();
+      else if (pg === 'cases')    { this.cases.search=''; this.cases.searchResults=null; await this.loadCases(); }
+      else if (pg === 'hearings') { await this.loadHearings(); this.hearingCases = await this.q('cases.list').catch(()=>[]); }
+      else if (pg === 'documents'){ this.docCases = await this.q('cases.list').catch(()=>[]); }
+      else if (pg === 'queue')    { await this.loadQueue(); this.allocCases = await this.q('cases.list').catch(()=>[]); }
+      else if (pg === 'lunar-queue') await this.loadLunarQueue();
+      if (this.isMobile) this.sidebarOpen = false;
+    },
+    async init() {
+      // Set localStorage defaults for dev
+      if (!localStorage.getItem('clerk-open-id')) localStorage.setItem('clerk-open-id','admin-user');
+      if (!localStorage.getItem('clerk-tenant'))  localStorage.setItem('clerk-tenant','alpha');
+      if (!localStorage.getItem('clerk-name'))    localStorage.setItem('clerk-name','Patricia Chen');
+
+      // Handle resize
+      window.addEventListener('resize', () => {
+        this.isMobile = window.innerWidth < 1024;
+        if (!this.isMobile) this.sidebarOpen = true;
+      });
+
+      await this.loadDash();
+      // Pre-check API status
+      this.checkApiStatus().catch(()=>{});
+    },
+  };
+}
+</script>
+</body>
+</html>
