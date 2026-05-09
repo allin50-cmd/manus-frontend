@@ -34,6 +34,19 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
+// ── Admin endpoint auth middleware ─────────────────────────────────────────
+function requireAdminToken(req: Request, res: Response, next: NextFunction) {
+  if (!DEPLOY_RECORD_TOKEN) {
+    // Token not configured — block all admin access rather than leave open
+    return res.status(503).json({ error: 'Admin endpoints not configured (DEPLOY_RECORD_TOKEN unset)' });
+  }
+  const token = req.headers['x-deploy-token'];
+  if (token !== DEPLOY_RECORD_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 // ── Startup env validation ─────────────────────────────────────────────────
 const ENV_OPTIONAL = [
   ['STRIPE_SECRET_KEY',           'Stripe payments disabled'],
@@ -239,7 +252,12 @@ app.use(cors({
 
 app.use((_req, res, next) => {
   const start = Date.now();
-  res.on('finish', () => res.setHeader('X-Response-Time', `${Date.now() - start}ms`));
+  const orig = res.end.bind(res) as typeof res.end;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  res.end = ((...args: any[]) => {
+    if (!res.headersSent) res.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+    return orig(...args);
+  }) as typeof res.end;
   next();
 });
 
@@ -534,7 +552,7 @@ app.post('/api/lead', writeLimiter, asyncHandler(async (req: Request, res: Respo
  * GET /api/admin/leads
  * Get all leads (admin endpoint)
  */
-app.get('/api/admin/leads', readLimiter, asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/leads', readLimiter, requireAdminToken, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allLeads = await db
       .select()
@@ -610,7 +628,7 @@ app.post('/api/intake', writeLimiter, asyncHandler(async (req: Request, res: Res
  * GET /api/admin/intake-forms
  * Get all intake forms (admin endpoint)
  */
-app.get('/api/admin/intake-forms', readLimiter, asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/intake-forms', readLimiter, requireAdminToken, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allForms = await db
       .select()
@@ -766,7 +784,7 @@ app.post('/api/compliance-bundle', writeLimiter, asyncHandler(async (req: Reques
  * GET /api/admin/compliance-bundles
  * Get all compliance bundle requests (admin endpoint)
  */
-app.get('/api/admin/compliance-bundles', readLimiter, asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/compliance-bundles', readLimiter, requireAdminToken, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allBundles = await db
       .select()
@@ -831,7 +849,7 @@ app.post('/api/contact', asyncHandler(async (req: Request, res: Response) => {
  * GET /api/admin/contacts
  * Get all contacts (admin endpoint)
  */
-app.get('/api/admin/contacts', readLimiter, asyncHandler(async (req: Request, res: Response) => {
+app.get('/api/admin/contacts', readLimiter, requireAdminToken, asyncHandler(async (req: Request, res: Response) => {
   try {
     const allContacts = await db
       .select()

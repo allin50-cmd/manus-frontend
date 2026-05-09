@@ -6,10 +6,12 @@ import App from './App';
 import './index.css';
 import { trpc } from './lib/trpc';
 
-// Demo mode defaults — pre-populate auth identity for local dev without Azure AD B2C
-if (!localStorage.getItem('clerk-tenant')) localStorage.setItem('clerk-tenant', 'alpha');
-if (!localStorage.getItem('clerk-open-id')) localStorage.setItem('clerk-open-id', 'admin-user');
-if (!localStorage.getItem('clerk-name')) localStorage.setItem('clerk-name', 'Patricia Chen');
+// Pre-populate auth identity for local dev only — never runs in production builds
+if (import.meta.env.DEV) {
+  if (!localStorage.getItem('clerk-tenant')) localStorage.setItem('clerk-tenant', 'alpha');
+  if (!localStorage.getItem('clerk-open-id')) localStorage.setItem('clerk-open-id', 'admin-user');
+  if (!localStorage.getItem('clerk-name')) localStorage.setItem('clerk-name', 'Patricia Chen');
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
