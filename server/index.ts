@@ -1143,7 +1143,7 @@ function shutdown(signal: string) {
   }, 10_000);
 }
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('🚀 VaultLine Brand Suite Server');
   console.log('================================');
