@@ -22,6 +22,7 @@ const MIME = {
 let db, insertIntake, updateStatus, listAll;
 try {
   db = new DatabaseSync(path.join(__dirname, 'ultai.db'));
+  db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=3000;');
   db.exec(`
     CREATE TABLE IF NOT EXISTS ultai_intakes (
       id TEXT PRIMARY KEY, company_name TEXT NOT NULL, contact_name TEXT NOT NULL,
@@ -71,23 +72,29 @@ const trim = (v, n) => (v == null || v === '') ? null : String(v).trim().slice(0
 function send(res, status, body) {
   const p = JSON.stringify(body);
   res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(p) });
-  res.end(p);
+  res.end(res._head ? '' : p);   // omit body for HEAD requests
 }
 
 function readJson(req) {
   return new Promise((resolve, reject) => {
     if (!(req.headers['content-type'] || '').startsWith('application/json')) return resolve(null);
     const buf = [];
-    req.on('data', c => buf.push(c))
-       .on('end', () => { try { resolve(JSON.parse(Buffer.concat(buf).toString() || '{}')); } catch { reject(); } })
-       .on('error', reject);
+    let size = 0, over = false;
+    req.on('data', c => {
+      if (over) return;
+      size += c.length;
+      if (size > 65_536) { over = true; req.resume(); return reject(Object.assign(new Error(), { tooLarge: true })); }
+      buf.push(c);
+    })
+    .on('end', () => { if (over) return; try { resolve(JSON.parse(Buffer.concat(buf).toString() || '{}')); } catch { reject(new Error('bad json')); } })
+    .on('error', reject);
   });
 }
 
 function serveFile(res, abs, headOnly) {
   try {
     const data = fs.readFileSync(abs);
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(abs)] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(abs)] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff' });
     res.end(headOnly ? '' : data);
   } catch { send(res, 404, { ok: false, error: 'Not found' }); }
 }
@@ -104,6 +111,7 @@ function csvEsc(v) {
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
+let _seq = 0;  // monotonic counter — appended to ms timestamp to prevent ID collisions
 const PATCH_RE = /^\/api\/admin\/ultai-intakes\/([^/]+)\/status$/;
 const STATUSES = new Set(['new', 'contacted', 'qualified', 'closed']);
 
@@ -117,7 +125,8 @@ async function handle(req, res) {
 
   if (method === 'POST' && pathname === '/api/ultai-intake') {
     let body;
-    try { body = await readJson(req); } catch { return send(res, 400, { ok: false, error: 'Invalid JSON in request body' }); }
+    try { body = await readJson(req); }
+    catch (e) { return send(res, e?.tooLarge ? 413 : 400, { ok: false, error: e?.tooLarge ? 'Request body too large' : 'Invalid JSON in request body' }); }
     const { companyName, contactName, email, phone, industry, companySize,
             website, businessContext, challenges, techStack, goalsTimeline } = body || {};
 
@@ -126,7 +135,7 @@ async function handle(req, res) {
     if (!email || !EMAIL_RE.test(String(email).trim())) return send(res, 400, { ok: false, error: 'A valid email address is required' });
     if (!rateOk(clientIp(req))) return send(res, 429, { ok: false, error: 'Too many requests. Please try again later.' });
 
-    const id = `ULTAI-${Date.now()}`;
+    const id = `ULTAI-${Date.now()}${String(++_seq).padStart(4, '0')}`;
     try {
       insertIntake.run({ id,
         company_name: trim(companyName, 255), contact_name: trim(contactName, 255),
@@ -162,7 +171,8 @@ async function handle(req, res) {
   const pm = method === 'PATCH' && PATCH_RE.exec(pathname);
   if (pm) {
     let body;
-    try { body = await readJson(req); } catch { return send(res, 400, { ok: false, error: 'Invalid JSON in request body' }); }
+    try { body = await readJson(req); }
+    catch (e) { return send(res, e?.tooLarge ? 413 : 400, { ok: false, error: e?.tooLarge ? 'Request body too large' : 'Invalid JSON in request body' }); }
     const { status } = body || {};
     if (!status || !STATUSES.has(status)) return send(res, 400, { ok: false, error: 'status must be one of: new, contacted, qualified, closed' });
     const result = updateStatus.run(status, pm[1]);
@@ -185,6 +195,7 @@ async function handle(req, res) {
 
 // ── Server ────────────────────────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
+  res._head = req.method === 'HEAD';   // used by send() to suppress body
   try { await handle(req, res); }
   catch (err) { console.error('Unhandled error:', err); if (!res.headersSent) send(res, 500, { ok: false, error: 'Internal server error' }); }
 });
