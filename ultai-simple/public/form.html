@@ -637,6 +637,7 @@
     document.getElementById('steps-nav').style.display = '';
     document.querySelector('.step-labels').style.display = '';
     document.getElementById('err-msg').style.display = '';
+    panels().forEach(p => p && (p.style.display = ''));
     document.getElementById('success').classList.remove('show');
     renderStep();
   }

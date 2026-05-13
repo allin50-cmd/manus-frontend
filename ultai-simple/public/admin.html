@@ -333,7 +333,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  let allIntakes = [];
+  let allIntakes = [];   // full unfiltered list — used for stats
+  let viewIntakes = [];  // filtered list — used for table
   let currentStatus = 'all';
   let currentSearch = '';
   let detailId = null;
@@ -351,31 +352,45 @@
 
   async function load() {
     try {
-      const params = new URLSearchParams();
-      if (currentStatus !== 'all') params.set('status', currentStatus);
-      if (currentSearch) params.set('search', currentSearch);
-      const res = await fetch(`/api/admin/ultai-intakes?${params}`);
+      // Always fetch the full list so stat cards show global totals.
+      const res = await fetch('/api/admin/ultai-intakes');
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       allIntakes = json.intakes;
-      renderTable();
-      renderStats();
+      applyFilters();
     } catch (e) {
       toast(e.message || 'Failed to load', true);
     }
   }
 
+  function applyFilters() {
+    let rows = allIntakes;
+    if (currentStatus !== 'all') rows = rows.filter(r => r.status === currentStatus);
+    if (currentSearch) {
+      const q = currentSearch.toLowerCase();
+      rows = rows.filter(r =>
+        (r.company_name || '').toLowerCase().includes(q) ||
+        (r.contact_name || '').toLowerCase().includes(q) ||
+        (r.email        || '').toLowerCase().includes(q) ||
+        (r.id           || '').toLowerCase().includes(q)
+      );
+    }
+    viewIntakes = rows;
+    renderStats();
+    renderTable();
+  }
+
   function renderStats() {
-    const all = allIntakes;
-    document.getElementById('cnt-new').textContent       = all.filter(r => r.status === 'new').length;
-    document.getElementById('cnt-contacted').textContent = all.filter(r => r.status === 'contacted').length;
-    document.getElementById('cnt-qualified').textContent = all.filter(r => r.status === 'qualified').length;
-    document.getElementById('cnt-closed').textContent    = all.filter(r => r.status === 'closed').length;
+    // Always count from the full unfiltered list.
+    document.getElementById('cnt-new').textContent       = allIntakes.filter(r => r.status === 'new').length;
+    document.getElementById('cnt-contacted').textContent = allIntakes.filter(r => r.status === 'contacted').length;
+    document.getElementById('cnt-qualified').textContent = allIntakes.filter(r => r.status === 'qualified').length;
+    document.getElementById('cnt-closed').textContent    = allIntakes.filter(r => r.status === 'closed').length;
   }
 
   function renderTable() {
     const tbody = document.getElementById('tbl-body');
-    const rows = allIntakes;
+    const rows = viewIntakes;
 
     if (rows.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
@@ -433,8 +448,7 @@
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       allIntakes = allIntakes.map(r => r.id === id ? { ...r, status } : r);
-      renderTable();
-      renderStats();
+      applyFilters();
       toast('Status updated');
     } catch (e) {
       toast(e.message || 'Update failed', true);
@@ -444,13 +458,13 @@
 
   function onSearch() {
     currentSearch = document.getElementById('search-input').value.trim();
-    load();
+    applyFilters();
   }
 
   function onStatusFilter() {
     currentStatus = document.getElementById('status-filter').value;
     renderStatCards();
-    load();
+    applyFilters();
   }
 
   function filterStatus(s) {
@@ -558,8 +572,7 @@
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       allIntakes = allIntakes.map(r => r.id === id ? { ...r, status } : r);
-      renderTable();
-      renderStats();
+      applyFilters();
       const updated = allIntakes.find(r => r.id === id);
       if (updated) {
         document.getElementById('detail-panel').innerHTML = buildDetail(updated);
