@@ -1,0 +1,61 @@
+name: UltAi Intake — Nightly Health Check
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 06:00 UTC daily
+  workflow_dispatch:       # manual trigger
+
+jobs:
+  health:
+    name: Nightly smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ultai-simple/package-lock.json
+
+      - name: Install
+        working-directory: ultai-simple
+        run: npm ci
+
+      - name: Start server
+        working-directory: ultai-simple
+        run: |
+          npm start &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:3000/api/health && break
+            sleep 0.5
+          done
+
+      - name: Submit → list → update → export
+        working-directory: ultai-simple
+        run: |
+          # Submit
+          R=$(curl -sf -X POST http://localhost:3000/api/ultai-intake \
+            -H 'Content-Type: application/json' \
+            -d '{"companyName":"Nightly Check","contactName":"Bot","email":"nightly@ci.local"}')
+          echo "$R" | grep '"ok":true'
+          ID=$(echo "$R" | grep -o 'ULTAI-[0-9]*')
+
+          # List
+          curl -sf http://localhost:3000/api/admin/ultai-intakes | grep 'Nightly Check'
+
+          # Update status
+          curl -sf -X PATCH "http://localhost:3000/api/admin/ultai-intakes/$ID/status" \
+            -H 'Content-Type: application/json' -d '{"status":"closed"}' | grep '"ok":true'
+
+          # Export
+          curl -sf http://localhost:3000/api/admin/ultai-intakes/export | grep 'Nightly Check'
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Nightly Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node:** $(node --version)" >> $GITHUB_STEP_SUMMARY

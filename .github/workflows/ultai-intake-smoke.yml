@@ -1,0 +1,90 @@
+name: UltAi Intake — Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: 'Node.js version'
+        required: false
+        default: '22'
+        type: choice
+        options: ['22', '23']
+
+jobs:
+  smoke:
+    name: Smoke test (Node ${{ github.event.inputs.node_version || '22' }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ github.event.inputs.node_version || '22' }}
+          cache: 'npm'
+          cache-dependency-path: ultai-simple/package-lock.json
+
+      - name: npm install
+        working-directory: ultai-simple
+        run: |
+          npm ci
+          echo "Installed packages: $(ls node_modules | wc -l)"
+
+      - name: npm start
+        working-directory: ultai-simple
+        run: |
+          npm start &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:3000/api/health && break
+            sleep 0.5
+          done
+
+      - name: Full journey — user submits intake
+        working-directory: ultai-simple
+        run: |
+          R=$(curl -sf -X POST http://localhost:3000/api/ultai-intake \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "companyName":    "Smoke Test Co",
+              "contactName":    "Tester",
+              "email":          "smoke@test.com",
+              "industry":       "Technology",
+              "companySize":    "11-50",
+              "challenges":     "Automation",
+              "techStack":      "Node.js",
+              "goalsTimeline":  "Q3"
+            }')
+          echo "$R"
+          echo "$R" | grep '"ok":true'
+          ID=$(echo "$R" | grep -o 'ULTAI-[0-9]*')
+          echo "Submitted: $ID"
+          echo "ID=$ID" >> $GITHUB_ENV
+
+      - name: Full journey — operator manages intake
+        working-directory: ultai-simple
+        run: |
+          # List
+          curl -sf http://localhost:3000/api/admin/ultai-intakes | grep 'Smoke Test Co'
+
+          # Search
+          curl -sf "http://localhost:3000/api/admin/ultai-intakes?search=smoke" | grep 'Smoke Test Co'
+
+          # Status pipeline
+          for S in contacted qualified closed; do
+            curl -sf -X PATCH "http://localhost:3000/api/admin/ultai-intakes/${{ env.ID }}/status" \
+              -H 'Content-Type: application/json' -d "{\"status\":\"$S\"}" | grep '"ok":true'
+            echo "  → $S"
+          done
+
+          # CSV
+          curl -sf http://localhost:3000/api/admin/ultai-intakes/export | grep 'Smoke Test Co'
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Node | $(node --version) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY

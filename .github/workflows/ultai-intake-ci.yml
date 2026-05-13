@@ -1,0 +1,107 @@
+name: UltAi Intake — CI
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'ultai-simple/**'
+      - '.github/workflows/ultai-intake-ci.yml'
+  pull_request:
+    paths:
+      - 'ultai-simple/**'
+      - '.github/workflows/ultai-intake-ci.yml'
+
+jobs:
+  test:
+    name: Install · Start · Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ultai-simple/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ultai-simple
+        run: npm ci
+
+      - name: Verify server starts
+        working-directory: ultai-simple
+        run: |
+          npm start &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:3000/api/health && break
+            sleep 0.5
+          done
+
+      - name: S1 — Infrastructure
+        working-directory: ultai-simple
+        run: |
+          curl -sf http://localhost:3000/api/health | grep '"ok":true'
+          curl -sf http://localhost:3000/form.html  | grep 'step-bubble'
+          curl -sf http://localhost:3000/admin.html | grep 'tbl-body'
+          ! curl -sI http://localhost:3000/api/health | grep -i 'x-powered-by'
+          test "$(curl -so /dev/null -w '%{http_code}' http://localhost:3000/no-such-path)" = "404"
+
+      - name: S2 — Validation (400 on bad input, no DB writes)
+        working-directory: ultai-simple
+        run: |
+          test "$(curl -so /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/ultai-intake -H 'Content-Type: application/json' -d '{}')" = "400"
+          test "$(curl -so /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/ultai-intake -H 'Content-Type: application/json' -d '{"companyName":"X","contactName":"Y","email":"bad"}')" = "400"
+          test "$(curl -so /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/ultai-intake -H 'Content-Type: application/json' -d '{"companyName":"X","contactName":"Y","email":"a@b"}')" = "400"
+
+      - name: S3 — Submission saves to DB
+        working-directory: ultai-simple
+        run: |
+          RESP=$(curl -sf -X POST http://localhost:3000/api/ultai-intake \
+            -H 'Content-Type: application/json' \
+            -d '{"companyName":"CI Corp","contactName":"CI User","email":"ci@test.com","industry":"Technology","techStack":"Node.js","goalsTimeline":"ASAP"}')
+          echo "$RESP" | grep '"ok":true'
+          echo "$RESP" | grep '"referenceId":"ULTAI-'
+          echo "ID=$(echo $RESP | grep -o 'ULTAI-[0-9]*')" >> $GITHUB_ENV
+
+      - name: S4 — Admin list
+        working-directory: ultai-simple
+        run: |
+          curl -sf http://localhost:3000/api/admin/ultai-intakes | grep 'CI Corp'
+
+      - name: S5 — Status update
+        working-directory: ultai-simple
+        run: |
+          curl -sf -X PATCH "http://localhost:3000/api/admin/ultai-intakes/${{ env.ID }}/status" \
+            -H 'Content-Type: application/json' -d '{"status":"contacted"}' | grep '"ok":true'
+          test "$(curl -so /dev/null -w '%{http_code}' -X PATCH "http://localhost:3000/api/admin/ultai-intakes/${{ env.ID }}/status" -H 'Content-Type: application/json' -d '{"status":"invalid"}')" = "400"
+          test "$(curl -so /dev/null -w '%{http_code}' -X PATCH "http://localhost:3000/api/admin/ultai-intakes/ULTAI-MISSING/status" -H 'Content-Type: application/json' -d '{"status":"contacted"}')" = "404"
+
+      - name: S6 — CSV export
+        working-directory: ultai-simple
+        run: |
+          CSV=$(curl -sf http://localhost:3000/api/admin/ultai-intakes/export)
+          echo "$CSV" | grep 'id,status,company_name'
+          echo "$CSV" | grep 'CI Corp'
+          curl -sI http://localhost:3000/api/admin/ultai-intakes/export | grep -i 'attachment'
+
+      - name: S7 — Rate limit (validate-first)
+        working-directory: ultai-simple
+        run: |
+          # 9 invalid submissions must NOT burn quota
+          for i in $(seq 1 9); do
+            curl -so /dev/null -X POST http://localhost:3000/api/ultai-intake \
+              -H 'Content-Type: application/json' -d '{"companyName":"X","contactName":"Y","email":""}'
+          done
+          # 10 valid submissions should all succeed
+          for i in $(seq 1 10); do
+            RESP=$(curl -s -X POST http://localhost:3000/api/ultai-intake \
+              -H 'Content-Type: application/json' \
+              -d "{\"companyName\":\"RL $i\",\"contactName\":\"T\",\"email\":\"rl$i@t.com\"}")
+            echo "$RESP" | grep '"ok":true'
+          done
+          # 11th must be rate-limited
+          test "$(curl -so /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/ultai-intake \
+            -H 'Content-Type: application/json' \
+            -d '{"companyName":"RL11","contactName":"T","email":"rl11@t.com"}')" = "429"
