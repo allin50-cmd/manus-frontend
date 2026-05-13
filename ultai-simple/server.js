@@ -11,7 +11,7 @@ app.disable('x-powered-by');
 
 // ── Database ──────────────────────────────────────────────────────────────────
 
-let db;
+let db, insertIntake, updateStatus, listAll;
 try {
   db = new DatabaseSync(path.join(__dirname, 'ultai.db'));
   db.exec(`
@@ -32,23 +32,20 @@ try {
       created_at      TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
+  insertIntake = db.prepare(`
+    INSERT INTO ultai_intakes
+      (id, company_name, contact_name, email, phone, industry, company_size,
+       website, business_context, challenges, tech_stack, goals_timeline, status)
+    VALUES
+      (@id, @company_name, @contact_name, @email, @phone, @industry, @company_size,
+       @website, @business_context, @challenges, @tech_stack, @goals_timeline, 'new')
+  `);
+  updateStatus = db.prepare(`UPDATE ultai_intakes SET status = ? WHERE id = ?`);
+  listAll      = db.prepare(`SELECT * FROM ultai_intakes ORDER BY created_at DESC`);
 } catch (err) {
   console.error('Fatal: failed to open/init database:', err.message);
   process.exit(1);
 }
-
-const insertIntake = db.prepare(`
-  INSERT INTO ultai_intakes
-    (id, company_name, contact_name, email, phone, industry, company_size,
-     website, business_context, challenges, tech_stack, goals_timeline, status)
-  VALUES
-    (@id, @company_name, @contact_name, @email, @phone, @industry, @company_size,
-     @website, @business_context, @challenges, @tech_stack, @goals_timeline, 'new')
-`);
-
-const updateStatus = db.prepare(
-  `UPDATE ultai_intakes SET status = ? WHERE id = ?`
-);
 
 // ── Rate limit (in-memory) ────────────────────────────────────────────────────
 // Only counts requests that PASS validation — typos/missing fields don't burn quota.
@@ -158,7 +155,7 @@ app.post('/api/ultai-intake', (req, res) => {
 app.get('/api/admin/ultai-intakes', (req, res) => {
   const { search, status } = req.query;
 
-  let rows = db.prepare('SELECT * FROM ultai_intakes ORDER BY created_at DESC').all();
+  let rows = listAll.all();
 
   if (status && status !== 'all') {
     rows = rows.filter(r => r.status === status);
@@ -199,7 +196,7 @@ app.patch('/api/admin/ultai-intakes/:id/status', (req, res) => {
 // ── GET /api/admin/ultai-intakes/export ──────────────────────────────────────
 
 app.get('/api/admin/ultai-intakes/export', (req, res) => {
-  const rows = db.prepare('SELECT * FROM ultai_intakes ORDER BY created_at DESC').all();
+  const rows = listAll.all();
 
   const cols = [
     'id', 'status', 'company_name', 'contact_name', 'email', 'phone',
