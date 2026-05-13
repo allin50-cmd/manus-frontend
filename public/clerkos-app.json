@@ -1,0 +1,253 @@
+{
+  "app": {
+    "name": "ClerkOS",
+    "version": "1.0.0",
+    "description": "Multi-tenant court case management system with Lunar triage engine",
+    "stack": {
+      "runtime": "Node 20 / Express 4",
+      "api": "tRPC v10 (no transformer — plain JSON)",
+      "frontend": "React 18 + Wouter + TanStack Query",
+      "standalone_ui": "Alpine.js 3 + Tailwind CDN (public/clerkos.html)",
+      "database": "PostgreSQL 16 via Drizzle ORM",
+      "auth": "Azure AD B2C (prod) / x-user-open-id header (dev)"
+    },
+    "endpoints": {
+      "trpc_base": "/api/trpc",
+      "lunar_intake": "/api/lunar/intake",
+      "lunar_queue": "/api/lunar/queue",
+      "health": "/api/health",
+      "standalone_ui": "/clerkos.html"
+    }
+  },
+  "trpc_routers": {
+    "auth": {
+      "procedures": {
+        "me": { "type": "query", "level": "authedProcedure", "returns": "User" },
+        "signIn": { "type": "mutation", "level": "publicProcedure", "input": { "openId": "string", "name": "string?", "email": "string?", "loginMethod": "string?" }, "returns": "User" },
+        "logout": { "type": "mutation", "level": "authedProcedure", "returns": "boolean" },
+        "updateRole": { "type": "mutation", "level": "adminProcedure", "input": { "userId": "number", "role": "UserRole" }, "returns": "User" }
+      }
+    },
+    "cases": {
+      "procedures": {
+        "list": { "type": "query", "level": "tenantProcedure", "input": { "status": "CaseStatus?", "limit": "number(1-200)?", "offset": "number?" }, "returns": "Case[]" },
+        "getById": { "type": "query", "level": "tenantProcedure", "input": { "id": "number" }, "returns": "Case" },
+        "search": { "type": "query", "level": "tenantProcedure", "input": { "query": "string(min:1)" }, "returns": "Case[]" },
+        "getAuditTrail": { "type": "query", "level": "tenantProcedure", "input": { "caseId": "number" }, "returns": "AuditEvent[]" },
+        "create": { "type": "mutation", "level": "adminProcedure", "input": { "referenceNumber": "string", "title": "string", "plaintiff": "string", "defendant": "string", "caseType": "string", "description": "string?", "status": "CaseStatus?" }, "returns": "Case" },
+        "update": { "type": "mutation", "level": "adminProcedure", "input": { "id": "number", "title": "string?", "plaintiff": "string?", "defendant": "string?", "judge": "string?", "caseType": "string?", "description": "string?" }, "returns": "Case" },
+        "transition": { "type": "mutation", "level": "adminProcedure", "input": { "id": "number", "status": "CaseStatus", "reason": "string?" }, "returns": "Case" }
+      }
+    },
+    "hearings": {
+      "procedures": {
+        "list": { "type": "query", "level": "tenantProcedure", "input": { "status": "HearingStatus?" }, "returns": "Hearing[]" },
+        "getByCaseId": { "type": "query", "level": "tenantProcedure", "input": { "caseId": "number" }, "returns": "Hearing[]" },
+        "create": { "type": "mutation", "level": "tenantProcedure", "input": { "caseId": "number", "hearingDate": "string(YYYY-MM-DD)", "hearingTime": "string(HH:MM)", "courtroom": "string", "judge": "string?", "notes": "string?" }, "returns": "Hearing" },
+        "update": { "type": "mutation", "level": "tenantProcedure", "input": { "id": "number", "hearingDate": "string?", "hearingTime": "string?", "courtroom": "string?", "judge": "string?", "status": "HearingStatus?", "notes": "string?" }, "returns": "Hearing" }
+      }
+    },
+    "documents": {
+      "procedures": {
+        "getByCaseId": { "type": "query", "level": "tenantProcedure", "input": { "caseId": "number", "limit": "number?", "offset": "number?" }, "returns": "Document[]" },
+        "create": { "type": "mutation", "level": "tenantProcedure", "input": { "caseId": "number", "filename": "string", "fileType": "string", "fileSize": "number", "notes": "string?" }, "returns": "Document" },
+        "approveForBundle": { "type": "mutation", "level": "tenantProcedure", "input": { "id": "number", "approved": "boolean", "bundlePosition": "number?" }, "returns": "Document" }
+      }
+    },
+    "allocations": {
+      "procedures": {
+        "getPending": { "type": "query", "level": "tenantProcedure", "returns": "Allocation[]" },
+        "getByClerk": { "type": "query", "level": "tenantProcedure", "input": { "clerkId": "number" }, "returns": "Allocation[]" },
+        "getByCase": { "type": "query", "level": "tenantProcedure", "input": { "caseId": "number" }, "returns": "Allocation[]" },
+        "create": { "type": "mutation", "level": "adminProcedure", "input": { "caseId": "number", "clerkId": "number", "taskType": "string", "priority": "Priority?", "dueDate": "string?", "notes": "string?" }, "returns": "Allocation" },
+        "update": { "type": "mutation", "level": "adminProcedure", "input": { "id": "number", "status": "AllocationStatus?", "priority": "Priority?", "notes": "string?" }, "returns": "Allocation" }
+      }
+    },
+    "diary": {
+      "procedures": {
+        "getByDate": { "type": "query", "level": "tenantProcedure", "input": { "date": "string(YYYY-MM-DD)", "clerkId": "number?" }, "returns": "DiaryEntry[]" },
+        "create": { "type": "mutation", "level": "tenantProcedure", "input": { "date": "string(YYYY-MM-DD)", "title": "string", "notes": "string?", "caseId": "number?", "startTime": "string?", "endTime": "string?" }, "returns": "DiaryEntry" }
+      }
+    },
+    "dashboard": {
+      "procedures": {
+        "stats": { "type": "query", "level": "tenantProcedure", "returns": "DashboardStats" }
+      }
+    }
+  },
+  "schemas": {
+    "Case": {
+      "id": "number",
+      "tenantId": "string",
+      "referenceNumber": "string",
+      "title": "string",
+      "plaintiff": "string",
+      "defendant": "string",
+      "judge": "string | null",
+      "status": "open | in_progress | on_hold | closed",
+      "caseType": "string",
+      "description": "string | null",
+      "createdAt": "ISO8601",
+      "updatedAt": "ISO8601"
+    },
+    "Hearing": {
+      "id": "number",
+      "tenantId": "string",
+      "caseId": "number",
+      "hearingDate": "YYYY-MM-DD",
+      "hearingTime": "HH:MM",
+      "courtroom": "string",
+      "judge": "string | null",
+      "status": "scheduled | adjourned | completed | cancelled",
+      "notes": "string | null",
+      "createdAt": "ISO8601",
+      "updatedAt": "ISO8601"
+    },
+    "Document": {
+      "id": "number",
+      "tenantId": "string",
+      "caseId": "number",
+      "filename": "string",
+      "fileType": "string",
+      "fileSize": "number",
+      "blobUrl": "string | null",
+      "uploadedById": "number",
+      "approvedForBundle": "0 | 1",
+      "bundlePosition": "number | null",
+      "notes": "string | null",
+      "createdAt": "ISO8601",
+      "updatedAt": "ISO8601"
+    },
+    "User": {
+      "id": "number",
+      "tenantId": "string",
+      "openId": "string",
+      "name": "string | null",
+      "email": "string | null",
+      "role": "admin (senior clerk / manager) | clerk | paralegal | viewer",
+      "loginMethod": "string | null",
+      "lastSignedIn": "ISO8601 | null",
+      "createdAt": "ISO8601",
+      "updatedAt": "ISO8601"
+    },
+    "Allocation": {
+      "id": "number",
+      "tenantId": "string",
+      "caseId": "number",
+      "clerkId": "number",
+      "taskType": "string",
+      "status": "pending | in_progress | completed | cancelled",
+      "priority": "urgent | high | medium | low",
+      "dueDate": "YYYY-MM-DD | null",
+      "notes": "string | null",
+      "createdAt": "ISO8601",
+      "updatedAt": "ISO8601"
+    },
+    "AuditEvent": {
+      "id": "number",
+      "tenantId": "string",
+      "entityType": "case | hearing | document | allocation | user",
+      "entityId": "number",
+      "action": "string",
+      "actorId": "number",
+      "actorOpenId": "string",
+      "prevState": "JSON string | null",
+      "nextState": "JSON string | null",
+      "createdAt": "ISO8601"
+    },
+    "DashboardStats": {
+      "totalCases": "number",
+      "activeCases": "number",
+      "closedCases": "number",
+      "pendingHearings": "number",
+      "todayHearings": "number",
+      "pendingAllocations": "number",
+      "recentCases": "Case[]",
+      "upcomingHearings": "Hearing[]"
+    }
+  },
+  "case_state_machine": {
+    "open": ["in_progress", "on_hold", "closed"],
+    "in_progress": ["closed", "on_hold", "open"],
+    "on_hold": ["open", "in_progress", "closed"],
+    "closed": ["open"]
+  },
+  "lunar_engine": {
+    "endpoint": "POST /api/lunar/intake",
+    "input": {
+      "issueType": "string",
+      "urgency": "low | medium | high | critical",
+      "description": "string",
+      "clientName": "string",
+      "contactEmail": "string"
+    },
+    "pipeline": {
+      "step1_lunar": {
+        "engine": "LunarTriage",
+        "outputs": ["riskScore(0-100)", "urgency", "flags[]", "summary"]
+      },
+      "step2_ultracore": {
+        "engine": "UltraCoreGate",
+        "decisions": ["ALLOW", "MODIFY", "DENY", "ESCALATE", "REFER_TO_SPECIALIST"],
+        "outputs": ["decision", "confidence(0-1)", "reason", "recommendedActions[]"]
+      },
+      "step3_vaultline": {
+        "engine": "VaultLineAudit",
+        "outputs": ["eventId", "sha256Hash", "timestamp", "immutable:true"]
+      },
+      "step4_lola": {
+        "engine": "LolaFollowUp",
+        "outputs": ["message", "tone", "nextSteps[]"]
+      }
+    }
+  },
+  "demo_tenant": {
+    "id": "tenant-alpha-demo",
+    "slug": "alpha",
+    "name": "Alpha Law LLP",
+    "plan": "pro",
+    "auth_header": "x-tenant: alpha",
+    "user_header": "x-user-open-id: admin-user",
+    "seed_cases": 5,
+    "seed_hearings": 4,
+    "seed_documents": 3
+  },
+  "http_usage": {
+    "query_example": "GET /api/trpc/dashboard.stats?input={}",
+    "mutation_example": {
+      "method": "POST",
+      "url": "/api/trpc/cases.create",
+      "headers": {
+        "Content-Type": "application/json",
+        "x-user-open-id": "admin-user",
+        "x-tenant": "alpha"
+      },
+      "body": {
+        "referenceNumber": "REF-2026-099",
+        "title": "Example v Example Ltd",
+        "plaintiff": "John Example",
+        "defendant": "Example Ltd",
+        "caseType": "Contract",
+        "description": "Breach of contract claim"
+      }
+    },
+    "response_shape": {
+      "result": {
+        "data": "<procedure return value>"
+      }
+    },
+    "error_shape": {
+      "error": {
+        "message": "string",
+        "code": "UNAUTHORIZED | FORBIDDEN | NOT_FOUND | BAD_REQUEST | INTERNAL_SERVER_ERROR"
+      }
+    }
+  },
+  "ci": {
+    "workflow": ".github/workflows/ci.yml",
+    "triggers": "push + pull_request on all branches",
+    "steps": ["npm ci", "tsc --noEmit", "tsc -p tsconfig.server.json --noEmit", "npm test", "npm run build"],
+    "tests": 138,
+    "status": "passing"
+  }
+}
