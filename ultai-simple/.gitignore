@@ -1,0 +1,4 @@
+node_modules/
+ultai.db
+ultai.db-shm
+ultai.db-wal
