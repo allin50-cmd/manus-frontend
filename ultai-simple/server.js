@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 
 const app = express();
@@ -11,7 +11,7 @@ app.disable('x-powered-by');
 
 // ── Database ──────────────────────────────────────────────────────────────────
 
-const db = new Database(path.join(__dirname, 'ultai.db'));
+const db = new DatabaseSync(path.join(__dirname, 'ultai.db'));
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS ultai_intakes (
