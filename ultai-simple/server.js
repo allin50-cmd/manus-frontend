@@ -1,16 +1,25 @@
 'use strict';
 
-const express = require('express');
-const { DatabaseSync } = require('node:sqlite');
+const http = require('http');
+const fs   = require('fs');
 const path = require('path');
+const { DatabaseSync } = require('node:sqlite');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT   = process.env.PORT || 3000;
+const PUBLIC = path.join(__dirname, 'public');
 
-app.disable('x-powered-by');
+// ── MIME ──────────────────────────────────────────────────────────────────────
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.json': 'application/json',
+  '.js':   'text/javascript',
+  '.css':  'text/css',
+  '.png':  'image/png',
+  '.ico':  'image/x-icon',
+  '.svg':  'image/svg+xml',
+};
 
 // ── Database ──────────────────────────────────────────────────────────────────
-
 let db, insertIntake, updateStatus, listAll;
 try {
   db = new DatabaseSync(path.join(__dirname, 'ultai.db'));
@@ -47,11 +56,9 @@ try {
   process.exit(1);
 }
 
-// ── Rate limit (in-memory) ────────────────────────────────────────────────────
-// Only counts requests that PASS validation — typos/missing fields don't burn quota.
-
-const rl = new Map(); // ip → { count, resetAt }
-const RL_WINDOW = 15 * 60 * 1000; // 15 minutes
+// ── Rate limit ────────────────────────────────────────────────────────────────
+const rl = new Map();
+const RL_WINDOW = 15 * 60 * 1000;
 const RL_MAX    = 10;
 
 function clientIp(req) {
@@ -71,7 +78,6 @@ function checkRateLimit(ip) {
   return true;
 }
 
-// Prune expired entries every 30 minutes to prevent unbounded Map growth.
 setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of rl) {
@@ -80,7 +86,6 @@ setInterval(() => {
 }, 30 * 60 * 1000).unref();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function clean(v, max) {
@@ -88,153 +93,190 @@ function clean(v, max) {
   return String(v).trim().slice(0, max || 1000);
 }
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+function send(res, status, body) {
+  const payload = JSON.stringify(body);
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(payload),
+  });
+  res.end(payload);
+}
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ── Health ────────────────────────────────────────────────────────────────────
-
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, timestamp: new Date().toISOString() });
-});
-
-// ── POST /api/ultai-intake ────────────────────────────────────────────────────
-
-app.post('/api/ultai-intake', (req, res) => {
-  const {
-    companyName, contactName, email, phone,
-    industry, companySize, website,
-    businessContext, challenges, techStack, goalsTimeline,
-  } = req.body || {};
-
-  // Validate BEFORE rate-limiting so typos / blank fields don't burn quota.
-  if (!companyName || !String(companyName).trim()) {
-    return res.status(400).json({ ok: false, error: 'companyName is required' });
-  }
-  if (!contactName || !String(contactName).trim()) {
-    return res.status(400).json({ ok: false, error: 'contactName is required' });
-  }
-  if (!email || !EMAIL_RE.test(String(email).trim())) {
-    return res.status(400).json({ ok: false, error: 'A valid email address is required' });
-  }
-
-  // Rate-limit only well-formed submissions.
-  if (!checkRateLimit(clientIp(req))) {
-    return res.status(429).json({ ok: false, error: 'Too many requests. Please try again later.' });
-  }
-
-  const id = `ULTAI-${Date.now()}`;
-
-  try {
-    insertIntake.run({
-      id,
-      company_name:     clean(companyName, 255),
-      contact_name:     clean(contactName, 255),
-      email:            String(email).trim().toLowerCase().slice(0, 255),
-      phone:            clean(phone, 50),
-      industry:         clean(industry, 100),
-      company_size:     clean(companySize, 50),
-      website:          clean(website, 255),
-      business_context: clean(businessContext, 2000),
-      challenges:       clean(challenges, 2000),
-      tech_stack:       clean(techStack, 2000),
-      goals_timeline:   clean(goalsTimeline, 2000),
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    const ct = (req.headers['content-type'] || '').split(';')[0].trim();
+    if (ct !== 'application/json') return resolve(null);
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
+    req.on('end', () => {
+      const raw = Buffer.concat(chunks).toString('utf8');
+      if (!raw) return resolve({});
+      try { resolve(JSON.parse(raw)); }
+      catch { reject(new Error('bad json')); }
     });
-  } catch (err) {
-    console.error('DB insert error:', err);
-    return res.status(500).json({ ok: false, error: 'Failed to save intake. Please try again.' });
+    req.on('error', reject);
+  });
+}
+
+function serveFile(res, abs, headOnly = false) {
+  try {
+    const data = fs.readFileSync(abs);
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(abs)] || 'application/octet-stream' });
+    res.end(headOnly ? '' : data);
+  } catch {
+    send(res, 404, { ok: false, error: 'Not found' });
   }
+}
 
-  console.log(`✅ Intake saved: ${id} — ${companyName}`);
-  res.status(201).json({ ok: true, referenceId: id, message: "Request received. We'll be in touch shortly." });
-});
-
-// ── GET /api/admin/ultai-intakes ──────────────────────────────────────────────
-
-app.get('/api/admin/ultai-intakes', (req, res) => {
-  const { search, status } = req.query;
-
-  let rows = listAll.all();
-
-  if (status && status !== 'all') {
-    rows = rows.filter(r => r.status === status);
-  }
-  if (search) {
-    const q = String(search).toLowerCase();
-    rows = rows.filter(r =>
-      r.company_name.toLowerCase().includes(q) ||
-      r.contact_name.toLowerCase().includes(q) ||
-      r.email.toLowerCase().includes(q) ||
-      r.id.toLowerCase().includes(q)
-    );
-  }
-
-  res.json({ ok: true, intakes: rows });
-});
-
-// ── PATCH /api/admin/ultai-intakes/:id/status ─────────────────────────────────
-
+// ── Router ────────────────────────────────────────────────────────────────────
+const PATCH_RE       = /^\/api\/admin\/ultai-intakes\/([^/]+)\/status$/;
 const VALID_STATUSES = new Set(['new', 'contacted', 'qualified', 'closed']);
 
-app.patch('/api/admin/ultai-intakes/:id/status', (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body || {};
+async function handle(req, res) {
+  const url      = new URL(req.url, 'http://localhost');
+  const pathname = url.pathname;
+  const method   = req.method;
+  const isHead   = method === 'HEAD';
 
-  if (!status || !VALID_STATUSES.has(status)) {
-    return res.status(400).json({ ok: false, error: 'status must be one of: new, contacted, qualified, closed' });
+  // Health
+  if ((method === 'GET' || isHead) && pathname === '/api/health') {
+    return send(res, 200, { ok: true, timestamp: new Date().toISOString() });
   }
 
-  const result = updateStatus.run(status, id);
-  if (result.changes === 0) {
-    return res.status(404).json({ ok: false, error: 'Intake not found' });
+  // Submit intake
+  if (method === 'POST' && pathname === '/api/ultai-intake') {
+    let body;
+    try { body = await readJson(req); }
+    catch { return send(res, 400, { ok: false, error: 'Invalid JSON in request body' }); }
+
+    const { companyName, contactName, email, phone, industry, companySize,
+            website, businessContext, challenges, techStack, goalsTimeline } = body || {};
+
+    if (!companyName || !String(companyName).trim())
+      return send(res, 400, { ok: false, error: 'companyName is required' });
+    if (!contactName || !String(contactName).trim())
+      return send(res, 400, { ok: false, error: 'contactName is required' });
+    if (!email || !EMAIL_RE.test(String(email).trim()))
+      return send(res, 400, { ok: false, error: 'A valid email address is required' });
+
+    if (!checkRateLimit(clientIp(req)))
+      return send(res, 429, { ok: false, error: 'Too many requests. Please try again later.' });
+
+    const id = `ULTAI-${Date.now()}`;
+    try {
+      insertIntake.run({
+        id,
+        company_name:     clean(companyName, 255),
+        contact_name:     clean(contactName, 255),
+        email:            String(email).trim().toLowerCase().slice(0, 255),
+        phone:            clean(phone, 50),
+        industry:         clean(industry, 100),
+        company_size:     clean(companySize, 50),
+        website:          clean(website, 255),
+        business_context: clean(businessContext, 2000),
+        challenges:       clean(challenges, 2000),
+        tech_stack:       clean(techStack, 2000),
+        goals_timeline:   clean(goalsTimeline, 2000),
+      });
+    } catch (err) {
+      console.error('DB insert error:', err);
+      return send(res, 500, { ok: false, error: 'Failed to save intake. Please try again.' });
+    }
+
+    console.log(`✅ Intake saved: ${id} — ${companyName}`);
+    return send(res, 201, { ok: true, referenceId: id, message: "Request received. We'll be in touch shortly." });
   }
 
-  res.json({ ok: true, id, status });
+  // Admin list
+  if ((method === 'GET' || isHead) && pathname === '/api/admin/ultai-intakes') {
+    const search = url.searchParams.get('search');
+    const status = url.searchParams.get('status');
+    let rows = listAll.all();
+    if (status && status !== 'all') rows = rows.filter(r => r.status === status);
+    if (search) {
+      const q = search.toLowerCase();
+      rows = rows.filter(r =>
+        r.company_name.toLowerCase().includes(q) ||
+        r.contact_name.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.id.toLowerCase().includes(q)
+      );
+    }
+    return send(res, 200, { ok: true, intakes: rows });
+  }
+
+  // CSV export — must come before the PATCH regex
+  if ((method === 'GET' || isHead) && pathname === '/api/admin/ultai-intakes/export') {
+    const rows = listAll.all();
+    const cols = ['id', 'status', 'company_name', 'contact_name', 'email', 'phone',
+                  'industry', 'company_size', 'website', 'business_context',
+                  'challenges', 'tech_stack', 'goals_timeline', 'created_at'];
+    const esc = v => {
+      if (v == null) return '';
+      const s = String(v).replace(/"/g, '""');
+      return /[,"\n]/.test(s) ? `"${s}"` : s;
+    };
+    const csv = [cols.join(','), ...rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\n');
+    res.writeHead(200, {
+      'Content-Type': 'text/csv',
+      'Content-Disposition': `attachment; filename="ultai-intakes-${Date.now()}.csv"`,
+    });
+    return res.end(isHead ? '' : csv);
+  }
+
+  // Status update
+  const patchMatch = method === 'PATCH' && PATCH_RE.exec(pathname);
+  if (patchMatch) {
+    let body;
+    try { body = await readJson(req); }
+    catch { return send(res, 400, { ok: false, error: 'Invalid JSON in request body' }); }
+
+    const { status } = body || {};
+    if (!status || !VALID_STATUSES.has(status))
+      return send(res, 400, { ok: false, error: 'status must be one of: new, contacted, qualified, closed' });
+
+    const result = updateStatus.run(status, patchMatch[1]);
+    if (result.changes === 0)
+      return send(res, 404, { ok: false, error: 'Intake not found' });
+
+    return send(res, 200, { ok: true, id: patchMatch[1], status });
+  }
+
+  // All other /api/* → 404
+  if (pathname.startsWith('/api/')) {
+    return send(res, 404, { ok: false, error: 'Not found' });
+  }
+
+  // Static files
+  if (method === 'GET' || isHead) {
+    const rel = pathname === '/' ? 'index.html' : pathname.slice(1);
+    const abs = path.join(PUBLIC, path.normalize(rel));
+    if (!abs.startsWith(PUBLIC + path.sep)) {
+      return send(res, 403, { ok: false, error: 'Forbidden' });
+    }
+    return serveFile(res, abs, isHead);
+  }
+
+  send(res, 404, { ok: false, error: 'Not found' });
+}
+
+// ── Server ────────────────────────────────────────────────────────────────────
+const server = http.createServer(async (req, res) => {
+  try {
+    await handle(req, res);
+  } catch (err) {
+    console.error('Unhandled error:', err);
+    if (!res.headersSent) send(res, 500, { ok: false, error: 'Internal server error' });
+  }
 });
 
-// ── GET /api/admin/ultai-intakes/export ──────────────────────────────────────
-
-app.get('/api/admin/ultai-intakes/export', (req, res) => {
-  const rows = listAll.all();
-
-  const cols = [
-    'id', 'status', 'company_name', 'contact_name', 'email', 'phone',
-    'industry', 'company_size', 'website', 'business_context',
-    'challenges', 'tech_stack', 'goals_timeline', 'created_at',
-  ];
-
-  const esc = v => {
-    if (v == null) return '';
-    const s = String(v).replace(/"/g, '""');
-    return /[,"\n]/.test(s) ? `"${s}"` : s;
-  };
-
-  const csv = [
-    cols.join(','),
-    ...rows.map(r => cols.map(c => esc(r[c])).join(',')),
-  ].join('\n');
-
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', `attachment; filename="ultai-intakes-${Date.now()}.csv"`);
-  res.send(csv);
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') console.error(`Fatal: port ${PORT} is already in use`);
+  else console.error('Fatal: server error:', err.message);
+  process.exit(1);
 });
 
-// ── Error middleware ──────────────────────────────────────────────────────────
-
-app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
-  if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
-    return res.status(400).json({ ok: false, error: 'Invalid JSON in request body' });
-  }
-  console.error('Unhandled Express error:', err);
-  if (!res.headersSent) {
-    res.status(500).json({ ok: false, error: 'Internal server error' });
-  }
-});
-
-// ── Start ─────────────────────────────────────────────────────────────────────
-
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log('');
   console.log('  UltAi Intake — Simple MVP');
   console.log('  ─────────────────────────────────────');
@@ -244,30 +286,18 @@ const server = app.listen(PORT, () => {
   console.log('');
 });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Fatal: port ${PORT} is already in use`);
-  } else {
-    console.error('Fatal: server error:', err.message);
-  }
-  process.exit(1);
-});
-
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
-
 let shuttingDown = false;
 
 function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
-
   console.log(`\n  Received ${signal} — shutting down gracefully…`);
   server.close(() => {
     try { db.close(); } catch (_) {}
     console.log('  Server and database closed. Bye.');
     process.exit(0);
   });
-  // Force-exit if connections don't drain within 10 s.
   setTimeout(() => {
     console.error('  Shutdown timeout — forcing exit.');
     process.exit(1);
@@ -276,13 +306,5 @@ function shutdown(signal) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT',  () => shutdown('SIGINT'));
-
-// Log and exit immediately — don't attempt graceful path on corrupted state.
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled promise rejection:', reason);
-});
+process.on('uncaughtException', err => { console.error('Uncaught exception:', err); process.exit(1); });
+process.on('unhandledRejection', reason => { console.error('Unhandled promise rejection:', reason); });
