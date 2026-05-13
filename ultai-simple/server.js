@@ -7,6 +7,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.disable('x-powered-by');
+
 // ── Database ──────────────────────────────────────────────────────────────────
 
 const db = new Database(path.join(__dirname, 'ultai.db'));
@@ -44,27 +46,36 @@ const updateStatus = db.prepare(
 );
 
 // ── Rate limit (in-memory) ────────────────────────────────────────────────────
+// Only counts requests that PASS validation — typos/missing fields don't burn quota.
 
 const rl = new Map(); // ip → { count, resetAt }
+const RL_WINDOW = 15 * 60 * 1000; // 15 minutes
+const RL_MAX    = 10;
 
-function rateLimit(req, res, next) {
-  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown')
+function clientIp(req) {
+  return (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown')
     .split(',')[0].trim();
-  const now = Date.now();
-  const window = 15 * 60 * 1000;
-  const max = 10;
-  const entry = rl.get(ip);
-
-  if (!entry || now > entry.resetAt) {
-    rl.set(ip, { count: 1, resetAt: now + window });
-    return next();
-  }
-  if (entry.count >= max) {
-    return res.status(429).json({ ok: false, error: 'Too many requests. Please try again later.' });
-  }
-  entry.count++;
-  next();
 }
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = rl.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rl.set(ip, { count: 1, resetAt: now + RL_WINDOW });
+    return true;
+  }
+  if (entry.count >= RL_MAX) return false;
+  entry.count++;
+  return true;
+}
+
+// Prune expired entries every 30 minutes to prevent unbounded Map growth.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rl) {
+    if (now > entry.resetAt) rl.delete(ip);
+  }
+}, 30 * 60 * 1000).unref();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -88,13 +99,14 @@ app.get('/api/health', (req, res) => {
 
 // ── POST /api/ultai-intake ────────────────────────────────────────────────────
 
-app.post('/api/ultai-intake', rateLimit, (req, res) => {
+app.post('/api/ultai-intake', (req, res) => {
   const {
     companyName, contactName, email, phone,
     industry, companySize, website,
     businessContext, challenges, techStack, goalsTimeline,
   } = req.body || {};
 
+  // Validate BEFORE rate-limiting so typos / blank fields don't burn quota.
   if (!companyName || !String(companyName).trim()) {
     return res.status(400).json({ ok: false, error: 'companyName is required' });
   }
@@ -103,6 +115,11 @@ app.post('/api/ultai-intake', rateLimit, (req, res) => {
   }
   if (!email || !EMAIL_RE.test(String(email).trim())) {
     return res.status(400).json({ ok: false, error: 'A valid email address is required' });
+  }
+
+  // Rate-limit only well-formed submissions.
+  if (!checkRateLimit(clientIp(req))) {
+    return res.status(429).json({ ok: false, error: 'Too many requests. Please try again later.' });
   }
 
   const id = `ULTAI-${Date.now()}`;
