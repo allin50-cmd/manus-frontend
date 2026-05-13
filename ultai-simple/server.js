@@ -218,9 +218,19 @@ app.get('/api/admin/ultai-intakes/export', (req, res) => {
   res.send(csv);
 });
 
+// ── Error middleware ──────────────────────────────────────────────────────────
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, _next) => {
+  console.error('Unhandled Express error:', err);
+  if (!res.headersSent) {
+    res.status(500).json({ ok: false, error: 'Internal server error' });
+  }
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('');
   console.log('  UltAi Intake — Simple MVP');
   console.log('  ─────────────────────────────────────');
@@ -228,4 +238,32 @@ app.listen(PORT, () => {
   console.log(`  Admin       : http://localhost:${PORT}/admin.html`);
   console.log(`  Health      : http://localhost:${PORT}/api/health`);
   console.log('');
+});
+
+// ── Graceful shutdown ─────────────────────────────────────────────────────────
+
+function shutdown(signal) {
+  console.log(`\n  Received ${signal} — shutting down gracefully…`);
+  server.close(() => {
+    try { db.close(); } catch (_) {}
+    console.log('  Server and database closed. Bye.');
+    process.exit(0);
+  });
+  // Force-exit if connections don't drain within 10 s.
+  setTimeout(() => {
+    console.error('  Shutdown timeout — forcing exit.');
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  shutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
 });
