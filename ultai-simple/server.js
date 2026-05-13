@@ -11,26 +11,31 @@ app.disable('x-powered-by');
 
 // ── Database ──────────────────────────────────────────────────────────────────
 
-const db = new DatabaseSync(path.join(__dirname, 'ultai.db'));
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS ultai_intakes (
-    id              TEXT PRIMARY KEY,
-    company_name    TEXT NOT NULL,
-    contact_name    TEXT NOT NULL,
-    email           TEXT NOT NULL,
-    phone           TEXT,
-    industry        TEXT,
-    company_size    TEXT,
-    website         TEXT,
-    business_context TEXT,
-    challenges      TEXT,
-    tech_stack      TEXT,
-    goals_timeline  TEXT,
-    status          TEXT NOT NULL DEFAULT 'new',
-    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
-  )
-`);
+let db;
+try {
+  db = new DatabaseSync(path.join(__dirname, 'ultai.db'));
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ultai_intakes (
+      id              TEXT PRIMARY KEY,
+      company_name    TEXT NOT NULL,
+      contact_name    TEXT NOT NULL,
+      email           TEXT NOT NULL,
+      phone           TEXT,
+      industry        TEXT,
+      company_size    TEXT,
+      website         TEXT,
+      business_context TEXT,
+      challenges      TEXT,
+      tech_stack      TEXT,
+      goals_timeline  TEXT,
+      status          TEXT NOT NULL DEFAULT 'new',
+      created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+} catch (err) {
+  console.error('Fatal: failed to open/init database:', err.message);
+  process.exit(1);
+}
 
 const insertIntake = db.prepare(`
   INSERT INTO ultai_intakes
@@ -221,6 +226,9 @@ app.get('/api/admin/ultai-intakes/export', (req, res) => {
 // ── Error middleware ──────────────────────────────────────────────────────────
 
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+    return res.status(400).json({ ok: false, error: 'Invalid JSON in request body' });
+  }
   console.error('Unhandled Express error:', err);
   if (!res.headersSent) {
     res.status(500).json({ ok: false, error: 'Internal server error' });
@@ -237,6 +245,15 @@ const server = app.listen(PORT, () => {
   console.log(`  Admin       : http://localhost:${PORT}/admin.html`);
   console.log(`  Health      : http://localhost:${PORT}/api/health`);
   console.log('');
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Fatal: port ${PORT} is already in use`);
+  } else {
+    console.error('Fatal: server error:', err.message);
+  }
+  process.exit(1);
 });
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
