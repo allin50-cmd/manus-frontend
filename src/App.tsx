@@ -11,6 +11,8 @@ import Diary from './pages/Diary';
 import Documents from './pages/Documents';
 import Hearings from './pages/Hearings';
 import Queue from './pages/Queue';
+import UltAiIntakeWizard from './pages/UltAiIntakeWizard';
+import UltAiAdminDashboard from './pages/UltAiAdminDashboard';
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
       <Route path="/queue" component={Queue} />
       <Route path="/diary" component={Diary} />
       <Route path="/bundles" component={Bundles} />
+      <Route path="/ultai-intake" component={UltAiIntakeWizard} />
+      <Route path="/admin" component={UltAiAdminDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

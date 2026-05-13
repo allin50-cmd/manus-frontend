@@ -1,4 +1,66 @@
-# FineGuard - Azure Deployment
+# VaultLine Brand Suite
+
+React + TypeScript full-stack application. Includes the **UltAi Consultation Intake** system.
+
+---
+
+## UltAi Intake — Local Setup
+
+### Prerequisites
+
+- Node.js ≥ 20
+- pnpm ≥ 8
+- PostgreSQL (local or remote)
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env — set DATABASE_URL to your PostgreSQL connection string
+```
+
+### 3. Push database schema
+
+```bash
+pnpm db:push
+```
+
+This creates all tables including `ultai_intakes`.
+
+### 4. Run in development (frontend + backend)
+
+```bash
+pnpm dev
+```
+
+Frontend: http://localhost:5173  
+Backend API: http://localhost:3000
+
+### 5. Key routes
+
+| Path | Description |
+|---|---|
+| `/ultai-intake` | 5-step consultation intake wizard |
+| `/admin` | Admin dashboard — intake submissions, status updates, CSV export |
+| `GET /api/health` | Health check |
+| `POST /api/ultai-intake` | Submit intake (rate-limited: 10/15 min per IP) |
+
+### Build for production
+
+```bash
+pnpm build      # compiles TypeScript + Vite bundle → dist/
+pnpm start      # serves compiled server + static assets
+```
+
+---
+
+## FineGuard - Azure Deployment
 
 A React/Vite application deployed to Azure Static Web Apps.
 

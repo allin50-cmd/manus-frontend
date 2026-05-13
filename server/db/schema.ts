@@ -90,6 +90,43 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
 
+/**
+ * UltAi Consultation Intake Table
+ * Stores multi-step consultation intake submissions for UltAi
+ */
+export const ultaiIntakes = pgTable('ultai_intakes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  intakeId: varchar('intake_id', { length: 50 }).notNull().unique(), // ULTAI-{timestamp}
+  // Step 1: Business Information
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  contactName: varchar('contact_name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 50 }),
+  industry: varchar('industry', { length: 100 }),
+  companySize: varchar('company_size', { length: 50 }),
+  website: varchar('website', { length: 255 }),
+  // Step 2: Business Context
+  businessDescription: text('business_description'),
+  targetMarket: varchar('target_market', { length: 255 }),
+  currentRevenue: varchar('current_revenue', { length: 50 }),
+  // Step 3: Current Challenges
+  challenges: text('challenges'),
+  aiExperience: varchar('ai_experience', { length: 100 }),
+  // Step 4: Technology Stack
+  techStack: text('tech_stack'),
+  currentTools: text('current_tools'),
+  cloudPlatform: varchar('cloud_platform', { length: 100 }),
+  // Step 5: Goals & Timeline
+  primaryGoals: text('primary_goals'),
+  timeline: varchar('timeline', { length: 100 }),
+  budget: varchar('budget', { length: 100 }),
+  additionalNotes: text('additional_notes'),
+  // Admin
+  status: varchar('status', { length: 50 }).default('new').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
@@ -108,3 +145,6 @@ export type NewContact = typeof contacts.$inferInsert;
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+export type UltaiIntake = typeof ultaiIntakes.$inferSelect;
+export type NewUltaiIntake = typeof ultaiIntakes.$inferInsert;

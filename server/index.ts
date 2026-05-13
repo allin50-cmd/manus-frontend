@@ -6,7 +6,7 @@ import path from 'path';
 import Stripe from 'stripe';
 import { fileURLToPath } from 'url';
 import { db } from './db/index';
-import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies } from './db/schema';
+import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies, ultaiIntakes } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
 import { getUserByOpenId, getTenantBySlug, setTenantContext } from './trpc/db';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
@@ -776,6 +776,197 @@ app.get('/health', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       database: 'disconnected',
     });
+  }
+});
+
+// ============================================================================
+// ULTAI INTAKE — RATE LIMITER (in-memory)
+// ============================================================================
+
+const _rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 10;
+
+function checkUltaiRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = _rateLimitStore.get(ip);
+  if (!entry || now > entry.resetAt) {
+    _rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// ============================================================================
+// ULTAI INTAKE API ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/ultai-intake
+ * Submit an UltAi consultation intake (5-step wizard)
+ */
+app.post('/api/ultai-intake', async (req: Request, res: Response) => {
+  const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+
+  if (!checkUltaiRateLimit(clientIp)) {
+    return res.status(429).json({ ok: false, error: 'Too many requests. Please try again later.' });
+  }
+
+  try {
+    const {
+      companyName, contactName, email, phone,
+      industry, companySize, website,
+      businessDescription, targetMarket, currentRevenue,
+      challenges, aiExperience,
+      techStack, currentTools, cloudPlatform,
+      primaryGoals, timeline, budget, additionalNotes,
+    } = req.body;
+
+    if (!companyName || typeof companyName !== 'string' || companyName.trim().length === 0) {
+      return res.status(400).json({ ok: false, error: 'companyName is required' });
+    }
+    if (!contactName || typeof contactName !== 'string' || contactName.trim().length === 0) {
+      return res.status(400).json({ ok: false, error: 'contactName is required' });
+    }
+    if (!email || typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
+      return res.status(400).json({ ok: false, error: 'A valid email is required' });
+    }
+
+    const sanitize = (v: unknown, max = 255): string | null => {
+      if (v == null || v === '') return null;
+      return String(v).slice(0, max);
+    };
+
+    const intakeId = `ULTAI-${Date.now()}`;
+
+    const [intake] = await db.insert(ultaiIntakes).values({
+      intakeId,
+      companyName: companyName.trim().slice(0, 255),
+      contactName: contactName.trim().slice(0, 255),
+      email: email.trim().toLowerCase().slice(0, 255),
+      phone: sanitize(phone, 50),
+      industry: sanitize(industry),
+      companySize: sanitize(companySize, 50),
+      website: sanitize(website),
+      businessDescription: sanitize(businessDescription, 2000),
+      targetMarket: sanitize(targetMarket),
+      currentRevenue: sanitize(currentRevenue, 50),
+      challenges: sanitize(challenges, 2000),
+      aiExperience: sanitize(aiExperience),
+      techStack: sanitize(techStack, 2000),
+      currentTools: sanitize(currentTools, 2000),
+      cloudPlatform: sanitize(cloudPlatform),
+      primaryGoals: sanitize(primaryGoals, 2000),
+      timeline: sanitize(timeline),
+      budget: sanitize(budget),
+      additionalNotes: sanitize(additionalNotes, 2000),
+      status: 'new',
+    }).returning();
+
+    console.log(`🤖 UltAi intake: ${intake.intakeId} — ${companyName}`);
+
+    return res.status(201).json({
+      ok: true,
+      intakeId: intake.intakeId,
+      message: "Your consultation request has been received. We'll be in touch shortly.",
+    });
+  } catch (error) {
+    console.error('Error creating UltAi intake:', error);
+    return res.status(500).json({ ok: false, error: 'Failed to submit intake. Please try again.' });
+  }
+});
+
+/**
+ * GET /api/admin/ultai-intakes
+ * List all UltAi intakes with optional search and status filter
+ */
+app.get('/api/admin/ultai-intakes', async (req: Request, res: Response) => {
+  try {
+    const { status, search } = req.query;
+    let rows = await db.select().from(ultaiIntakes).orderBy(desc(ultaiIntakes.createdAt));
+
+    if (status && typeof status === 'string' && status !== 'all') {
+      rows = rows.filter(r => r.status === status);
+    }
+    if (search && typeof search === 'string') {
+      const q = search.toLowerCase();
+      rows = rows.filter(r =>
+        r.companyName.toLowerCase().includes(q) ||
+        r.contactName.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.intakeId.toLowerCase().includes(q)
+      );
+    }
+
+    return res.json({ ok: true, intakes: rows });
+  } catch (error) {
+    console.error('Error fetching UltAi intakes:', error);
+    return res.status(500).json({ ok: false, error: 'Failed to fetch intakes' });
+  }
+});
+
+/**
+ * PATCH /api/admin/ultai-intakes/:id/status
+ * Update the status of an UltAi intake
+ */
+app.patch('/api/admin/ultai-intakes/:id/status', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const VALID_STATUSES = ['new', 'contacted', 'qualified', 'closed'];
+    if (!status || !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ ok: false, error: `status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+
+    const [updated] = await db
+      .update(ultaiIntakes)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(ultaiIntakes.id, id))
+      .returning();
+
+    if (!updated) return res.status(404).json({ ok: false, error: 'Intake not found' });
+
+    return res.json({ ok: true, intake: updated });
+  } catch (error) {
+    console.error('Error updating UltAi intake status:', error);
+    return res.status(500).json({ ok: false, error: 'Failed to update status' });
+  }
+});
+
+/**
+ * GET /api/admin/ultai-intakes/export
+ * Export all UltAi intakes as CSV
+ */
+app.get('/api/admin/ultai-intakes/export', async (req: Request, res: Response) => {
+  try {
+    const rows = await db.select().from(ultaiIntakes).orderBy(desc(ultaiIntakes.createdAt));
+
+    const cols = [
+      'intakeId', 'status', 'companyName', 'contactName', 'email', 'phone',
+      'industry', 'companySize', 'website', 'targetMarket', 'currentRevenue',
+      'aiExperience', 'cloudPlatform', 'timeline', 'budget', 'createdAt',
+    ] as const;
+
+    const escape = (v: unknown) => {
+      if (v == null) return '';
+      const s = String(v).replace(/"/g, '""');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+    };
+
+    const header = cols.join(',');
+    const body = rows.map(r => cols.map(c => escape(r[c])).join(',')).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="ultai-intakes-${Date.now()}.csv"`);
+    return res.send(`${header}\n${body}`);
+  } catch (error) {
+    console.error('Error exporting UltAi intakes:', error);
+    return res.status(500).json({ ok: false, error: 'Failed to export' });
   }
 });
 
