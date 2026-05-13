@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UltAi — Consultation Intake</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0c10;
+      --surface:   #0f1117;
+      --border:    rgba(255,255,255,0.07);
+      --cyan:      #06b6d4;
+      --cyan-dim:  rgba(6,182,212,0.15);
+      --cyan-glow: rgba(6,182,212,0.25);
+      --blue:      #3b82f6;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --subtle:    #1e2130;
+      --radius:    10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      line-height: 1.6;
+      background-image:
+        linear-gradient(rgba(6,182,212,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6,182,212,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      background: rgba(11,12,16,0.85);
+      backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 10;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 13px; color: #fff;
+    }
+    .logo-name { font-weight: 700; font-size: 15px; }
+    .logo-sub  { color: var(--muted); font-size: 12px; margin-left: 6px; }
+    header a { color: var(--muted); font-size: 12px; text-decoration: none; }
+    header a:hover { color: var(--text); }
+
+    /* ── Main ── */
+    main {
+      max-width: 680px; margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .hero { text-align: center; margin-bottom: 40px; }
+    .hero-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.22em;
+      color: var(--cyan); text-transform: uppercase; margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-size: clamp(28px,5vw,42px); font-weight: 800;
+      line-height: 1.15; margin-bottom: 12px; color: #fff;
+    }
+    .hero h1 span {
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { color: var(--muted); max-width: 440px; margin: 0 auto; font-size: 14px; }
+
+    /* ── Card ── */
+    .card {
+      background: rgba(15,17,23,0.75);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+    .card-top { height: 2px; background: linear-gradient(90deg, var(--cyan), var(--blue), transparent); }
+
+    /* ── Steps nav ── */
+    .steps {
+      display: flex; align-items: center;
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 0;
+    }
+    .step-item { display: flex; align-items: center; flex: 1; }
+    .step-item:last-child { flex: 0; }
+    .step-bubble {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+      border: 1.5px solid var(--border);
+      background: var(--subtle); color: var(--muted);
+      transition: all 0.25s;
+    }
+    .step-bubble.active  { background: var(--cyan); border-color: var(--cyan); color: #000; box-shadow: 0 0 14px var(--cyan-glow); }
+    .step-bubble.done    { background: var(--cyan-dim); border-color: rgba(6,182,212,0.4); color: var(--cyan); }
+    .step-bubble.done::after { content: '✓'; }
+    .step-bubble.done span { display: none; }
+    .step-line {
+      flex: 1; height: 1px; margin: 0 8px;
+      background: var(--border); transition: background 0.25s;
+    }
+    .step-line.done { background: rgba(6,182,212,0.35); }
+
+    /* ── Step label (below bubbles) ── */
+    .step-labels {
+      display: flex;
+      padding: 0 28px 4px;
+    }
+    .step-label-item {
+      flex: 1; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); text-align: center;
+      transition: color 0.25s;
+    }
+    .step-label-item.active { color: var(--cyan); }
+    .step-label-item.done   { color: rgba(6,182,212,0.5); }
+
+    /* ── Step panels ── */
+    .step-header {
+      padding: 24px 28px 8px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .step-icon { font-size: 18px; }
+    .step-title { font-size: 18px; font-weight: 700; color: #fff; }
+    .step-sub { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+    .panel { display: none; padding: 0 28px 28px; }
+    .panel.active { display: block; }
+
+    /* ── Fields ── */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid.full { grid-template-columns: 1fr; }
+    @media(max-width:540px) { .grid { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.span2 { grid-column: span 2; }
+    @media(max-width:540px) { .field.span2 { grid-column: span 1; } }
+
+    label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    label .req { color: var(--cyan); }
+
+    input, select, textarea {
+      width: 100%;
+      background: rgba(30,33,48,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px; font-family: inherit;
+      padding: 10px 13px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.6; }
+    select { cursor: pointer; }
+    textarea { resize: vertical; min-height: 96px; line-height: 1.55; }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(6,182,212,0.5);
+      box-shadow: 0 0 0 3px rgba(6,182,212,0.1);
+    }
+
+    /* ── Nav buttons ── */
+    .nav {
+      padding: 0 28px 28px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .dots { display: flex; gap: 6px; }
+    .dot {
+      border-radius: 99px; height: 5px; transition: all 0.3s;
+      background: var(--subtle); width: 6px;
+    }
+    .dot.active { width: 20px; background: var(--cyan); }
+    .dot.done   { background: rgba(6,182,212,0.35); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 20px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      border: none; transition: all 0.2s;
+    }
+    .btn-back {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+    }
+    .btn-back:hover:not(:disabled) { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .btn-back:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-next {
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(6,182,212,0.25);
+    }
+    .btn-next:hover:not(:disabled) { filter: brightness(1.1); }
+    .btn-next:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Error message ── */
+    .err {
+      display: none; margin: 0 28px 16px;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 8px; padding: 10px 14px;
+      color: #fca5a5; font-size: 13px;
+    }
+    .err.show { display: block; }
+
+    /* ── Success screen ── */
+    #success {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center;
+      padding: 64px 40px;
+    }
+    #success.show { display: flex; }
+    .success-ring {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(6,182,212,0.15); border: 2px solid rgba(6,182,212,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; margin-bottom: 24px;
+      box-shadow: 0 0 32px rgba(6,182,212,0.2);
+    }
+    #success h2 { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+    #success p  { color: var(--muted); max-width: 360px; font-size: 13px; line-height: 1.6; }
+    .ref-box {
+      margin-top: 24px;
+      background: rgba(30,33,48,0.8); border: 1px solid rgba(6,182,212,0.2);
+      border-radius: 10px; padding: 16px 32px;
+    }
+    .ref-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted); margin-bottom: 4px; }
+    .ref-id { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 18px; font-weight: 700; color: var(--cyan); }
+    .reset-link {
+      margin-top: 20px; font-size: 12px; color: var(--muted);
+      text-decoration: underline; cursor: pointer; background: none; border: none;
+    }
+    .reset-link:hover { color: var(--text); }
+
+    footer { text-align: center; margin-top: 28px; font-size: 11px; color: var(--muted); opacity: 0.5; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">U</div>
+    <span class="logo-name">UltAi</span>
+    <span class="logo-sub">/ Consultation Intake</span>
+  </div>
+  <a href="/admin.html">Admin →</a>
+</header>
+
+<main>
+  <div class="hero">
+    <p class="hero-label">AI Consultation</p>
+    <h1>Tell us about your <span>business</span></h1>
+    <p>Complete the intake form and an UltAi strategist will prepare a tailored AI roadmap for your call.</p>
+  </div>
+
+  <div class="card" id="wizard">
+    <div class="card-top"></div>
+
+    <!-- Step bubbles -->
+    <div class="steps" id="steps-nav">
+      <div class="step-item">
+        <div class="step-bubble active" id="b0"><span>01</span></div>
+        <div class="step-line" id="l0"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-bubble" id="b1"><span>02</span></div>
+        <div class="step-line" id="l1"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-bubble" id="b2"><span>03</span></div>
+        <div class="step-line" id="l2"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-bubble" id="b3"><span>04</span></div>
+        <div class="step-line" id="l3"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-bubble" id="b4"><span>05</span></div>
+      </div>
+    </div>
+
+    <!-- Step labels -->
+    <div class="step-labels">
+      <div class="step-label-item active" id="lb0">Business Info</div>
+      <div class="step-label-item" id="lb1">Context</div>
+      <div class="step-label-item" id="lb2">Challenges</div>
+      <div class="step-label-item" id="lb3">Tech Stack</div>
+      <div class="step-label-item" id="lb4">Goals</div>
+    </div>
+
+    <!-- Error banner -->
+    <div class="err" id="err-msg"></div>
+
+    <!-- ── Panel 0: Business Info ── -->
+    <div class="panel active" id="panel0">
+      <div class="step-header">
+        <span class="step-icon">🏢</span>
+        <span class="step-title">Business Information</span>
+        <span class="step-sub">Step 1 of 5</span>
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label>Company Name <span class="req">*</span></label>
+          <input type="text" id="companyName" placeholder="Acme Corp" autocomplete="organization" />
+        </div>
+        <div class="field">
+          <label>Contact Name <span class="req">*</span></label>
+          <input type="text" id="contactName" placeholder="Jane Smith" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="jane@acme.com" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label>Phone Number</label>
+          <input type="tel" id="phone" placeholder="+44 7700 900000" autocomplete="tel" />
+        </div>
+        <div class="field">
+          <label>Industry</label>
+          <select id="industry">
+            <option value="">Select industry…</option>
+            <option>Technology</option><option>Finance</option><option>Healthcare</option>
+            <option>Legal</option><option>Manufacturing</option><option>Retail</option>
+            <option>Education</option><option>Real Estate</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Company Size</label>
+          <select id="companySize">
+            <option value="">Select size…</option>
+            <option>1–10</option><option>11–50</option><option>51–200</option>
+            <option>201–500</option><option>500+</option>
+          </select>
+        </div>
+        <div class="field span2">
+          <label>Website</label>
+          <input type="url" id="website" placeholder="https://acme.com" autocomplete="url" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Panel 1: Business Context ── -->
+    <div class="panel" id="panel1">
+      <div class="step-header">
+        <span class="step-icon">📊</span>
+        <span class="step-title">Business Context</span>
+        <span class="step-sub">Step 2 of 5</span>
+      </div>
+      <div class="grid full">
+        <div class="field">
+          <label>Describe your business</label>
+          <textarea id="bizDesc" placeholder="What does your company do? What's your core value proposition?"></textarea>
+        </div>
+        <div class="field">
+          <label>Target Market</label>
+          <input type="text" id="targetMarket" placeholder="e.g. SMB UK financial services firms" />
+        </div>
+        <div class="field">
+          <label>Current Annual Revenue</label>
+          <select id="revenue">
+            <option value="">Select range…</option>
+            <option>Pre-revenue</option><option>Under £1M</option><option>£1M – £10M</option>
+            <option>£10M – £50M</option><option>£50M – £250M</option><option>£250M+</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Panel 2: Challenges ── -->
+    <div class="panel" id="panel2">
+      <div class="step-header">
+        <span class="step-icon">⚡</span>
+        <span class="step-title">Current Challenges</span>
+        <span class="step-sub">Step 3 of 5</span>
+      </div>
+      <div class="grid full">
+        <div class="field">
+          <label>Primary Challenges</label>
+          <textarea id="challenges" style="min-height:120px"
+            placeholder="What operational, growth, or efficiency challenges are you trying to solve with AI?"></textarea>
+        </div>
+        <div class="field">
+          <label>AI Experience Level</label>
+          <select id="aiExp">
+            <option value="">Select level…</option>
+            <option>None — exploring for the first time</option>
+            <option>Early exploration — researching options</option>
+            <option>Some tools — using basic AI (e.g. ChatGPT)</option>
+            <option>Actively using — deployed in select workflows</option>
+            <option>Advanced — AI is core to our operations</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Panel 3: Tech Stack ── -->
+    <div class="panel" id="panel3">
+      <div class="step-header">
+        <span class="step-icon">🔧</span>
+        <span class="step-title">Technology Stack</span>
+        <span class="step-sub">Step 4 of 5</span>
+      </div>
+      <div class="grid full">
+        <div class="field">
+          <label>Current Technology Stack</label>
+          <textarea id="techStack" placeholder="e.g. React, Node.js, PostgreSQL, Python microservices…"></textarea>
+        </div>
+        <div class="field">
+          <label>Current AI / Automation Tools</label>
+          <textarea id="currentTools" placeholder="e.g. Zapier, OpenAI API, Azure Cognitive Services…"></textarea>
+        </div>
+        <div class="field">
+          <label>Primary Cloud Platform</label>
+          <select id="cloud">
+            <option value="">Select platform…</option>
+            <option>Microsoft Azure</option><option>Amazon Web Services</option>
+            <option>Google Cloud Platform</option><option>On-Premise</option>
+            <option>Mixed / Hybrid</option><option>None / Not Yet Decided</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Panel 4: Goals & Timeline ── -->
+    <div class="panel" id="panel4">
+      <div class="step-header">
+        <span class="step-icon">🎯</span>
+        <span class="step-title">Goals &amp; Timeline</span>
+        <span class="step-sub">Step 5 of 5</span>
+      </div>
+      <div class="grid full">
+        <div class="field">
+          <label>Primary Goals with AI</label>
+          <textarea id="goals" style="min-height:110px"
+            placeholder="What outcomes do you want? e.g. reduce manual processing by 60%, automate client onboarding…"></textarea>
+        </div>
+        <div class="grid" style="padding:0">
+          <div class="field">
+            <label>Implementation Timeline</label>
+            <select id="timeline">
+              <option value="">Select timeline…</option>
+              <option>As soon as possible</option><option>1–3 months</option>
+              <option>3–6 months</option><option>6–12 months</option><option>12+ months</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Indicative Budget</label>
+            <select id="budget">
+              <option value="">Select range…</option>
+              <option>Under £10K</option><option>£10K – £50K</option>
+              <option>£50K – £100K</option><option>£100K – £500K</option>
+              <option>£500K+</option><option>To be determined</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Additional Notes</label>
+          <textarea id="notes" placeholder="Anything else we should know before our call?"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav" id="wizard-nav">
+      <button class="btn btn-back" id="btn-back" onclick="prev()" disabled>← Back</button>
+      <div class="dots" id="dots"></div>
+      <button class="btn btn-next" id="btn-next" onclick="next()">Continue →</button>
+    </div>
+
+    <!-- Success -->
+    <div id="success">
+      <div class="success-ring">✓</div>
+      <h2>Request Received</h2>
+      <p>Your consultation intake has been securely submitted. An UltAi strategist will review your brief and reach out within one business day.</p>
+      <div class="ref-box">
+        <div class="ref-label">Reference ID</div>
+        <div class="ref-id" id="ref-id">—</div>
+      </div>
+      <button class="reset-link" onclick="resetWizard()">Submit another intake</button>
+    </div>
+  </div>
+
+  <footer>Your information is encrypted in transit and stored securely. UltAi will never share your data with third parties.</footer>
+</main>
+
+<script>
+  let currentStep = 0;
+  const STEPS = 5;
+
+  const panels = () => Array.from({ length: STEPS }, (_, i) => document.getElementById(`panel${i}`));
+  const bubbles = () => Array.from({ length: STEPS }, (_, i) => document.getElementById(`b${i}`));
+  const lines = () => Array.from({ length: STEPS - 1 }, (_, i) => document.getElementById(`l${i}`));
+  const labels = () => Array.from({ length: STEPS }, (_, i) => document.getElementById(`lb${i}`));
+
+  function renderStep() {
+    panels().forEach((p, i) => p && p.classList.toggle('active', i === currentStep));
+    bubbles().forEach((b, i) => {
+      if (!b) return;
+      b.classList.remove('active', 'done');
+      if (i < currentStep) b.classList.add('done');
+      else if (i === currentStep) b.classList.add('active');
+    });
+    lines().forEach((l, i) => l && l.classList.toggle('done', i < currentStep));
+    labels().forEach((l, i) => {
+      if (!l) return;
+      l.classList.remove('active', 'done');
+      if (i === currentStep) l.classList.add('active');
+      else if (i < currentStep) l.classList.add('done');
+    });
+
+    const dots = document.getElementById('dots');
+    dots.innerHTML = '';
+    for (let i = 0; i < STEPS; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+      dots.appendChild(d);
+    }
+
+    document.getElementById('btn-back').disabled = currentStep === 0;
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.textContent = currentStep === STEPS - 1 ? 'Submit Intake ✓' : 'Continue →';
+    clearErr();
+  }
+
+  function showErr(msg) {
+    const el = document.getElementById('err-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearErr() {
+    document.getElementById('err-msg').classList.remove('show');
+  }
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function validateStep() {
+    if (currentStep === 0) {
+      if (!document.getElementById('companyName').value.trim()) return 'Company name is required.';
+      if (!document.getElementById('contactName').value.trim()) return 'Contact name is required.';
+      const em = document.getElementById('email').value.trim();
+      if (!em || !EMAIL_RE.test(em)) return 'A valid email address is required.';
+    }
+    return null;
+  }
+
+  function prev() {
+    if (currentStep > 0) { currentStep--; renderStep(); }
+  }
+
+  async function next() {
+    const err = validateStep();
+    if (err) { showErr(err); return; }
+
+    if (currentStep < STEPS - 1) {
+      currentStep++;
+      renderStep();
+      return;
+    }
+
+    // Submit
+    const btn = document.getElementById('btn-next');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    const body = {
+      companyName:     document.getElementById('companyName').value.trim(),
+      contactName:     document.getElementById('contactName').value.trim(),
+      email:           document.getElementById('email').value.trim(),
+      phone:           document.getElementById('phone').value.trim(),
+      industry:        document.getElementById('industry').value,
+      companySize:     document.getElementById('companySize').value,
+      website:         document.getElementById('website').value.trim(),
+      businessContext: [
+        document.getElementById('bizDesc').value.trim(),
+        document.getElementById('targetMarket').value.trim(),
+        document.getElementById('revenue').value,
+      ].filter(Boolean).join('\n'),
+      challenges: [
+        document.getElementById('challenges').value.trim(),
+        document.getElementById('aiExp').value ? `AI Experience: ${document.getElementById('aiExp').value}` : '',
+      ].filter(Boolean).join('\n'),
+      techStack: [
+        document.getElementById('techStack').value.trim(),
+        document.getElementById('currentTools').value.trim(),
+        document.getElementById('cloud').value ? `Cloud: ${document.getElementById('cloud').value}` : '',
+      ].filter(Boolean).join('\n'),
+      goalsTimeline: [
+        document.getElementById('goals').value.trim(),
+        document.getElementById('timeline').value ? `Timeline: ${document.getElementById('timeline').value}` : '',
+        document.getElementById('budget').value ? `Budget: ${document.getElementById('budget').value}` : '',
+        document.getElementById('notes').value.trim(),
+      ].filter(Boolean).join('\n'),
+    };
+
+    try {
+      const res = await fetch('/api/ultai-intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'Submission failed');
+
+      document.getElementById('ref-id').textContent = json.referenceId;
+      document.getElementById('wizard-nav').style.display = 'none';
+      document.getElementById('steps-nav').style.display = 'none';
+      document.querySelector('.step-labels').style.display = 'none';
+      panels().forEach(p => p && (p.style.display = 'none'));
+      document.getElementById('err-msg').style.display = 'none';
+      document.getElementById('success').classList.add('show');
+    } catch (e) {
+      showErr(e.message || 'Submission failed. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Submit Intake ✓';
+    }
+  }
+
+  function resetWizard() {
+    document.querySelectorAll('input,select,textarea').forEach(el => { el.value = ''; });
+    currentStep = 0;
+    document.getElementById('wizard-nav').style.display = '';
+    document.getElementById('steps-nav').style.display = '';
+    document.querySelector('.step-labels').style.display = '';
+    document.getElementById('err-msg').style.display = '';
+    document.getElementById('success').classList.remove('show');
+    renderStep();
+  }
+
+  renderStep();
+</script>
+</body>
+</html>
