@@ -220,8 +220,7 @@ app.get('/api/admin/ultai-intakes/export', (req, res) => {
 
 // ── Error middleware ──────────────────────────────────────────────────────────
 
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, _next) => {
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   console.error('Unhandled Express error:', err);
   if (!res.headersSent) {
     res.status(500).json({ ok: false, error: 'Internal server error' });
@@ -242,7 +241,12 @@ const server = app.listen(PORT, () => {
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 
+let shuttingDown = false;
+
 function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
   console.log(`\n  Received ${signal} — shutting down gracefully…`);
   server.close(() => {
     try { db.close(); } catch (_) {}
@@ -259,9 +263,10 @@ function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT',  () => shutdown('SIGINT'));
 
+// Log and exit immediately — don't attempt graceful path on corrupted state.
 process.on('uncaughtException', (err) => {
   console.error('Uncaught exception:', err);
-  shutdown('uncaughtException');
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
