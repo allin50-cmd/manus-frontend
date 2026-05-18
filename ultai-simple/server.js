@@ -83,7 +83,7 @@ function readJson(req) {
     req.on('data', c => {
       if (over) return;
       size += c.length;
-      if (size > 65_536) { over = true; req.resume(); return reject(Object.assign(new Error(), { tooLarge: true })); }
+      if (size >= 65_536) { over = true; req.resume(); return reject(Object.assign(new Error(), { tooLarge: true })); }
       buf.push(c);
     })
     .on('end', () => { if (over) return; try { resolve(JSON.parse(Buffer.concat(buf).toString() || '{}')); } catch { reject(new Error('bad json')); } })
