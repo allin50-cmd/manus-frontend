@@ -1,19 +1,30 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-COUNCIL PLANNING APPLICATIONS SCRAPER (v2 - Production Grade)
+COUNCIL PLANNING APPLICATIONS SCRAPER (v3 - Hardened)
 Bromley & Lewisham - Last 7 Days Residential Applications
-Config-Driven | Resilient Extraction | Deduplication | Dry-Run Support
-================================================================================
 
-REQUIREMENTS:
-    pip install playwright pandas python-dateutil click
-
-USAGE:
-    python3 idox_scraper_prod.py --start-date 2024-05-11 --end-date 2024-05-18 --output csv
-    python3 idox_scraper_prod.py --dry-run
-    python3 idox_scraper_prod.py --council Bromley --output json
-
+Fixes vs v2:
+  - Two-phase selector discovery: form selectors before submit, result
+    selectors after submit (v2 always returned zero records because it
+    tried to find result-table selectors on the search-form page).
+  - Fixed None-default bug: dict.get(key, default) ignores default when
+    the key exists with value None; replaced with `or` operator.
+  - Fixed dead else-branch in discover_selectors (selector_group is always
+    a str from JSON, so split was never reached).
+  - Exponential backoff on retries.
+  - Atomic writes for seen_refs.json and CSV (write tmp, rename).
+  - seen_refs saved after each council, not just at program end.
+  - navigate_next_page waits for networkidle after click.
+  - URL extracted from first anchor in each result row.
+  - page_has_no_results() distinguishes empty search from broken selector.
+  - Per-council hard timeout via asyncio.wait_for (COUNCIL_TIMEOUT_SEC).
+  - Circuit breaker: abort run after MAX_CONSECUTIVE_FAILURES.
+  - Dry-run submits the form and validates result selectors too.
+  - Duplicate-handler guard in logging setup.
+  - --max-pages and --verbose CLI flags.
+  - Prints NEW_RECORDS=N to stdout for machine-readable parsing by
+    run_daily.py (replaces fragile CSV mtime check).
 ================================================================================
 """
 
@@ -23,15 +34,15 @@ import json
 import csv
 import random
 import sys
+import urllib.parse
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Set
+from typing import Optional, List, Dict, Any, Set, Tuple
 from dataclasses import dataclass, asdict
-import re
 
 import pandas as pd
 import click
-from playwright.async_api import async_playwright, Page, Browser, BrowserContext
+from playwright.async_api import async_playwright, Page, Browser
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 
@@ -45,9 +56,32 @@ OUTPUT_FILE = Path.cwd() / 'planning_records.csv'
 OUTPUT_JSON_FILE = Path.cwd() / 'planning_records.json'
 
 RETRY_ATTEMPTS = 3
-RETRY_DELAY = 2.0
-PAGE_TIMEOUT = 30000
-NETWORK_IDLE_TIMEOUT = 20000
+BASE_RETRY_DELAY = 1.0       # seconds; doubled each attempt
+PAGE_TIMEOUT = 30_000        # ms
+NETWORK_IDLE_TIMEOUT = 20_000
+COUNCIL_TIMEOUT_SEC = 600    # 10 min hard limit per council
+MAX_CONSECUTIVE_FAILURES = 3
+DEFAULT_MAX_PAGES = 50
+
+# Selectors expected to exist on the search form (before submit)
+FORM_SELECTOR_KEYS = {'advanced_search', 'date_from', 'date_to', 'submit_button'}
+
+# Selectors expected to exist on the results page (after submit)
+RESULT_SELECTOR_KEYS = {
+    'results_container', 'reference_cell', 'address_cell',
+    'description_cell', 'status_cell', 'date_validated_cell', 'next_page',
+}
+
+# Playwright locators that indicate a genuine empty result set
+NO_RESULTS_LOCATORS = [
+    "text=No results found",
+    "text=No applications found",
+    "text=Your search returned no results",
+    "text=0 results",
+    "text=no planning applications",
+    "[class*='no-result']",
+    "[id*='no-result']",
+]
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -67,13 +101,18 @@ VIEWPORTS = [
 # LOGGING
 # =============================================================================
 
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
+def setup_logging(verbose: bool = False) -> logging.Logger:
+    root = logging.getLogger()
+    if not root.handlers:
+        logging.basicConfig(
+            level=logging.DEBUG if verbose else logging.INFO,
+            format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+        )
+    elif verbose:
+        root.setLevel(logging.DEBUG)
     return logging.getLogger(__name__)
+
 
 logger = setup_logging()
 
@@ -84,7 +123,6 @@ logger = setup_logging()
 
 @dataclass
 class PlanningRecord:
-    """Represents a planning application record."""
     council: str
     reference: str
     address: str
@@ -98,305 +136,317 @@ class PlanningRecord:
         return asdict(self)
 
     def dedupe_key(self) -> str:
-        """Return unique key for deduplication (council + reference)."""
         return f"{self.council}:{self.reference}"
 
 
+@dataclass
+class CouncilStats:
+    council: str
+    total_found: int = 0
+    new_records: int = 0
+    duplicates_skipped: int = 0
+    pages_scraped: int = 0
+    errors: int = 0
+    error_message: str = ""
+    no_results: bool = False
+
+    def failed(self) -> bool:
+        return bool(self.error_message)
+
+
 # =============================================================================
-# UTILITY FUNCTIONS
+# UTILITIES
 # =============================================================================
 
 def load_config() -> Dict[str, Any]:
-    """Load councils configuration from JSON file."""
     if not CONFIG_FILE.exists():
         logger.error(f"Config file not found: {CONFIG_FILE}")
         sys.exit(1)
-
     with open(CONFIG_FILE, 'r') as f:
         config = json.load(f)
-
     logger.info(f"Loaded config with {len(config.get('councils', []))} councils")
     return config
 
 
 def load_seen_refs() -> Set[str]:
-    """Load previously seen reference keys from JSON file."""
     if not SEEN_REFS_FILE.exists():
         return set()
-
     with open(SEEN_REFS_FILE, 'r') as f:
         seen = json.load(f)
-
     logger.debug(f"Loaded {len(seen)} previously seen references")
     return set(seen)
 
 
 def save_seen_refs(seen_refs: Set[str]) -> None:
-    """Save seen reference keys to JSON file."""
-    with open(SEEN_REFS_FILE, 'w') as f:
-        json.dump(sorted(list(seen_refs)), f, indent=2)
+    """Atomic write: write to .tmp then rename so a crash never corrupts the file."""
+    tmp = SEEN_REFS_FILE.with_suffix('.tmp')
+    try:
+        with open(tmp, 'w') as f:
+            json.dump(sorted(list(seen_refs)), f, indent=2)
+        tmp.replace(SEEN_REFS_FILE)
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+    logger.debug(f"Saved {len(seen_refs)} references")
 
-    logger.debug(f"Saved {len(seen_refs)} references to {SEEN_REFS_FILE}")
 
-
-async def realistic_delay(min_sec: float = 0.5, max_sec: float = 2.5) -> None:
-    """Insert realistic human-like delay between actions."""
-    delay = random.uniform(min_sec, max_sec)
+async def exponential_backoff(attempt: int, base: float = BASE_RETRY_DELAY, cap: float = 30.0) -> None:
+    delay = min(base * (2 ** attempt) + random.uniform(0, 0.5), cap)
+    logger.debug(f"Backoff {delay:.1f}s (attempt {attempt + 1})")
     await asyncio.sleep(delay)
 
 
-def clean_text(raw_text: Optional[str]) -> str:
-    """Strip whitespace, newlines, null bytes, normalize spaces."""
-    if not raw_text:
+async def realistic_delay(min_sec: float = 0.5, max_sec: float = 2.5) -> None:
+    await asyncio.sleep(random.uniform(min_sec, max_sec))
+
+
+def clean_text(raw: Optional[str]) -> str:
+    if not raw:
         return ""
-
-    cleaned = ''.join(char for char in raw_text if char.isprintable() or char.isspace())
-    cleaned = ' '.join(cleaned.split())
-    return cleaned
+    cleaned = ''.join(ch for ch in raw if ch.isprintable() or ch.isspace())
+    return ' '.join(cleaned.split())
 
 
-def calculate_date_range(start_date: Optional[str], end_date: Optional[str]) -> tuple[str, str]:
-    """
-    Calculate date range. If not provided, default to last 7 days.
-    Returns: (start_date, end_date) as 'DD/MM/YYYY' strings
-    """
-    if end_date:
-        to_date = datetime.strptime(end_date, '%Y-%m-%d')
-    else:
-        to_date = datetime.now()
-
-    if start_date:
-        from_date = datetime.strptime(start_date, '%Y-%m-%d')
-    else:
-        from_date = to_date - timedelta(days=7)
-
-    start_str = from_date.strftime('%d/%m/%Y')
-    end_str = to_date.strftime('%d/%m/%Y')
-
+def calculate_date_range(start_date: Optional[str], end_date: Optional[str]) -> Tuple[str, str]:
+    to_date = datetime.strptime(end_date, '%Y-%m-%d') if end_date else datetime.now()
+    from_date = datetime.strptime(start_date, '%Y-%m-%d') if start_date else to_date - timedelta(days=7)
+    start_str, end_str = from_date.strftime('%d/%m/%Y'), to_date.strftime('%d/%m/%Y')
     logger.info(f"Date range: {start_str} to {end_str}")
     return start_str, end_str
 
 
 def parse_date(date_str: str) -> str:
-    """Normalize date string to YYYY-MM-DD format."""
     if not date_str:
         return ""
-
     date_str = clean_text(date_str)
-
     for fmt in ['%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d %b %Y', '%d %B %Y']:
         try:
-            parsed = datetime.strptime(date_str, fmt)
-            return parsed.strftime('%Y-%m-%d')
+            return datetime.strptime(date_str, fmt).strftime('%Y-%m-%d')
         except ValueError:
             pass
-
     return date_str
 
 
+def atomic_write_csv(records: List[PlanningRecord], output_path: Path) -> None:
+    """Write CSV atomically: write to .tmp then rename."""
+    tmp = output_path.with_suffix('.tmp')
+    try:
+        df = pd.DataFrame([r.to_dict() for r in records])
+        df.to_csv(tmp, index=False, quoting=csv.QUOTE_ALL, encoding='utf-8')
+        tmp.replace(output_path)
+        logger.info(f"Data saved: {output_path} ({len(df)} rows)")
+    except Exception:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+        raise
+
+
 # =============================================================================
-# DYNAMIC SELECTOR DISCOVERY
+# SELECTOR DISCOVERY
 # =============================================================================
 
-async def try_selector_group(page: Page, selectors: List[str], timeout: int = 5000) -> Optional[str]:
-    """Try a list of selectors in order, return first working one."""
-    for selector in selectors:
-        try:
-            element = page.locator(selector).first
-            if await element.is_visible(timeout=timeout):
-                return selector
-        except Exception:
-            pass
-
-    return None
+async def _selector_visible(page: Page, selector: str, timeout: int = 3000) -> bool:
+    try:
+        return await page.locator(selector).first.is_visible(timeout=timeout)
+    except Exception:
+        return False
 
 
-async def discover_selectors(page: Page, council_config: Dict[str, Any]) -> Dict[str, Optional[str]]:
+async def discover_selectors(
+    page: Page,
+    council_config: Dict[str, Any],
+    keys: Optional[Set[str]] = None,
+) -> Dict[str, Optional[str]]:
     """
-    Validate council selectors by attempting to locate elements.
-    Returns dict with selector -> discovered_selector mapping.
+    For each field in keys (or all fields if keys is None), try each
+    comma-separated fallback selector in order and return the first visible one.
+
+    Each config value like "a:has-text('Search'), a[href*='adv']" is split on
+    ", " so alternatives are tried individually rather than as a combined CSS
+    selector — this lets us report exactly which sub-selector matched.
     """
-    discovered = {}
-    selectors = council_config.get('selectors', {})
+    discovered: Dict[str, Optional[str]] = {}
+    all_selectors = council_config.get('selectors', {})
 
-    for field, selector_group in selectors.items():
-        if isinstance(selector_group, str):
-            selector_list = [selector_group]
-        else:
-            selector_list = selector_group.split(', ')
+    for field, selector_group in all_selectors.items():
+        if keys and field not in keys:
+            continue
 
-        found = await try_selector_group(page, selector_list, timeout=3000)
+        candidates = [s.strip() for s in selector_group.split(', ') if s.strip()]
+        found: Optional[str] = None
+        for candidate in candidates:
+            if await _selector_visible(page, candidate):
+                found = candidate
+                break
+
         discovered[field] = found
-
         if found:
-            logger.debug(f"  ✓ {field}: {found}")
+            logger.debug(f"  [ok] {field}: {found}")
         else:
-            logger.warning(f"  ✗ {field}: no selector found")
+            logger.debug(f"  [--] {field}: not found on current page")
 
     return discovered
 
 
 # =============================================================================
-# EXTRACTION LOGIC
+# PAGE STATE HELPERS
 # =============================================================================
 
-async def extract_cell_content(cell_element, field_name: str, regex_pattern: Optional[str] = None) -> str:
-    """Extract text from a cell element with optional regex parsing."""
+async def page_has_no_results(page: Page) -> bool:
+    """Return True if the page explicitly says no results were found."""
+    for locator in NO_RESULTS_LOCATORS:
+        try:
+            if await page.locator(locator).first.is_visible(timeout=1_500):
+                return True
+        except Exception:
+            pass
+    return False
+
+
+async def click_advanced_search(page: Page, council_config: Dict[str, Any]) -> None:
+    """Click the Advanced Search link if configured and visible."""
+    raw = council_config.get('selectors', {}).get('advanced_search', '')
+    for candidate in [s.strip() for s in raw.split(', ') if s.strip()]:
+        try:
+            el = page.locator(candidate).first
+            if await el.is_visible(timeout=4_000):
+                logger.info("Clicking Advanced Search…")
+                await el.click()
+                await realistic_delay(1.0, 2.0)
+                return
+        except Exception:
+            pass
+
+
+# =============================================================================
+# EXTRACTION
+# =============================================================================
+
+async def _cell_text(row, selector: Optional[str], fallback: str, field: str) -> str:
+    """
+    Extract text from a cell. Uses `selector or fallback` so that a None
+    discovered selector falls through to the positional fallback — unlike
+    dict.get(key, default) which ignores the default when the key exists
+    with value None.
+    """
+    effective = selector or fallback
     try:
-        text = await cell_element.text_content()
-        text = clean_text(text)
-
-        if regex_pattern and text:
-            match = re.search(regex_pattern, text)
-            if match:
-                return match.group(1) if match.groups() else match.group(0)
-
-        return text
+        return clean_text(await row.locator(effective).first.text_content(timeout=3_000))
     except Exception as e:
-        logger.debug(f"Error extracting {field_name}: {e}")
+        logger.debug(f"  cell[{field}] ({effective}): {e}")
+        return ""
+
+
+async def _row_url(row, base_url: str) -> str:
+    try:
+        href = await row.locator('a').first.get_attribute('href', timeout=2_000)
+        return urllib.parse.urljoin(base_url, href) if href else ""
+    except Exception:
         return ""
 
 
 async def extract_results(
     page: Page,
     council_name: str,
-    discovered_selectors: Dict[str, Optional[str]]
+    result_selectors: Dict[str, Optional[str]],
 ) -> List[PlanningRecord]:
-    """Extract all visible planning application rows from current page."""
-    records = []
+    records: List[PlanningRecord] = []
 
-    try:
-        await page.wait_for_load_state('networkidle', timeout=NETWORK_IDLE_TIMEOUT)
-    except PlaywrightTimeoutError:
-        logger.warning(f"{council_name}: Page load timeout - proceeding")
-
-    results_selector = discovered_selectors.get('results_container')
+    results_selector = result_selectors.get('results_container')
     if not results_selector:
-        logger.warning(f"{council_name}: No results container selector found")
+        if await page_has_no_results(page):
+            logger.info(f"{council_name}: search returned no results for this date range")
+        else:
+            logger.warning(f"{council_name}: results_container selector not found after search")
         return records
 
     try:
         row_count = await page.locator(results_selector).count()
-        logger.info(f"{council_name}: Found {row_count} result rows")
+        logger.info(f"{council_name}: {row_count} rows on page")
+        base_url = page.url
 
         for i in range(row_count):
             try:
                 row = page.locator(results_selector).nth(i)
 
-                ref = await extract_cell_content(
-                    row.locator(discovered_selectors.get('reference_cell', 'td:first-child')).first,
-                    'reference'
-                )
-
-                addr = await extract_cell_content(
-                    row.locator(discovered_selectors.get('address_cell', 'td:nth-child(2)')).first,
-                    'address'
-                )
-
-                desc = await extract_cell_content(
-                    row.locator(discovered_selectors.get('description_cell', 'td:nth-child(3)')).first,
-                    'description'
-                )
-
-                status = await extract_cell_content(
-                    row.locator(discovered_selectors.get('status_cell', 'td:nth-child(4)')).first,
-                    'status'
-                )
-
-                date_val = await extract_cell_content(
-                    row.locator(discovered_selectors.get('date_validated_cell', 'td:nth-child(5)')).first,
-                    'date_validated'
-                )
-
+                ref = await _cell_text(row, result_selectors.get('reference_cell'), 'td:nth-child(1)', 'ref')
                 if not ref or len(ref.strip()) < 3:
-                    logger.debug(f"Skipping row {i}: invalid reference")
                     continue
 
-                record = PlanningRecord(
+                records.append(PlanningRecord(
                     council=council_name,
                     reference=ref,
-                    address=addr,
-                    description=desc,
-                    status=status,
-                    date_validated=parse_date(date_val),
-                    date_decision="",
-                    url=""
-                )
-
-                records.append(record)
-                logger.debug(f"Extracted: {ref} | {addr}")
+                    address=await _cell_text(row, result_selectors.get('address_cell'), 'td:nth-child(2)', 'addr'),
+                    description=await _cell_text(row, result_selectors.get('description_cell'), 'td:nth-child(3)', 'desc'),
+                    status=await _cell_text(row, result_selectors.get('status_cell'), 'td:nth-child(4)', 'status'),
+                    date_validated=parse_date(
+                        await _cell_text(row, result_selectors.get('date_validated_cell'), 'td:nth-child(5)', 'date')
+                    ),
+                    url=await _row_url(row, base_url),
+                ))
+                logger.debug(f"  + {ref}")
 
             except Exception as e:
-                logger.debug(f"Error extracting row {i}: {e}")
-                continue
+                logger.debug(f"  row {i}: {e}")
 
     except Exception as e:
-        logger.error(f"Error extracting results: {e}")
+        logger.error(f"{council_name}: extract_results error: {e}")
 
     return records
 
 
 async def navigate_next_page(page: Page, council_config: Dict[str, Any]) -> bool:
-    """
-    Attempt to navigate to next results page.
-    Returns True if next page was found and clicked, False otherwise.
-    """
     next_selector = council_config.get('selectors', {}).get('next_page')
-
     if not next_selector:
-        logger.debug("No next page selector configured")
         return False
-
     try:
-        next_button = page.locator(next_selector).first
-        if await next_button.is_visible(timeout=5000):
-            logger.info("Found next page button, clicking...")
-            await next_button.click()
+        btn = page.locator(next_selector).first
+        if await btn.is_visible(timeout=3_000) and await btn.is_enabled(timeout=3_000):
+            await btn.click()
             await realistic_delay(1.0, 2.5)
+            await page.wait_for_load_state('networkidle', timeout=NETWORK_IDLE_TIMEOUT)
             return True
     except Exception as e:
-        logger.debug(f"No next page found: {e}")
-
+        logger.debug(f"No next page: {e}")
     return False
 
 
 # =============================================================================
-# DRY-RUN MODE
+# DRY-RUN
 # =============================================================================
 
 async def dry_run_council(
     browser: Browser,
     council_config: Dict[str, Any],
     start_date: str,
-    end_date: str
+    end_date: str,
 ) -> Dict[str, Any]:
-    """Validate council configuration without scraping records."""
+    """
+    Validate both form and result selectors by actually submitting a test
+    search (read-only — no writes anywhere).
+    """
     council_name = council_config.get('name')
     url = council_config.get('url')
+    logger.info(f"\n{'='*80}\nDRY-RUN: {council_name}\n{'='*80}")
 
-    logger.info(f"\n{'='*80}")
-    logger.info(f"DRY-RUN: {council_name}")
-    logger.info(f"{'='*80}")
-
-    report = {
+    report: Dict[str, Any] = {
         'council': council_name,
         'url': url,
-        'selectors_valid': {},
+        'form_selectors': {},
+        'result_selectors': {},
         'errors': [],
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
     }
 
-    context = await browser.new_context(
+    ctx = await browser.new_context(
         user_agent=random.choice(USER_AGENTS),
         viewport=random.choice(VIEWPORTS),
         locale='en-GB',
-        timezone_id='Europe/London'
+        timezone_id='Europe/London',
     )
-
-    page = await context.new_page()
+    page = await ctx.new_page()
 
     try:
-        logger.info(f"Navigating to {url}...")
         try:
             await page.goto(url, timeout=PAGE_TIMEOUT, wait_until='domcontentloaded')
         except PlaywrightTimeoutError:
@@ -404,193 +454,217 @@ async def dry_run_council(
             return report
 
         await realistic_delay(1.0, 2.0)
+        await click_advanced_search(page, council_config)
 
-        adv_search_selector = council_config.get('selectors', {}).get('advanced_search')
-        if adv_search_selector:
+        # Phase 1: form selectors
+        logger.info("Checking form selectors…")
+        form = await discover_selectors(page, council_config, FORM_SELECTOR_KEYS)
+        report['form_selectors'] = form
+
+        missing_form = [k for k, v in form.items() if not v]
+        if missing_form:
+            report['errors'].append(f"Missing form selectors: {', '.join(missing_form)}")
+
+        # Phase 2: submit test search, then check result selectors
+        df_sel = form.get('date_from')
+        dt_sel = form.get('date_to')
+        sb_sel = form.get('submit_button')
+
+        if df_sel and dt_sel and sb_sel:
+            logger.info("Submitting test search to validate result selectors…")
             try:
-                adv = page.locator(adv_search_selector).first
-                if await adv.is_visible(timeout=3000):
-                    logger.info("Found Advanced Search link")
-                    await adv.click()
-                    await realistic_delay(1.0, 2.0)
+                await page.fill(df_sel, start_date)
+                await page.fill(dt_sel, end_date)
+                await page.click(sb_sel)
+                await page.wait_for_load_state('networkidle', timeout=NETWORK_IDLE_TIMEOUT)
+                await realistic_delay(1.0, 2.0)
+                result = await discover_selectors(page, council_config, RESULT_SELECTOR_KEYS)
+                report['result_selectors'] = result
+                missing_result = [k for k, v in result.items() if not v and k != 'next_page']
+                if missing_result:
+                    report['errors'].append(f"Missing result selectors: {', '.join(missing_result)}")
             except Exception as e:
-                logger.debug(f"Could not find/click Advanced Search: {e}")
+                report['errors'].append(f"Test search failed: {e}")
+        else:
+            report['errors'].append("Skipped result selector check: form selectors incomplete")
 
-        logger.info("Validating selectors...")
-        discovered = await discover_selectors(page, council_config)
-        report['selectors_valid'] = discovered
-
-        missing = [k for k, v in discovered.items() if not v]
-        if missing:
-            report['errors'].append(f"Missing selectors: {', '.join(missing)}")
-
-        logger.info(f"Validation complete. Errors: {len(report['errors'])}")
+        logger.info(f"Dry-run complete. Errors: {len(report['errors'])}")
 
     except Exception as e:
         logger.error(f"Dry-run error: {e}")
         report['errors'].append(str(e))
-
     finally:
         await page.close()
-        await context.close()
+        await ctx.close()
 
     return report
 
 
 # =============================================================================
-# SCRAPE LOGIC
+# SCRAPE A SINGLE COUNCIL
 # =============================================================================
+
+async def _scrape_inner(
+    browser: Browser,
+    council_config: Dict[str, Any],
+    start_date: str,
+    end_date: str,
+    seen_refs: Set[str],
+    max_pages: int,
+) -> Tuple[List[PlanningRecord], CouncilStats]:
+    council_name = council_config.get('name', 'Unknown')
+    url = council_config.get('url', '')
+    logger.info(f"\n{'='*80}\nSCRAPING: {council_name}\n{'='*80}")
+
+    stats = CouncilStats(council=council_name)
+    all_records: List[PlanningRecord] = []
+
+    ctx = await browser.new_context(
+        user_agent=random.choice(USER_AGENTS),
+        viewport=random.choice(VIEWPORTS),
+        locale='en-GB',
+        timezone_id='Europe/London',
+    )
+    page = await ctx.new_page()
+
+    try:
+        # ── Phase 1: navigate ────────────────────────────────────────────── #
+        loaded = False
+        for attempt in range(RETRY_ATTEMPTS):
+            try:
+                logger.info(f"Navigating to {url}… (attempt {attempt + 1})")
+                await page.goto(url, timeout=PAGE_TIMEOUT, wait_until='domcontentloaded')
+                loaded = True
+                break
+            except PlaywrightTimeoutError:
+                if attempt < RETRY_ATTEMPTS - 1:
+                    await exponential_backoff(attempt)
+
+        if not loaded:
+            stats.error_message = f"Failed to load {url} after {RETRY_ATTEMPTS} attempts"
+            stats.errors += 1
+            return all_records, stats
+
+        await realistic_delay(1.5, 2.5)
+        await click_advanced_search(page, council_config)
+
+        # ── Phase 2: discover FORM selectors, fill dates, submit ─────────── #
+        logger.info("Discovering form selectors…")
+        form_sel = await discover_selectors(page, council_config, FORM_SELECTOR_KEYS)
+
+        submit_sel = form_sel.get('submit_button')
+        if not submit_sel:
+            stats.error_message = "Submit button not found"
+            stats.errors += 1
+            return all_records, stats
+
+        for attempt in range(RETRY_ATTEMPTS):
+            try:
+                if form_sel.get('date_from'):
+                    await page.fill(form_sel['date_from'], start_date)
+                    await realistic_delay(0.2, 0.6)
+                if form_sel.get('date_to'):
+                    await page.fill(form_sel['date_to'], end_date)
+                    await realistic_delay(0.2, 0.6)
+                break
+            except Exception as e:
+                logger.warning(f"Date fill failed (attempt {attempt + 1}): {e}")
+                if attempt < RETRY_ATTEMPTS - 1:
+                    await exponential_backoff(attempt)
+
+        for attempt in range(RETRY_ATTEMPTS):
+            try:
+                logger.info("Submitting search…")
+                await page.click(submit_sel)
+                await realistic_delay(1.5, 3.0)
+                await page.wait_for_load_state('networkidle', timeout=NETWORK_IDLE_TIMEOUT)
+                break
+            except Exception as e:
+                logger.warning(f"Submit failed (attempt {attempt + 1}): {e}")
+                if attempt < RETRY_ATTEMPTS - 1:
+                    await exponential_backoff(attempt)
+
+        # ── Phase 3: discover RESULT selectors on the results page ───────── #
+        logger.info("Discovering result selectors…")
+        result_sel = await discover_selectors(page, council_config, RESULT_SELECTOR_KEYS)
+
+        if not result_sel.get('results_container'):
+            if await page_has_no_results(page):
+                logger.info(f"{council_name}: no results for this date range")
+                stats.no_results = True
+                return all_records, stats
+            logger.warning(f"{council_name}: results_container not found — will attempt extraction anyway")
+            stats.errors += 1
+
+        # ── Phase 4: paginate and extract ────────────────────────────────── #
+        page_num = 1
+        while True:
+            logger.info(f"Extracting page {page_num}…")
+            try:
+                await page.wait_for_load_state('networkidle', timeout=NETWORK_IDLE_TIMEOUT)
+            except PlaywrightTimeoutError:
+                logger.warning(f"Page {page_num} load timeout — proceeding")
+
+            rows = await extract_results(page, council_name, result_sel)
+            logger.info(f"  page {page_num}: {len(rows)} raw rows")
+
+            for rec in rows:
+                key = rec.dedupe_key()
+                stats.total_found += 1
+                if key in seen_refs:
+                    stats.duplicates_skipped += 1
+                else:
+                    all_records.append(rec)
+                    seen_refs.add(key)
+                    stats.new_records += 1
+
+            stats.pages_scraped = page_num
+
+            if page_num >= max_pages:
+                logger.warning(f"{council_name}: reached {max_pages}-page limit")
+                break
+            if not await navigate_next_page(page, council_config):
+                break
+            page_num += 1
+
+        logger.info(
+            f"{council_name}: done — new={stats.new_records} "
+            f"dupes={stats.duplicates_skipped} pages={stats.pages_scraped}"
+        )
+
+    except asyncio.CancelledError:
+        stats.error_message = "Cancelled (per-council timeout)"
+        stats.errors += 1
+        raise
+    except Exception as e:
+        logger.error(f"{council_name}: critical error: {e}", exc_info=True)
+        stats.error_message = str(e)
+        stats.errors += 1
+    finally:
+        await page.close()
+        await ctx.close()
+
+    return all_records, stats
+
 
 async def scrape_council(
     browser: Browser,
     council_config: Dict[str, Any],
     start_date: str,
     end_date: str,
-    seen_refs: Set[str]
-) -> tuple[List[PlanningRecord], Dict[str, int]]:
-    """Scrape a single council with retry logic and deduplication."""
-    council_name = council_config.get('name')
-    url = council_config.get('url')
-
-    logger.info(f"\n{'='*80}")
-    logger.info(f"SCRAPING: {council_name}")
-    logger.info(f"{'='*80}")
-
-    stats = {
-        'total_found': 0,
-        'new_records': 0,
-        'duplicates_skipped': 0,
-        'errors': 0
-    }
-
-    all_records = []
-
-    context = await browser.new_context(
-        user_agent=random.choice(USER_AGENTS),
-        viewport=random.choice(VIEWPORTS),
-        locale='en-GB',
-        timezone_id='Europe/London'
-    )
-
-    page = await context.new_page()
-
+    seen_refs: Set[str],
+    max_pages: int,
+) -> Tuple[List[PlanningRecord], CouncilStats]:
+    """Wraps _scrape_inner with a per-council hard timeout."""
     try:
-        for attempt in range(RETRY_ATTEMPTS):
-            try:
-                logger.info(f"Navigating to {url}... (attempt {attempt + 1})")
-                await page.goto(url, timeout=PAGE_TIMEOUT, wait_until='domcontentloaded')
-                break
-            except PlaywrightTimeoutError:
-                if attempt < RETRY_ATTEMPTS - 1:
-                    logger.warning(f"Timeout, retrying in {RETRY_DELAY}s...")
-                    await asyncio.sleep(RETRY_DELAY)
-                else:
-                    logger.error(f"Failed to load page after {RETRY_ATTEMPTS} attempts")
-                    stats['errors'] += 1
-                    return all_records, stats
-
-        await realistic_delay(1.5, 2.5)
-
-        adv_search_selector = council_config.get('selectors', {}).get('advanced_search')
-        if adv_search_selector:
-            try:
-                adv = page.locator(adv_search_selector).first
-                if await adv.is_visible(timeout=5000):
-                    logger.info("Clicking Advanced Search...")
-                    await adv.click()
-                    await realistic_delay(1.0, 2.0)
-            except Exception as e:
-                logger.debug(f"Could not click Advanced Search: {e}")
-
-        logger.info("Discovering/validating selectors...")
-        discovered_selectors = await discover_selectors(page, council_config)
-
-        for attempt in range(RETRY_ATTEMPTS):
-            try:
-                date_from_selector = discovered_selectors.get('date_from')
-                date_to_selector = discovered_selectors.get('date_to')
-
-                if date_from_selector:
-                    logger.info(f"Filling start date: {start_date}")
-                    await page.fill(date_from_selector, start_date)
-                    await realistic_delay(0.3, 0.8)
-
-                if date_to_selector:
-                    logger.info(f"Filling end date: {end_date}")
-                    await page.fill(date_to_selector, end_date)
-                    await realistic_delay(0.3, 0.8)
-
-                break
-            except Exception as e:
-                logger.warning(f"Error filling dates (attempt {attempt + 1}): {e}")
-                if attempt < RETRY_ATTEMPTS - 1:
-                    await asyncio.sleep(RETRY_DELAY)
-
-        for attempt in range(RETRY_ATTEMPTS):
-            try:
-                submit_selector = discovered_selectors.get('submit_button')
-                if submit_selector:
-                    logger.info("Submitting search...")
-                    await page.click(submit_selector)
-                    await realistic_delay(1.5, 3.0)
-                    await page.wait_for_load_state('networkidle', timeout=NETWORK_IDLE_TIMEOUT)
-                break
-            except Exception as e:
-                logger.warning(f"Error submitting search (attempt {attempt + 1}): {e}")
-                if attempt < RETRY_ATTEMPTS - 1:
-                    await asyncio.sleep(RETRY_DELAY)
-
-        page_num = 1
-        while True:
-            logger.info(f"Extracting page {page_num}...")
-
-            records = await extract_results(page, council_name, discovered_selectors)
-            logger.info(f"Page {page_num}: {len(records)} raw records")
-
-            for record in records:
-                key = record.dedupe_key()
-                stats['total_found'] += 1
-
-                if key in seen_refs:
-                    logger.debug(f"Skipping duplicate: {record.reference}")
-                    stats['duplicates_skipped'] += 1
-                else:
-                    all_records.append(record)
-                    seen_refs.add(key)
-                    stats['new_records'] += 1
-
-            has_next = False
-            for attempt in range(RETRY_ATTEMPTS):
-                try:
-                    has_next = await navigate_next_page(page, council_config)
-                    break
-                except Exception as e:
-                    logger.warning(f"Error navigating next page (attempt {attempt + 1}): {e}")
-                    if attempt < RETRY_ATTEMPTS - 1:
-                        await asyncio.sleep(RETRY_DELAY)
-
-            if not has_next:
-                break
-
-            page_num += 1
-            if page_num > 50:
-                logger.warning("Reached pagination safety limit (50 pages)")
-                break
-
-        logger.info(
-            f"{council_name} complete: {stats['new_records']} new records "
-            f"(total found: {stats['total_found']}, duplicates: {stats['duplicates_skipped']})"
+        return await asyncio.wait_for(
+            _scrape_inner(browser, council_config, start_date, end_date, seen_refs, max_pages),
+            timeout=COUNCIL_TIMEOUT_SEC,
         )
-
-    except Exception as e:
-        logger.error(f"Critical error scraping {council_name}: {e}", exc_info=True)
-        stats['errors'] += 1
-
-    finally:
-        await page.close()
-        await context.close()
-
-    return all_records, stats
+    except asyncio.TimeoutError:
+        name = council_config.get('name', 'Unknown')
+        logger.error(f"{name}: timed out after {COUNCIL_TIMEOUT_SEC}s")
+        return [], CouncilStats(council=name, error_message=f"timeout after {COUNCIL_TIMEOUT_SEC}s")
 
 
 # =============================================================================
@@ -602,130 +676,152 @@ async def run_scraper(
     end_date: Optional[str],
     output_format: str,
     dry_run: bool,
-    council_filter: Optional[str]
-):
-    """Main async orchestration function."""
+    council_filter: Optional[str],
+    max_pages: int,
+    verbose: bool,
+) -> None:
+    setup_logging(verbose)
 
     logger.info("=" * 80)
-    logger.info(f"Council Planning Scraper v2 - {'DRY-RUN MODE' if dry_run else 'LIVE MODE'}")
-    logger.info(f"Start time: {datetime.now().isoformat()}")
+    logger.info(f"Council Planning Scraper v3 — {'DRY-RUN' if dry_run else 'LIVE MODE'}")
+    logger.info(f"Start: {datetime.now().isoformat()}")
     logger.info("=" * 80)
 
     config = load_config()
-
     councils = config.get('councils', [])
+
     if council_filter:
-        councils = [c for c in councils if c.get('name').lower() == council_filter.lower()]
+        councils = [c for c in councils if c.get('name', '').lower() == council_filter.lower()]
         if not councils:
             logger.error(f"Council not found: {council_filter}")
             sys.exit(1)
 
-    enabled_councils = [c for c in councils if c.get('enabled', True)]
-    logger.info(f"Processing {len(enabled_councils)} council(s)")
+    enabled = [c for c in councils if c.get('enabled', True)]
+    logger.info(f"Processing {len(enabled)} council(s)")
 
-    start_date_str, end_date_str = calculate_date_range(start_date, end_date)
-
+    start_str, end_str = calculate_date_range(start_date, end_date)
     seen_refs = load_seen_refs()
 
-    all_records = []
-    all_stats = {}
-    dry_run_reports = []
+    all_records: List[PlanningRecord] = []
+    all_stats: List[CouncilStats] = []
+    dry_reports: List[Dict[str, Any]] = []
+    consecutive_failures = 0
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=True,
-            args=['--disable-blink-features=AutomationControlled', '--disable-gpu']
+            args=['--disable-blink-features=AutomationControlled', '--disable-gpu'],
         )
-
         try:
-            for council_config in enabled_councils:
-                council_name = council_config.get('name')
-
+            for council_config in enabled:
+                name = council_config.get('name', 'Unknown')
                 try:
                     if dry_run:
-                        report = await dry_run_council(browser, council_config, start_date_str, end_date_str)
-                        dry_run_reports.append(report)
+                        report = await dry_run_council(browser, council_config, start_str, end_str)
+                        dry_reports.append(report)
                     else:
                         records, stats = await scrape_council(
-                            browser, council_config, start_date_str, end_date_str, seen_refs
+                            browser, council_config, start_str, end_str, seen_refs, max_pages
                         )
                         all_records.extend(records)
-                        all_stats[council_name] = stats
+                        all_stats.append(stats)
+
+                        # Persist dedup state after each council so a crash
+                        # mid-run doesn't re-scrape already-processed councils.
+                        if not stats.failed():
+                            save_seen_refs(seen_refs)
+                            consecutive_failures = 0
+                        else:
+                            consecutive_failures += 1
+                            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                                logger.error(
+                                    f"Aborting: {consecutive_failures} consecutive council failures"
+                                )
+                                break
 
                 except Exception as e:
-                    logger.error(f"Failed to process {council_name}: {e}", exc_info=True)
-                    all_stats[council_name] = {'error': str(e)}
+                    logger.error(f"Unhandled error for {name}: {e}", exc_info=True)
+                    all_stats.append(CouncilStats(council=name, error_message=str(e)))
+                    consecutive_failures += 1
+                    if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                        logger.error("Aborting: too many consecutive failures")
+                        break
 
                 await realistic_delay(1.0, 2.0)
-
         finally:
             await browser.close()
 
+    # ── Output ────────────────────────────────────────────────────────────── #
     if dry_run:
         logger.info("\n" + "=" * 80)
         logger.info("DRY-RUN VALIDATION REPORT")
         logger.info("=" * 80)
-
-        for report in dry_run_reports:
+        for report in dry_reports:
+            form_ok = sum(1 for v in report.get('form_selectors', {}).values() if v)
+            form_total = len(report.get('form_selectors', {}))
+            res_ok = sum(1 for v in report.get('result_selectors', {}).values() if v)
+            res_total = len(report.get('result_selectors', {}))
             logger.info(f"\n{report['council']}:")
             logger.info(f"  URL: {report['url']}")
-            logger.info(
-                f"  Selectors Valid: "
-                f"{sum(1 for v in report['selectors_valid'].values() if v)} / "
-                f"{len(report['selectors_valid'])}"
-            )
-
-            if report['errors']:
-                logger.info(f"  Errors:")
-                for err in report['errors']:
-                    logger.info(f"    - {err}")
-            else:
-                logger.info(f"  All validations passed")
+            logger.info(f"  Form selectors:   {form_ok}/{form_total}")
+            logger.info(f"  Result selectors: {res_ok}/{res_total}")
+            for err in report['errors']:
+                logger.warning(f"  ! {err}")
+            if not report['errors']:
+                logger.info("  All validations passed")
     else:
         save_seen_refs(seen_refs)
 
-        if all_records:
-            if output_format == 'csv':
-                df = pd.DataFrame([r.to_dict() for r in all_records])
-                df.to_csv(OUTPUT_FILE, index=False, quoting=csv.QUOTE_ALL, encoding='utf-8')
-                logger.info(f"\nData saved to: {OUTPUT_FILE}")
-                logger.info(f"  Rows: {len(df)} | Columns: {list(df.columns)}")
+        total_new = total_found = total_dups = 0
+        for stats in all_stats:
+            if stats.failed():
+                logger.error(f"{stats.council}: FAILED — {stats.error_message}")
+            elif stats.no_results:
+                logger.info(f"{stats.council}: no results for date range")
+            else:
+                total_found += stats.total_found
+                total_new += stats.new_records
+                total_dups += stats.duplicates_skipped
 
-            elif output_format == 'json':
-                with open(OUTPUT_JSON_FILE, 'w') as f:
-                    json.dump([r.to_dict() for r in all_records], f, indent=2)
-                logger.info(f"\nData saved to: {OUTPUT_JSON_FILE}")
-                logger.info(f"  Records: {len(all_records)}")
+        if all_records:
+            try:
+                if output_format == 'csv':
+                    atomic_write_csv(all_records, OUTPUT_FILE)
+                elif output_format == 'json':
+                    tmp = OUTPUT_JSON_FILE.with_suffix('.tmp')
+                    try:
+                        with open(tmp, 'w') as f:
+                            json.dump([r.to_dict() for r in all_records], f, indent=2)
+                        tmp.replace(OUTPUT_JSON_FILE)
+                        logger.info(f"Data saved: {OUTPUT_JSON_FILE} ({len(all_records)} records)")
+                    finally:
+                        if tmp.exists():
+                            tmp.unlink(missing_ok=True)
+            except Exception as e:
+                logger.error(f"Output write failed: {e}")
         else:
             logger.warning("No new records found")
 
         logger.info("\n" + "=" * 80)
-        logger.info("SUMMARY STATISTICS")
+        logger.info("SUMMARY")
         logger.info("=" * 80)
-
-        total_new = 0
-        total_found = 0
-        total_dups = 0
-
-        for council_name, stats in all_stats.items():
-            if 'error' in stats:
-                logger.error(f"{council_name}: FAILED - {stats['error']}")
+        for stats in all_stats:
+            if stats.failed():
+                logger.error(f"  {stats.council}: FAILED — {stats.error_message}")
+            elif stats.no_results:
+                logger.info(f"  {stats.council}: no results")
             else:
-                logger.info(f"{council_name}:")
-                logger.info(f"  Total Found: {stats['total_found']}")
-                logger.info(f"  New Records: {stats['new_records']}")
-                logger.info(f"  Duplicates Skipped: {stats['duplicates_skipped']}")
+                logger.info(
+                    f"  {stats.council}: "
+                    f"found={stats.total_found} new={stats.new_records} "
+                    f"dupes={stats.duplicates_skipped} pages={stats.pages_scraped}"
+                )
+        logger.info(f"\n  Grand total — found={total_found} new={total_new} dupes={total_dups}")
 
-                total_new += stats['new_records']
-                total_found += stats['total_found']
-                total_dups += stats['duplicates_skipped']
+        # Machine-readable line parsed by run_daily.py
+        print(f"NEW_RECORDS={total_new}")
 
-        logger.info(f"\nGrand Total:")
-        logger.info(f"  Records Found: {total_found}")
-        logger.info(f"  New Records: {total_new}")
-        logger.info(f"  Duplicates Skipped: {total_dups}")
-
-    logger.info(f"\nEnd time: {datetime.now().isoformat()}")
+    logger.info(f"\nEnd: {datetime.now().isoformat()}")
     logger.info("=" * 80)
 
 
@@ -734,47 +830,28 @@ async def run_scraper(
 # =============================================================================
 
 @click.command()
-@click.option(
-    '--start-date',
-    type=str,
-    default=None,
-    help='Start date (YYYY-MM-DD). Default: 7 days ago.'
-)
-@click.option(
-    '--end-date',
-    type=str,
-    default=None,
-    help='End date (YYYY-MM-DD). Default: today.'
-)
-@click.option(
-    '--output',
-    type=click.Choice(['csv', 'json']),
-    default='csv',
-    help='Output format.'
-)
-@click.option(
-    '--dry-run',
-    is_flag=True,
-    help='Validate council configs without scraping.'
-)
-@click.option(
-    '--council',
-    type=str,
-    default=None,
-    help='Scrape only one council by name (e.g., Bromley).'
-)
+@click.option('--start-date', default=None, help='YYYY-MM-DD (default: 7 days ago)')
+@click.option('--end-date', default=None, help='YYYY-MM-DD (default: today)')
+@click.option('--output', type=click.Choice(['csv', 'json']), default='csv')
+@click.option('--dry-run', is_flag=True, help='Validate configs without scraping')
+@click.option('--council', default=None, help='Scrape one council only (e.g. Bromley)')
+@click.option('--max-pages', default=DEFAULT_MAX_PAGES, show_default=True,
+              help='Pagination safety limit per council')
+@click.option('--verbose', '-v', is_flag=True, help='Enable DEBUG logging')
 def main(
     start_date: Optional[str],
     end_date: Optional[str],
     output: str,
     dry_run: bool,
-    council: Optional[str]
-):
-    """Production-grade council planning scraper with config-driven extraction."""
+    council: Optional[str],
+    max_pages: int,
+    verbose: bool,
+) -> None:
+    """Council planning scraper v3 — hardened against selector drift and network failures."""
     try:
-        asyncio.run(run_scraper(start_date, end_date, output, dry_run, council))
+        asyncio.run(run_scraper(start_date, end_date, output, dry_run, council, max_pages, verbose))
     except KeyboardInterrupt:
-        logger.info("\nScraper interrupted by user")
+        logger.info("\nInterrupted by user")
         sys.exit(1)
     except Exception as e:
         logger.error(f"Fatal error: {e}", exc_info=True)
