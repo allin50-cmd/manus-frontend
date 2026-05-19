@@ -49,34 +49,10 @@
       "date_format": "DD/MM/YYYY"
     },
     {
-      "name": "Ealing",
-      "url": "https://pam.ealing.gov.uk/online-applications/search.do?action=advanced&searchType=Application",
-      "enabled": false,
-      "selectors": {
-        "advanced_search": "",
-        "date_from": "#applicationValidatedStart",
-        "date_to": "#applicationValidatedEnd",
-        "submit_button": "input[value='Search'], button[type=submit], input[type=submit]",
-        "results_container": ".searchresult",
-        "reference_cell": ".metaInfo",
-        "address_cell": ".address",
-        "description_cell": "a",
-        "status_cell": ".metaInfo",
-        "date_validated_cell": ".metaInfo",
-        "next_page": "a:has-text('Next')"
-      },
-      "field_patterns": {
-        "reference_cell": "Ref\\.\\s*No[:\\s]+([^\\s|]+)",
-        "date_validated_cell": "Validated[^\\w]*([\\w]+ \\d{1,2} [\\w]+ \\d{4}|\\d{1,2}/\\d{1,2}/\\d{2,4})",
-        "status_cell": "Status[:\\s]+([^|\\n]{1,60})"
-      },
-      "date_input_js": true,
-      "date_format": "DD/MM/YYYY"
-    },
-    {
-      "name": "Brent",
-      "url": "https://pa.brent.gov.uk/online-applications/search.do?action=advanced&searchType=Application",
-      "enabled": false,
+      "name": "Croydon",
+      "url": "https://publicaccess.croydon.gov.uk/online-applications/search.do?action=advanced&searchType=Application",
+      "enabled": true,
+      "note": "Portal returns 503 TLS_error from cloud/CI environments (proxy-level cert failure). Re-enable on local Mac.",
       "selectors": {
         "advanced_search": "",
         "date_from": "#applicationValidatedStart",
