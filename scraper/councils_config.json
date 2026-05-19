@@ -51,7 +51,7 @@
     {
       "name": "Ealing",
       "url": "https://pam.ealing.gov.uk/online-applications/search.do?action=advanced&searchType=Application",
-      "enabled": true,
+      "enabled": false,
       "selectors": {
         "advanced_search": "",
         "date_from": "#applicationValidatedStart",
@@ -76,7 +76,7 @@
     {
       "name": "Brent",
       "url": "https://pa.brent.gov.uk/online-applications/search.do?action=advanced&searchType=Application",
-      "enabled": true,
+      "enabled": false,
       "selectors": {
         "advanced_search": "",
         "date_from": "#applicationValidatedStart",
@@ -101,7 +101,7 @@
     {
       "name": "Bromley",
       "url": "https://searchapplications.bromley.gov.uk/online-applications/search.do?action=advanced&searchType=Application",
-      "enabled": false,
+      "enabled": true,
       "note": "Portal returns upstream connection timeout from cloud/CI environments. Re-enable on local Mac.",
       "selectors": {
         "advanced_search": "",
