@@ -1,0 +1,42 @@
+{
+  "councils": [
+    {
+      "name": "Bromley",
+      "url": "https://searchapplications.bromley.gov.uk/online-applications/",
+      "selectors": {
+        "advanced_search": "a:has-text('Advanced Search'), a[href*='advanced']",
+        "date_from": "input[id*='from' i], input[name*='from' i], input[aria-label*='from' i]",
+        "date_to": "input[id*='to' i], input[name*='to' i], input[aria-label*='to' i]",
+        "submit_button": "button:has-text('Search'), button[type='submit'], input[type='submit']",
+        "results_container": "table tbody tr, div[class*='result'], div[class*='application']",
+        "reference_cell": "td:nth-child(1), div[class*='ref']",
+        "address_cell": "td:nth-child(2), div[class*='address']",
+        "description_cell": "td:nth-child(3), div[class*='proposal']",
+        "status_cell": "td:nth-child(4), div[class*='status']",
+        "date_validated_cell": "td:nth-child(5), div[class*='date']",
+        "next_page": "a:has-text('Next'), a[aria-label*='next' i], .pagination-next"
+      },
+      "date_format": "DD/MM/YYYY",
+      "enabled": true
+    },
+    {
+      "name": "Lewisham",
+      "url": "https://planning.lewisham.gov.uk/online-applications/",
+      "selectors": {
+        "advanced_search": "a:has-text('Advanced Search'), a[href*='advanced']",
+        "date_from": "input[id*='from' i], input[name*='from' i], input[aria-label*='from' i]",
+        "date_to": "input[id*='to' i], input[name*='to' i], input[aria-label*='to' i]",
+        "submit_button": "button:has-text('Search'), button[type='submit'], input[type='submit']",
+        "results_container": "table tbody tr, div[class*='result'], div[class*='application']",
+        "reference_cell": "td:nth-child(1), div[class*='ref']",
+        "address_cell": "td:nth-child(2), div[class*='address']",
+        "description_cell": "td:nth-child(3), div[class*='proposal']",
+        "status_cell": "td:nth-child(4), div[class*='status']",
+        "date_validated_cell": "td:nth-child(5), div[class*='date']",
+        "next_page": "a:has-text('Next'), a[aria-label*='next' i], .pagination-next"
+      },
+      "date_format": "DD/MM/YYYY",
+      "enabled": true
+    }
+  ]
+}

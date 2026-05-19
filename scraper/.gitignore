@@ -1,0 +1,9 @@
+venv/
+.env
+*.csv
+*.json
+!councils_config.json
+logs/
+seen_refs.json
+__pycache__/
+*.pyc
