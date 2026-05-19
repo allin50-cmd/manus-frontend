@@ -259,7 +259,7 @@ def atomic_write_csv(records: List[PlanningRecord], output_path: Path) -> None:
 # SELECTOR DISCOVERY
 # =============================================================================
 
-async def _selector_visible(page: Page, selector: str, timeout: int = 3000) -> bool:
+async def _selector_visible(page: Page, selector: str, timeout: int = 5000) -> bool:
     try:
         return await page.locator(selector).first.is_visible(timeout=timeout)
     except Exception:
