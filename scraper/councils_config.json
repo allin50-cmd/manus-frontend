@@ -3,40 +3,54 @@
     {
       "name": "Bromley",
       "url": "https://searchapplications.bromley.gov.uk/online-applications/",
+      "enabled": false,
+      "note": "Portal returns connection timeout from cloud/CI environments. Requires direct residential/VPN network access to reach the upstream server. Re-enable when running on a local Mac.",
       "selectors": {
         "advanced_search": "a:has-text('Advanced Search'), a[href*='advanced']",
         "date_from": "input[id*='from' i], input[name*='from' i], input[aria-label*='from' i]",
         "date_to": "input[id*='to' i], input[name*='to' i], input[aria-label*='to' i]",
         "submit_button": "button:has-text('Search'), button[type='submit'], input[type='submit']",
-        "results_container": "table tbody tr, div[class*='result'], div[class*='application']",
-        "reference_cell": "td:nth-child(1), div[class*='ref']",
-        "address_cell": "td:nth-child(2), div[class*='address']",
-        "description_cell": "td:nth-child(3), div[class*='proposal']",
-        "status_cell": "td:nth-child(4), div[class*='status']",
-        "date_validated_cell": "td:nth-child(5), div[class*='date']",
+        "results_container": ".searchresult, table tbody tr",
+        "reference_cell": ".metaInfo, td:nth-child(1)",
+        "address_cell": ".address, td:nth-child(2)",
+        "description_cell": "a, td:nth-child(3)",
+        "status_cell": ".metaInfo, td:nth-child(4)",
+        "date_validated_cell": ".metaInfo, td:nth-child(5)",
         "next_page": "a:has-text('Next'), a[aria-label*='next' i], .pagination-next"
       },
-      "date_format": "DD/MM/YYYY",
-      "enabled": true
+      "field_patterns": {
+        "reference_cell": "Ref\\.\\s*No[:\\s]+([^\\s|]+)",
+        "date_validated_cell": "Validated[^\\w]*([\\w]+ \\d{1,2} [\\w]+ \\d{4}|\\d{1,2}/\\d{1,2}/\\d{2,4})",
+        "status_cell": "Status[:\\s]+([^|\\n]{1,60})"
+      },
+      "date_input_js": false,
+      "date_format": "DD/MM/YYYY"
     },
     {
       "name": "Lewisham",
-      "url": "https://planning.lewisham.gov.uk/online-applications/",
+      "url": "https://planning.lewisham.gov.uk/online-applications/search.do?action=advanced&searchType=Application",
+      "enabled": true,
+      "note": "URL points directly to the advanced search form — no need to click an Advanced Search link.",
       "selectors": {
-        "advanced_search": "a:has-text('Advanced Search'), a[href*='advanced']",
-        "date_from": "input[id*='from' i], input[name*='from' i], input[aria-label*='from' i]",
-        "date_to": "input[id*='to' i], input[name*='to' i], input[aria-label*='to' i]",
-        "submit_button": "button:has-text('Search'), button[type='submit'], input[type='submit']",
-        "results_container": "table tbody tr, div[class*='result'], div[class*='application']",
-        "reference_cell": "td:nth-child(1), div[class*='ref']",
-        "address_cell": "td:nth-child(2), div[class*='address']",
-        "description_cell": "td:nth-child(3), div[class*='proposal']",
-        "status_cell": "td:nth-child(4), div[class*='status']",
-        "date_validated_cell": "td:nth-child(5), div[class*='date']",
-        "next_page": "a:has-text('Next'), a[aria-label*='next' i], .pagination-next"
+        "advanced_search": "",
+        "date_from": "#applicationValidatedStart",
+        "date_to": "#applicationValidatedEnd",
+        "submit_button": "input[type='submit']",
+        "results_container": ".searchresult",
+        "reference_cell": ".metaInfo",
+        "address_cell": ".address",
+        "description_cell": "a",
+        "status_cell": ".metaInfo",
+        "date_validated_cell": ".metaInfo",
+        "next_page": "a:has-text('Next')"
       },
-      "date_format": "DD/MM/YYYY",
-      "enabled": true
+      "field_patterns": {
+        "reference_cell": "Ref\\.\\s*No[:\\s]+([^\\s|]+)",
+        "date_validated_cell": "Validated[^\\w]*([\\w]+ \\d{1,2} [\\w]+ \\d{4}|\\d{1,2}/\\d{1,2}/\\d{2,4})",
+        "status_cell": "Status[:\\s]+([^|\\n]{1,60})"
+      },
+      "date_input_js": true,
+      "date_format": "DD/MM/YYYY"
     }
   ]
 }

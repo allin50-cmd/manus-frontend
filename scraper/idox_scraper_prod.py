@@ -25,6 +25,16 @@ Fixes vs v2:
   - --max-pages and --verbose CLI flags.
   - Prints NEW_RECORDS=N to stdout for machine-readable parsing by
     run_daily.py (replaces fragile CSV mtime check).
+  - v3.1: Lewisham live-run fixes:
+    - fill_date_field(): try page.fill first, fall back to JS value injection
+      for portals with calendar-picker widgets that block normal interaction.
+    - field_patterns in config: per-field regex applied after text extraction,
+      needed when reference/status/date are packed into a single .metaInfo
+      paragraph rather than separate table cells.
+    - click_advanced_search() skips the click if already on advanced page.
+    - parse_date() extended with '%a %d %b %Y' (e.g. 'Mon 18 May 2026').
+    - ignore_https_errors=True on all browser contexts (government portals
+      use certs that the cloud sandbox CA store does not trust).
 ================================================================================
 """
 
@@ -219,7 +229,11 @@ def parse_date(date_str: str) -> str:
     if not date_str:
         return ""
     date_str = clean_text(date_str)
-    for fmt in ['%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d %b %Y', '%d %B %Y']:
+    for fmt in [
+        '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d',
+        '%d %b %Y', '%d %B %Y',
+        '%a %d %b %Y', '%A %d %b %Y',   # e.g. "Mon 18 May 2026"
+    ]:
         try:
             return datetime.strptime(date_str, fmt).strftime('%Y-%m-%d')
         except ValueError:
@@ -303,8 +317,32 @@ async def page_has_no_results(page: Page) -> bool:
     return False
 
 
+async def fill_date_field(page: Page, selector: str, value: str, use_js: bool = False) -> None:
+    """
+    Fill a date input. Falls back to JavaScript direct value injection when
+    a date-picker widget intercepts the normal fill interaction.
+    The `selector` must be an id-based selector (e.g. '#myId') for the JS
+    fallback path; other selector types skip the fallback gracefully.
+    """
+    if use_js:
+        elem_id = selector.lstrip('#')
+        await page.evaluate(f"document.getElementById('{elem_id}').value = '{value}'")
+        return
+    try:
+        await page.fill(selector, value, timeout=5_000)
+    except Exception:
+        elem_id = selector.lstrip('#')
+        if elem_id:
+            logger.debug(f"page.fill({selector}) failed — using JS injection")
+            await page.evaluate(f"document.getElementById('{elem_id}').value = '{value}'")
+        else:
+            raise
+
+
 async def click_advanced_search(page: Page, council_config: Dict[str, Any]) -> None:
-    """Click the Advanced Search link if configured and visible."""
+    """Click the Advanced Search link if configured and not already on that page."""
+    if 'action=advanced' in page.url:
+        return   # already on the advanced search form
     raw = council_config.get('selectors', {}).get('advanced_search', '')
     for candidate in [s.strip() for s in raw.split(', ') if s.strip()]:
         try:
@@ -322,16 +360,33 @@ async def click_advanced_search(page: Page, council_config: Dict[str, Any]) -> N
 # EXTRACTION
 # =============================================================================
 
-async def _cell_text(row, selector: Optional[str], fallback: str, field: str) -> str:
+async def _cell_text(
+    row,
+    selector: Optional[str],
+    fallback: str,
+    field: str,
+    pattern: Optional[str] = None,
+) -> str:
     """
     Extract text from a cell. Uses `selector or fallback` so that a None
     discovered selector falls through to the positional fallback — unlike
     dict.get(key, default) which ignores the default when the key exists
     with value None.
+
+    If `pattern` is given, it is applied as a regex and the first capture
+    group (or full match) is returned. This is needed when multiple fields
+    share the same element (e.g. Idox's .metaInfo paragraph that contains
+    reference number, dates, and status in a single block of text).
     """
+    import re as _re
     effective = selector or fallback
     try:
-        return clean_text(await row.locator(effective).first.text_content(timeout=3_000))
+        text = clean_text(await row.locator(effective).first.text_content(timeout=3_000))
+        if pattern and text:
+            m = _re.search(pattern, text, _re.IGNORECASE)
+            if m:
+                return (m.group(1) if m.groups() else m.group(0)).strip()
+        return text
     except Exception as e:
         logger.debug(f"  cell[{field}] ({effective}): {e}")
         return ""
@@ -349,7 +404,9 @@ async def extract_results(
     page: Page,
     council_name: str,
     result_selectors: Dict[str, Optional[str]],
+    field_patterns: Optional[Dict[str, str]] = None,
 ) -> List[PlanningRecord]:
+    fp = field_patterns or {}
     records: List[PlanningRecord] = []
 
     results_selector = result_selectors.get('results_container')
@@ -369,18 +426,23 @@ async def extract_results(
             try:
                 row = page.locator(results_selector).nth(i)
 
-                ref = await _cell_text(row, result_selectors.get('reference_cell'), 'td:nth-child(1)', 'ref')
+                ref = await _cell_text(row, result_selectors.get('reference_cell'), 'td:nth-child(1)', 'ref',
+                                       fp.get('reference_cell'))
                 if not ref or len(ref.strip()) < 3:
                     continue
 
                 records.append(PlanningRecord(
                     council=council_name,
                     reference=ref,
-                    address=await _cell_text(row, result_selectors.get('address_cell'), 'td:nth-child(2)', 'addr'),
-                    description=await _cell_text(row, result_selectors.get('description_cell'), 'td:nth-child(3)', 'desc'),
-                    status=await _cell_text(row, result_selectors.get('status_cell'), 'td:nth-child(4)', 'status'),
+                    address=await _cell_text(row, result_selectors.get('address_cell'), 'td:nth-child(2)', 'addr',
+                                            fp.get('address_cell')),
+                    description=await _cell_text(row, result_selectors.get('description_cell'), 'td:nth-child(3)', 'desc',
+                                                fp.get('description_cell')),
+                    status=await _cell_text(row, result_selectors.get('status_cell'), 'td:nth-child(4)', 'status',
+                                           fp.get('status_cell')),
                     date_validated=parse_date(
-                        await _cell_text(row, result_selectors.get('date_validated_cell'), 'td:nth-child(5)', 'date')
+                        await _cell_text(row, result_selectors.get('date_validated_cell'), 'td:nth-child(5)', 'date',
+                                         fp.get('date_validated_cell'))
                     ),
                     url=await _row_url(row, base_url),
                 ))
@@ -443,6 +505,7 @@ async def dry_run_council(
         viewport=random.choice(VIEWPORTS),
         locale='en-GB',
         timezone_id='Europe/London',
+        ignore_https_errors=True,
     )
     page = await ctx.new_page()
 
@@ -472,9 +535,10 @@ async def dry_run_council(
 
         if df_sel and dt_sel and sb_sel:
             logger.info("Submitting test search to validate result selectors…")
+            use_js = council_config.get('date_input_js', False)
             try:
-                await page.fill(df_sel, start_date)
-                await page.fill(dt_sel, end_date)
+                await fill_date_field(page, df_sel, start_date, use_js=use_js)
+                await fill_date_field(page, dt_sel, end_date, use_js=use_js)
                 await page.click(sb_sel)
                 await page.wait_for_load_state('networkidle', timeout=NETWORK_IDLE_TIMEOUT)
                 await realistic_delay(1.0, 2.0)
@@ -524,6 +588,7 @@ async def _scrape_inner(
         viewport=random.choice(VIEWPORTS),
         locale='en-GB',
         timezone_id='Europe/London',
+        ignore_https_errors=True,
     )
     page = await ctx.new_page()
 
@@ -558,13 +623,16 @@ async def _scrape_inner(
             stats.errors += 1
             return all_records, stats
 
+        use_js_date = council_config.get('date_input_js', False)
+        field_patterns = council_config.get('field_patterns', {})
+
         for attempt in range(RETRY_ATTEMPTS):
             try:
                 if form_sel.get('date_from'):
-                    await page.fill(form_sel['date_from'], start_date)
+                    await fill_date_field(page, form_sel['date_from'], start_date, use_js=use_js_date)
                     await realistic_delay(0.2, 0.6)
                 if form_sel.get('date_to'):
-                    await page.fill(form_sel['date_to'], end_date)
+                    await fill_date_field(page, form_sel['date_to'], end_date, use_js=use_js_date)
                     await realistic_delay(0.2, 0.6)
                 break
             except Exception as e:
@@ -605,7 +673,7 @@ async def _scrape_inner(
             except PlaywrightTimeoutError:
                 logger.warning(f"Page {page_num} load timeout — proceeding")
 
-            rows = await extract_results(page, council_name, result_sel)
+            rows = await extract_results(page, council_name, result_sel, field_patterns)
             logger.info(f"  page {page_num}: {len(rows)} raw rows")
 
             for rec in rows:
