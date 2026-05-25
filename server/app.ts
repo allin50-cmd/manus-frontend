@@ -24,6 +24,12 @@ import { withRetry } from './lib/retry';
 import { PieOpportunitySchema, buildSourceRef } from './lib/pie-schema';
 import { activateFineGuardForPie } from './lib/pie-fineguard';
 import { wrapGracefully } from './lib/wrap-gracefully';
+import { getAllCircuitSnapshots } from './lib/circuit-breaker';
+import {
+  getAllDependencyStats,
+  getInstanceInfo,
+  getRecentTraces,
+} from './lib/resilience-stats';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -904,6 +910,66 @@ export function createApp(): express.Express {
       console.error('Error updating contact:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
+  });
+
+  // ==========================================================================
+  // RESILIENCE OBSERVABILITY
+  // ==========================================================================
+
+  /**
+   * GET /api/internal/resilience
+   *
+   * Returns a per-instance snapshot of circuit breaker state, dependency
+   * success/failure counters, and a small ring buffer of recent traced
+   * operations. Strictly read-only — does NOT touch the database, does
+   * NOT mutate any breaker state.
+   *
+   * Security: gated by the same ADMIN_API_KEY as other /api/internal/*
+   * routes. Returns 401 without a valid key.
+   *
+   * Safety: every read is wrapped in try/catch so a corrupted in-memory
+   * structure cannot 500 the endpoint. A partial snapshot is preferable
+   * to a failed introspection call.
+   */
+  app.get('/api/internal/resilience', (req: Request, res: Response) => {
+    const key = req.headers['x-admin-key'];
+    if (!ADMIN_API_KEY || key !== ADMIN_API_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const partial: { circuits?: unknown; stats?: unknown; recentTraces?: unknown; system?: unknown; errors: string[] } = {
+      errors: [],
+    };
+
+    try {
+      partial.circuits = getAllCircuitSnapshots();
+    } catch (e) {
+      partial.errors.push(`circuits: ${String(e)}`);
+    }
+    try {
+      partial.stats = getAllDependencyStats();
+    } catch (e) {
+      partial.errors.push(`stats: ${String(e)}`);
+    }
+    try {
+      partial.recentTraces = getRecentTraces();
+    } catch (e) {
+      partial.errors.push(`recentTraces: ${String(e)}`);
+    }
+    try {
+      partial.system = getInstanceInfo();
+    } catch (e) {
+      partial.errors.push(`system: ${String(e)}`);
+    }
+
+    return res.json({
+      timestamp: new Date().toISOString(),
+      circuits: partial.circuits ?? {},
+      stats: partial.stats ?? {},
+      recentTraces: partial.recentTraces ?? [],
+      system: partial.system ?? { instanceId: 'unknown', uptimeMs: 0 },
+      ...(partial.errors.length > 0 ? { partialErrors: partial.errors } : {}),
+    });
   });
 
   // ==========================================================================

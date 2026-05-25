@@ -27,6 +27,11 @@ export interface CircuitSnapshot {
   cooldownRemainingMs: number;
 }
 
+export interface CircuitSnapshotDetailed extends CircuitSnapshot {
+  lastFailureAt: number;
+  openedAt: number;
+}
+
 export interface CircuitConfig {
   /** Failures within `windowMs` that open the circuit. */
   failureThreshold: number;
@@ -143,6 +148,32 @@ export function getCircuitSnapshot(dependency: string, now: number = Date.now())
     failures: state.failures,
     cooldownRemainingMs,
   };
+}
+
+/**
+ * Read-only snapshot of every known dependency's circuit state. Used by
+ * the resilience observability endpoint. Returns a fresh object on each
+ * call — callers may not mutate internal state through it.
+ */
+export function getAllCircuitSnapshots(
+  now: number = Date.now(),
+): Record<string, CircuitSnapshotDetailed> {
+  const out: Record<string, CircuitSnapshotDetailed> = {};
+  for (const [dep, state] of states) {
+    const config = getConfig(dep);
+    let cooldownRemainingMs = 0;
+    if (state.state === 'open') {
+      cooldownRemainingMs = Math.max(0, config.cooldownMs - (now - state.openedAt));
+    }
+    out[dep] = {
+      state: state.state,
+      failures: state.failures,
+      cooldownRemainingMs,
+      lastFailureAt: state.lastFailureAt,
+      openedAt: state.openedAt,
+    };
+  }
+  return out;
 }
 
 /**

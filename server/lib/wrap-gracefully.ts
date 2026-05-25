@@ -7,6 +7,7 @@ import {
   type CircuitStateName,
 } from './circuit-breaker';
 import { log } from './logger';
+import { recordOperationFailure, recordOperationSuccess } from './resilience-stats';
 
 /**
  * Coarse error category surfaced in audit metadata. Operators use this
@@ -85,6 +86,7 @@ export async function wrapGracefully<T>(
   // Circuit breaker fast-fail
   if (dependency && !shouldAllowExecution(dependency, now)) {
     const snap = getCircuitSnapshot(dependency, now);
+    recordOperationFailure(dependency, { correlationId, operation, outcome: 'circuit_open' }, now);
     log({
       level: 'warn',
       event: 'graceful.circuit_open.skip',
@@ -124,12 +126,14 @@ export async function wrapGracefully<T>(
   try {
     const value = await fn();
     if (dependency) recordSuccess(dependency);
+    recordOperationSuccess(dependency, { correlationId, operation });
     const snap = dependency
       ? getCircuitSnapshot(dependency)
       : { state: 'closed' as const, failures: 0, cooldownRemainingMs: 0 };
     return { ok: true, value, circuitState: snap.state, degraded: false };
   } catch (err) {
     if (dependency) recordFailure(dependency, now);
+    recordOperationFailure(dependency, { correlationId, operation });
     const snap = dependency
       ? getCircuitSnapshot(dependency)
       : { state: 'closed' as const, failures: 0, cooldownRemainingMs: 0 };
