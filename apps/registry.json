@@ -1,6 +1,7 @@
 {
   "schema": "ultracore-registry/v1",
-  "lastUpdated": "2026-05-25",
+  "lastUpdated": "2026-05-25T07:36:00Z",
+  "consolidationCycle": 2,
   "portfolio": {
     "p1": [
       {
@@ -37,7 +38,22 @@
         ],
         "deployment": "https://zhoqgoan.manus.space/",
         "ownership": "allin50-cmd",
-        "notes": "ClerkOS engine provides case lifecycle state machine. Manus export is the canonical source. Needs migration to packages/core-workflow."
+        "buildStatus": "passing",
+        "testStatus": "30/30 passing",
+        "resolvedBlockers": [
+          "Build was broken (node_modules absent) — resolved",
+          "Test runner was absent — resolved via npm install",
+          "Competing CI/CD pipelines (pnpm/npm conflict) — deploy-vaultline.yml fixed to npm",
+          "ClerkOS schema had no drizzle-kit path — drizzle.clerkos.config.ts added",
+          "Admin endpoints unprotected — X-ADMIN-KEY middleware added",
+          "Marketing pages not routed in App.tsx — all 10 missing pages now routed"
+        ],
+        "remainingBlockers": [
+          "Canonical deployment URL unverified",
+          "Production DATABASE_URL technology unconfirmed",
+          "10-state workflow lifecycle not implemented (core-workflow package pending)"
+        ],
+        "notes": "ClerkOS engine provides 4-state case lifecycle. Needs extension to 10-state target lifecycle via packages/core-workflow."
       },
       {
         "id": "fineguard",
@@ -55,7 +71,19 @@
         ],
         "deployment": "https://compliance-t2rtvc.manus.space/",
         "ownership": "allin50-cmd",
-        "notes": "Companies House API service exists and is integrated. Landing page and bundle checkout exist. Alert generation and email delivery status unverified. Stripe integrated. Full compliance loop needs verification."
+        "buildStatus": "passing",
+        "testStatus": "covered by shared test suite",
+        "resolvedBlockers": [
+          "FineGuard and ComplianceBundle pages are now routed at /fineguard and /compliance-bundle",
+          "Admin endpoints (/api/admin/compliance-bundles, /api/admin/contacts) now protected by X-ADMIN-KEY"
+        ],
+        "remainingBlockers": [
+          "No alert scheduler — monitored companies are not periodically checked",
+          "No email delivery provider configured",
+          "Stripe keys must be provisioned in production environment",
+          "CH API key must be provisioned in production environment"
+        ],
+        "notes": "CH API integration is functional on-demand. Stripe checkout and webhook handler are implemented. Critical gap: no scheduled monitoring loop and no email delivery mechanism."
       },
       {
         "id": "vaultline",
@@ -82,7 +110,19 @@
           "Azure Durable Functions (ClerkOSBundleHub)",
           "Azure Static Web Apps"
         ],
-        "notes": "Audit event table is live in schema. Durable Functions orchestrator handles bundle validate → render → merge → finalize pipeline. Azure resource provisioning status must be verified."
+        "buildStatus": "passing",
+        "testStatus": "covered by shared test suite",
+        "resolvedBlockers": [
+          "VaultLine landing page now routed at /vaultline",
+          "Azure SQL Server replaced with Azure Database for PostgreSQL in deploy/main.bicep — technology now matches application postgres driver",
+          "PostgreSQL connection string now generated and stored in Key Vault as database-url secret"
+        ],
+        "remainingBlockers": [
+          "Azure resource provisioning status unverified — Bicep not confirmed deployed",
+          "ClerkOS schema (server/drizzle/schema.ts) migration path now exists via db:generate:clerkos but initial migration not yet run",
+          "failBundle Azure Function implementation not confirmed"
+        ],
+        "notes": "Audit event table schema is correct. Durable Functions orchestrator handles bundle pipeline. Azure IaC now provisions PostgreSQL. Key Vault stores database-url secret."
       }
     ],
     "p2": [

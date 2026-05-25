@@ -16,7 +16,7 @@ param appName string = 'clerkos'
 @description('Azure region')
 param location string = resourceGroup().location
 
-@description('SQL Server administrator password')
+@description('PostgreSQL administrator password')
 @secure()
 param sqlAdminPassword string
 
@@ -34,8 +34,8 @@ param initialTenantSlug string = 'default'
 // =============================================================================
 
 var prefix = '${appName}-${environment}'
-var sqlServerName = '${prefix}-sql'
-var sqlDbName = '${prefix}-db'
+var pgServerName = '${prefix}-pg'
+var pgDbName = '${prefix}-db'
 var storageAccountName = replace('${appName}${environment}docs', '-', '')
 var serviceBusNamespace = '${prefix}-sb'
 var containerRegistryName = replace('${appName}${environment}cr', '-', '')
@@ -91,10 +91,18 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
-resource kvSecretSqlPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+resource kvSecretDbPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
-  name: 'sql-admin-password'
+  name: 'pg-admin-password'
   properties: { value: sqlAdminPassword }
+}
+
+resource kvSecretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'database-url'
+  properties: {
+    value: 'postgresql://${appName}admin:${sqlAdminPassword}@${pgServer.properties.fullyQualifiedDomainName}:5432/${pgDbName}?sslmode=require'
+  }
 }
 
 resource kvSecretAppInsights 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
@@ -104,39 +112,42 @@ resource kvSecretAppInsights 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
 }
 
 // =============================================================================
-// Azure SQL Server & Database
+// Azure Database for PostgreSQL Flexible Server
+// Replaces Azure SQL Server — application uses the postgres wire protocol.
 // =============================================================================
 
-resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
-  name: sqlServerName
+resource pgServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview' = {
+  name: pgServerName
   location: location
+  sku: {
+    name: environment == 'prod' ? 'Standard_D4s_v3' : 'Standard_B1ms'
+    tier: environment == 'prod' ? 'GeneralPurpose' : 'Burstable'
+  }
   properties: {
     administratorLogin: '${appName}admin'
     administratorLoginPassword: sqlAdminPassword
-    version: '12.0'
-    minimalTlsVersion: '1.2'
-    publicNetworkAccess: environment == 'prod' ? 'Disabled' : 'Enabled'
+    version: '16'
+    storage: { storageSizeGB: environment == 'prod' ? 128 : 32 }
+    backup: {
+      backupRetentionDays: environment == 'prod' ? 35 : 7
+      geoRedundantBackup: environment == 'prod' ? 'Enabled' : 'Disabled'
+    }
+    highAvailability: { mode: environment == 'prod' ? 'ZoneRedundant' : 'Disabled' }
   }
 }
 
-resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-05-01-preview' = {
-  parent: sqlServer
-  name: sqlDbName
-  location: location
-  sku: {
-    name: environment == 'prod' ? 'Hyperscale' : 'GP_Gen5'
-    tier: environment == 'prod' ? 'Hyperscale' : 'GeneralPurpose'
-    capacity: environment == 'prod' ? 4 : 2
-  }
+resource pgDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2023-06-01-preview' = {
+  parent: pgServer
+  name: pgDbName
   properties: {
-    collation: 'SQL_Latin1_General_CP1_CI_AS'
-    catalogCollation: 'SQL_Latin1_General_CP1_CI_AS'
+    charset: 'utf8'
+    collation: 'en_US.utf8'
   }
 }
 
 // Allow Azure services to connect (dev only — use private endpoint in prod)
-resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-05-01-preview' = if (environment != 'prod') {
-  parent: sqlServer
+resource pgFirewallAzure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-06-01-preview' = if (environment != 'prod') {
+  parent: pgServer
   name: 'AllowAzureServices'
   properties: {
     startIpAddress: '0.0.0.0'
