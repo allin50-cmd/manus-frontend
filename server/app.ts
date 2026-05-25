@@ -21,6 +21,7 @@ import { appRouter } from './trpc/routers';
 import { desc, eq } from 'drizzle-orm';
 import { log, generateCorrelationId } from './lib/logger';
 import { withRetry } from './lib/retry';
+import { PieOpportunitySchema, buildSourceRef } from './lib/pie-schema';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -489,6 +490,152 @@ export function createApp(): express.Express {
     } catch (error) {
       console.error('Error fetching intake forms:', error);
       res.status(500).json({ error: 'Failed to fetch intake forms' });
+    }
+  });
+
+  // ==========================================================================
+  // PIE INGESTION — Accuracy PIE → VaultLine intake
+  // ==========================================================================
+
+  /**
+   * POST /api/pie/opportunity
+   *
+   * Accepts an upstream Accuracy PIE planning opportunity and persists it
+   * through the existing intake flow with full audit lineage.
+   *
+   * Idempotent: repeated delivery of the same externalRef returns the
+   * existing matterRef and writes an ingestion_replayed audit event —
+   * no duplicate intake rows are created.
+   */
+  app.post('/api/pie/opportunity', async (req: Request, res: Response) => {
+    const correlationId = generateCorrelationId();
+    const startMs = Date.now();
+
+    const parseResult = PieOpportunitySchema.safeParse(req.body);
+    if (!parseResult.success) {
+      log({
+        level: 'warn',
+        event: 'pie.ingestion.validation_failed',
+        correlationId,
+        errors: parseResult.error.flatten(),
+      });
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid PIE payload',
+        details: parseResult.error.flatten(),
+      });
+    }
+
+    const data = parseResult.data;
+    const pieExternalRef = data.externalRef;
+    const sourceRef = buildSourceRef(pieExternalRef);
+
+    try {
+      // Idempotency check — look up existing intake by sourceRef
+      const [existing] = await db
+        .select()
+        .from(intakeForms)
+        .where(eq(intakeForms.sourceRef, sourceRef))
+        .limit(1);
+
+      if (existing) {
+        await writeAuditEvent({
+          tenantId: SYSTEM_TENANT_ID,
+          entityType: 'intake',
+          entityUuid: existing.id,
+          action: 'ingestion_replayed',
+          correlationId,
+          metadata: JSON.stringify({
+            matterRef: existing.matterRef,
+            sourceRef,
+            upstreamSystem: 'PIE',
+            pieExternalRef,
+            replayDetected: true,
+          }),
+        }).catch(e =>
+          log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'pie-opportunity', error: String(e) }),
+        );
+
+        log({
+          level: 'info',
+          event: 'pie.ingestion.replayed',
+          correlationId,
+          sourceRef,
+          pieExternalRef,
+          existingMatterRef: existing.matterRef,
+          durationMs: Date.now() - startMs,
+        });
+
+        return res.status(200).json({
+          ok: true,
+          replayed: true,
+          message: 'PIE opportunity already ingested',
+          matterRef: existing.matterRef,
+          sourceRef,
+        });
+      }
+
+      // First-time ingestion
+      const matterRef = `MAT-${Date.now()}`;
+
+      const [intake] = await db
+        .insert(intakeForms)
+        .values({
+          matterRef,
+          clientName: data.applicantName,
+          clientEmail: data.applicantEmail || null,
+          clientPhone: data.applicantPhone || null,
+          matterType: 'planning',
+          urgency: data.urgency,
+          description: data.description || null,
+          claimValue: data.estimatedValue || null,
+          sourceRef,
+        })
+        .returning();
+
+      await writeAuditEvent({
+        tenantId: SYSTEM_TENANT_ID,
+        entityType: 'intake',
+        entityUuid: intake.id,
+        action: 'captured',
+        correlationId,
+        metadata: JSON.stringify({
+          matterRef: intake.matterRef,
+          matterType: 'planning',
+          urgency: data.urgency,
+          sourceRef,
+          upstreamSystem: 'PIE',
+          pieExternalRef,
+          siteAddress: data.siteAddress || null,
+          district: data.district || null,
+          submittedAt: data.submittedAt || null,
+        }),
+      }).catch(e =>
+        log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'pie-opportunity', error: String(e) }),
+      );
+
+      log({
+        level: 'info',
+        event: 'pie.ingestion.captured',
+        correlationId,
+        matterRef: intake.matterRef,
+        sourceRef,
+        pieExternalRef,
+        urgency: data.urgency,
+        durationMs: Date.now() - startMs,
+      });
+
+      return res.status(201).json({
+        ok: true,
+        replayed: false,
+        message: 'PIE opportunity ingested successfully',
+        matterRef: intake.matterRef,
+        sourceRef,
+        urgency: intake.urgency,
+      });
+    } catch (error) {
+      log({ level: 'error', event: 'pie.ingestion.failed', correlationId, sourceRef, error: String(error) });
+      res.status(500).json({ ok: false, error: 'Failed to ingest PIE opportunity. Please try again.' });
     }
   });
 
