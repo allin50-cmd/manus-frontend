@@ -3,17 +3,19 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not set');
+// Drizzle Kit push/migrate must use DIRECT_URL (non-pooler).
+// Falls back to DATABASE_URL for local dev where there is no pooler.
+const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('Set DIRECT_URL (preferred) or DATABASE_URL for Drizzle Kit');
 }
 
 export default {
   schema: './server/db/schema.ts',
   out: './drizzle',
   driver: 'pg',
-  dbCredentials: {
-    connectionString: process.env.DATABASE_URL,
-  },
+  dbCredentials: { connectionString },
   verbose: true,
   strict: true,
 } satisfies Config;

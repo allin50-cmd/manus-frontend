@@ -12,17 +12,17 @@ const __dirname = path.dirname(__filename);
 // Resolve deterministically: server/db/migrate.ts → ../../drizzle (project root)
 const migrationsFolder = path.resolve(__dirname, '../../drizzle');
 
-const databaseUrl = process.env.DATABASE_URL;
+// Migrations must use DIRECT_URL (bypasses Neon/Supabase connection pooler).
+const migrationUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 
-if (!databaseUrl) {
-  console.error('DATABASE_URL environment variable is not set');
+if (!migrationUrl) {
+  console.error('Set DIRECT_URL (preferred) or DATABASE_URL before running migrations');
   process.exit(1);
 }
 
 async function runMigration() {
   console.log(`Running brand-suite migration from: ${migrationsFolder}`);
-  // databaseUrl is non-null — process.exit(1) guard above ensures this
-  const migrationClient = postgres(databaseUrl!, { max: 1 });
+  const migrationClient = postgres(migrationUrl!, { max: 1 });
   const db = drizzle(migrationClient);
 
   try {
