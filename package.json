@@ -24,7 +24,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "type-check:server": "tsc -p server/tsconfig.json --noEmit",
+    "db:bootstrap": "npm run db:migrate:clerkos && npm run db:migrate && npm run db:seed:clerkos"
   },
   "dependencies": {
     "@azure/service-bus": "^7.9.5",

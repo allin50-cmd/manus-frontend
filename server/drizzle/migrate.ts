@@ -14,7 +14,7 @@ if (!databaseUrl) {
 
 async function runMigration() {
   console.log('Running ClerkOS schema migration...');
-  const client = postgres(databaseUrl, { max: 1 });
+  const client = postgres(databaseUrl!, { max: 1 });
   const db = drizzle(client);
 
   try {

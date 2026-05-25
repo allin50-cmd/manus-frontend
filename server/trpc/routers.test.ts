@@ -296,7 +296,7 @@ describe("LUNAR Court Clerk Management System", () => {
   describe("Data Integrity", () => {
     it("should maintain proper timestamps", async () => {
       const ctx = createAdminContext();
-      const user = ctx.user;
+      const user = ctx.user!;
 
       expect(user.createdAt).toBeInstanceOf(Date);
       expect(user.updatedAt).toBeInstanceOf(Date);

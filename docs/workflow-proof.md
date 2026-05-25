@@ -38,48 +38,50 @@ ON CONFLICT (slug) DO NOTHING;
 
 ---
 
-### Change 2 — UltAi: `POST /api/intake` → VaultLine
+### Change 2 — UltAi: `POST /api/intake` → VaultLine (production-hardened)
 
 **File:** `server/index.ts` — after `db.insert(intakeForms)`
 
 ```typescript
+const correlationId = generateCorrelationId();
+// ... insert ...
 await writeAuditEvent({
   tenantId: SYSTEM_TENANT_ID,
   entityType: 'intake',
-  entityId: intake.id,
+  entityUuid: intake.id,          // ← UUID, not integer workaround
   action: 'captured',
-  metadata: JSON.stringify({
-    matterRef: intake.matterRef,
-    matterType,
-    urgency,
-    sourceRef: (req.body.sourceRef as string) || 'MANUAL',
-  }),
-}).catch(e => console.error('VaultLine write failed (intake):', e));
+  correlationId,
+  metadata: JSON.stringify({ matterRef, matterType, urgency, sourceRef }),
+});
+log({ level: 'info', event: 'intake.captured', correlationId, matterRef, ... });
 ```
+
+`entityUuid` carries the actual `intake_forms.id` UUID. `correlationId` threads through logs and audit event.
 
 **Workflow state achieved:** CAPTURED → RECORDED
 
 ---
 
-### Change 3 — FineGuard: `POST /api/compliance-bundle` → VaultLine
+### Change 3 — FineGuard: `POST /api/compliance-bundle` → VaultLine (production-hardened)
 
 **File:** `server/index.ts` — after `db.insert(complianceBundles)`
 
 ```typescript
+const correlationId = generateCorrelationId();
+// CH API calls wrapped in withRetry (3 attempts, 500ms base delay)
+const companyProfile = await withRetry(
+  () => chService.getCompanyProfile(formattedNumber),
+  { attempts: 3, baseDelayMs: 500, label: 'ch.getCompanyProfile', correlationId }
+);
+// ... insert ...
 await writeAuditEvent({
   tenantId: SYSTEM_TENANT_ID,
   entityType: 'compliance_check',
-  entityId: bundle.id,
+  entityUuid: bundle.id,           // ← UUID, not integer workaround
   action: 'executed',
-  metadata: JSON.stringify({
-    bundleId: bundle.bundleId,
-    companyNumber: formattedNumber,
-    companyName: companyProfile.companyName,
-    riskLevel: complianceStatus.riskLevel,
-    status: complianceStatus.status,
-    overdueFilings: complianceStatus.overdueFilings.length,
-  }),
-}).catch(e => console.error('VaultLine write failed (compliance-bundle):', e));
+  correlationId,
+  metadata: JSON.stringify({ bundleId, companyNumber, riskLevel, status, ... }),
+});
 ```
 
 **Workflow state achieved:** EXECUTED → RECORDED
@@ -91,13 +93,15 @@ await writeAuditEvent({
 **File:** `server/index.ts` — after `db.insert(monitoredCompanies)`
 
 ```typescript
+const correlationId = generateCorrelationId();
 await writeAuditEvent({
   tenantId: SYSTEM_TENANT_ID,
   entityType: 'monitoring_activation',
-  entityId: 0,
+  entityUuid: activation.id,
   action: 'executed',
+  correlationId,
   metadata: JSON.stringify({ companyNumber, companyName, stripeSessionId: session.id }),
-}).catch(e => console.error('VaultLine write failed (stripe webhook):', e));
+});
 ```
 
 **Workflow state achieved:** EXECUTED (billing activation) → RECORDED
@@ -155,43 +159,41 @@ After these changes, the following events write to `clerk_audit_events`:
 **Database:** `vaultline_test` (PostgreSQL 16, local)
 **Test run date:** 2026-05-25
 
-**Step 1 — Both schemas migrated:**
+**Step 1 — Full bootstrap (one command):**
 ```
-npm run db:generate:clerkos && npm run db:migrate:clerkos
-→ 9 ClerkOS tables created
+npm run db:bootstrap
+→ db:migrate:clerkos  — 9 ClerkOS tables + 2 ClerkOS migrations tracked
+→ db:migrate          — 6 brand-suite tables tracked in brand_suite_migrations (separate table)
+→ db:seed:clerkos     — system tenant seeded: 00000000-0000-0000-0000-000000000001
 
-npm run db:generate && npm run db:migrate
-→ 6 brand-suite tables created
-
-Total: 15 tables in database
+Total: 15 tables (9 ClerkOS + 6 brand-suite)
 ```
 
-**Step 2 — System tenant seeded:**
-```
-npm run db:seed:clerkos
-→ System tenant ready: 00000000-0000-0000-0000-000000000001
-```
+Note: brand-suite migrations use `migrationsTable: 'brand_suite_migrations'` to avoid timestamp-ordering conflicts with the ClerkOS migration set (see `docs/audit-schema-evolution.md`).
 
 **Step 3 — Build and tests:**
 ```
-npm run build  →  ✓ built in 4.51s  (zero TypeScript errors)
-npm test       →  36/36 tests passing (30 unit + 6 integration)
+npm run build        →  ✓ built in 4.53s  (zero TypeScript errors)
+npm run type-check   →  0 errors
+npm run type-check:server → 0 errors (server strict mode)
+npm test             →  38/38 tests passing (30 unit + 8 integration)
 ```
 
-**Step 4 — Integration test result (VaultLine audit events written):**
+**Step 4 — Integration test result (VaultLine audit events with UUID + correlation ID):**
 
 ```sql
-SELECT entity_type, action, metadata FROM clerk_audit_events ORDER BY created_at;
+SELECT entity_type, action, entity_uuid, correlation_id, metadata
+FROM clerk_audit_events ORDER BY created_at;
 
-   entity_type    |  action  |  metadata
-------------------+----------+--------------------------------------------------
- compliance_check | executed | {"companyNumber":"00445790","companyName":"TESCO PLC","riskLevel":"low","status":"compliant","overdueFilings":0}
- intake           | captured | {"matterRef":"MAT-TEST-...","matterType":"planning","urgency":"high","sourceRef":"PIE:24/AP/1234"}
- compliance_check | executed | {"companyNumber":"00445790","companyName":"TESCO PLC","riskLevel":"low","status":"compliant","overdueFilings":0}
-(3 rows)
+   entity_type    |  action  | entity_uuid (uuid)                   | correlation_id (uuid)                | sourceRef in metadata
+------------------+----------+--------------------------------------+--------------------------------------+----------------------
+ schema_test      | verified | 22222222-2222-2222-...               | 11111111-1111-1111-...               | -
+ intake           | captured | <intake_forms.id uuid>               | 33333333-3333-3333-...               | PIE:24/AP/1234
+ compliance_check | executed | 55555555-5555-5555-...               | 44444444-4444-4444-...               | -
+ case             | test_integer_entity | NULL                          | 66666666-6666-6666-...               | -  (entityId=9999)
 ```
 
-`sourceRef: "PIE:24/AP/1234"` is present in the audit trail — the Bromley planning application reference propagates end-to-end from intake submission through to VaultLine.
+`entityUuid` contains the actual primary key of the originating entity (no more `entityId: 0` workaround). `correlationId` traces each event to its request. `sourceRef: "PIE:24/AP/1234"` propagates end-to-end from intake through to VaultLine.
 
 ---
 

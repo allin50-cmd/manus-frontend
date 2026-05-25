@@ -16,7 +16,7 @@ if (!databaseUrl) {
 const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 async function seed() {
-  const client = postgres(databaseUrl, { max: 1 });
+  const client = postgres(databaseUrl!, { max: 1 });
   const db = drizzle(client);
 
   try {

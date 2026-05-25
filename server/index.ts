@@ -9,13 +9,15 @@ import { db } from './db/index';
 import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
 import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db';
-
-// System tenant for brand-suite events that have no user/tenant context.
-// Row must exist in tenants table (see docs/blockers.md BLOCKER-04).
-const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
 import { appRouter } from './trpc/routers';
 import { desc, eq } from 'drizzle-orm';
+import { log, generateCorrelationId } from './lib/logger';
+import { withRetry } from './lib/retry';
+
+// System tenant for brand-suite events that have no user/tenant context.
+// Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 // Load environment variables
 dotenv.config();
@@ -29,7 +31,7 @@ const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
 
 // Stripe client – only initialised when key is present
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' }) : null;
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }) : null;
 
 // ============================================================================
 // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
@@ -69,6 +71,7 @@ app.post(
       const companyName = session.metadata?.companyName;
 
       if (companyNumber && companyName) {
+        const correlationId = generateCorrelationId();
         try {
           await db
             .insert(monitoredCompanies)
@@ -84,10 +87,11 @@ app.post(
             entityType: 'monitoring_activation',
             entityId: 0,
             action: 'executed',
+            correlationId,
             metadata: JSON.stringify({ companyNumber, companyName, stripeSessionId: session.id }),
-          }).catch(e => console.error('VaultLine write failed (stripe webhook):', e));
+          }).catch(e => log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'stripe-webhook', error: String(e) }));
 
-          console.log(`✅ Company monitored: ${companyName} (${companyNumber})`);
+          log({ level: 'info', event: 'stripe.monitoring_activation', correlationId, companyNumber, companyName });
         } catch (err) {
           console.error('Error persisting monitored company:', err);
           return res.status(500).json({ error: 'Database error' });
@@ -451,6 +455,8 @@ app.get('/api/admin/leads', async (req: Request, res: Response) => {
  * Submit a client intake form
  */
 app.post('/api/intake', async (req: Request, res: Response) => {
+  const correlationId = generateCorrelationId();
+  const startMs = Date.now();
   try {
     const {
       clientName,
@@ -486,20 +492,32 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       })
       .returning();
 
+    const sourceRef = (req.body.sourceRef as string | undefined) || 'MANUAL';
+
     await writeAuditEvent({
       tenantId: SYSTEM_TENANT_ID,
       entityType: 'intake',
-      entityId: 0,
+      entityUuid: intake.id,
       action: 'captured',
+      correlationId,
       metadata: JSON.stringify({
         matterRef: intake.matterRef,
         matterType,
         urgency,
-        sourceRef: (req.body.sourceRef as string) || 'MANUAL',
+        sourceRef,
       }),
-    }).catch(e => console.error('VaultLine write failed (intake):', e));
+    }).catch(e => log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'intake', error: String(e) }));
 
-    console.log(`📋 New intake form: ${clientName} - ${matterType} [VaultLine: captured]`);
+    log({
+      level: 'info',
+      event: 'intake.captured',
+      correlationId,
+      matterRef: intake.matterRef,
+      matterType,
+      urgency,
+      sourceRef,
+      durationMs: Date.now() - startMs,
+    });
 
     res.status(201).json({
       ok: true,
@@ -543,6 +561,8 @@ app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
  * Submit a compliance bundle request with REAL-TIME Companies House lookup
  */
 app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
+  const correlationId = generateCorrelationId();
+  const startMs = Date.now();
   try {
     const {
       companyName,
@@ -570,18 +590,25 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
     // Format company number
     const formattedNumber = companiesHouseService.formatCompanyNumber(companyNumber);
 
-    // REAL-TIME: Fetch company profile from Companies House
-    const companyProfile = await companiesHouseService.getCompanyProfile(formattedNumber);
+    // REAL-TIME: Fetch company profile from Companies House (with retry)
+    const companyProfile = await withRetry(
+      () => companiesHouseService.getCompanyProfile(formattedNumber),
+      { label: 'ch.getCompanyProfile', correlationId, attempts: 3, baseDelayMs: 400 },
+    );
 
     if (!companyProfile) {
+      log({ level: 'warn', event: 'compliance.company_not_found', correlationId, companyNumber: formattedNumber });
       return res.status(404).json({
         ok: false,
         error: 'Company not found in Companies House register. Please check the company number.',
       });
     }
 
-    // REAL-TIME: Get compliance status with deadlines
-    const complianceStatus = await companiesHouseService.getComplianceStatus(formattedNumber);
+    // REAL-TIME: Get compliance status with deadlines (with retry)
+    const complianceStatus = await withRetry(
+      () => companiesHouseService.getComplianceStatus(formattedNumber),
+      { label: 'ch.getComplianceStatus', correlationId, attempts: 3, baseDelayMs: 400 },
+    );
 
     // Generate unique bundle ID
     const bundleId = `BUNDLE-${Date.now()}`;
@@ -603,8 +630,9 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
     await writeAuditEvent({
       tenantId: SYSTEM_TENANT_ID,
       entityType: 'compliance_check',
-      entityId: bundle.id,
+      entityUuid: bundle.id,
       action: 'executed',
+      correlationId,
       metadata: JSON.stringify({
         bundleId: bundle.bundleId,
         companyNumber: formattedNumber,
@@ -613,11 +641,19 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
         status: complianceStatus.status,
         overdueFilings: complianceStatus.overdueFilings.length,
       }),
-    }).catch(e => console.error('VaultLine write failed (compliance-bundle):', e));
+    }).catch(e => log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'compliance-bundle', error: String(e) }));
 
-    console.log(`📦 Real-time compliance check: ${companyProfile.companyName} (${formattedNumber})`);
-    console.log(`   Status: ${complianceStatus.status.toUpperCase()}`);
-    console.log(`   Risk Level: ${complianceStatus.riskLevel.toUpperCase()}`);
+    log({
+      level: 'info',
+      event: 'compliance.check.executed',
+      correlationId,
+      companyNumber: formattedNumber,
+      companyName: companyProfile.companyName,
+      riskLevel: complianceStatus.riskLevel,
+      status: complianceStatus.status,
+      overdueFilings: complianceStatus.overdueFilings.length,
+      durationMs: Date.now() - startMs,
+    });
     console.log(`   Overdue Filings: ${complianceStatus.overdueFilings.length}`);
     console.log(`   Upcoming Deadlines: ${complianceStatus.upcomingDeadlines.length}`);
 
@@ -859,6 +895,7 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
     return res.status(503).json({ error: 'Companies House API not configured' });
   }
 
+  const runId = generateCorrelationId();
   const started = Date.now();
   const results: Array<{
     companyNumber: string;
@@ -873,10 +910,15 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
   try {
     const companies = await db.select().from(monitoredCompanies);
 
+    log({ level: 'info', event: 'scheduler.run.start', correlationId: runId, companiesTotal: companies.length });
+
     for (const company of companies) {
+      const companyCorrelationId = generateCorrelationId();
       try {
-        const complianceStatus = await companiesHouseService.getComplianceStatus(
-          company.companyNumber
+        // Retry CH API per company — a single company failure must not abort the batch
+        const complianceStatus = await withRetry(
+          () => companiesHouseService.getComplianceStatus(company.companyNumber),
+          { label: 'ch.scheduler.getComplianceStatus', correlationId: companyCorrelationId, attempts: 3, baseDelayMs: 600 },
         );
 
         const alertRequired =
@@ -889,7 +931,9 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
           entityType: 'compliance_alert',
           entityId: 0,
           action: alertRequired ? 'alert_required' : 'checked',
+          correlationId: companyCorrelationId,
           metadata: JSON.stringify({
+            schedulerRunId: runId,
             companyNumber: company.companyNumber,
             companyName: company.companyName,
             status: complianceStatus.status,
@@ -898,14 +942,19 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
             upcomingDeadlines: complianceStatus.upcomingDeadlines.length,
             alertRequired,
           }),
-        }).catch(e => console.error('VaultLine write failed (compliance-check scheduler):', e));
+        }).catch(e => log({ level: 'error', event: 'vaultline.write.failed', correlationId: companyCorrelationId, endpoint: 'scheduler', error: String(e) }));
 
         if (alertRequired) {
-          console.warn(
-            `[FineGuard] ALERT: ${company.companyName} (${company.companyNumber}) — ` +
-              `status=${complianceStatus.status} risk=${complianceStatus.riskLevel} ` +
-              `overdue=${complianceStatus.overdueFilings.length}`
-          );
+          log({
+            level: 'warn',
+            event: 'compliance.alert.required',
+            correlationId: companyCorrelationId,
+            companyNumber: company.companyNumber,
+            companyName: company.companyName,
+            status: complianceStatus.status,
+            riskLevel: complianceStatus.riskLevel,
+            overdueFilings: complianceStatus.overdueFilings.length,
+          });
         }
 
         results.push({
@@ -918,7 +967,13 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.error(`[FineGuard] Error checking ${company.companyNumber}:`, message);
+        log({
+          level: 'error',
+          event: 'scheduler.company.failed',
+          correlationId: companyCorrelationId,
+          companyNumber: company.companyNumber,
+          error: message,
+        });
         results.push({
           companyNumber: company.companyNumber,
           companyName: company.companyName,
@@ -932,19 +987,25 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
     }
 
     const alertCount = results.filter(r => r.alertRequired).length;
-    console.log(
-      `[FineGuard] Compliance check complete — ${results.length} companies, ${alertCount} alerts`
-    );
+    log({
+      level: 'info',
+      event: 'scheduler.run.complete',
+      correlationId: runId,
+      companiesChecked: results.length,
+      alertsRequired: alertCount,
+      durationMs: Date.now() - started,
+    });
 
     res.json({
       ok: true,
+      runId,
       durationMs: Date.now() - started,
       companiesChecked: results.length,
       alertsRequired: alertCount,
       results,
     });
   } catch (err) {
-    console.error('[FineGuard] Scheduler error:', err);
+    log({ level: 'error', event: 'scheduler.run.failed', correlationId: runId, error: String(err) });
     res.status(500).json({ error: 'Compliance check failed' });
   }
 });
