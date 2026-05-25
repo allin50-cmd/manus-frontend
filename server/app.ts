@@ -15,7 +15,7 @@ import {
   monitoredCompanies,
 } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
-import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db';
+import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent, getDb } from './trpc/db';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
 import { appRouter } from './trpc/routers';
 import { desc, eq, and, gt, or, isNull } from 'drizzle-orm';
@@ -1227,7 +1227,7 @@ export function createApp(): express.Express {
       return res.status(400).json({ error: `maintenance_mode may only be applied to known dependencies: ${[...KNOWN_DEPENDENCIES].join(', ')}` });
     }
 
-    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    const clerkDb = await getDb();
     if (!clerkDb) {
       return res.status(503).json({ error: 'Database unavailable' });
     }
@@ -1264,7 +1264,7 @@ export function createApp(): express.Express {
   app.get('/api/internal/operations/overrides', async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
 
-    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    const clerkDb = await getDb();
     if (!clerkDb) {
       return res.status(503).json({ error: 'Database unavailable' });
     }
@@ -1289,7 +1289,7 @@ export function createApp(): express.Express {
     const { id } = req.params;
     const correlationId = generateCorrelationId();
 
-    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    const clerkDb = await getDb();
     if (!clerkDb) {
       return res.status(503).json({ error: 'Database unavailable' });
     }
@@ -1339,7 +1339,7 @@ export function createApp(): express.Express {
       return res.status(400).json({ error: 'incidentStatus, note, createdBy are required' });
     }
 
-    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    const clerkDb = await getDb();
     if (!clerkDb) {
       return res.status(503).json({ error: 'Database unavailable' });
     }
@@ -1368,7 +1368,7 @@ export function createApp(): express.Express {
   app.get('/api/internal/operations/incidents', async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
 
-    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    const clerkDb = await getDb();
     if (!clerkDb) {
       return res.status(503).json({ error: 'Database unavailable' });
     }
