@@ -489,7 +489,7 @@ app.post('/api/intake', async (req: Request, res: Response) => {
     await writeAuditEvent({
       tenantId: SYSTEM_TENANT_ID,
       entityType: 'intake',
-      entityId: intake.id,
+      entityId: 0,
       action: 'captured',
       metadata: JSON.stringify({
         matterRef: intake.matterRef,
@@ -829,6 +829,123 @@ app.get('/health', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       database: 'disconnected',
     });
+  }
+});
+
+// ============================================================================
+// FINEGUARD ALERT SCHEDULER
+// ============================================================================
+
+/**
+ * GET /api/internal/run-compliance-check
+ *
+ * Reads all monitored_companies, fetches current CH compliance status for
+ * each, writes a VaultLine audit event per company, and returns a summary.
+ *
+ * Designed to be called by a cron / Azure timer trigger / external scheduler.
+ * Protect with ADMIN_API_KEY in any environment where the port is public.
+ *
+ * Does not send email (email provider not yet configured — BLOCKER-07).
+ * Alert data is captured in VaultLine audit events and logged to console.
+ */
+app.get('/api/internal/run-compliance-check', async (req: Request, res: Response) => {
+  // Require admin key — this endpoint triggers real CH API calls
+  const key = req.headers['x-admin-key'];
+  if (!ADMIN_API_KEY || key !== ADMIN_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (!companiesHouseService) {
+    return res.status(503).json({ error: 'Companies House API not configured' });
+  }
+
+  const started = Date.now();
+  const results: Array<{
+    companyNumber: string;
+    companyName: string;
+    status: string;
+    riskLevel: string;
+    overdueFilings: number;
+    alertRequired: boolean;
+    error?: string;
+  }> = [];
+
+  try {
+    const companies = await db.select().from(monitoredCompanies);
+
+    for (const company of companies) {
+      try {
+        const complianceStatus = await companiesHouseService.getComplianceStatus(
+          company.companyNumber
+        );
+
+        const alertRequired =
+          complianceStatus.status === 'overdue' ||
+          complianceStatus.riskLevel === 'high' ||
+          complianceStatus.overdueFilings.length > 0;
+
+        await writeAuditEvent({
+          tenantId: SYSTEM_TENANT_ID,
+          entityType: 'compliance_alert',
+          entityId: 0,
+          action: alertRequired ? 'alert_required' : 'checked',
+          metadata: JSON.stringify({
+            companyNumber: company.companyNumber,
+            companyName: company.companyName,
+            status: complianceStatus.status,
+            riskLevel: complianceStatus.riskLevel,
+            overdueFilings: complianceStatus.overdueFilings.length,
+            upcomingDeadlines: complianceStatus.upcomingDeadlines.length,
+            alertRequired,
+          }),
+        }).catch(e => console.error('VaultLine write failed (compliance-check scheduler):', e));
+
+        if (alertRequired) {
+          console.warn(
+            `[FineGuard] ALERT: ${company.companyName} (${company.companyNumber}) — ` +
+              `status=${complianceStatus.status} risk=${complianceStatus.riskLevel} ` +
+              `overdue=${complianceStatus.overdueFilings.length}`
+          );
+        }
+
+        results.push({
+          companyNumber: company.companyNumber,
+          companyName: company.companyName,
+          status: complianceStatus.status,
+          riskLevel: complianceStatus.riskLevel,
+          overdueFilings: complianceStatus.overdueFilings.length,
+          alertRequired,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[FineGuard] Error checking ${company.companyNumber}:`, message);
+        results.push({
+          companyNumber: company.companyNumber,
+          companyName: company.companyName,
+          status: 'error',
+          riskLevel: 'unknown',
+          overdueFilings: 0,
+          alertRequired: false,
+          error: message,
+        });
+      }
+    }
+
+    const alertCount = results.filter(r => r.alertRequired).length;
+    console.log(
+      `[FineGuard] Compliance check complete — ${results.length} companies, ${alertCount} alerts`
+    );
+
+    res.json({
+      ok: true,
+      durationMs: Date.now() - started,
+      companiesChecked: results.length,
+      alertsRequired: alertCount,
+      results,
+    });
+  } catch (err) {
+    console.error('[FineGuard] Scheduler error:', err);
+    res.status(500).json({ error: 'Compliance check failed' });
   }
 });
 

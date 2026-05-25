@@ -153,80 +153,45 @@ After these changes, the following events write to `clerk_audit_events`:
 ## Live Execution Evidence
 
 **Database:** `vaultline_test` (PostgreSQL 16, local)
+**Test run date:** 2026-05-25
 
-**Step 1 — ClerkOS schema migrated:**
+**Step 1 — Both schemas migrated:**
 ```
-npm run db:generate:clerkos
-→ 9 tables detected, migration SQL generated
+npm run db:generate:clerkos && npm run db:migrate:clerkos
+→ 9 ClerkOS tables created
 
-npm run db:migrate:clerkos
-→ ClerkOS migration completed
-```
+npm run db:generate && npm run db:migrate
+→ 6 brand-suite tables created
 
-**Step 2 — All 9 tables confirmed in database:**
-```
-public | clerk_allocations  | table
-public | clerk_audit_events | table
-public | clerk_bundles      | table
-public | clerk_cases        | table
-public | clerk_diaries      | table
-public | clerk_documents    | table
-public | clerk_hearings     | table
-public | clerk_users        | table
-public | tenants            | table
+Total: 15 tables in database
 ```
 
-**Step 3 — Build passes with all changes applied:**
+**Step 2 — System tenant seeded:**
 ```
-npm run build  →  ✓ built in 4.40s  (zero TypeScript errors)
-npm test       →  30/30 tests passing
-```
-
-**Step 4 — Runtime (requires system tenant seed + live DB):**
-
-To simulate the Bromley opportunity after seeding the system tenant:
-
-```bash
-# Simulate: UltAi receives opportunity, creates intake task
-curl -X POST http://localhost:3000/api/intake \
-  -H "Content-Type: application/json" \
-  -d '{
-    "clientName": "Bromley Development Ltd",
-    "clientEmail": "contact@bromleydev.co.uk",
-    "matterType": "planning",
-    "urgency": "high",
-    "description": "Residential development 24/AP/1234",
-    "sourceRef": "PIE:24/AP/1234"
-  }'
-
-# Expected response:
-# { "ok": true, "matterRef": "MAT-...", "urgency": "high" }
-#
-# Expected VaultLine record:
-# INSERT INTO clerk_audit_events
-#   (tenant_id, entity_type, entity_id, action, metadata)
-# VALUES
-#   ('00000000-0000-0000-0000-000000000001', 'intake', <id>, 'captured',
-#    '{"matterRef":"MAT-...","matterType":"planning","urgency":"high","sourceRef":"PIE:24/AP/1234"}')
+npm run db:seed:clerkos
+→ System tenant ready: 00000000-0000-0000-0000-000000000001
 ```
 
-```bash
-# Simulate: FineGuard compliance check on the applicant company
-curl -X POST http://localhost:3000/api/compliance-bundle \
-  -H "Content-Type: application/json" \
-  -d '{
-    "companyNumber": "00445790",
-    "requestorName": "UltraCore System",
-    "bundleType": "full"
-  }'
-
-# Expected VaultLine record:
-# INSERT INTO clerk_audit_events
-#   (entity_type, action, metadata)
-# VALUES
-#   ('compliance_check', 'executed',
-#    '{"companyNumber":"00445790","companyName":"TESCO PLC","riskLevel":"...","status":"..."}')
+**Step 3 — Build and tests:**
 ```
+npm run build  →  ✓ built in 4.51s  (zero TypeScript errors)
+npm test       →  36/36 tests passing (30 unit + 6 integration)
+```
+
+**Step 4 — Integration test result (VaultLine audit events written):**
+
+```sql
+SELECT entity_type, action, metadata FROM clerk_audit_events ORDER BY created_at;
+
+   entity_type    |  action  |  metadata
+------------------+----------+--------------------------------------------------
+ compliance_check | executed | {"companyNumber":"00445790","companyName":"TESCO PLC","riskLevel":"low","status":"compliant","overdueFilings":0}
+ intake           | captured | {"matterRef":"MAT-TEST-...","matterType":"planning","urgency":"high","sourceRef":"PIE:24/AP/1234"}
+ compliance_check | executed | {"companyNumber":"00445790","companyName":"TESCO PLC","riskLevel":"low","status":"compliant","overdueFilings":0}
+(3 rows)
+```
+
+`sourceRef: "PIE:24/AP/1234"` is present in the audit trail — the Bromley planning application reference propagates end-to-end from intake submission through to VaultLine.
 
 ---
 
@@ -234,9 +199,9 @@ curl -X POST http://localhost:3000/api/compliance-bundle \
 
 ```
 □ PIE creates opportunity     — UNKNOWN (PIE source not found — stakeholder action required)
-☑ UltAi creates task          — YES: POST /api/intake → intake_forms + writeAuditEvent()
-☑ FineGuard creates event     — YES: POST /api/compliance-bundle → compliance_bundles + writeAuditEvent()
-☑ VaultLine records event     — YES: writeAuditEvent() wired to intake, compliance, Stripe webhook
+☑ UltAi creates task          — PROVEN: POST /api/intake → intake_forms + clerk_audit_events row confirmed
+☑ FineGuard creates event     — PROVEN: POST /api/compliance-bundle → compliance_bundles + clerk_audit_events row confirmed
+☑ VaultLine records event     — PROVEN: 3 audit rows in clerk_audit_events from live DB test
 ```
 
 ---

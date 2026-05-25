@@ -19,6 +19,7 @@
     "db:generate:clerkos": "drizzle-kit generate:pg --config=drizzle.clerkos.config.ts",
     "db:migrate:clerkos": "tsx server/drizzle/migrate.ts",
     "db:push:clerkos": "drizzle-kit push:pg --config=drizzle.clerkos.config.ts",
+    "db:seed:clerkos": "tsx server/drizzle/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
