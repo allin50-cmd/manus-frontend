@@ -56,7 +56,10 @@ export function createApp(): express.Express {
     '/api/stripe/webhook',
     express.raw({ type: 'application/json' }),
     async (req: Request, res: Response) => {
+      const correlationId = generateCorrelationId();
+
       if (!stripe) {
+        log({ level: 'error', event: 'stripe.webhook.unconfigured', correlationId });
         return res.status(500).json({ error: 'Stripe not configured' });
       }
 
@@ -64,6 +67,7 @@ export function createApp(): express.Express {
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
       if (!webhookSecret) {
+        log({ level: 'error', event: 'stripe.webhook.secret_missing', correlationId });
         return res.status(500).json({ error: 'Stripe webhook secret not configured' });
       }
 
@@ -71,7 +75,7 @@ export function createApp(): express.Express {
       try {
         event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       } catch (err) {
-        console.error('Stripe webhook signature verification failed:', err);
+        log({ level: 'warn', event: 'stripe.webhook.signature_failed', correlationId, error: String(err) });
         return res.status(400).json({ error: 'Invalid signature' });
       }
 
@@ -81,7 +85,6 @@ export function createApp(): express.Express {
         const companyName = session.metadata?.companyName;
 
         if (companyNumber && companyName) {
-          const correlationId = generateCorrelationId();
           try {
             const [activation] = await db
               .insert(monitoredCompanies)
@@ -115,7 +118,7 @@ export function createApp(): express.Express {
 
             log({ level: 'info', event: 'stripe.monitoring_activation', correlationId, companyNumber, companyName });
           } catch (err) {
-            console.error('Error persisting monitored company:', err);
+            log({ level: 'error', event: 'stripe.monitoring_activation.failed', correlationId, error: String(err) });
             return res.status(500).json({ error: 'Database error' });
           }
         }
@@ -159,12 +162,12 @@ export function createApp(): express.Express {
 
   // General middleware
   app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '100kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
   // Logging middleware
   app.use((req: Request, _res: Response, next: NextFunction) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    log({ level: 'info', event: 'request.received', method: req.method, path: req.path });
     next();
   });
 
@@ -355,6 +358,7 @@ export function createApp(): express.Express {
   // ==========================================================================
 
   app.post('/api/lead', async (req: Request, res: Response) => {
+    const correlationId = generateCorrelationId();
     try {
       const { name, email, company, product, phone, message } = req.body;
 
@@ -377,7 +381,7 @@ export function createApp(): express.Express {
         })
         .returning();
 
-      console.log(`📧 New lead captured: ${name} - ${product || 'N/A'}`);
+      log({ level: 'info', event: 'lead.captured', correlationId, leadId: lead.leadId, product: product || null });
 
       res.status(201).json({
         ok: true,
@@ -385,7 +389,7 @@ export function createApp(): express.Express {
         leadId: lead.leadId,
       });
     } catch (error) {
-      console.error('Error creating lead:', error);
+      log({ level: 'error', event: 'lead.failed', correlationId, error: String(error) });
       res.status(500).json({ ok: false, error: 'Failed to save lead. Please try again.' });
     }
   });
@@ -579,8 +583,6 @@ export function createApp(): express.Express {
         overdueFilings: complianceStatus.overdueFilings.length,
         durationMs: Date.now() - startMs,
       });
-      console.log(`   Overdue Filings: ${complianceStatus.overdueFilings.length}`);
-      console.log(`   Upcoming Deadlines: ${complianceStatus.upcomingDeadlines.length}`);
 
       res.status(201).json({
         ok: true,
@@ -651,6 +653,7 @@ export function createApp(): express.Express {
   // ==========================================================================
 
   app.post('/api/contact', async (req: Request, res: Response) => {
+    const correlationId = generateCorrelationId();
     try {
       const { name, email, subject, message } = req.body;
 
@@ -665,7 +668,7 @@ export function createApp(): express.Express {
         .values({ ticketId, name, email, subject: subject || null, message, status: 'new' })
         .returning();
 
-      console.log(`💬 New contact: ${name}`);
+      log({ level: 'info', event: 'contact.captured', correlationId, ticketId: contact.ticketId });
 
       res.status(201).json({
         ok: true,
@@ -673,7 +676,7 @@ export function createApp(): express.Express {
         ticketId: contact.ticketId,
       });
     } catch (error) {
-      console.error('Error creating contact:', error);
+      log({ level: 'error', event: 'contact.failed', correlationId, error: String(error) });
       res.status(500).json({ ok: false, error: 'Failed to save contact form. Please try again.' });
     }
   });

@@ -13,8 +13,12 @@ function getDb(): Db {
   if (_db) return _db;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL environment variable is not set');
+  // On Vercel, many concurrent function instances each create their own pool.
+  // Use max:1 per instance to avoid exhausting DB connection limits.
+  // Use a connection pooler (PgBouncer / Neon / Supabase pooler) in production.
+  const max = process.env.VERCEL ? 1 : 10;
   _client = postgres(url, {
-    max: 10,
+    max,
     idle_timeout: 20,
     connect_timeout: 10,
   });
