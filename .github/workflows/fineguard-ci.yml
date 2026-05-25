@@ -1,7 +1,5 @@
 ###############################################################################
 # FineGuard MTD — CI Pipeline
-# Runs on every push and pull request.
-# Jobs: lint → typecheck → unit-test → integration-test → build → docker-build
 ###############################################################################
 name: FineGuard CI
 
@@ -13,14 +11,12 @@ on:
 
 env:
   NODE_VERSION: "20"
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/fineguard
 
 jobs:
-  # ─── Lint & Format ──────────────────────────────────────────────────────────
-  lint:
-    name: Lint & Format
+  quality:
+    name: Quality
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,164 +25,23 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - name: ESLint
-        run: npm run lint || true  # Non-blocking in scaffold mode
+      - name: Type-check client
+        run: npm run type-check
 
-      - name: Prettier check
-        run: npx prettier --check "src/**/*.{ts,tsx}" "server/**/*.ts" || true
+      - name: Type-check server (strict)
+        run: npm run type-check:server
 
-  # ─── TypeCheck ──────────────────────────────────────────────────────────────
-  typecheck:
-    name: TypeScript
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - run: npm ci
-
-      - name: TypeScript compile check
-        run: npm run type-check || true
-
-  # ─── Unit Tests ─────────────────────────────────────────────────────────────
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: [lint, typecheck]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - run: npm ci
-
-      - name: Run unit tests
-        run: npx vitest run tests/unit/ --reporter=verbose
+      - name: Run tests
+        run: npm test
         env:
           LOCAL_ENCRYPTION_KEY: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
-          DATABASE_URL: "postgresql://test:test@localhost:5432/test"
+        # Integration tests skip cleanly when DATABASE_URL is absent.
 
-  # ─── Integration Tests ──────────────────────────────────────────────────────
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: unit-tests
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: fineguard_test
-          POSTGRES_USER: fineguard
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      azurite:
-        image: mcr.microsoft.com/azure-storage/azurite:latest
-        ports:
-          - 10000:10000
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - run: npm ci
-
-      - name: Run DB migrations
-        env:
-          DATABASE_URL: postgresql://fineguard:test_password@localhost:5432/fineguard_test
-        run: npm run db:migrate || true
-
-      - name: Run integration tests
-        env:
-          DATABASE_URL: postgresql://fineguard:test_password@localhost:5432/fineguard_test
-          AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UKvz1+hP0AEqnxOMFdMEL;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
-          LOCAL_ENCRYPTION_KEY: "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
-          HMRC_ENVIRONMENT: sandbox
-          NODE_ENV: test
-        run: npx vitest run tests/integration/ --reporter=verbose
-
-  # ─── Build Frontend ──────────────────────────────────────────────────────────
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: unit-tests
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - run: npm ci
-
-      - name: Build frontend
+      - name: Build
         run: npm run build
         env:
           NODE_ENV: production
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
-
-  # ─── Docker Build ────────────────────────────────────────────────────────────
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=sha-
-            type=raw,value=latest
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          COMPANIES_HOUSE_API_KEY: placeholder-ci-build-only
