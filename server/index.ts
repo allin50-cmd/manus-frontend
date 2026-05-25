@@ -134,6 +134,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Admin auth middleware — requires X-ADMIN-KEY header matching ADMIN_API_KEY env var
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+app.use('/api/admin', (req: Request, res: Response, next: NextFunction) => {
+  if (!ADMIN_API_KEY) {
+    return res.status(503).json({ error: 'Admin access not configured' });
+  }
+  const key = req.headers['x-admin-key'];
+  if (!key || key !== ADMIN_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+});
+
 // ============================================================================
 // HEALTH CHECK ENDPOINT
 // ============================================================================
