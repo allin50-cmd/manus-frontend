@@ -1045,6 +1045,10 @@ export function createApp(): express.Express {
       error?: string;
     }> = [];
 
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'Database not configured (DATABASE_URL missing)' });
+    }
+
     try {
       const companies = await db.select().from(monitoredCompanies);
 
