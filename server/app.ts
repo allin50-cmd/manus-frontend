@@ -708,6 +708,10 @@ export function createApp(): express.Express {
         return res.status(400).json({ ok: false, error: 'Company number is required' });
       }
 
+      if (!companiesHouseService) {
+        return res.status(503).json({ ok: false, error: 'Companies House integration not configured (COMPANIES_HOUSE_API_KEY missing)' });
+      }
+
       if (!companiesHouseService.validateCompanyNumber(companyNumber)) {
         return res.status(400).json({
           ok: false,
@@ -718,7 +722,7 @@ export function createApp(): express.Express {
       const formattedNumber = companiesHouseService.formatCompanyNumber(companyNumber);
 
       const companyProfile = await withRetry(
-        () => companiesHouseService.getCompanyProfile(formattedNumber),
+        () => companiesHouseService!.getCompanyProfile(formattedNumber),
         { label: 'ch.getCompanyProfile', correlationId, attempts: 3, baseDelayMs: 400 },
       );
 
@@ -731,7 +735,7 @@ export function createApp(): express.Express {
       }
 
       const complianceStatus = await withRetry(
-        () => companiesHouseService.getComplianceStatus(formattedNumber),
+        () => companiesHouseService!.getComplianceStatus(formattedNumber),
         { label: 'ch.getComplianceStatus', correlationId, attempts: 3, baseDelayMs: 400 },
       );
 
@@ -1079,7 +1083,7 @@ export function createApp(): express.Express {
           },
           () =>
             withRetry(
-              () => companiesHouseService.getComplianceStatus(company.companyNumber),
+              () => companiesHouseService!.getComplianceStatus(company.companyNumber),
               { label: 'ch.scheduler.getComplianceStatus', correlationId: companyCorrelationId, attempts: 3, baseDelayMs: 600 },
             ),
         );
