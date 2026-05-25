@@ -51,6 +51,8 @@ Set these in the Vercel project dashboard under **Settings → Environment Varia
 
 **Build-time note:** `COMPANIES_HOUSE_API_KEY` must be set in Vercel for the build step even though it is not used at build time. The `npm run build` step does not call the API; the CI workflow uses `placeholder-ci-build-only` for the same reason.
 
+**Cold-start note:** `DATABASE_URL` is required for every serverless function invocation. The DB pool is initialized lazily on first request — `api/index.ts` can be imported without DATABASE_URL set, but the first database operation will throw if it is absent. Ensure the env var is configured in Vercel before deploying.
+
 ---
 
 ## Routing

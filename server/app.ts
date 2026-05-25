@@ -43,6 +43,11 @@ export function createApp(): express.Express {
 
   const app = express();
 
+  // Trust Cloudflare/Vercel reverse proxy so req.ip and req.protocol are accurate
+  if (isVercel) {
+    app.set('trust proxy', 1);
+  }
+
   // ==========================================================================
   // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
   // ==========================================================================

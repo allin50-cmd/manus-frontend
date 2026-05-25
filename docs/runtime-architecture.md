@@ -55,6 +55,8 @@ Behaviour:
 - All `/api/*` routes are handled by the same Express app
 - Static files are served by Vercel's CDN from the `dist/` build output
 
+Express is also configured with `app.set('trust proxy', 1)` on Vercel so that `req.ip` and `req.protocol` reflect the original client values through the Cloudflare → Vercel proxy chain.
+
 The `isVercel` flag is set at module load time:
 
 ```ts
@@ -85,6 +87,19 @@ The order below is enforced in `server/app.ts` and must not be changed:
 The Stripe webhook must stay at position 1 because it requires access to the raw request body before `express.json()` parses it.
 
 The `/api/*` guard must stay after all API route handlers and after `express.static` to ensure legitimate API routes are matched first.
+
+---
+
+## DB Pool Initialization
+
+The DB pool in `server/db/index.ts` is lazily initialized — it is created on the first database operation after a cold start, not at module import time. This ensures `api/index.ts` can be safely imported even before environment variables are confirmed set. In practice, `DATABASE_URL` must be present before any request is served.
+
+Connection pool configuration:
+- `max: 10` connections per function instance
+- `idle_timeout: 20` seconds
+- `connect_timeout: 10` seconds
+
+For Vercel with a serverless Postgres provider, consider setting `max: 1` to avoid connection exhaustion when many function instances run concurrently.
 
 ---
 
