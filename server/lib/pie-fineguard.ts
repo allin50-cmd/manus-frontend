@@ -4,6 +4,7 @@ import { monitoredCompanies } from '../db/schema';
 import { writeAuditEvent } from '../trpc/db';
 import { evaluateFineGuardActivation, type FineGuardEvaluation } from './fineguard-rules';
 import { log } from './logger';
+import { wrapGracefully } from './wrap-gracefully';
 
 export interface FineGuardActivationInput {
   intake: IntakeForm;
@@ -104,27 +105,42 @@ export async function activateFineGuardForPie(
     return { evaluation, activated: false, monitoredCompanyId: null, error: null };
   }
 
-  try {
-    const rows = await db
-      .insert(monitoredCompanies)
-      .values({
-        companyNumber: sourceRef,
-        companyName: applicantName,
-        stripeSessionId: `pie-activation:${pieExternalRef}`,
-      })
-      .onConflictDoUpdate({
-        target: monitoredCompanies.companyNumber,
-        set: { companyName: applicantName },
-      })
-      .returning();
+  const upsertResult = await wrapGracefully(
+    {
+      operation: 'pie.fineguard.upsert',
+      dependency: 'fineguard_activation',
+      correlationId,
+      sourceRef,
+      upstreamSystem: 'PIE',
+      tenantId,
+      entityUuid: intake.id,
+      retryable: true,
+    },
+    async () => {
+      const rows = await db
+        .insert(monitoredCompanies)
+        .values({
+          companyNumber: sourceRef,
+          companyName: applicantName,
+          stripeSessionId: `pie-activation:${pieExternalRef}`,
+        })
+        .onConflictDoUpdate({
+          target: monitoredCompanies.companyNumber,
+          set: { companyName: applicantName },
+        })
+        .returning();
+      const activation = rows[0];
+      if (!activation) {
+        // Defensive: RETURNING normally yields the conflicting row, but if a
+        // future predicate filters it out we don't want a TypeError to leak.
+        throw new Error('monitored_companies upsert returned no row');
+      }
+      return activation;
+    },
+  );
 
-    const activation = rows[0];
-    if (!activation) {
-      // Defensive: RETURNING normally yields the conflicting row, but if a
-      // future predicate filters it out we don't want a TypeError to leak.
-      throw new Error('monitored_companies upsert returned no row');
-    }
-
+  if (upsertResult.ok) {
+    const activation = upsertResult.value;
     await writeAuditEvent({
       tenantId,
       entityType: 'monitoring_activation',
@@ -157,49 +173,37 @@ export async function activateFineGuardForPie(
     });
 
     return { evaluation, activated: true, monitoredCompanyId: activation.id, error: null };
-  } catch (activationErr) {
-    log({
-      level: 'error',
-      event: 'pie.fineguard.activation_failed',
-      correlationId,
+  }
+
+  // wrapGracefully already emitted the structured failure log and
+  // system_failure_captured audit event. Additionally write the
+  // domain-specific `fineguard_activation_failed` audit event so the
+  // PIE intake's audit trail remains symmetric (evaluated → failed).
+  await writeAuditEvent({
+    tenantId,
+    entityType: 'intake',
+    entityUuid: intake.id,
+    action: 'fineguard_activation_failed',
+    correlationId,
+    metadata: JSON.stringify({
       sourceRef,
+      upstreamSystem: 'PIE',
       pieExternalRef,
-      error: String(activationErr),
+      matterRef: intake.matterRef,
+      reasons: evaluation.reasons,
+      errorCategory: upsertResult.errorCategory,
+      circuitState: upsertResult.circuitState,
+      degradedMode: upsertResult.degraded,
       trigger,
-    });
+    }),
+  }).catch(e =>
+    log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'pie-fineguard-failed', error: String(e) }),
+  );
 
-    await writeAuditEvent({
-      tenantId,
-      entityType: 'intake',
-      entityUuid: intake.id,
-      action: 'fineguard_activation_failed',
-      correlationId,
-      metadata: JSON.stringify({
-        sourceRef,
-        upstreamSystem: 'PIE',
-        pieExternalRef,
-        matterRef: intake.matterRef,
-        reasons: evaluation.reasons,
-        errorCategory: categoriseError(activationErr),
-        trigger,
-      }),
-    }).catch(e =>
-      log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'pie-fineguard-failed', error: String(e) }),
-    );
-
-    return {
-      evaluation,
-      activated: false,
-      monitoredCompanyId: null,
-      error: activationErr instanceof Error ? activationErr : new Error(String(activationErr)),
-    };
-  }
-}
-
-function categoriseError(err: unknown): 'database' | 'runtime' {
-  const msg = err instanceof Error ? err.message : String(err);
-  if (/value too long|violates|duplicate key|connection|timeout|ECONNREFUSED/i.test(msg)) {
-    return 'database';
-  }
-  return 'runtime';
+  return {
+    evaluation,
+    activated: false,
+    monitoredCompanyId: null,
+    error: new Error(upsertResult.error),
+  };
 }

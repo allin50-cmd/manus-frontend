@@ -23,6 +23,7 @@ import { log, generateCorrelationId } from './lib/logger';
 import { withRetry } from './lib/retry';
 import { PieOpportunitySchema, buildSourceRef } from './lib/pie-schema';
 import { activateFineGuardForPie } from './lib/pie-fineguard';
+import { wrapGracefully } from './lib/wrap-gracefully';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -87,20 +88,37 @@ export function createApp(): express.Express {
         const companyName = session.metadata?.companyName;
 
         if (companyNumber && companyName) {
-          try {
-            const [activation] = await db
-              .insert(monitoredCompanies)
-              .values({
-                companyNumber,
-                companyName,
-                stripeSessionId: session.id,
-              })
-              .onConflictDoUpdate({
-                target: monitoredCompanies.companyNumber,
-                set: { stripeSessionId: session.id },
-              })
-              .returning();
+          // Wrap the DB-heavy enrichment in graceful failure / circuit breaker.
+          // ACK semantics: we ALWAYS return 200 to Stripe — never block the
+          // webhook on our own dependency degradation. When the circuit is
+          // open or the upsert fails, the activation is skipped, audited as
+          // system_failure_captured, and Stripe gets its 200.
+          const stripeResult = await wrapGracefully(
+            {
+              operation: 'stripe.webhook.activate_monitoring',
+              dependency: 'stripe_webhook_processing',
+              correlationId,
+              upstreamSystem: 'STRIPE',
+              tenantId: SYSTEM_TENANT_ID,
+              entityUuid: SYSTEM_TENANT_ID, // no domain entity yet — anchor on tenant
+              retryable: true,
+            },
+            async () => {
+              const [activation] = await db
+                .insert(monitoredCompanies)
+                .values({ companyNumber, companyName, stripeSessionId: session.id })
+                .onConflictDoUpdate({
+                  target: monitoredCompanies.companyNumber,
+                  set: { stripeSessionId: session.id },
+                })
+                .returning();
+              if (!activation) throw new Error('monitored_companies upsert returned no row');
+              return activation;
+            },
+          );
 
+          if (stripeResult.ok) {
+            const activation = stripeResult.value;
             await writeAuditEvent({
               tenantId: SYSTEM_TENANT_ID,
               entityType: 'monitoring_activation',
@@ -117,12 +135,10 @@ export function createApp(): express.Express {
                 error: String(e),
               }),
             );
-
             log({ level: 'info', event: 'stripe.monitoring_activation', correlationId, companyNumber, companyName });
-          } catch (err) {
-            log({ level: 'error', event: 'stripe.monitoring_activation.failed', correlationId, error: String(err) });
-            return res.status(500).json({ error: 'Database error' });
           }
+          // On failure or circuit_open: wrapGracefully has already logged + audited.
+          // Stripe still receives 200 below — never block the webhook.
         }
       }
 
@@ -923,11 +939,42 @@ export function createApp(): express.Express {
 
       for (const company of companies) {
         const companyCorrelationId = generateCorrelationId();
+        const chResult = await wrapGracefully(
+          {
+            operation: 'scheduler.companies_house.compliance_status',
+            dependency: 'companies_house_api',
+            correlationId: companyCorrelationId,
+            upstreamSystem: 'COMPANIES_HOUSE',
+            tenantId: SYSTEM_TENANT_ID,
+            entityUuid: company.id,
+            errorCategory: 'external_api',
+            retryable: true,
+          },
+          () =>
+            withRetry(
+              () => companiesHouseService.getComplianceStatus(company.companyNumber),
+              { label: 'ch.scheduler.getComplianceStatus', correlationId: companyCorrelationId, attempts: 3, baseDelayMs: 600 },
+            ),
+        );
+
+        if (!chResult.ok) {
+          // Circuit open OR all retries exhausted — wrapGracefully has
+          // already logged + audited. Continue the loop for the next
+          // company; do NOT abort the run.
+          results.push({
+            companyNumber: company.companyNumber,
+            companyName: company.companyName,
+            status: chResult.error === 'circuit_open' ? 'skipped' : 'error',
+            riskLevel: 'unknown',
+            overdueFilings: 0,
+            alertRequired: false,
+            error: chResult.error,
+          });
+          continue;
+        }
+
         try {
-          const complianceStatus = await withRetry(
-            () => companiesHouseService.getComplianceStatus(company.companyNumber),
-            { label: 'ch.scheduler.getComplianceStatus', correlationId: companyCorrelationId, attempts: 3, baseDelayMs: 600 },
-          );
+          const complianceStatus = chResult.value;
 
           const alertRequired =
             complianceStatus.status === 'overdue' ||

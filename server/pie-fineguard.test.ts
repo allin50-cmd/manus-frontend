@@ -23,6 +23,11 @@ vi.mock('./trpc/db', () => ({
 }));
 
 import { activateFineGuardForPie } from './lib/pie-fineguard';
+import {
+  __resetCircuitBreakerForTests,
+  configureDependency,
+  getCircuitSnapshot,
+} from './lib/circuit-breaker';
 import type { IntakeForm } from './db/schema';
 
 function makeIntake(overrides: Partial<IntakeForm> = {}): IntakeForm {
@@ -56,6 +61,7 @@ beforeEach(() => {
   insertMock.mockClear();
   writeAuditEventMock.mockReset();
   writeAuditEventMock.mockResolvedValue(undefined);
+  __resetCircuitBreakerForTests();
 });
 
 describe('activateFineGuardForPie: contract — never throws', () => {
@@ -78,7 +84,8 @@ describe('activateFineGuardForPie: contract — never throws', () => {
 
     expect(result.activated).toBe(false);
     expect(result.monitoredCompanyId).toBeNull();
-    expect(result.error).toBe(dbErr);
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toContain('value too long for varchar(50)');
   });
 
   it('writes a fineguard_activation_failed audit event when the upsert fails', async () => {
@@ -171,5 +178,68 @@ describe('activateFineGuardForPie: contract — never throws', () => {
       ([event]) => event.action === 'fineguard_activation_failed',
     );
     expect(failedAudit).toBeDefined();
+  });
+});
+
+describe('activateFineGuardForPie: circuit-breaker integration', () => {
+  it('repeated upsert failures open the fineguard_activation circuit', async () => {
+    configureDependency('fineguard_activation', {
+      failureThreshold: 3,
+      windowMs: 60_000,
+      cooldownMs: 30_000,
+    });
+    upsertReturningMock.mockRejectedValue(new Error('value too long for type character varying(50)'));
+
+    for (let i = 0; i < 3; i++) {
+      await activateFineGuardForPie({ ...baseInput, intake: makeIntake() });
+    }
+    expect(getCircuitSnapshot('fineguard_activation').state).toBe('open');
+  });
+
+  it('skips the upsert when the circuit is OPEN — intake response unaffected', async () => {
+    configureDependency('fineguard_activation', {
+      failureThreshold: 1,
+      windowMs: 60_000,
+      cooldownMs: 30_000,
+    });
+    // First call opens the circuit
+    upsertReturningMock.mockRejectedValueOnce(new Error('boom'));
+    await activateFineGuardForPie({ ...baseInput, intake: makeIntake() });
+    expect(getCircuitSnapshot('fineguard_activation').state).toBe('open');
+
+    insertMock.mockClear();
+    // Subsequent call must skip the upsert entirely
+    const result = await activateFineGuardForPie({ ...baseInput, intake: makeIntake() });
+
+    expect(insertMock).not.toHaveBeenCalled();
+    expect(result.activated).toBe(false);
+    expect(result.error?.message).toBe('circuit_open');
+
+    // A fineguard_activation_failed audit is still written (symmetric audit trail).
+    const failedAudit = writeAuditEventMock.mock.calls.find(
+      ([event]) => event.action === 'fineguard_activation_failed',
+    );
+    expect(failedAudit).toBeDefined();
+    const meta = JSON.parse(failedAudit![0].metadata);
+    expect(meta.circuitState).toBe('open');
+    expect(meta.degradedMode).toBe(true);
+  });
+
+  it('a successful upsert closes a HALF-OPEN circuit', async () => {
+    configureDependency('fineguard_activation', {
+      failureThreshold: 1,
+      windowMs: 60_000,
+      cooldownMs: 0, // immediate cooldown for test
+    });
+    upsertReturningMock.mockRejectedValueOnce(new Error('boom'));
+    await activateFineGuardForPie({ ...baseInput, intake: makeIntake() });
+    expect(getCircuitSnapshot('fineguard_activation').state).toBe('open');
+
+    // Cooldown is 0 — next call allowed as half-open probe; resolve it cleanly.
+    upsertReturningMock.mockResolvedValueOnce([{ id: 'recovered-id' }]);
+    const result = await activateFineGuardForPie({ ...baseInput, intake: makeIntake() });
+
+    expect(result.activated).toBe(true);
+    expect(getCircuitSnapshot('fineguard_activation').state).toBe('closed');
   });
 });
