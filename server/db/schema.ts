@@ -44,6 +44,7 @@ export const intakeForms = pgTable('intake_forms', {
   urgency: varchar('urgency', { length: 20 }).notNull(), // low, medium, high, critical
   description: text('description'),
   claimValue: varchar('claim_value', { length: 50 }),
+  sourceRef: varchar('source_ref', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

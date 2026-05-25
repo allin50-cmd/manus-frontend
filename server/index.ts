@@ -8,7 +8,11 @@ import { fileURLToPath } from 'url';
 import { db } from './db/index';
 import { complianceBundles, contacts, deploymentStatus, intakeForms, leads, monitoredCompanies } from './db/schema';
 import { companiesHouseService } from './services/companiesHouse';
-import { getUserByOpenId, getTenantBySlug, setTenantContext } from './trpc/db';
+import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db';
+
+// System tenant for brand-suite events that have no user/tenant context.
+// Row must exist in tenants table (see docs/blockers.md BLOCKER-04).
+const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
 import { appRouter } from './trpc/routers';
 import { desc, eq } from 'drizzle-orm';
@@ -74,6 +78,14 @@ app.post(
               stripeSessionId: session.id,
             })
             .onConflictDoNothing();
+
+          await writeAuditEvent({
+            tenantId: SYSTEM_TENANT_ID,
+            entityType: 'monitoring_activation',
+            entityId: 0,
+            action: 'executed',
+            metadata: JSON.stringify({ companyNumber, companyName, stripeSessionId: session.id }),
+          }).catch(e => console.error('VaultLine write failed (stripe webhook):', e));
 
           console.log(`✅ Company monitored: ${companyName} (${companyNumber})`);
         } catch (err) {
@@ -474,7 +486,20 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       })
       .returning();
 
-    console.log(`📋 New intake form: ${clientName} - ${matterType}`);
+    await writeAuditEvent({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'intake',
+      entityId: intake.id,
+      action: 'captured',
+      metadata: JSON.stringify({
+        matterRef: intake.matterRef,
+        matterType,
+        urgency,
+        sourceRef: (req.body.sourceRef as string) || 'MANUAL',
+      }),
+    }).catch(e => console.error('VaultLine write failed (intake):', e));
+
+    console.log(`📋 New intake form: ${clientName} - ${matterType} [VaultLine: captured]`);
 
     res.status(201).json({
       ok: true,
@@ -574,6 +599,21 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
         estimatedTime: 'Generated instantly', // No longer fake - we have real data!
       })
       .returning();
+
+    await writeAuditEvent({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'compliance_check',
+      entityId: bundle.id,
+      action: 'executed',
+      metadata: JSON.stringify({
+        bundleId: bundle.bundleId,
+        companyNumber: formattedNumber,
+        companyName: companyProfile.companyName,
+        riskLevel: complianceStatus.riskLevel,
+        status: complianceStatus.status,
+        overdueFilings: complianceStatus.overdueFilings.length,
+      }),
+    }).catch(e => console.error('VaultLine write failed (compliance-bundle):', e));
 
     console.log(`📦 Real-time compliance check: ${companyProfile.companyName} (${formattedNumber})`);
     console.log(`   Status: ${complianceStatus.status.toUpperCase()}`);

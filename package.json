@@ -11,14 +11,14 @@
     "start": "node dist/index.js",
     "server": "tsx server/index.ts",
     "server:watch": "tsx watch server/index.ts",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx server/db/migrate.ts",
     "db:seed": "tsx server/db/seed.ts",
-    "db:generate:clerkos": "drizzle-kit generate --config=drizzle.clerkos.config.ts",
-    "db:migrate:clerkos": "drizzle-kit migrate --config=drizzle.clerkos.config.ts",
-    "db:push:clerkos": "drizzle-kit push --config=drizzle.clerkos.config.ts",
+    "db:generate:clerkos": "drizzle-kit generate:pg --config=drizzle.clerkos.config.ts",
+    "db:migrate:clerkos": "tsx server/drizzle/migrate.ts",
+    "db:push:clerkos": "drizzle-kit push:pg --config=drizzle.clerkos.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -84,7 +84,6 @@
     "vitest": "^1.6.1"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=20.0.0"
   }
 }
