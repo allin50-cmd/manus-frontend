@@ -465,7 +465,8 @@ app.post('/api/intake', async (req: Request, res: Response) => {
       matterType,
       urgency,
       description,
-      claimValue
+      claimValue,
+      sourceRef: rawSourceRef,
     } = req.body;
 
     if (!clientName || !matterType || !urgency) {
@@ -474,6 +475,8 @@ app.post('/api/intake', async (req: Request, res: Response) => {
         error: 'Client name, matter type, and urgency are required',
       });
     }
+
+    const sourceRef = (rawSourceRef as string | undefined) || 'MANUAL';
 
     // Generate unique matter reference
     const matterRef = `MAT-${Date.now()}`;
@@ -489,10 +492,9 @@ app.post('/api/intake', async (req: Request, res: Response) => {
         urgency,
         description: description || null,
         claimValue: claimValue || null,
+        sourceRef: sourceRef !== 'MANUAL' ? sourceRef : null,
       })
       .returning();
-
-    const sourceRef = (req.body.sourceRef as string | undefined) || 'MANUAL';
 
     await writeAuditEvent({
       tenantId: SYSTEM_TENANT_ID,
