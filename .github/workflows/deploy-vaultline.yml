@@ -74,6 +74,7 @@ jobs:
           path: dist/
 
       - name: Deploy to Azure Web App
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE != '' }}
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
