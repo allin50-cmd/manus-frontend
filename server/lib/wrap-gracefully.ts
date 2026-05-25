@@ -61,6 +61,7 @@ export type WrapResult<T> =
       error: string;
       circuitState: CircuitStateName;
       degraded: boolean;
+      degradedMode?: boolean;
       errorCategory: ErrorCategory;
       overrideApplied?: boolean;
       overrideType?: string;
@@ -96,7 +97,7 @@ export async function wrapGracefully<T>(
     try {
       const maintenanceOverride = await evaluateOperationalOverride(dependency, 'maintenance_mode');
       if (maintenanceOverride.active) {
-        recordOperationFailure(dependency, { correlationId, operation }, now);
+        // Do NOT record failure against circuit and do NOT consume retry budget.
         log({
           level: 'info',
           event: 'graceful.maintenance_mode.skip',
@@ -111,6 +112,7 @@ export async function wrapGracefully<T>(
           error: 'maintenance_mode',
           circuitState: 'closed',
           degraded: true,
+          degradedMode: true,
           errorCategory: 'external_api',
           overrideApplied: true,
           overrideType: 'maintenance_mode',

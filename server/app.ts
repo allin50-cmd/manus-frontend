@@ -1225,14 +1225,17 @@ export function createApp(): express.Express {
   ]);
 
   const KNOWN_DEPENDENCIES = new Set([
-    'companies_house_api', 'stripe_webhook_processing', 'fineguard_activation', 'scheduler',
+    'companies_house_api', 'fineguard_activation', 'stripe_api', 'neon_db',
+    'azure_service_bus', 'scheduler',
+    // Legacy aliases kept for backwards compatibility
+    'stripe_webhook_processing',
   ]);
 
   // POST /api/internal/operations/override — create an override
   app.post('/api/internal/operations/override', async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
 
-    const { target, overrideType, value, expiresAt, createdBy, reason } = req.body ?? {};
+    const { target, overrideType, value, expiresAt, expiresInMinutes, createdBy, reason } = req.body ?? {};
     const correlationId = generateCorrelationId();
 
     if (!target || !overrideType || !createdBy || !reason) {
@@ -1245,9 +1248,42 @@ export function createApp(): express.Express {
       return res.status(400).json({ error: `maintenance_mode may only be applied to known dependencies: ${[...KNOWN_DEPENDENCIES].join(', ')}` });
     }
 
+    // Compute effective expiry: expiresInMinutes takes precedence over expiresAt
+    let effectiveExpiresAt: Date | null = null;
+    if (typeof expiresInMinutes === 'number' && expiresInMinutes > 0) {
+      effectiveExpiresAt = new Date(Date.now() + expiresInMinutes * 60_000);
+    } else if (expiresAt) {
+      effectiveExpiresAt = new Date(expiresAt);
+    }
+
     const clerkDb = await getDb();
     if (!clerkDb) {
       return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    // Warn (log) if force_closed has no expiry set
+    if (overrideType === 'force_closed' && !effectiveExpiresAt) {
+      log({ level: 'warn', event: 'operations.override.force_closed_no_expiry', correlationId, target, reason });
+    }
+
+    // Contradictory override check: force_open + force_closed cannot both be active on the same target
+    try {
+      const now = new Date();
+      const existing = await clerkDb
+        .select()
+        .from(operationalOverrides)
+        .where(or(isNull(operationalOverrides.expiresAt), gt(operationalOverrides.expiresAt, now))!);
+
+      const activeForTarget = existing.filter((o) => o.target === target);
+      const conflictType = overrideType === 'force_open' ? 'force_closed' : overrideType === 'force_closed' ? 'force_open' : null;
+      if (conflictType && activeForTarget.some((o) => o.overrideType === conflictType)) {
+        return res.status(400).json({
+          error: `Contradictory override: ${overrideType} conflicts with existing ${conflictType} override on target "${target}"`,
+        });
+      }
+    } catch (err) {
+      log({ level: 'warn', event: 'operations.override.conflict_check_failed', correlationId, error: String(err) });
+      // Allow proceed — conflict check failure must not block the write
     }
 
     try {
@@ -1255,7 +1291,7 @@ export function createApp(): express.Express {
         target,
         overrideType,
         value: value ?? {},
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        expiresAt: effectiveExpiresAt,
         createdBy,
         reason,
       };
@@ -1323,7 +1359,12 @@ export function createApp(): express.Express {
         return res.status(404).json({ error: 'Override not found' });
       }
 
-      await clerkDb.delete(operationalOverrides).where(eq(operationalOverrides.id, id));
+      // Soft-expire: set expires_at = now() rather than deleting the row,
+      // preserving audit history while making the override immediately inactive.
+      await clerkDb
+        .update(operationalOverrides)
+        .set({ expiresAt: new Date() })
+        .where(eq(operationalOverrides.id, id));
       invalidateOverrideCache();
 
       await writeAuditEvent({
