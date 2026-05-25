@@ -18,7 +18,7 @@ import { companiesHouseService } from './services/companiesHouse';
 import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
 import { appRouter } from './trpc/routers';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, and, gt, or, isNull } from 'drizzle-orm';
 import { log, generateCorrelationId } from './lib/logger';
 import { withRetry } from './lib/retry';
 import { PieOpportunitySchema, buildSourceRef } from './lib/pie-schema';
@@ -30,6 +30,11 @@ import {
   getInstanceInfo,
   getRecentTraces,
 } from './lib/resilience-stats';
+import { getAllGlobalCircuitState } from './lib/global-circuit-sync';
+import { acquireSchedulerLease, releaseSchedulerLease, getSchedulerLeaseState } from './lib/scheduler-lease';
+import { getAllActiveOverrides, evaluateOperationalOverride, invalidateOverrideCache } from './lib/override-engine';
+import { operationalOverrides, operationalAnnotations } from './drizzle/schema';
+import type { InsertOperationalOverride, InsertOperationalAnnotation } from './drizzle/schema';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -931,15 +936,21 @@ export function createApp(): express.Express {
    * structure cannot 500 the endpoint. A partial snapshot is preferable
    * to a failed introspection call.
    */
-  app.get('/api/internal/resilience', (req: Request, res: Response) => {
+  app.get('/api/internal/resilience', async (req: Request, res: Response) => {
     const key = req.headers['x-admin-key'];
     if (!ADMIN_API_KEY || key !== ADMIN_API_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const partial: { circuits?: unknown; stats?: unknown; recentTraces?: unknown; system?: unknown; errors: string[] } = {
-      errors: [],
-    };
+    const partial: {
+      circuits?: unknown;
+      stats?: unknown;
+      recentTraces?: unknown;
+      system?: unknown;
+      global?: unknown;
+      overrides?: unknown;
+      errors: string[];
+    } = { errors: [] };
 
     try {
       partial.circuits = getAllCircuitSnapshots();
@@ -961,6 +972,17 @@ export function createApp(): express.Express {
     } catch (e) {
       partial.errors.push(`system: ${String(e)}`);
     }
+    try {
+      const [globalCircuits, schedulerLease, overrides] = await Promise.all([
+        getAllGlobalCircuitState().catch(() => ({})),
+        getSchedulerLeaseState('fineguard-compliance-check').catch(() => ({ held: false, holderInstance: null, expiresAt: null })),
+        getAllActiveOverrides().catch(() => ({})),
+      ]);
+      partial.global = { circuits: globalCircuits, schedulerLease };
+      partial.overrides = overrides;
+    } catch (e) {
+      partial.errors.push(`global: ${String(e)}`);
+    }
 
     return res.json({
       timestamp: new Date().toISOString(),
@@ -968,6 +990,8 @@ export function createApp(): express.Express {
       stats: partial.stats ?? {},
       recentTraces: partial.recentTraces ?? [],
       system: partial.system ?? { instanceId: 'unknown', uptimeMs: 0 },
+      global: partial.global ?? { circuits: {}, schedulerLease: null },
+      overrides: partial.overrides ?? {},
       ...(partial.errors.length > 0 ? { partialErrors: partial.errors } : {}),
     });
   });
@@ -984,6 +1008,29 @@ export function createApp(): express.Express {
 
     if (!companiesHouseService) {
       return res.status(503).json({ error: 'Companies House API not configured' });
+    }
+
+    // Check scheduler pause override before any lease/processing work
+    try {
+      const pauseOverride = await evaluateOperationalOverride('scheduler', 'pause_scheduler');
+      if (pauseOverride.active) {
+        log({ level: 'info', event: 'scheduler.paused_by_override', reason: pauseOverride.reason });
+        return res.json({ skipped: true, reason: 'scheduler_paused', overrideId: pauseOverride.overrideId });
+      }
+    } catch {
+      // Override engine failure must not block the scheduler
+    }
+
+    // Acquire distributed lease to prevent parallel runs across instances
+    const lease = await acquireSchedulerLease('fineguard-compliance-check', 5 * 60_000);
+    if (!lease.acquired) {
+      log({ level: 'info', event: 'scheduler.lease_busy', holderInstance: lease.holderInstance });
+      return res.json({
+        skipped: true,
+        reason: 'lease_held_by_other_instance',
+        holderInstance: lease.holderInstance,
+        expiresAt: lease.expiresAt?.toISOString(),
+      });
     }
 
     const runId = generateCorrelationId();
@@ -1115,6 +1162,8 @@ export function createApp(): express.Express {
         }
       }
 
+      await releaseSchedulerLease('fineguard-compliance-check').catch(() => {});
+
       const alertCount = results.filter(r => r.alertRequired).length;
       log({
         level: 'info',
@@ -1134,8 +1183,205 @@ export function createApp(): express.Express {
         results,
       });
     } catch (err) {
+      await releaseSchedulerLease('fineguard-compliance-check').catch(() => {});
       log({ level: 'error', event: 'scheduler.run.failed', correlationId: runId, error: String(err) });
       res.status(500).json({ error: 'Compliance check failed' });
+    }
+  });
+
+  // ==========================================================================
+  // OPERATIONS CONTROL PLANE
+  // ==========================================================================
+
+  function requireAdmin(req: Request, res: Response): boolean {
+    const key = req.headers['x-admin-key'];
+    if (!ADMIN_API_KEY || key !== ADMIN_API_KEY) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return false;
+    }
+    return true;
+  }
+
+  const VALID_OVERRIDE_TYPES = new Set([
+    'force_open', 'force_closed', 'maintenance_mode', 'pause_scheduler', 'disable_retry_budget',
+  ]);
+
+  const KNOWN_DEPENDENCIES = new Set([
+    'companies_house_api', 'stripe_webhook_processing', 'fineguard_activation', 'scheduler',
+  ]);
+
+  // POST /api/internal/operations/override — create an override
+  app.post('/api/internal/operations/override', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+
+    const { target, overrideType, value, expiresAt, createdBy, reason } = req.body ?? {};
+    const correlationId = generateCorrelationId();
+
+    if (!target || !overrideType || !createdBy || !reason) {
+      return res.status(400).json({ error: 'target, overrideType, createdBy, reason are required' });
+    }
+    if (!VALID_OVERRIDE_TYPES.has(overrideType)) {
+      return res.status(400).json({ error: `Invalid overrideType. Allowed: ${[...VALID_OVERRIDE_TYPES].join(', ')}` });
+    }
+    if (overrideType === 'maintenance_mode' && !KNOWN_DEPENDENCIES.has(target)) {
+      return res.status(400).json({ error: `maintenance_mode may only be applied to known dependencies: ${[...KNOWN_DEPENDENCIES].join(', ')}` });
+    }
+
+    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    if (!clerkDb) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    try {
+      const row: InsertOperationalOverride = {
+        target,
+        overrideType,
+        value: value ?? {},
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        createdBy,
+        reason,
+      };
+      const [created] = await clerkDb.insert(operationalOverrides).values(row).returning();
+      invalidateOverrideCache();
+
+      await writeAuditEvent({
+        tenantId: SYSTEM_TENANT_ID,
+        entityType: 'system',
+        entityUuid: created.id,
+        action: 'system_override_applied',
+        correlationId,
+        metadata: JSON.stringify({ target, overrideType, reason, expiresAt: created.expiresAt, createdBy }),
+      }).catch(() => {});
+
+      return res.status(201).json({ ok: true, override: created });
+    } catch (err) {
+      log({ level: 'error', event: 'operations.override.create_failed', correlationId, error: String(err) });
+      return res.status(500).json({ error: 'Failed to create override' });
+    }
+  });
+
+  // GET /api/internal/operations/overrides — list active overrides
+  app.get('/api/internal/operations/overrides', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+
+    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    if (!clerkDb) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    try {
+      const now = new Date();
+      const rows = await clerkDb
+        .select()
+        .from(operationalOverrides)
+        .where(or(isNull(operationalOverrides.expiresAt), gt(operationalOverrides.expiresAt, now))!);
+      return res.json({ overrides: rows });
+    } catch (err) {
+      log({ level: 'error', event: 'operations.overrides.list_failed', error: String(err) });
+      return res.status(500).json({ error: 'Failed to list overrides' });
+    }
+  });
+
+  // DELETE /api/internal/operations/override/:id — remove an override
+  app.delete('/api/internal/operations/override/:id', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+
+    const { id } = req.params;
+    const correlationId = generateCorrelationId();
+
+    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    if (!clerkDb) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    try {
+      const existing = await clerkDb
+        .select()
+        .from(operationalOverrides)
+        .where(eq(operationalOverrides.id, id))
+        .limit(1);
+
+      if (existing.length === 0) {
+        return res.status(404).json({ error: 'Override not found' });
+      }
+
+      await clerkDb.delete(operationalOverrides).where(eq(operationalOverrides.id, id));
+      invalidateOverrideCache();
+
+      await writeAuditEvent({
+        tenantId: SYSTEM_TENANT_ID,
+        entityType: 'system',
+        entityUuid: id,
+        action: 'system_override_removed',
+        correlationId,
+        metadata: JSON.stringify({
+          target: existing[0].target,
+          overrideType: existing[0].overrideType,
+          reason: existing[0].reason,
+        }),
+      }).catch(() => {});
+
+      return res.json({ ok: true });
+    } catch (err) {
+      log({ level: 'error', event: 'operations.override.delete_failed', correlationId, error: String(err) });
+      return res.status(500).json({ error: 'Failed to delete override' });
+    }
+  });
+
+  // POST /api/internal/operations/annotate — add an incident annotation
+  app.post('/api/internal/operations/annotate', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+
+    const { incidentStatus, note, createdBy } = req.body ?? {};
+    const correlationId = generateCorrelationId();
+
+    if (!incidentStatus || !note || !createdBy) {
+      return res.status(400).json({ error: 'incidentStatus, note, createdBy are required' });
+    }
+
+    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    if (!clerkDb) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    try {
+      const row: InsertOperationalAnnotation = { incidentStatus, note, createdBy };
+      const [created] = await clerkDb.insert(operationalAnnotations).values(row).returning();
+
+      await writeAuditEvent({
+        tenantId: SYSTEM_TENANT_ID,
+        entityType: 'system',
+        entityUuid: created.id,
+        action: 'system_annotation_added',
+        correlationId,
+        metadata: JSON.stringify({ incidentStatus, createdBy, noteLength: note.length }),
+      }).catch(() => {});
+
+      return res.status(201).json({ ok: true, annotation: created });
+    } catch (err) {
+      log({ level: 'error', event: 'operations.annotate.failed', correlationId, error: String(err) });
+      return res.status(500).json({ error: 'Failed to add annotation' });
+    }
+  });
+
+  // GET /api/internal/operations/incidents — list recent annotations
+  app.get('/api/internal/operations/incidents', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+
+    const clerkDb = await import('./trpc/db').then(m => m.getDb());
+    if (!clerkDb) {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+
+    try {
+      const rows = await clerkDb
+        .select()
+        .from(operationalAnnotations)
+        .orderBy(operationalAnnotations.createdAt);
+      return res.json({ annotations: rows });
+    } catch (err) {
+      log({ level: 'error', event: 'operations.incidents.list_failed', error: String(err) });
+      return res.status(500).json({ error: 'Failed to list annotations' });
     }
   });
 

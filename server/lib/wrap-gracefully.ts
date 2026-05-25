@@ -8,6 +8,7 @@ import {
 } from './circuit-breaker';
 import { log } from './logger';
 import { recordOperationFailure, recordOperationSuccess } from './resilience-stats';
+import { evaluateOperationalOverride } from './override-engine';
 
 /**
  * Coarse error category surfaced in audit metadata. Operators use this
@@ -51,6 +52,7 @@ export type WrapResult<T> =
       value: T;
       circuitState: CircuitStateName;
       degraded: false;
+      overrideApplied?: false;
     }
   | {
       ok: false;
@@ -58,6 +60,8 @@ export type WrapResult<T> =
       circuitState: CircuitStateName;
       degraded: boolean;
       errorCategory: ErrorCategory;
+      overrideApplied?: boolean;
+      overrideType?: string;
     };
 
 /**
@@ -82,6 +86,59 @@ export async function wrapGracefully<T>(
 ): Promise<WrapResult<T>> {
   const { operation, dependency, correlationId, sourceRef, upstreamSystem, tenantId, entityUuid } = ctx;
   const now = Date.now();
+
+  // Maintenance mode override — operator-controlled bypass before circuit logic
+  if (dependency) {
+    try {
+      const maintenanceOverride = await evaluateOperationalOverride(dependency, 'maintenance_mode');
+      if (maintenanceOverride.active) {
+        recordOperationFailure(dependency, { correlationId, operation }, now);
+        log({
+          level: 'info',
+          event: 'graceful.maintenance_mode.skip',
+          operation,
+          dependency,
+          correlationId,
+          overrideId: maintenanceOverride.overrideId,
+          reason: maintenanceOverride.reason,
+        });
+        return {
+          ok: false,
+          error: 'maintenance_mode',
+          circuitState: 'closed',
+          degraded: true,
+          errorCategory: 'external_api',
+          overrideApplied: true,
+          overrideType: 'maintenance_mode',
+        };
+      }
+
+      const forceOpenOverride = await evaluateOperationalOverride(dependency, 'force_open');
+      if (forceOpenOverride.active) {
+        const snap = getCircuitSnapshot(dependency, now);
+        recordOperationFailure(dependency, { correlationId, operation, outcome: 'circuit_open' }, now);
+        log({
+          level: 'warn',
+          event: 'graceful.force_open.skip',
+          operation,
+          dependency,
+          correlationId,
+          overrideId: forceOpenOverride.overrideId,
+        });
+        return {
+          ok: false,
+          error: 'circuit_open',
+          circuitState: 'open',
+          degraded: true,
+          errorCategory: 'circuit_open',
+          overrideApplied: true,
+          overrideType: 'force_open',
+        };
+      }
+    } catch {
+      // Override engine failure must never block the operation
+    }
+  }
 
   // Circuit breaker fast-fail
   if (dependency && !shouldAllowExecution(dependency, now)) {
