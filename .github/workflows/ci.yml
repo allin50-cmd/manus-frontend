@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check client
+        run: npm run type-check
+
+      - name: Type-check server (strict)
+        run: npm run type-check:server
+
+      - name: Unit tests
+        run: npm test
+        # Integration tests skip cleanly when DATABASE_URL is absent.
+        # Run the full suite (including integration) in a separate job
+        # that has DATABASE_URL provisioned.
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+          COMPANIES_HOUSE_API_KEY: placeholder-ci-build-only

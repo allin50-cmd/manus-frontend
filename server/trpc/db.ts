@@ -230,8 +230,12 @@ export async function getClerkDiaryByDate(clerkId: number, date: string, tenantI
 // ─── Audit ───────────────────────────────────────────────────────────────────
 
 export async function writeAuditEvent(event: InsertAuditEvent): Promise<void> {
+  if (event.entityId == null && event.entityUuid == null) {
+    throw new Error(
+      `writeAuditEvent: one of entityId or entityUuid is required (entityType=${event.entityType}, action=${event.action})`
+    );
+  }
   const db = await getDb();
   if (!db) return;
-  // Audit events are immutable — insert only, no update
   await db.insert(auditEvents).values(event);
 }

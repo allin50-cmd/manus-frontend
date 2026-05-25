@@ -268,6 +268,12 @@ export type ClerkDiary = typeof clerkDiaries.$inferSelect;
 export type InsertClerkDiary = typeof clerkDiaries.$inferInsert;
 
 // ─── Audit Events ─────────────────────────────────────────────────────────────
+//
+// entityId  — integer serial PK used by ClerkOS entities (cases, allocations, …)
+// entityUuid — UUID used by brand-suite entities (intake_forms, compliance_bundles)
+//
+// Exactly one of entityId / entityUuid must be provided per row.
+// The application layer enforces this in writeAuditEvent().
 
 export const auditEvents = pgTable(
   'clerk_audit_events',
@@ -277,18 +283,25 @@ export const auditEvents = pgTable(
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
     entityType: varchar('entity_type', { length: 64 }).notNull(),
-    entityId: integer('entity_id').notNull(),
+    // Nullable — set for ClerkOS serial-ID entities; null for brand-suite UUID entities
+    entityId: integer('entity_id'),
+    // Nullable — set for brand-suite UUID entities (intake_forms, compliance_bundles)
+    entityUuid: uuid('entity_uuid'),
     action: varchar('action', { length: 64 }).notNull(),
     actorId: integer('actor_id'),
     actorOpenId: varchar('actor_open_id', { length: 64 }),
     previousState: text('previous_state'),
     nextState: text('next_state'),
     metadata: text('metadata'),
+    correlationId: uuid('correlation_id'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (t) => ({
     tenantIdx: index('audit_tenant_idx').on(t.tenantId),
+    // Integer entity lookup (ClerkOS)
     entityIdx: index('audit_entity_idx').on(t.tenantId, t.entityType, t.entityId),
+    // UUID entity lookup (brand-suite)
+    entityUuidIdx: index('audit_entity_uuid_idx').on(t.tenantId, t.entityType, t.entityUuid),
   }),
 );
 

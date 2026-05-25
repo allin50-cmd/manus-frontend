@@ -42,8 +42,8 @@ lerna-debug.log*
 *.sqlite3
 *.db
 
-# Drizzle (migration output at project root only)
-/drizzle/
+# Drizzle studio generated files only
+.drizzle/
 
 # OS
 .DS_Store
