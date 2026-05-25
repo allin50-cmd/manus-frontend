@@ -22,7 +22,7 @@ import { desc, eq } from 'drizzle-orm';
 import { log, generateCorrelationId } from './lib/logger';
 import { withRetry } from './lib/retry';
 import { PieOpportunitySchema, buildSourceRef } from './lib/pie-schema';
-import { evaluateFineGuardActivation } from './lib/fineguard-rules';
+import { activateFineGuardForPie } from './lib/pie-fineguard';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -557,6 +557,19 @@ export function createApp(): express.Express {
           log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'pie-opportunity', error: String(e) }),
         );
 
+        // Re-attempt FineGuard activation on replay so a previously-failed
+        // activation gets a recovery path. Upsert is idempotent via
+        // ON CONFLICT (company_number); the helper never throws.
+        await activateFineGuardForPie({
+          intake: existing,
+          applicantName: data.applicantName,
+          sourceRef,
+          pieExternalRef,
+          correlationId,
+          tenantId: SYSTEM_TENANT_ID,
+          trigger: 'replay_retry',
+        });
+
         log({
           level: 'info',
           event: 'pie.ingestion.replayed',
@@ -626,107 +639,17 @@ export function createApp(): express.Express {
         durationMs: Date.now() - startMs,
       });
 
-      // --------------------------------------------------------------------
-      // FineGuard activation — best-effort, isolated from intake success.
-      // Evaluation always runs (audited); upsert happens only when rules pass.
-      // --------------------------------------------------------------------
-      try {
-        const evaluation = evaluateFineGuardActivation(intake);
-
-        await writeAuditEvent({
-          tenantId: SYSTEM_TENANT_ID,
-          entityType: 'intake',
-          entityUuid: intake.id,
-          action: 'fineguard_activation_evaluated',
-          correlationId,
-          metadata: JSON.stringify({
-            sourceRef,
-            upstreamSystem: 'PIE',
-            pieExternalRef,
-            matterRef: intake.matterRef,
-            activate: evaluation.activate,
-            reasons: evaluation.reasons,
-          }),
-        }).catch(e =>
-          log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'pie-fineguard-eval', error: String(e) }),
-        );
-
-        log({
-          level: 'info',
-          event: 'pie.fineguard.evaluated',
-          correlationId,
-          sourceRef,
-          pieExternalRef,
-          activate: evaluation.activate,
-          reasons: evaluation.reasons,
-        });
-
-        if (evaluation.activate) {
-          try {
-            const [activation] = await db
-              .insert(monitoredCompanies)
-              .values({
-                companyNumber: sourceRef,
-                companyName: data.applicantName,
-                stripeSessionId: `pie-activation:${pieExternalRef}`,
-              })
-              .onConflictDoUpdate({
-                target: monitoredCompanies.companyNumber,
-                set: { companyName: data.applicantName },
-              })
-              .returning();
-
-            await writeAuditEvent({
-              tenantId: SYSTEM_TENANT_ID,
-              entityType: 'monitoring_activation',
-              entityUuid: activation.id,
-              action: 'fineguard_activation_triggered',
-              correlationId,
-              metadata: JSON.stringify({
-                sourceRef,
-                upstreamSystem: 'PIE',
-                pieExternalRef,
-                matterRef: intake.matterRef,
-                companyIdentifier: sourceRef,
-                companyName: data.applicantName,
-                reasons: evaluation.reasons,
-              }),
-            }).catch(e =>
-              log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'pie-fineguard-trigger', error: String(e) }),
-            );
-
-            log({
-              level: 'info',
-              event: 'pie.fineguard.activated',
-              correlationId,
-              sourceRef,
-              pieExternalRef,
-              companyIdentifier: sourceRef,
-              reasons: evaluation.reasons,
-            });
-          } catch (activationErr) {
-            log({
-              level: 'error',
-              event: 'pie.fineguard.activation_failed',
-              correlationId,
-              sourceRef,
-              pieExternalRef,
-              error: String(activationErr),
-            });
-          }
-        }
-      } catch (evalErr) {
-        // Defensive — evaluation is a pure function, but never let any
-        // unforeseen runtime issue break the intake success path.
-        log({
-          level: 'error',
-          event: 'pie.fineguard.evaluation_failed',
-          correlationId,
-          sourceRef,
-          pieExternalRef,
-          error: String(evalErr),
-        });
-      }
+      // FineGuard activation — best-effort, never throws.
+      // See server/lib/pie-fineguard.ts for evaluation + upsert + audit semantics.
+      await activateFineGuardForPie({
+        intake,
+        applicantName: data.applicantName,
+        sourceRef,
+        pieExternalRef,
+        correlationId,
+        tenantId: SYSTEM_TENANT_ID,
+        trigger: 'first_ingestion',
+      });
 
       return res.status(201).json({
         ok: true,

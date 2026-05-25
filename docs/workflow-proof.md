@@ -325,15 +325,35 @@ so re-running with the same `sourceRef` is a no-op for row count.
 
 ### Audit Events Emitted
 
-Per first-time PIE ingestion (in addition to the existing `captured` event):
+Per ingestion (first-time AND replay; in addition to `captured` / `ingestion_replayed`):
 
 | `action` | When | Metadata includes |
 |---|---|---|
-| `fineguard_activation_evaluated` | Always (after intake insert) | `sourceRef`, `upstreamSystem: "PIE"`, `pieExternalRef`, `matterRef`, `activate`, `reasons` |
-| `fineguard_activation_triggered` | Only when `activate=true` and upsert succeeds | adds `companyIdentifier`, `companyName`, `reasons` |
+| `fineguard_activation_evaluated` | Always (after intake insert / replay match) | `sourceRef`, `upstreamSystem: "PIE"`, `pieExternalRef`, `matterRef`, `activate`, `reasons`, `trigger` |
+| `fineguard_activation_triggered` | `activate=true` and upsert succeeded | adds `companyIdentifier`, `companyName`, `reasons`, `trigger` |
+| `fineguard_activation_failed` | `activate=true` but upsert/audit failed | adds `errorCategory: 'database' \| 'runtime'`, `trigger` |
 
-Both events carry the same `correlationId` as the parent intake `captured`
-event, so the full chain is traceable from a single ID.
+Every `evaluated` event with `activate=true` has a terminal counterpart —
+either `triggered` (success) or `failed` (caught error). This symmetry lets
+operators detect stuck activations via SQL:
+
+```sql
+SELECT i.metadata->>'sourceRef' AS source_ref, i.created_at
+FROM clerk_audit_events i
+WHERE i.action = 'fineguard_activation_evaluated'
+  AND (i.metadata->>'activate')::boolean = true
+  AND NOT EXISTS (
+    SELECT 1 FROM clerk_audit_events t
+    WHERE t.correlation_id = i.correlation_id
+      AND t.action IN ('fineguard_activation_triggered', 'fineguard_activation_failed')
+  );
+```
+
+`trigger` is `"first_ingestion"` or `"replay_retry"`, distinguishing the
+two paths into the helper.
+
+All events carry the same `correlationId` as the parent intake event, so
+the full chain is traceable from a single ID.
 
 ### Failure Isolation Guarantees
 
@@ -352,15 +372,24 @@ not depend on activation outcome).
 
 ### Idempotency
 
-- **Replay path is untouched**: the handler returns early on `existing` lookup
-  before reaching the activation block, so replays do not re-evaluate or
-  re-upsert. The `ingestion_replayed` audit event is the only write.
-- **At-first-ingestion**: the upsert's `ON CONFLICT` clause means even if
-  somehow the activation block ran twice for the same `sourceRef` (e.g. due
-  to a future retry harness), `monitored_companies` stays at exactly one row
-  per PIE ref.
+- **Replay path re-attempts activation**: when an existing intake row is
+  found, the handler emits `ingestion_replayed` AND re-invokes the FineGuard
+  helper with `trigger: "replay_retry"`. A previously-failed activation
+  (e.g. transient DB blip during first ingestion) gets a recovery path on
+  the next PIE delivery without operator intervention.
+- **Idempotent upsert**: the `ON CONFLICT (company_number) DO UPDATE` clause
+  keeps `monitored_companies` at exactly one row per PIE ref. Re-attempts
+  refresh `companyName` but never duplicate rows.
 - **`monitored_companies.company_number` UNIQUE** constraint enforces this
   at the DB level.
+
+### Schema
+
+`monitored_companies.company_number` was widened from `varchar(50)` to
+`varchar(255)` (brand-suite migration `0001_unique_wolf_cub.sql`) so that
+PIE sourceRefs of any Zod-permitted length (up to `PIE:<100-char-ref>`)
+fit without overflow. Real CH numbers remain 8 chars; the column simply
+has more headroom for synthetic identifiers from non-CH origins.
 
 ### Logging Events
 

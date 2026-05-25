@@ -121,6 +121,113 @@ describe('evaluateFineGuardActivation: value rule', () => {
   });
 });
 
+describe('parseClaimValueGbp via evaluateFineGuardActivation: shorthand notation', () => {
+  it('recognises "2.4m" as £2.4M (above threshold)', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({ sourceRef: 'PIE:24/AP/1234', urgency: 'low', claimValue: '2.4m' }),
+    );
+    expect(result.activate).toBe(true);
+    expect(result.reasons.highValue).toBe(true);
+  });
+
+  it('recognises "£2.4m" with currency prefix', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({ sourceRef: 'PIE:24/AP/1234', urgency: 'low', claimValue: '£2.4m' }),
+    );
+    expect(result.activate).toBe(true);
+  });
+
+  it('recognises "£5M" uppercase suffix', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({ sourceRef: 'PIE:24/AP/1234', urgency: 'low', claimValue: '£5M' }),
+    );
+    expect(result.activate).toBe(true);
+  });
+
+  it('recognises "£500k" as £500,000 (below threshold)', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({ sourceRef: 'PIE:24/AP/1234', urgency: 'low', claimValue: '£500k' }),
+    );
+    expect(result.activate).toBe(false);
+    expect(result.reasons.highValue).toBe(false);
+  });
+
+  it('recognises "1.5bn" as £1.5 billion (way above threshold)', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({ sourceRef: 'PIE:24/AP/1234', urgency: 'low', claimValue: '1.5bn' }),
+    );
+    expect(result.activate).toBe(true);
+  });
+
+  it('handles trailing junk after the number ("£500k development cost")', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({
+        sourceRef: 'PIE:24/AP/1234',
+        urgency: 'low',
+        claimValue: '£500k development cost over 3 years',
+      }),
+    );
+    expect(result.activate).toBe(false);
+    expect(result.reasons.highValue).toBe(false);
+  });
+
+  it('decimals preserved without suffix ("£1,500.50" stays £1,500.50)', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({ sourceRef: 'PIE:24/AP/1234', urgency: 'low', claimValue: '£1,500.50' }),
+    );
+    expect(result.activate).toBe(false);
+    expect(result.reasons.highValue).toBe(false);
+  });
+});
+
+describe('parseClaimValueGbp via evaluateFineGuardActivation: ranges resolve to lower bound', () => {
+  it('"£1,000 - £5,000,000" treated as £1,000 (lower bound, below threshold)', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({
+        sourceRef: 'PIE:24/AP/1234',
+        urgency: 'low',
+        claimValue: '£1,000 - £5,000,000',
+      }),
+    );
+    expect(result.activate).toBe(false);
+    expect(result.reasons.highValue).toBe(false);
+  });
+
+  it('"£2,000,000 - £5,000,000" treated as £2M (lower bound, above threshold)', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({
+        sourceRef: 'PIE:24/AP/1234',
+        urgency: 'low',
+        claimValue: '£2,000,000 - £5,000,000',
+      }),
+    );
+    expect(result.activate).toBe(true);
+    expect(result.reasons.highValue).toBe(true);
+  });
+
+  it('en-dash range splitter ("£500k – £2m")', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({
+        sourceRef: 'PIE:24/AP/1234',
+        urgency: 'low',
+        claimValue: '£500k – £2m',
+      }),
+    );
+    expect(result.activate).toBe(false);
+  });
+
+  it('"to" splitter ("£500,000 to £2,000,000")', () => {
+    const result = evaluateFineGuardActivation(
+      makeIntake({
+        sourceRef: 'PIE:24/AP/1234',
+        urgency: 'low',
+        claimValue: '£500,000 to £2,000,000',
+      }),
+    );
+    expect(result.activate).toBe(false);
+  });
+});
+
 describe('evaluateFineGuardActivation: determinism', () => {
   it('produces identical results for identical inputs', () => {
     const intake = makeIntake({

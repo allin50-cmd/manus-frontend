@@ -85,7 +85,10 @@ export const contacts = pgTable('contacts', {
  */
 export const monitoredCompanies = pgTable('monitored_companies', {
   id: uuid('id').primaryKey().defaultRandom(),
-  companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
+  // Length 255 to accommodate synthetic identifiers from non-CH sources
+  // (e.g. "PIE:<externalRef>" from Accuracy PIE auto-activation).
+  // Real Companies House numbers are 8 chars; PIE sourceRefs are up to ~104.
+  companyNumber: varchar('company_number', { length: 255 }).notNull().unique(),
   companyName: varchar('company_name', { length: 255 }).notNull(),
   stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
   activatedAt: timestamp('activated_at').defaultNow().notNull(),

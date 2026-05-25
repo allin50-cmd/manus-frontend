@@ -1,0 +1,1 @@
+ALTER TABLE "monitored_companies" ALTER COLUMN "company_number" SET DATA TYPE varchar(255);

@@ -21,18 +21,56 @@ export interface FineGuardEvaluation {
 
 const HIGH_VALUE_THRESHOLD_GBP = 1_000_000;
 
+const SUFFIX_MULTIPLIERS: ReadonlyArray<[RegExp, number]> = [
+  [/bn\b/i, 1_000_000_000],
+  [/\bm\b/i, 1_000_000],
+  [/\bk\b/i, 1_000],
+];
+
 /**
- * Parse a free-text claim value string (e.g. "£2,400,000", "2.4m", "500000")
- * to a numeric GBP value. Returns null when no digits are present.
+ * Parse a free-text claim value string to a numeric GBP value.
  *
- * Deterministic: no locale, no currency conversion — strips non-digits.
+ * Supported shapes (deterministic — no locale, no currency conversion):
+ *   "£2,400,000"            → 2_400_000
+ *   "2400000"               → 2_400_000
+ *   "£1,500.50"             → 1_500.5         (decimals preserved)
+ *   "2.4m" / "£2.4m"        → 2_400_000       (case-insensitive suffix)
+ *   "500k" / "£500k"        → 500_000
+ *   "1.5bn"                 → 1_500_000_000
+ *   "£1,000 - £5,000,000"   → 1_000           (range: lower bound wins, conservative)
+ *
+ * Returns null when no numeric content is present.
+ *
+ * Conservative choices:
+ *   - Ranges resolve to the LOWER bound so we never falsely fire highValue.
+ *   - Trailing junk after a number is ignored ("£500k development cost" → 500_000).
+ *   - Mixed case suffixes ("M", "K", "BN") all recognised.
  */
 function parseClaimValueGbp(claimValue: string | null | undefined): number | null {
   if (!claimValue) return null;
-  const digits = claimValue.replace(/[^\d]/g, '');
-  if (digits.length === 0) return null;
-  const n = Number(digits);
-  return Number.isFinite(n) ? n : null;
+
+  // Take the LOWER bound on ranges — "£1,000 - £5,000,000" → "£1,000".
+  // Splitter matches " - ", " – " (en-dash with spaces), " to ", or "—".
+  const lowerBoundFragment = claimValue
+    .split(/\s+(?:-|–|—|to)\s+/i)[0]
+    .trim();
+
+  // Find the first numeric token (digits with optional commas + optional decimal).
+  const numericMatch = lowerBoundFragment.match(/[\d,]+(?:\.\d+)?/);
+  if (!numericMatch) return null;
+
+  const numericRaw = numericMatch[0].replace(/,/g, '');
+  const base = Number(numericRaw);
+  if (!Number.isFinite(base)) return null;
+
+  // Look for a shorthand suffix in the fragment AFTER the numeric token.
+  const after = lowerBoundFragment.slice(
+    numericMatch.index! + numericMatch[0].length,
+  );
+  for (const [pattern, multiplier] of SUFFIX_MULTIPLIERS) {
+    if (pattern.test(after)) return base * multiplier;
+  }
+  return base;
 }
 
 /**

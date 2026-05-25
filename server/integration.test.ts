@@ -676,59 +676,7 @@ describe('PIE → FineGuard: auto-activation bridge', () => {
     await fgClient.end();
   });
 
-  it('PIE intake activation failure is isolated — intake remains intact', async () => {
-    if (skipIfNoDb()) return;
-
-    const pieRef = `24/AP/FG-ISOLATED-${Date.now()}`;
-    const sourceRef = buildSourceRef(pieRef);
-    const matterRef = `MAT-FG-ISO-${Date.now()}`;
-    const fgClient = postgres(DATABASE_URL!, { max: 1 });
-    const fgDb = drizzle(fgClient);
-
-    // Intake insert succeeds
-    const [intake] = await fgDb
-      .insert(intakeForms)
-      .values({
-        matterRef,
-        clientName: 'FG Isolated Ltd',
-        matterType: 'planning',
-        urgency: 'critical',
-        sourceRef,
-      })
-      .returning();
-
-    // Simulate activation failure: deliberately violate NOT NULL on stripe_session_id.
-    // Cast through unknown because the column is typed non-null; we're stress-testing
-    // runtime isolation, not the type system.
-    const failingInsert = {
-      companyNumber: sourceRef,
-      companyName: intake.clientName,
-      stripeSessionId: null as unknown as string,
-    };
-    let activationError: unknown = null;
-    try {
-      await fgDb.insert(monitoredCompanies).values(failingInsert);
-    } catch (err) {
-      activationError = err;
-    }
-    expect(activationError).not.toBeNull();
-
-    // Intake row must still exist — failure was isolated
-    const intakeRows = await fgDb
-      .select()
-      .from(intakeForms)
-      .where(eq(intakeForms.matterRef, matterRef));
-    expect(intakeRows).toHaveLength(1);
-    expect(intakeRows[0].sourceRef).toBe(sourceRef);
-
-    // No monitored_companies row was created
-    const mcRows = await fgDb
-      .select()
-      .from(monitoredCompanies)
-      .where(eq(monitoredCompanies.companyNumber, sourceRef));
-    expect(mcRows).toHaveLength(0);
-
-    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
-    await fgClient.end();
-  });
+  // Note: handler-level isolation (FineGuard failure → 201 intake response unaffected)
+  // is verified in server/pie-fineguard.test.ts via mocked DB. That test directly
+  // exercises the helper's "never throws" contract, which the handler relies on.
 });
