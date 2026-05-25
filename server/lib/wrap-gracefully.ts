@@ -198,7 +198,7 @@ export async function wrapGracefully<T>(
   if (dependency && ctx.retryable && !retryBudgetDisabled) {
     try {
       if (!consumeRetryBudget(dependency, now)) {
-        recordOperationFailure(dependency, { correlationId, operation, outcome: 'retry_budget_exhausted' }, now);
+        recordOperationFailure(dependency, { correlationId, operation }, now);
         log({ level: 'warn', event: 'graceful.retry_budget.exhausted', operation, dependency, correlationId });
         pushCircuitStateAsync(dependency);
         const snap = getCircuitSnapshot(dependency, now);
