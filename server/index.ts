@@ -73,19 +73,23 @@ app.post(
       if (companyNumber && companyName) {
         const correlationId = generateCorrelationId();
         try {
-          await db
+          const [activation] = await db
             .insert(monitoredCompanies)
             .values({
               companyNumber,
               companyName,
               stripeSessionId: session.id,
             })
-            .onConflictDoNothing();
+            .onConflictDoUpdate({
+              target: monitoredCompanies.companyNumber,
+              set: { stripeSessionId: session.id },
+            })
+            .returning();
 
           await writeAuditEvent({
             tenantId: SYSTEM_TENANT_ID,
             entityType: 'monitoring_activation',
-            entityId: 0,
+            entityUuid: activation.id,
             action: 'executed',
             correlationId,
             metadata: JSON.stringify({ companyNumber, companyName, stripeSessionId: session.id }),
@@ -931,7 +935,7 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
         await writeAuditEvent({
           tenantId: SYSTEM_TENANT_ID,
           entityType: 'compliance_alert',
-          entityId: 0,
+          entityUuid: company.id,
           action: alertRequired ? 'alert_required' : 'checked',
           correlationId: companyCorrelationId,
           metadata: JSON.stringify({
@@ -1020,7 +1024,12 @@ app.get('/api/internal/run-compliance-check', async (req: Request, res: Response
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
 
-// SPA fallback - serve index.html for all other routes
+// Guard: any /api/* route that wasn't matched above has no handler
+app.all('/api/*', (_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// SPA fallback - serve index.html for all non-API routes
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
