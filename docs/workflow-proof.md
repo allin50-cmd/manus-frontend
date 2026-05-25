@@ -134,7 +134,8 @@ sourceRef: varchar('source_ref', { length: 100 }),
 | HITL_REQUIRED | UltAi/ClerkOS | `allocations.create` tRPC | ~ PARTIAL — manual allocation only |
 | APPROVED | ClerkOS | `cases.transition` tRPC | ~ PARTIAL — maps to `open→in_progress` |
 | EXECUTED | FineGuard | `POST /api/compliance-bundle` → CH API | ✓ CODE EXISTS — compliance check + VaultLine notified |
-| RECORDED | VaultLine | `writeAuditEvent()` | ✓ WIRED — PIE, intake, compliance, Stripe all write audit rows |
+| EXECUTED (auto) | FineGuard | `evaluateFineGuardActivation()` → `monitored_companies` upsert | ✓ WIRED — PIE high-urgency/high-value intakes auto-enroll |
+| RECORDED | VaultLine | `writeAuditEvent()` | ✓ WIRED — PIE, intake, compliance, Stripe, FineGuard activation all write audit rows |
 | CLOSED | ClerkOS | `cases.transition` → `closed` | ~ PARTIAL — case close + audit works |
 
 ---
@@ -147,6 +148,8 @@ After these changes, the following events write to `clerk_audit_events`:
 |---|---|---|---|
 | Accuracy PIE opportunity ingested | `intake` | `captured` | NOT RECORDED |
 | Accuracy PIE opportunity replayed | `intake` | `ingestion_replayed` | NOT RECORDED |
+| PIE → FineGuard evaluation | `intake` | `fineguard_activation_evaluated` | NOT RECORDED |
+| PIE → FineGuard activation | `monitoring_activation` | `fineguard_activation_triggered` | NOT RECORDED |
 | UltAi intake form submitted | `intake` | `captured` | NOT RECORDED |
 | FineGuard compliance check | `compliance_check` | `executed` | NOT RECORDED |
 | Stripe monitoring activation | `monitoring_activation` | `executed` | NOT RECORDED |
@@ -271,15 +274,115 @@ No stack traces are exposed to clients. All errors log with `correlationId`.
 
 ---
 
+## PIE → FineGuard Activation Bridge
+
+After a PIE opportunity is ingested for the first time, the handler runs a
+deterministic evaluation to decide whether FineGuard monitoring should be
+auto-enrolled. The evaluation and (conditional) enrollment happen **synchronously
+inside the same request**, but are wrapped so failure is fully isolated from
+the intake success path.
+
+### Decision Logic
+
+```
+activate = pieOriginated AND (highUrgency OR highValue)
+
+pieOriginated  ← intake.sourceRef startsWith "PIE:"
+highUrgency    ← intake.urgency ∈ {"high", "critical"}
+highValue      ← numeric digits parsed from intake.claimValue ≥ £1,000,000
+```
+
+`server/lib/fineguard-rules.ts` exposes two functions:
+
+- `shouldActivateFineGuard(intake): boolean` — guard form
+- `evaluateFineGuardActivation(intake): { activate, reasons }` — adds the
+  rule flags used for audit metadata
+
+Both are pure: no I/O, no external services, no clock dependency, no
+randomness. Same inputs → same outputs across processes.
+
+### Activation Rules Matrix
+
+| `pieOriginated` | `highUrgency` | `highValue` | `activate` |
+|---|---|---|---|
+| false | * | * | false |
+| true | false | false | false |
+| true | true | * | true |
+| true | * | true | true |
+
+### Storage
+
+When activation triggers, the handler upserts into `monitored_companies`:
+
+| Column | Value |
+|---|---|
+| `company_number` | `sourceRef` (e.g. `"PIE:24/AP/1234"`) — synthetic identifier, namespaced so it never collides with real CH numbers |
+| `company_name` | `applicantName` from the PIE payload |
+| `stripe_session_id` | `"pie-activation:<externalRef>"` — synthetic, satisfies NOT NULL, distinguishes PIE-origin rows from Stripe-origin rows |
+
+The upsert uses `ON CONFLICT (company_number) DO UPDATE SET company_name = …`
+so re-running with the same `sourceRef` is a no-op for row count.
+
+### Audit Events Emitted
+
+Per first-time PIE ingestion (in addition to the existing `captured` event):
+
+| `action` | When | Metadata includes |
+|---|---|---|
+| `fineguard_activation_evaluated` | Always (after intake insert) | `sourceRef`, `upstreamSystem: "PIE"`, `pieExternalRef`, `matterRef`, `activate`, `reasons` |
+| `fineguard_activation_triggered` | Only when `activate=true` and upsert succeeds | adds `companyIdentifier`, `companyName`, `reasons` |
+
+Both events carry the same `correlationId` as the parent intake `captured`
+event, so the full chain is traceable from a single ID.
+
+### Failure Isolation Guarantees
+
+| Failure | Effect on intake response | Effect on monitored_companies | Logged |
+|---|---|---|---|
+| `evaluateFineGuardActivation` throws | 201 returned normally | No row written | `pie.fineguard.evaluation_failed` |
+| Audit write for evaluation fails | 201 returned normally | No row written | `vaultline.write.failed` |
+| `monitored_companies` upsert throws | 201 returned normally | No row written | `pie.fineguard.activation_failed` |
+| Audit write for trigger fails | 201 returned normally | Row preserved | `vaultline.write.failed` |
+
+Two nested try/catches wrap the activation block. The outer `try` covers
+evaluation; the inner `try` covers the DB upsert. Neither can propagate
+to the outer handler — the 201 has already been computed before activation
+begins (the response is sent after activation, but the response shape does
+not depend on activation outcome).
+
+### Idempotency
+
+- **Replay path is untouched**: the handler returns early on `existing` lookup
+  before reaching the activation block, so replays do not re-evaluate or
+  re-upsert. The `ingestion_replayed` audit event is the only write.
+- **At-first-ingestion**: the upsert's `ON CONFLICT` clause means even if
+  somehow the activation block ran twice for the same `sourceRef` (e.g. due
+  to a future retry harness), `monitored_companies` stays at exactly one row
+  per PIE ref.
+- **`monitored_companies.company_number` UNIQUE** constraint enforces this
+  at the DB level.
+
+### Logging Events
+
+| Event | Level | When |
+|---|---|---|
+| `pie.fineguard.evaluated` | info | After evaluation (always) |
+| `pie.fineguard.activated` | info | After successful upsert |
+| `pie.fineguard.activation_failed` | error | Upsert raised |
+| `pie.fineguard.evaluation_failed` | error | Evaluation raised (defensive) |
+
+---
+
 ## Success Condition Checklist
 
 ```
 ☑ PIE creates opportunity     — IMPLEMENTED: POST /api/pie/opportunity → intake_forms + audit event
 ☑ PIE replay idempotency      — IMPLEMENTED: second delivery writes ingestion_replayed, no duplicate row
 ☑ PIE audit lineage           — IMPLEMENTED: sourceRef, upstreamSystem, pieExternalRef, correlationId, entityUuid all stored
+☑ PIE → FineGuard activation  — IMPLEMENTED: deterministic rule eval + best-effort monitored_companies upsert, isolated failure
 ☑ UltAi creates task          — PROVEN: POST /api/intake → intake_forms + clerk_audit_events row confirmed
 ☑ FineGuard creates event     — PROVEN: POST /api/compliance-bundle → compliance_bundles + clerk_audit_events row confirmed
-☑ VaultLine records event     — PROVEN: audit rows in clerk_audit_events confirmed across PIE, intake, compliance, Stripe
+☑ VaultLine records event     — PROVEN: audit rows in clerk_audit_events confirmed across PIE, intake, compliance, Stripe, activation
 ```
 
 ---

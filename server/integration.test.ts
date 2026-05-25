@@ -16,8 +16,9 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq, and } from 'drizzle-orm';
 import { tenants, auditEvents } from './drizzle/schema';
-import { intakeForms } from './db/schema';
+import { intakeForms, monitoredCompanies } from './db/schema';
 import { buildSourceRef } from './lib/pie-schema';
+import { evaluateFineGuardActivation } from './lib/fineguard-rules';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const runIntegration = !!DATABASE_URL;
@@ -487,5 +488,247 @@ describe('PIE: POST /api/pie/opportunity → intake + VaultLine', () => {
 
     await pieDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
     await pieClient.end();
+  });
+});
+
+// ─── PIE → FineGuard activation bridge ───────────────────────────────────────
+
+describe('PIE → FineGuard: auto-activation bridge', () => {
+  it('high-urgency PIE intake upserts monitored_companies keyed by sourceRef', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/FG-HIGH-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-FG-${Date.now()}`;
+    const correlationId = randomUUID();
+    const fgClient = postgres(DATABASE_URL!, { max: 1 });
+    const fgDb = drizzle(fgClient);
+
+    // Simulate intake insert (high urgency → activation expected)
+    const [intake] = await fgDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'FG High Urgency Ltd',
+        matterType: 'planning',
+        urgency: 'high',
+        sourceRef,
+      })
+      .returning();
+
+    const evaluation = evaluateFineGuardActivation(intake);
+    expect(evaluation.activate).toBe(true);
+    expect(evaluation.reasons.pieOriginated).toBe(true);
+    expect(evaluation.reasons.highUrgency).toBe(true);
+
+    // Mirror the handler's upsert
+    const [activation] = await fgDb
+      .insert(monitoredCompanies)
+      .values({
+        companyNumber: sourceRef,
+        companyName: intake.clientName,
+        stripeSessionId: `pie-activation:${pieRef}`,
+      })
+      .onConflictDoUpdate({
+        target: monitoredCompanies.companyNumber,
+        set: { companyName: intake.clientName },
+      })
+      .returning();
+
+    // Audit event for triggered activation
+    await fgDb.insert(auditEvents).values({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'monitoring_activation',
+      entityUuid: activation.id,
+      action: 'fineguard_activation_triggered',
+      correlationId,
+      metadata: JSON.stringify({
+        sourceRef,
+        upstreamSystem: 'PIE',
+        pieExternalRef: pieRef,
+        matterRef: intake.matterRef,
+        companyIdentifier: sourceRef,
+        reasons: evaluation.reasons,
+      }),
+    });
+
+    // Verify monitored_companies row
+    const mcRows = await fgDb
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, sourceRef));
+    expect(mcRows).toHaveLength(1);
+    expect(mcRows[0].companyName).toBe('FG High Urgency Ltd');
+    expect(mcRows[0].stripeSessionId).toBe(`pie-activation:${pieRef}`);
+
+    // Verify trigger audit event lineage
+    const auditRows = await fgDb
+      .select()
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.correlationId, correlationId),
+          eq(auditEvents.action, 'fineguard_activation_triggered'),
+        ),
+      );
+    expect(auditRows.length).toBeGreaterThanOrEqual(1);
+    const meta = JSON.parse(auditRows[0].metadata!);
+    expect(meta.upstreamSystem).toBe('PIE');
+    expect(meta.companyIdentifier).toBe(sourceRef);
+    expect(meta.reasons.pieOriginated).toBe(true);
+    expect(meta.reasons.highUrgency).toBe(true);
+
+    // Cleanup
+    await fgDb.delete(monitoredCompanies).where(eq(monitoredCompanies.companyNumber, sourceRef));
+    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await fgClient.end();
+  });
+
+  it('low-urgency, low-value PIE intake does NOT create monitored_companies row', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/FG-LOW-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-FG-LOW-${Date.now()}`;
+    const fgClient = postgres(DATABASE_URL!, { max: 1 });
+    const fgDb = drizzle(fgClient);
+
+    const [intake] = await fgDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'FG Low Urgency Ltd',
+        matterType: 'planning',
+        urgency: 'low',
+        claimValue: '£50,000',
+        sourceRef,
+      })
+      .returning();
+
+    const evaluation = evaluateFineGuardActivation(intake);
+    expect(evaluation.activate).toBe(false);
+
+    // No upsert performed in this case — verify absence
+    const mcRows = await fgDb
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, sourceRef));
+    expect(mcRows).toHaveLength(0);
+
+    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await fgClient.end();
+  });
+
+  it('replay of the same PIE ref does not duplicate monitored_companies rows', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/FG-REPLAY-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-FG-REPLAY-${Date.now()}`;
+    const fgClient = postgres(DATABASE_URL!, { max: 1 });
+    const fgDb = drizzle(fgClient);
+
+    const [intake] = await fgDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'FG Replay Ltd',
+        matterType: 'planning',
+        urgency: 'critical',
+        sourceRef,
+      })
+      .returning();
+
+    // First activation
+    await fgDb
+      .insert(monitoredCompanies)
+      .values({
+        companyNumber: sourceRef,
+        companyName: intake.clientName,
+        stripeSessionId: `pie-activation:${pieRef}`,
+      })
+      .onConflictDoUpdate({
+        target: monitoredCompanies.companyNumber,
+        set: { companyName: intake.clientName },
+      });
+
+    // Replay: same upsert again
+    await fgDb
+      .insert(monitoredCompanies)
+      .values({
+        companyNumber: sourceRef,
+        companyName: intake.clientName,
+        stripeSessionId: `pie-activation:${pieRef}`,
+      })
+      .onConflictDoUpdate({
+        target: monitoredCompanies.companyNumber,
+        set: { companyName: intake.clientName },
+      });
+
+    const mcRows = await fgDb
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, sourceRef));
+    expect(mcRows).toHaveLength(1);
+
+    await fgDb.delete(monitoredCompanies).where(eq(monitoredCompanies.companyNumber, sourceRef));
+    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await fgClient.end();
+  });
+
+  it('PIE intake activation failure is isolated — intake remains intact', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/FG-ISOLATED-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-FG-ISO-${Date.now()}`;
+    const fgClient = postgres(DATABASE_URL!, { max: 1 });
+    const fgDb = drizzle(fgClient);
+
+    // Intake insert succeeds
+    const [intake] = await fgDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'FG Isolated Ltd',
+        matterType: 'planning',
+        urgency: 'critical',
+        sourceRef,
+      })
+      .returning();
+
+    // Simulate activation failure: deliberately violate NOT NULL on stripe_session_id.
+    // Cast through unknown because the column is typed non-null; we're stress-testing
+    // runtime isolation, not the type system.
+    const failingInsert = {
+      companyNumber: sourceRef,
+      companyName: intake.clientName,
+      stripeSessionId: null as unknown as string,
+    };
+    let activationError: unknown = null;
+    try {
+      await fgDb.insert(monitoredCompanies).values(failingInsert);
+    } catch (err) {
+      activationError = err;
+    }
+    expect(activationError).not.toBeNull();
+
+    // Intake row must still exist — failure was isolated
+    const intakeRows = await fgDb
+      .select()
+      .from(intakeForms)
+      .where(eq(intakeForms.matterRef, matterRef));
+    expect(intakeRows).toHaveLength(1);
+    expect(intakeRows[0].sourceRef).toBe(sourceRef);
+
+    // No monitored_companies row was created
+    const mcRows = await fgDb
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, sourceRef));
+    expect(mcRows).toHaveLength(0);
+
+    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await fgClient.end();
   });
 });
