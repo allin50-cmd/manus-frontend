@@ -9,6 +9,18 @@ vi.mock('../trpc/db', () => ({
   getDb: vi.fn().mockResolvedValue(null),
 }));
 
+// Override engine mock — default: all overrides inactive (DB null path)
+const { evaluateOverrideMock } = vi.hoisted(() => ({
+  evaluateOverrideMock: vi.fn(),
+}));
+vi.mock('./override-engine', () => ({
+  evaluateOperationalOverride: evaluateOverrideMock,
+  invalidateOverrideCache: vi.fn(),
+  __resetOverrideCacheForTests: vi.fn(),
+  getAllActiveOverrides: vi.fn().mockResolvedValue({}),
+  getOverridesForTarget: vi.fn().mockResolvedValue([]),
+}));
+
 import { wrapGracefully } from './wrap-gracefully';
 import {
   __resetCircuitBreakerForTests,
@@ -16,10 +28,15 @@ import {
   getCircuitSnapshot,
 } from './circuit-breaker';
 
+/** Default override response: inactive */
+const inactiveOverride = { active: false, overrideType: null, overrideId: null, expiresAt: null, reason: null };
+
 beforeEach(() => {
   __resetCircuitBreakerForTests();
   writeAuditEventMock.mockReset();
   writeAuditEventMock.mockResolvedValue(undefined);
+  // Default: all override checks return inactive
+  evaluateOverrideMock.mockResolvedValue(inactiveOverride);
 });
 
 describe('wrapGracefully: success path', () => {
@@ -187,5 +204,143 @@ describe('wrapGracefully: retryable inference', () => {
     );
     const meta = JSON.parse(writeAuditEventMock.mock.calls[0][0].metadata);
     expect(meta.retryable).toBe(false);
+  });
+});
+
+describe('wrapGracefully: force_open override supersedes CLOSED circuit', () => {
+  it('returns circuit_open without calling fn when force_open override is active', async () => {
+    // Circuit is closed — no failures recorded
+    configureDependency('dep-force-open', { failureThreshold: 5, windowMs: 60_000, cooldownMs: 30_000 });
+
+    evaluateOverrideMock.mockImplementation((_target: string, overrideType: string) => {
+      if (overrideType === 'force_open') {
+        return Promise.resolve({
+          active: true,
+          overrideType: 'force_open',
+          overrideId: 'override-uuid-1',
+          expiresAt: null,
+          reason: 'CH API degraded',
+        });
+      }
+      return Promise.resolve(inactiveOverride);
+    });
+
+    const spy = vi.fn().mockResolvedValue('should-not-run');
+    const result = await wrapGracefully({ operation: 'op', dependency: 'dep-force-open' }, spy);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe('circuit_open');
+      expect(result.errorCategory).toBe('circuit_open');
+      expect(result.degraded).toBe(true);
+      expect(result.overrideApplied).toBe(true);
+      expect(result.overrideType).toBe('force_open');
+    }
+  });
+
+  it('force_open does not record a circuit failure (circuit stays closed)', async () => {
+    configureDependency('dep-force-open-no-record', { failureThreshold: 3, windowMs: 60_000, cooldownMs: 30_000 });
+
+    evaluateOverrideMock.mockImplementation((_target: string, overrideType: string) => {
+      if (overrideType === 'force_open') {
+        return Promise.resolve({
+          active: true,
+          overrideType: 'force_open',
+          overrideId: 'override-uuid-2',
+          expiresAt: null,
+          reason: 'test',
+        });
+      }
+      return Promise.resolve(inactiveOverride);
+    });
+
+    // Call 3 times — if circuit failure were recorded, it would open the breaker
+    for (let i = 0; i < 3; i++) {
+      await wrapGracefully({ operation: 'op', dependency: 'dep-force-open-no-record' }, async () => 'val');
+    }
+    // Circuit must remain closed because force_open returns early (no fn execution, no circuit failure)
+    expect(getCircuitSnapshot('dep-force-open-no-record').state).toBe('closed');
+  });
+});
+
+describe('wrapGracefully: maintenance_mode override skips execution', () => {
+  it('returns maintenance_mode without calling fn', async () => {
+    evaluateOverrideMock.mockImplementation((_target: string, overrideType: string) => {
+      if (overrideType === 'maintenance_mode') {
+        return Promise.resolve({
+          active: true,
+          overrideType: 'maintenance_mode',
+          overrideId: 'override-uuid-3',
+          expiresAt: null,
+          reason: 'Scheduled maintenance',
+        });
+      }
+      return Promise.resolve(inactiveOverride);
+    });
+
+    const spy = vi.fn().mockResolvedValue('should-not-run');
+    const result = await wrapGracefully({ operation: 'op', dependency: 'companies_house_api' }, spy);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe('maintenance_mode');
+      expect(result.degraded).toBe(true);
+      expect((result as { degradedMode?: boolean }).degradedMode).toBe(true);
+      expect(result.overrideApplied).toBe(true);
+      expect(result.overrideType).toBe('maintenance_mode');
+    }
+  });
+
+  it('maintenance_mode does NOT record a circuit failure', async () => {
+    configureDependency('dep-maint', { failureThreshold: 2, windowMs: 60_000, cooldownMs: 30_000 });
+
+    evaluateOverrideMock.mockImplementation((_target: string, overrideType: string) => {
+      if (overrideType === 'maintenance_mode') {
+        return Promise.resolve({
+          active: true,
+          overrideType: 'maintenance_mode',
+          overrideId: 'override-uuid-4',
+          expiresAt: null,
+          reason: 'maintenance',
+        });
+      }
+      return Promise.resolve(inactiveOverride);
+    });
+
+    // 3 calls — if circuit failures were recorded, circuit would be open after 2
+    for (let i = 0; i < 3; i++) {
+      await wrapGracefully({ operation: 'op', dependency: 'dep-maint' }, async () => 'val');
+    }
+    // Circuit must remain closed — maintenance_mode must not record failures
+    expect(getCircuitSnapshot('dep-maint').state).toBe('closed');
+    expect(getCircuitSnapshot('dep-maint').failures).toBe(0);
+  });
+
+  it('maintenance_mode does NOT consume retry budget', async () => {
+    evaluateOverrideMock.mockImplementation((_target: string, overrideType: string) => {
+      if (overrideType === 'maintenance_mode') {
+        return Promise.resolve({
+          active: true,
+          overrideType: 'maintenance_mode',
+          overrideId: 'override-uuid-5',
+          expiresAt: null,
+          reason: 'maintenance',
+        });
+      }
+      return Promise.resolve(inactiveOverride);
+    });
+
+    // retryable:true would normally consume budget — but maintenance_mode returns early
+    const result = await wrapGracefully(
+      { operation: 'op', dependency: 'dep-maint-budget', retryable: true },
+      async () => 'val',
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe('maintenance_mode');
+    }
+    // No error thrown — budget was not consumed (or the fn was skipped entirely)
   });
 });

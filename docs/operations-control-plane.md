@@ -142,9 +142,10 @@ The control plane prevents the following dangerous states:
 1. **Unknown overrideType**: POST returns 400 with allowed values listed
 2. **maintenance_mode on unknown dependency**: POST returns 400. Maintenance mode
    on an unrecognised dependency name is likely a typo and would silently do nothing.
-3. **Contradictory overrides (force_open + force_closed on same target)**: currently
-   both can exist — the `force_open` check runs first in `wrapGracefully`. In a
-   future version this should be a 409 Conflict.
+3. **Contradictory overrides (force_open + force_closed on same target)**: POST
+   returns 400 if the opposing override is already active on the same target.
+   You cannot have both `force_open` and `force_closed` active simultaneously
+   for the same dependency.
 4. **Stale overrides**: expired overrides are filtered at query time. The in-memory
    cache is TTL'd at 30 seconds so a just-expired override may still be active
    for up to 30 more seconds. This is acceptable.
