@@ -46,6 +46,15 @@ let cacheLoadedAt = 0;
 const CACHE_TTL_MS = 30_000; // 30 second cache
 
 /**
+ * Last cache that was successfully populated from the DB.
+ * Returned on DB failure so invalidateOverrideCache() followed by a DB blip
+ * does not silently drop all active overrides — we serve stale data (minus
+ * the just-deleted override if that was the reason for invalidation) rather
+ * than an empty map.
+ */
+let lastValidCache: Map<string, ActiveOverride[]> = new Map();
+
+/**
  * Load all active overrides from the database.
  * Uses a short in-memory cache to reduce DB round-trips on hot paths.
  */
@@ -56,7 +65,7 @@ async function loadActiveOverrides(): Promise<Map<string, ActiveOverride[]>> {
   }
 
   const db = await getDb();
-  if (!db) return new Map();
+  if (!db) return lastValidCache;
 
   try {
     const nowDate = new Date();
@@ -87,11 +96,12 @@ async function loadActiveOverrides(): Promise<Map<string, ActiveOverride[]>> {
     }
 
     overrideCache = cache;
+    lastValidCache = cache;
     cacheLoadedAt = now;
     return cache;
   } catch (err) {
     log({ level: 'warn', event: 'override_engine.load_failed', error: String(err) });
-    return overrideCache; // return stale cache on error
+    return lastValidCache; // serve last known-good data on DB error
   }
 }
 
@@ -164,4 +174,5 @@ export function invalidateOverrideCache(): void {
 export function __resetOverrideCacheForTests(): void {
   cacheLoadedAt = 0;
   overrideCache = new Map();
+  lastValidCache = new Map();
 }

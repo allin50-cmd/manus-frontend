@@ -16,8 +16,7 @@ import { log } from './logger';
 import { getInstanceInfo } from './resilience-stats';
 import {
   getAllCircuitSnapshots,
-  configureDependency,
-  recordFailure,
+  forceCircuitOpen,
   type CircuitStateName,
 } from './circuit-breaker';
 
@@ -112,13 +111,10 @@ export async function syncGlobalCircuitState(
         const remainingMs = Math.max(0, cooldownUntil - now);
 
         if (remainingMs > 0) {
-          // Replay failures to open the circuit locally
-          configureDependency(row.dependency, {
-            failureThreshold: 1,
-            windowMs: 60_000,
-            cooldownMs: remainingMs,
-          });
-          recordFailure(row.dependency, now);
+          // Open the circuit locally for the remaining cooldown without
+          // mutating failureThreshold — that config stays at its original
+          // value so future organic failures use the correct threshold.
+          forceCircuitOpen(row.dependency, remainingMs, now);
           synced++;
         }
       }

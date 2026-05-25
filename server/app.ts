@@ -30,7 +30,7 @@ import {
   getInstanceInfo,
   getRecentTraces,
 } from './lib/resilience-stats';
-import { getAllGlobalCircuitState } from './lib/global-circuit-sync';
+import { getAllGlobalCircuitState, syncGlobalCircuitState } from './lib/global-circuit-sync';
 import { acquireSchedulerLease, releaseSchedulerLease, getSchedulerLeaseState } from './lib/scheduler-lease';
 import { getAllActiveOverrides, evaluateOperationalOverride, invalidateOverrideCache } from './lib/override-engine';
 import { operationalOverrides, operationalAnnotations } from './drizzle/schema';
@@ -634,6 +634,8 @@ export function createApp(): express.Express {
         })
         .returning();
 
+      if (!intake) throw new Error('Intake INSERT returned no row');
+
       await writeAuditEvent({
         tenantId: SYSTEM_TENANT_ID,
         entityType: 'intake',
@@ -1010,6 +1012,18 @@ export function createApp(): express.Express {
       return res.status(503).json({ error: 'Companies House API not configured' });
     }
 
+    // Fail-fast if DB is unavailable — do this before acquiring the lease so
+    // we never hold a lease we cannot use.
+    if (!process.env.DATABASE_URL) {
+      return res.status(503).json({ error: 'Database not configured (DATABASE_URL missing)' });
+    }
+
+    // Opportunistically sync global circuit state from Postgres so this
+    // instance benefits from open-circuit signals raised by peer instances.
+    syncGlobalCircuitState().catch(err =>
+      log({ level: 'warn', event: 'scheduler.global_sync_failed', error: String(err) })
+    );
+
     // Check scheduler pause override before any lease/processing work
     try {
       const pauseOverride = await evaluateOperationalOverride('scheduler', 'pause_scheduler');
@@ -1044,10 +1058,6 @@ export function createApp(): express.Express {
       alertRequired: boolean;
       error?: string;
     }> = [];
-
-    if (!process.env.DATABASE_URL) {
-      return res.status(503).json({ error: 'Database not configured (DATABASE_URL missing)' });
-    }
 
     try {
       const companies = await db.select().from(monitoredCompanies);

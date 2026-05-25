@@ -5,6 +5,8 @@ const { writeAuditEventMock } = vi.hoisted(() => ({
 }));
 vi.mock('../trpc/db', () => ({
   writeAuditEvent: writeAuditEventMock,
+  // pushCircuitStateAsync calls getDb fire-and-forget; return null so it short-circuits
+  getDb: vi.fn().mockResolvedValue(null),
 }));
 
 import { wrapGracefully } from './wrap-gracefully';

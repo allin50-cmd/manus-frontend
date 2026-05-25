@@ -20,6 +20,7 @@ vi.mock('./db/index', () => ({
 }));
 vi.mock('./trpc/db', () => ({
   writeAuditEvent: writeAuditEventMock,
+  getDb: vi.fn().mockResolvedValue(null),
 }));
 
 import { activateFineGuardForPie } from './lib/pie-fineguard';
@@ -28,6 +29,7 @@ import {
   configureDependency,
   getCircuitSnapshot,
 } from './lib/circuit-breaker';
+import { __resetRetryBudgetsForTests } from './lib/retry-budget';
 import type { IntakeForm } from './db/schema';
 
 function makeIntake(overrides: Partial<IntakeForm> = {}): IntakeForm {
@@ -62,6 +64,7 @@ beforeEach(() => {
   writeAuditEventMock.mockReset();
   writeAuditEventMock.mockResolvedValue(undefined);
   __resetCircuitBreakerForTests();
+  __resetRetryBudgetsForTests();
 });
 
 describe('activateFineGuardForPie: contract — never throws', () => {

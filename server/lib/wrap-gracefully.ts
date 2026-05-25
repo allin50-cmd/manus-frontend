@@ -9,6 +9,8 @@ import {
 import { log } from './logger';
 import { recordOperationFailure, recordOperationSuccess } from './resilience-stats';
 import { evaluateOperationalOverride } from './override-engine';
+import { pushCircuitStateAsync } from './global-circuit-sync';
+import { consumeRetryBudget } from './retry-budget';
 
 /**
  * Coarse error category surfaced in audit metadata. Operators use this
@@ -87,7 +89,9 @@ export async function wrapGracefully<T>(
   const { operation, dependency, correlationId, sourceRef, upstreamSystem, tenantId, entityUuid } = ctx;
   const now = Date.now();
 
-  // Maintenance mode override — operator-controlled bypass before circuit logic
+  // Operator overrides — evaluated before circuit logic
+  let skipCircuitCheck = false;
+  let retryBudgetDisabled = false;
   if (dependency) {
     try {
       const maintenanceOverride = await evaluateOperationalOverride(dependency, 'maintenance_mode');
@@ -115,7 +119,6 @@ export async function wrapGracefully<T>(
 
       const forceOpenOverride = await evaluateOperationalOverride(dependency, 'force_open');
       if (forceOpenOverride.active) {
-        const snap = getCircuitSnapshot(dependency, now);
         recordOperationFailure(dependency, { correlationId, operation, outcome: 'circuit_open' }, now);
         log({
           level: 'warn',
@@ -135,13 +138,23 @@ export async function wrapGracefully<T>(
           overrideType: 'force_open',
         };
       }
+
+      const forceClosedOverride = await evaluateOperationalOverride(dependency, 'force_closed');
+      if (forceClosedOverride.active) {
+        skipCircuitCheck = true; // allow through even if circuit is open
+      }
+
+      const disableBudgetOverride = await evaluateOperationalOverride(dependency, 'disable_retry_budget');
+      if (disableBudgetOverride.active) {
+        retryBudgetDisabled = true;
+      }
     } catch {
       // Override engine failure must never block the operation
     }
   }
 
-  // Circuit breaker fast-fail
-  if (dependency && !shouldAllowExecution(dependency, now)) {
+  // Circuit breaker fast-fail (skipped when force_closed override is active)
+  if (!skipCircuitCheck && dependency && !shouldAllowExecution(dependency, now)) {
     const snap = getCircuitSnapshot(dependency, now);
     recordOperationFailure(dependency, { correlationId, operation, outcome: 'circuit_open' }, now);
     log({
@@ -180,16 +193,44 @@ export async function wrapGracefully<T>(
     };
   }
 
+  // Retry budget gate — only applied when the caller marks the operation
+  // retryable AND the budget has not been overridden by an operator.
+  if (dependency && ctx.retryable && !retryBudgetDisabled) {
+    try {
+      if (!consumeRetryBudget(dependency, now)) {
+        recordOperationFailure(dependency, { correlationId, operation, outcome: 'retry_budget_exhausted' }, now);
+        log({ level: 'warn', event: 'graceful.retry_budget.exhausted', operation, dependency, correlationId });
+        pushCircuitStateAsync(dependency);
+        const snap = getCircuitSnapshot(dependency, now);
+        return {
+          ok: false,
+          error: 'retry_budget_exhausted',
+          circuitState: snap.state,
+          degraded: true,
+          errorCategory: 'external_api' as ErrorCategory,
+        };
+      }
+    } catch {
+      // Budget errors must never block the operation
+    }
+  }
+
   try {
     const value = await fn();
-    if (dependency) recordSuccess(dependency);
+    if (dependency) {
+      recordSuccess(dependency);
+      pushCircuitStateAsync(dependency);
+    }
     recordOperationSuccess(dependency, { correlationId, operation });
     const snap = dependency
       ? getCircuitSnapshot(dependency)
       : { state: 'closed' as const, failures: 0, cooldownRemainingMs: 0 };
     return { ok: true, value, circuitState: snap.state, degraded: false };
   } catch (err) {
-    if (dependency) recordFailure(dependency, now);
+    if (dependency) {
+      recordFailure(dependency, now);
+      pushCircuitStateAsync(dependency);
+    }
     recordOperationFailure(dependency, { correlationId, operation });
     const snap = dependency
       ? getCircuitSnapshot(dependency)

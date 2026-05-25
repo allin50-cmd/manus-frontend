@@ -177,6 +177,30 @@ export function getAllCircuitSnapshots(
 }
 
 /**
+ * Open a circuit directly for a given remaining cooldown duration.
+ *
+ * Used by global-circuit-sync when reconciling a remotely-open circuit.
+ * Does NOT mutate the dependency's failureThreshold — the existing config
+ * is preserved so future organic failures still use the correct threshold.
+ *
+ * The openedAt timestamp is back-dated so that shouldAllowExecution sees
+ * exactly `remainingCooldownMs` left in the cooldown window.
+ */
+export function forceCircuitOpen(
+  dependency: string,
+  remainingCooldownMs: number,
+  now: number = Date.now(),
+): void {
+  const state = getOrCreateState(dependency);
+  const config = getConfig(dependency);
+  state.state = 'open';
+  // Back-date openedAt so the remaining cooldown equals remainingCooldownMs.
+  state.openedAt = now - Math.max(0, config.cooldownMs - remainingCooldownMs);
+  if (state.failures < 1) state.failures = 1;
+  state.lastFailureAt = now;
+}
+
+/**
  * Reset all circuit state and configs. Test-only helper — production code
  * relies on cold-start reset, never an explicit reset.
  */
