@@ -17,6 +17,15 @@ vi.hoisted(() => {
   process.env.COMPANIES_HOUSE_API_KEY = 'placeholder';
 });
 
+// Prevent real TCP connections to Neon during unit tests — getDb returning
+// null causes all DB-dependent helpers to use their fallback values.
+vi.mock('./trpc/db', () => ({
+  getDb: () => Promise.resolve(null),
+  writeAuditEvent: () => Promise.resolve(),
+  setTenantContext: () => Promise.resolve(),
+  withTenant: () => Promise.reject(new Error('DB not available')),
+}));
+
 import http from 'http';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { createApp } from './app';
