@@ -16,10 +16,25 @@ permissions:
   pull-requests: write
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      has_token: ${{ steps.check.outputs.has_token }}
+    steps:
+      - id: check
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build_and_deploy_job:
-    if: |
-      secrets.AZURE_STATIC_WEB_APPS_API_TOKEN != '' &&
-      (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed'))
+    needs: preflight
+    if: needs.preflight.outputs.has_token == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed'))
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
@@ -43,7 +58,8 @@ jobs:
           skip_deploy_on_missing_secrets: true
 
   close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && secrets.AZURE_STATIC_WEB_APPS_API_TOKEN != ''
+    needs: preflight
+    if: needs.preflight.outputs.has_token == 'true' && github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     name: Close Pull Request Job
     steps:
