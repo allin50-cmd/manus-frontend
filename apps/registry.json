@@ -1,7 +1,7 @@
 {
   "schema": "ultracore-registry/v1",
-  "lastUpdated": "2026-05-25T07:36:00Z",
-  "consolidationCycle": 2,
+  "lastUpdated": "2026-05-26T03:45:00Z",
+  "consolidationCycle": 3,
   "portfolio": {
     "p1": [
       {
@@ -39,21 +39,25 @@
         "deployment": "https://zhoqgoan.manus.space/",
         "ownership": "allin50-cmd",
         "buildStatus": "passing",
-        "testStatus": "30/30 passing",
+        "testStatus": "190/190 passing (14 test files)",
         "resolvedBlockers": [
           "Build was broken (node_modules absent) — resolved",
           "Test runner was absent — resolved via npm install",
           "Competing CI/CD pipelines (pnpm/npm conflict) — deploy-vaultline.yml fixed to npm",
           "ClerkOS schema had no drizzle-kit path — drizzle.clerkos.config.ts added",
           "Admin endpoints unprotected — X-ADMIN-KEY middleware added",
-          "Marketing pages not routed in App.tsx — all 10 missing pages now routed"
+          "Marketing pages not routed in App.tsx — all 10 missing pages now routed",
+          "CI/CD workflows used secrets in if conditions (GitHub Actions rejects) — preflight job pattern applied to all three workflow files",
+          "End-to-end workflow proof test added — server/workflow-proof.test.ts proves PIE→UltAi→FineGuard→VaultLine chain for Bromley ref 24/AP/1234",
+          "Database driver confirmed — @neondatabase/serverless v1.1.0 with Neon URL auto-detection and ws WebSocket polyfill",
+          "UNIQUE constraint migration added — drizzle/0002_source_ref_unique.sql enforces idempotency on intake_forms.source_ref"
         ],
         "remainingBlockers": [
-          "Canonical deployment URL unverified",
-          "Production DATABASE_URL technology unconfirmed",
+          "Canonical deployment URL unverified — Vercel project not yet created",
+          "DATABASE_URL and DIRECT_URL not provisioned — Neon project not yet created",
           "10-state workflow lifecycle not implemented (core-workflow package pending)"
         ],
-        "notes": "ClerkOS engine provides 4-state case lifecycle. Needs extension to 10-state target lifecycle via packages/core-workflow."
+        "notes": "ClerkOS engine provides 4-state case lifecycle. Needs extension to 10-state target lifecycle via packages/core-workflow. Neon is confirmed database driver — isNeonUrl() detects neon.tech hostname."
       },
       {
         "id": "fineguard",
@@ -72,18 +76,21 @@
         "deployment": "https://compliance-t2rtvc.manus.space/",
         "ownership": "allin50-cmd",
         "buildStatus": "passing",
-        "testStatus": "covered by shared test suite",
+        "testStatus": "covered by shared test suite (190/190)",
         "resolvedBlockers": [
           "FineGuard and ComplianceBundle pages are now routed at /fineguard and /compliance-bundle",
-          "Admin endpoints (/api/admin/compliance-bundles, /api/admin/contacts) now protected by X-ADMIN-KEY"
+          "Admin endpoints (/api/admin/compliance-bundles, /api/admin/contacts) now protected by X-ADMIN-KEY",
+          "Auto-activation rules proven deterministic — evaluateFineGuardActivation() pure function unit-tested",
+          "PIE→FineGuard bridge proven — activateFineGuardForPie() tested via server/workflow-proof.test.ts",
+          "Bromley ref 24/AP/1234 confirmed to trigger activate=true (pieOriginated + highUrgency + highValue all true)"
         ],
         "remainingBlockers": [
-          "No alert scheduler — monitored companies are not periodically checked",
+          "No external cron trigger for scheduler endpoint — GET /api/internal/run-compliance-check exists but not wired to any schedule",
           "No email delivery provider configured",
           "Stripe keys must be provisioned in production environment",
-          "CH API key must be provisioned in production environment"
+          "CH API key must be provisioned in production environment — auto-activation path does not require it; on-demand POST /api/compliance-bundle does"
         ],
-        "notes": "CH API integration is functional on-demand. Stripe checkout and webhook handler are implemented. Critical gap: no scheduled monitoring loop and no email delivery mechanism."
+        "notes": "CH API integration is functional on-demand. Stripe checkout and webhook handler are implemented. Auto-activation via PIE path is fully proven without CH API. Critical gap: no scheduled monitoring loop and no email delivery mechanism."
       },
       {
         "id": "vaultline",
@@ -111,18 +118,23 @@
           "Azure Static Web Apps"
         ],
         "buildStatus": "passing",
-        "testStatus": "covered by shared test suite",
+        "testStatus": "covered by shared test suite (190/190)",
         "resolvedBlockers": [
           "VaultLine landing page now routed at /vaultline",
           "Azure SQL Server replaced with Azure Database for PostgreSQL in deploy/main.bicep — technology now matches application postgres driver",
-          "PostgreSQL connection string now generated and stored in Key Vault as database-url secret"
+          "PostgreSQL connection string now generated and stored in Key Vault as database-url secret",
+          "clerk_audit_events schema verified correct — entityUuid (uuid), correlationId (uuid), metadata (text/JSON), entityType (varchar 64)",
+          "writeAuditEvent() proven to emit 3 events for Bromley simulation: captured, fineguard_activation_evaluated, fineguard_activation_triggered",
+          "Migration scripts ready — npm run db:bootstrap runs ClerkOS + brand-suite migrations + system tenant seed in correct order",
+          "Neon confirmed as target database — @neondatabase/serverless v1.1.0 installed, driver auto-detection implemented"
         ],
         "remainingBlockers": [
           "Azure resource provisioning status unverified — Bicep not confirmed deployed",
-          "ClerkOS schema (server/drizzle/schema.ts) migration path now exists via db:generate:clerkos but initial migration not yet run",
-          "failBundle Azure Function implementation not confirmed"
+          "Live DATABASE_URL not yet provisioned — Neon project not created; db:bootstrap blocked on missing credentials",
+          "failBundle Azure Function implementation not confirmed",
+          "System tenant row not yet seeded in any live environment — required for audit FK constraint"
         ],
-        "notes": "Audit event table schema is correct. Durable Functions orchestrator handles bundle pipeline. Azure IaC now provisions PostgreSQL. Key Vault stores database-url secret."
+        "notes": "Audit event table schema is correct and verified. Three-event VaultLine chain proven via server/workflow-proof.test.ts. Migration path confirmed. Neon is the confirmed runtime database. Live bootstrap blocked on missing Neon credentials — next action is Neon + Vercel project creation."
       }
     ],
     "p2": [
@@ -187,7 +199,10 @@
     "consumers": ["accuracy-pie", "ultai", "fineguard", "vaultline"]
   },
   "hosting": {
-    "primary": "Vercel + Cloudflare",
-    "audit": "Azure (VaultLine and associated audit storage only)"
+    "primary": "Vercel (frontend + API serverless functions)",
+    "database": "Neon (PostgreSQL serverless — confirmed driver, credentials pending)",
+    "audit": "Azure (VaultLine blob storage, Service Bus, Durable Functions — provisioning unverified)",
+    "vercelConfig": "vercel.json present — api/index.ts serverless entry, dist/ static build, /api/* routing wired",
+    "deploymentStatus": "Vercel project not yet created — pending Neon credentials first"
   }
 }
