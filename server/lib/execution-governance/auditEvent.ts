@@ -18,10 +18,14 @@ export function buildGovernanceAuditPayload(
   return {
     entityType: 'governance_decision',
     entityId: null,
-    entityUuid: null,
+    // event.id is guaranteed to be a valid UUID by the time it reaches here
+    // (decisionGate normalises it). Required: writeAuditEvent() throws when both
+    // entityId and entityUuid are null.
+    entityUuid: event.id,
     action: decision.decision,
     actorId: null,
-    actorOpenId: event.actor,
+    // varchar(64) column — truncate to prevent DB rejection on long actor strings
+    actorOpenId: event.actor.slice(0, 64),
     previousState: null,
     nextState: decision.decision,
     correlationId: event.id,

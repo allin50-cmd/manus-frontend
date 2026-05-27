@@ -17,6 +17,11 @@ import { randomUUID } from 'crypto';
 import type { GovernanceEvent, GovernanceDecision, ClientPolicy, SystemState } from './types';
 import { buildDecision } from './policyEngine';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUUID(s: string): boolean {
+  return UUID_RE.test(s);
+}
+
 export type { GovernanceEvent, GovernanceDecision, ClientPolicy, SystemState };
 export type { ExecutionDomain, ExecutionDecision, RiskLevel, ReasonCode } from './types';
 
@@ -44,10 +49,12 @@ export function evaluateExecutionGovernance(
   clientPolicy: ClientPolicy,
   systemState: SystemState = 'GREEN',
 ): GovernanceDecision {
-  // OBSERVE — ensure the event has a stable ID for correlation.
+  // OBSERVE — ensure the event carries a valid RFC 4122 UUID.
+  // correlationId and entityUuid in clerk_audit_events are uuid columns;
+  // PostgreSQL rejects non-UUID strings at insert time.
   const observed: GovernanceEvent = {
     ...event,
-    id: event.id || randomUUID(),
+    id: event.id && isUUID(event.id) ? event.id : randomUUID(),
   };
 
   // ORIENT + DECIDE — pure rule evaluation, no I/O.

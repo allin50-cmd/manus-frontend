@@ -131,7 +131,7 @@ export function exampleDocumentReleaseDeny(): GovernanceDecision {
       actor: 'document.service',
       source: 'compliance_bundle',
       actionRequested: 'release_document',
-      inputSummary: 'Release AML report containing pep_screening results',
+      inputSummary: 'Release aml_report containing pep_screening results',
       confidenceScore: 0.85,
       riskLevel: 'high',
       jurisdiction: 'GB',

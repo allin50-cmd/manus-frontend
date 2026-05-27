@@ -50,8 +50,9 @@ function ruleSystemState(systemState: SystemState): RuleResult | null {
     };
   }
   if (systemState === 'AMBER') {
-    // AMBER narrows: escalate anything below high confidence; low-risk still allowed.
-    return null; // handled as a modifier in the main evaluator
+    // AMBER narrows: minimum confidence raised to 0.9 in the main evaluator.
+    // Events below that threshold escalate regardless of risk level.
+    return null; // handled as a modifier + reason-code push in applyPolicyRules
   }
   return null; // GREEN — no system constraint
 }
@@ -158,11 +159,21 @@ export function applyPolicyRules(
   const stateRule = ruleSystemState(systemState);
   if (stateRule) triggered.push(stateRule);
 
-  // AMBER modifier: raise minimum confidence requirement to 0.9.
+  // AMBER modifier: raise minimum confidence threshold to 0.9.
+  // Also emit SYSTEM_STATE_AMBER as a reason code so audit records show the
+  // system state that caused a confidence escalation, not just LOW_CONFIDENCE.
   const amberPolicy: ClientPolicy =
     systemState === 'AMBER'
       ? { ...policy, minimumConfidenceScore: Math.max(policy.minimumConfidenceScore ?? 0, 0.9) }
       : policy;
+  if (systemState === 'AMBER') {
+    triggered.push({
+      triggered: true,
+      decision: 'ALLOW',
+      reasonCode: 'SYSTEM_STATE_AMBER',
+      requiredActions: [],
+    });
+  }
 
   triggered.push(
     ...[
@@ -184,6 +195,8 @@ export function applyPolicyRules(
   }
 
   // Most-restrictive decision wins.
+  // MODIFY is reserved for future rules (e.g. "proceed but cap the amount").
+  // No current rule produces it; it sits between ESCALATE and ALLOW in precedence.
   const precedence: Record<ExecutionDecision, number> = {
     DENY: 4,
     ESCALATE: 3,
@@ -212,17 +225,13 @@ export function buildDecision(
 ): GovernanceDecision {
   const { decision, reasonCodes, requiredActions } = applyPolicyRules(event, policy, systemState);
   const humanReviewRequired = decision === 'ESCALATE' || decision === 'DENY';
-  const now = new Date().toISOString();
+  const createdAt = new Date().toISOString();
 
-  const result: GovernanceDecision = {
-    decision,
-    reasonCodes,
-    requiredActions,
-    humanReviewRequired,
-    createdAt: now,
-    // Placeholder — filled in after the object is constructed.
-    vaultLineEvent: null as unknown as GovernanceDecision['vaultLineEvent'],
+  // Build the core decision fields first, then attach the audit payload in one
+  // object literal — avoids the unsafe null-cast that a two-step construction requires.
+  const core = { decision, reasonCodes, requiredActions, humanReviewRequired, createdAt };
+  return {
+    ...core,
+    vaultLineEvent: buildGovernanceAuditPayload(event, core as GovernanceDecision),
   };
-  result.vaultLineEvent = buildGovernanceAuditPayload(event, result);
-  return result;
 }

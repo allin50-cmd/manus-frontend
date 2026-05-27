@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { randomUUID } from 'crypto';
 import { evaluateExecutionGovernance } from './decisionGate';
 import type { GovernanceEvent, ClientPolicy } from './types';
 import {
@@ -116,6 +117,15 @@ describe('rule: payment approval threshold', () => {
       makeEvent({ domain: 'payment_approval', payload: { amountPence: 999_999 } }),
       defaultPolicy,
     );
+    expect(d.reasonCodes).not.toContain('PAYMENT_THRESHOLD_EXCEEDED');
+  });
+
+  it('allows when payment amount exactly equals threshold (boundary: strict >)', () => {
+    const d = evaluateExecutionGovernance(
+      makeEvent({ domain: 'payment_approval', payload: { amountPence: 100_000 } }),
+      paymentPolicy,
+    );
+    expect(d.decision).toBe('ALLOW');
     expect(d.reasonCodes).not.toContain('PAYMENT_THRESHOLD_EXCEEDED');
   });
 
@@ -308,6 +318,27 @@ describe('adaptive stability: system states', () => {
     expect(d.decision).toBe('ALLOW');
   });
 
+  it('AMBER: emits SYSTEM_STATE_AMBER reason code even when traffic is allowed', () => {
+    const d = evaluateExecutionGovernance(
+      makeEvent({ confidenceScore: 0.95 }),
+      defaultPolicy,
+      'AMBER',
+    );
+    expect(d.reasonCodes).toContain('SYSTEM_STATE_AMBER');
+  });
+
+  it('AMBER: respects client threshold higher than 0.9', () => {
+    // client minimum is 0.95 — AMBER must not lower it to 0.9
+    const policy: ClientPolicy = { clientId: 'client-test', minimumConfidenceScore: 0.95 };
+    const d = evaluateExecutionGovernance(
+      makeEvent({ confidenceScore: 0.92 }),
+      policy,
+      'AMBER',
+    );
+    expect(d.decision).toBe('ESCALATE');
+    expect(d.reasonCodes).toContain('LOW_CONFIDENCE');
+  });
+
   it('RED: escalates all traffic with SYSTEM_STATE_RED', () => {
     const d = evaluateExecutionGovernance(makeEvent(), defaultPolicy, 'RED');
     expect(d.decision).toBe('ESCALATE');
@@ -358,9 +389,33 @@ describe('audit payload (vaultLineEvent)', () => {
     expect(meta.reasonCodes).toContain('POLICY_ALLOW');
   });
 
-  it('sets correlationId from the event id', () => {
-    const d = evaluateExecutionGovernance(makeEvent({ id: 'fixed-event-id' }), defaultPolicy);
-    expect(d.vaultLineEvent.correlationId).toBe('fixed-event-id');
+  it('sets correlationId to the supplied UUID when it is a valid UUID', () => {
+    const uuid = randomUUID();
+    const d = evaluateExecutionGovernance(makeEvent({ id: uuid }), defaultPolicy);
+    expect(d.vaultLineEvent.correlationId).toBe(uuid);
+  });
+
+  it('replaces a non-UUID event id with a generated UUID', () => {
+    // Non-UUID strings (e.g. 'cw-001') would cause PostgreSQL to reject the insert;
+    // the gate normalises them to a valid RFC 4122 UUID.
+    const d = evaluateExecutionGovernance(makeEvent({ id: 'not-a-uuid' }), defaultPolicy);
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    expect(uuidRe.test(d.vaultLineEvent.correlationId!)).toBe(true);
+    expect(d.vaultLineEvent.correlationId).not.toBe('not-a-uuid');
+  });
+
+  it('sets entityUuid to the (normalised) event id so writeAuditEvent does not throw', () => {
+    // writeAuditEvent() throws when both entityId and entityUuid are null.
+    const uuid = randomUUID();
+    const d = evaluateExecutionGovernance(makeEvent({ id: uuid }), defaultPolicy);
+    expect(d.vaultLineEvent.entityUuid).toBe(uuid);
+    expect(d.vaultLineEvent.entityId).toBeNull();
+  });
+
+  it('truncates actorOpenId to 64 characters', () => {
+    const longActor = 'a'.repeat(80);
+    const d = evaluateExecutionGovernance(makeEvent({ actor: longActor }), defaultPolicy);
+    expect(d.vaultLineEvent.actorOpenId!.length).toBe(64);
   });
 
   it('does not include tenantId (caller responsibility)', () => {
