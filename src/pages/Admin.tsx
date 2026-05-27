@@ -21,9 +21,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  ExternalLink,
   GitCommit,
-  Calendar
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,13 +83,28 @@ interface Deployment {
   deployedAt: string;
 }
 
+interface FineGuardAlert {
+  id: string;
+  complianceRunId: string;
+  alertType: string;
+  severity: string;
+  title: string;
+  message: string;
+  status: string;
+  metadata: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function Admin() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
   const [complianceBundles, setComplianceBundles] = useState<ComplianceBundle[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [alerts, setAlerts] = useState<FineGuardAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllData();
@@ -99,12 +113,13 @@ export default function Admin() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
+      const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes, alertsRes] = await Promise.all([
         fetch('/api/admin/leads'),
         fetch('/api/admin/intake-forms'),
         fetch('/api/admin/compliance-bundles'),
         fetch('/api/admin/contacts'),
         fetch('/api/deployments/status'),
+        fetch('/api/admin/alerts'),
       ]);
 
       if (leadsRes.ok) setLeads(await leadsRes.json());
@@ -114,6 +129,10 @@ export default function Admin() {
       if (deploymentsRes.ok) {
         const data = await deploymentsRes.json();
         setDeployments(data.deployments || []);
+      }
+      if (alertsRes.ok) {
+        const data = await alertsRes.json() as { alerts: FineGuardAlert[] };
+        setAlerts(data.alerts || []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -180,6 +199,53 @@ export default function Admin() {
         return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
     }
   };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity?.toLowerCase()) {
+      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/50';
+      case 'high':     return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
+      case 'medium':   return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+      default:         return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+    }
+  };
+
+  const getAlertStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':      return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+      case 'acknowledged': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+      case 'resolved':     return 'bg-green-500/20 text-green-400 border-green-500/50';
+      case 'failed':       return 'bg-red-500/20 text-red-400 border-red-500/50';
+      default:             return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+    }
+  };
+
+  const getAlertCompanyName = (alert: FineGuardAlert): string => {
+    try {
+      const meta = JSON.parse(alert.metadata ?? '{}') as { companyName?: string };
+      return meta.companyName ?? '—';
+    } catch {
+      return '—';
+    }
+  };
+
+  const acknowledgeAlert = async (id: string) => {
+    setAcknowledgingId(id);
+    try {
+      const res = await fetch(`/api/admin/alerts/${id}/acknowledge`, { method: 'PATCH' });
+      if (res.ok) {
+        setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'acknowledged' } : a));
+        toast.success('Alert acknowledged');
+      } else {
+        toast.error('Failed to acknowledge alert');
+      }
+    } catch {
+      toast.error('Failed to acknowledge alert');
+    } finally {
+      setAcknowledgingId(null);
+    }
+  };
+
+  const pendingAlertCount = alerts.filter(a => a.status === 'pending').length;
 
   // Sort deployments by environment order
   const sortedDeployments = [...deployments].sort((a, b) => {
@@ -323,6 +389,21 @@ export default function Admin() {
               <div className="text-3xl font-bold text-white">{contacts.length}</div>
             </CardContent>
           </Card>
+
+          <Card className={`bg-[#13151C] border-[#2A2D3A] ${pendingAlertCount > 0 ? 'border-orange-500/50' : ''}`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                <ShieldAlert className={`w-4 h-4 ${pendingAlertCount > 0 ? 'text-orange-400' : ''}`} />
+                FineGuard Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold ${pendingAlertCount > 0 ? 'text-orange-400' : 'text-white'}`}>
+                {pendingAlertCount}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">pending of {alerts.length}</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Data Tables */}
@@ -343,6 +424,15 @@ export default function Admin() {
             <TabsTrigger value="contacts" className="data-[state=active]:bg-green-500">
               <MessageSquare className="w-4 h-4 mr-2" />
               Contacts
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="data-[state=active]:bg-orange-500 relative">
+              <ShieldAlert className="w-4 h-4 mr-2" />
+              Alerts
+              {pendingAlertCount > 0 && (
+                <span className="ml-1.5 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
+                  {pendingAlertCount}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -528,6 +618,92 @@ export default function Admin() {
                     </TableBody>
                   </Table>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          {/* FineGuard Alerts Tab */}
+          <TabsContent value="alerts">
+            <Card className="bg-[#13151C] border-[#2A2D3A]">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-orange-400" />
+                  FineGuard Compliance Alerts
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Companies requiring compliance attention. Acknowledge to record review.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {alerts.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <ShieldAlert className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-sm">No alerts — all monitored companies are compliant</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-[#2A2D3A] hover:bg-[#1A1D28]">
+                          <TableHead className="text-gray-400">Company</TableHead>
+                          <TableHead className="text-gray-400">Type</TableHead>
+                          <TableHead className="text-gray-400">Severity</TableHead>
+                          <TableHead className="text-gray-400">Title</TableHead>
+                          <TableHead className="text-gray-400">Status</TableHead>
+                          <TableHead className="text-gray-400">Raised</TableHead>
+                          <TableHead className="text-gray-400"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {alerts.map((alert) => (
+                          <TableRow key={alert.id} className="border-[#2A2D3A] hover:bg-[#1A1D28]">
+                            <TableCell className="text-white font-medium">
+                              {getAlertCompanyName(alert)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs font-mono">
+                                {alert.alertType.replace('_', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={getSeverityColor(alert.severity)}>
+                                {alert.severity}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-gray-300 max-w-xs truncate">
+                              {alert.title}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={getAlertStatusColor(alert.status)}>
+                                {alert.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-gray-400 text-sm">
+                              {formatRelativeTime(alert.createdAt)}
+                            </TableCell>
+                            <TableCell>
+                              {alert.status === 'pending' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                                  disabled={acknowledgingId === alert.id}
+                                  onClick={() => acknowledgeAlert(alert.id)}
+                                >
+                                  {acknowledgingId === alert.id ? (
+                                    <RefreshCw className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                  )}
+                                  Acknowledge
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

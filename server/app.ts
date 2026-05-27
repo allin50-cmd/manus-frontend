@@ -899,6 +899,52 @@ export function createApp(): express.Express {
     }
   });
 
+  // GET /api/admin/alerts — FineGuard compliance alerts, newest-first.
+  // Optional ?status= filter.
+  app.get('/api/admin/alerts', async (req: Request, res: Response) => {
+    const { status } = req.query;
+    try {
+      const baseQuery = db.select().from(fineGuardAlerts);
+      const rows = status
+        ? await baseQuery
+            .where(eq(fineGuardAlerts.status, String(status)))
+            .orderBy(desc(fineGuardAlerts.createdAt))
+        : await baseQuery.orderBy(desc(fineGuardAlerts.createdAt));
+      return res.json({ alerts: rows, total: rows.length });
+    } catch (err) {
+      log({ level: 'error', event: 'admin.alerts.list_failed', error: String(err) });
+      return res.status(500).json({ error: 'Failed to fetch alerts' });
+    }
+  });
+
+  // PATCH /api/admin/alerts/:id/acknowledge — mark one alert as acknowledged.
+  app.patch('/api/admin/alerts/:id/acknowledge', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const correlationId = generateCorrelationId();
+    try {
+      const [updated] = await db
+        .update(fineGuardAlerts)
+        .set({ status: 'acknowledged', updatedAt: new Date() })
+        .where(eq(fineGuardAlerts.id, id))
+        .returning();
+      if (!updated) {
+        return res.status(404).json({ error: 'Alert not found' });
+      }
+      await writeAuditEvent({
+        tenantId: SYSTEM_TENANT_ID,
+        entityType: 'compliance_alert',
+        entityUuid: updated.id,
+        action: 'alert_acknowledged',
+        correlationId,
+        metadata: JSON.stringify({ alertType: updated.alertType, severity: updated.severity }),
+      }).catch(() => {});
+      return res.json({ ok: true, alert: updated });
+    } catch (err) {
+      log({ level: 'error', event: 'admin.alerts.acknowledge_failed', correlationId, error: String(err) });
+      return res.status(500).json({ error: 'Failed to acknowledge alert' });
+    }
+  });
+
   app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
