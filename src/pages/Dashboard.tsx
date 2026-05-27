@@ -82,7 +82,7 @@ export default function Dashboard() {
           <div className="mb-6 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-300">
-              Database not connected — running in preview mode with empty data.
+              Tenant session not active — sign in or select a tenant to load live court data.
             </p>
           </div>
         )}
