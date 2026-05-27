@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "crons": [
+    {
+      "path": "/api/internal/run-compliance-check",
+      "schedule": "0 * * * *"
+    }
+  ],
   "builds": [
     {
       "src": "api/index.ts",

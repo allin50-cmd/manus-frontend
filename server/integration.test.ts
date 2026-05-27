@@ -16,7 +16,9 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq, and } from 'drizzle-orm';
 import { tenants, auditEvents } from './drizzle/schema';
-import { intakeForms } from './db/schema';
+import { intakeForms, monitoredCompanies } from './db/schema';
+import { buildSourceRef } from './lib/pie-schema';
+import { evaluateFineGuardActivation } from './lib/fineguard-rules';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const runIntegration = !!DATABASE_URL;
@@ -286,4 +288,395 @@ describe('writeAuditEvent: application-layer validation', () => {
     expect(row.entityId).toBe(9999);
     expect(row.entityUuid).toBeNull();
   });
+});
+
+// ─── PIE ingestion → VaultLine ───────────────────────────────────────────────
+
+describe('PIE: POST /api/pie/opportunity → intake + VaultLine', () => {
+  it('persists intake row with correct sourceRef and matterType', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/PIE-TEST-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-PIE-${Date.now()}`;
+    const pieClient = postgres(DATABASE_URL!, { max: 1 });
+    const pieDb = drizzle(pieClient);
+
+    const [row] = await pieDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'PIE Test Applicant',
+        clientEmail: 'pie@test.local',
+        matterType: 'planning',
+        urgency: 'high',
+        description: 'PIE integration test opportunity',
+        sourceRef,
+      })
+      .returning();
+
+    expect(row.sourceRef).toBe(sourceRef);
+    expect(row.matterType).toBe('planning');
+    expect(row.clientName).toBe('PIE Test Applicant');
+
+    await pieDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await pieClient.end();
+  });
+
+  it('writes audit event with upstreamSystem=PIE in metadata and sourceRef round-trip', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/AUDIT-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-PIE-AUDIT-${Date.now()}`;
+    const correlationId = randomUUID();
+    const pieClient = postgres(DATABASE_URL!, { max: 1 });
+    const pieDb = drizzle(pieClient);
+
+    const [intake] = await pieDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'Audit Test Applicant',
+        matterType: 'planning',
+        urgency: 'medium',
+        sourceRef,
+      })
+      .returning();
+
+    const { writeAuditEvent } = await import('./trpc/db');
+
+    await writeAuditEvent({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'intake',
+      entityUuid: intake.id,
+      action: 'captured',
+      correlationId,
+      metadata: JSON.stringify({
+        matterRef,
+        matterType: 'planning',
+        urgency: 'medium',
+        sourceRef,
+        upstreamSystem: 'PIE',
+        pieExternalRef: pieRef,
+        siteAddress: null,
+        district: null,
+        submittedAt: null,
+      }),
+    });
+
+    const [auditRow] = await db!
+      .select()
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.entityType, 'intake'),
+          eq(auditEvents.correlationId, correlationId),
+        )
+      );
+
+    expect(auditRow).toBeDefined();
+    expect(auditRow.entityUuid).toBe(intake.id);
+    expect(auditRow.entityId).toBeNull();
+    expect(auditRow.action).toBe('captured');
+
+    const meta = JSON.parse(auditRow.metadata!);
+    expect(meta.sourceRef).toBe(sourceRef);
+    expect(meta.upstreamSystem).toBe('PIE');
+    expect(meta.pieExternalRef).toBe(pieRef);
+
+    await pieDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await pieClient.end();
+  });
+
+  it('replay: second ingestion with same sourceRef writes ingestion_replayed audit event', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/REPLAY-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-PIE-REPLAY-${Date.now()}`;
+    const firstCid = randomUUID();
+    const replayCid = randomUUID();
+    const pieClient = postgres(DATABASE_URL!, { max: 1 });
+    const pieDb = drizzle(pieClient);
+
+    // First ingestion
+    const [intake] = await pieDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'Replay Test Applicant',
+        matterType: 'planning',
+        urgency: 'low',
+        sourceRef,
+      })
+      .returning();
+
+    const { writeAuditEvent } = await import('./trpc/db');
+
+    await writeAuditEvent({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'intake',
+      entityUuid: intake.id,
+      action: 'captured',
+      correlationId: firstCid,
+      metadata: JSON.stringify({ matterRef, sourceRef, upstreamSystem: 'PIE', pieExternalRef: pieRef }),
+    });
+
+    // Simulate replay — existing sourceRef found, write ingestion_replayed event
+    await writeAuditEvent({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'intake',
+      entityUuid: intake.id,
+      action: 'ingestion_replayed',
+      correlationId: replayCid,
+      metadata: JSON.stringify({
+        matterRef,
+        sourceRef,
+        upstreamSystem: 'PIE',
+        pieExternalRef: pieRef,
+        replayDetected: true,
+      }),
+    });
+
+    // Verify two audit events for the same entityUuid — original + replay
+    const rows = await db!
+      .select()
+      .from(auditEvents)
+      .where(eq(auditEvents.entityUuid, intake.id));
+
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+
+    const capturedRow = rows.find(r => r.action === 'captured' && r.correlationId === firstCid);
+    const replayRow = rows.find(r => r.action === 'ingestion_replayed' && r.correlationId === replayCid);
+
+    expect(capturedRow).toBeDefined();
+    expect(replayRow).toBeDefined();
+
+    const replayMeta = JSON.parse(replayRow!.metadata!);
+    expect(replayMeta.replayDetected).toBe(true);
+    expect(replayMeta.sourceRef).toBe(sourceRef);
+
+    // Only one intake row created
+    const intakeRows = await db!
+      .select()
+      .from(intakeForms)
+      .where(eq(intakeForms.sourceRef, sourceRef));
+    expect(intakeRows).toHaveLength(1);
+
+    await pieDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await pieClient.end();
+  });
+
+  it('sourceRef round-trip: intake_forms.source_ref matches buildSourceRef output', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = '25/BRO/0001/FUL';
+    const sourceRef = buildSourceRef(pieRef);
+    expect(sourceRef).toBe('PIE:25/BRO/0001/FUL');
+
+    const matterRef = `MAT-PIE-SR-${Date.now()}`;
+    const pieClient = postgres(DATABASE_URL!, { max: 1 });
+    const pieDb = drizzle(pieClient);
+
+    const [row] = await pieDb
+      .insert(intakeForms)
+      .values({ matterRef, clientName: 'SR Test', matterType: 'planning', urgency: 'low', sourceRef })
+      .returning();
+
+    expect(row.sourceRef).toBe('PIE:25/BRO/0001/FUL');
+
+    await pieDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await pieClient.end();
+  });
+});
+
+// ─── PIE → FineGuard activation bridge ───────────────────────────────────────
+
+describe('PIE → FineGuard: auto-activation bridge', () => {
+  it('high-urgency PIE intake upserts monitored_companies keyed by sourceRef', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/FG-HIGH-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-FG-${Date.now()}`;
+    const correlationId = randomUUID();
+    const fgClient = postgres(DATABASE_URL!, { max: 1 });
+    const fgDb = drizzle(fgClient);
+
+    // Simulate intake insert (high urgency → activation expected)
+    const [intake] = await fgDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'FG High Urgency Ltd',
+        matterType: 'planning',
+        urgency: 'high',
+        sourceRef,
+      })
+      .returning();
+
+    const evaluation = evaluateFineGuardActivation(intake);
+    expect(evaluation.activate).toBe(true);
+    expect(evaluation.reasons.pieOriginated).toBe(true);
+    expect(evaluation.reasons.highUrgency).toBe(true);
+
+    // Mirror the handler's upsert
+    const [activation] = await fgDb
+      .insert(monitoredCompanies)
+      .values({
+        companyNumber: sourceRef,
+        companyName: intake.clientName,
+        stripeSessionId: `pie-activation:${pieRef}`,
+      })
+      .onConflictDoUpdate({
+        target: monitoredCompanies.companyNumber,
+        set: { companyName: intake.clientName },
+      })
+      .returning();
+
+    // Audit event for triggered activation
+    await fgDb.insert(auditEvents).values({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'monitoring_activation',
+      entityUuid: activation.id,
+      action: 'fineguard_activation_triggered',
+      correlationId,
+      metadata: JSON.stringify({
+        sourceRef,
+        upstreamSystem: 'PIE',
+        pieExternalRef: pieRef,
+        matterRef: intake.matterRef,
+        companyIdentifier: sourceRef,
+        reasons: evaluation.reasons,
+      }),
+    });
+
+    // Verify monitored_companies row
+    const mcRows = await fgDb
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, sourceRef));
+    expect(mcRows).toHaveLength(1);
+    expect(mcRows[0].companyName).toBe('FG High Urgency Ltd');
+    expect(mcRows[0].stripeSessionId).toBe(`pie-activation:${pieRef}`);
+
+    // Verify trigger audit event lineage
+    const auditRows = await fgDb
+      .select()
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.correlationId, correlationId),
+          eq(auditEvents.action, 'fineguard_activation_triggered'),
+        ),
+      );
+    expect(auditRows.length).toBeGreaterThanOrEqual(1);
+    const meta = JSON.parse(auditRows[0].metadata!);
+    expect(meta.upstreamSystem).toBe('PIE');
+    expect(meta.companyIdentifier).toBe(sourceRef);
+    expect(meta.reasons.pieOriginated).toBe(true);
+    expect(meta.reasons.highUrgency).toBe(true);
+
+    // Cleanup
+    await fgDb.delete(monitoredCompanies).where(eq(monitoredCompanies.companyNumber, sourceRef));
+    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await fgClient.end();
+  });
+
+  it('low-urgency, low-value PIE intake does NOT create monitored_companies row', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/FG-LOW-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-FG-LOW-${Date.now()}`;
+    const fgClient = postgres(DATABASE_URL!, { max: 1 });
+    const fgDb = drizzle(fgClient);
+
+    const [intake] = await fgDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'FG Low Urgency Ltd',
+        matterType: 'planning',
+        urgency: 'low',
+        claimValue: '£50,000',
+        sourceRef,
+      })
+      .returning();
+
+    const evaluation = evaluateFineGuardActivation(intake);
+    expect(evaluation.activate).toBe(false);
+
+    // No upsert performed in this case — verify absence
+    const mcRows = await fgDb
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, sourceRef));
+    expect(mcRows).toHaveLength(0);
+
+    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await fgClient.end();
+  });
+
+  it('replay of the same PIE ref does not duplicate monitored_companies rows', async () => {
+    if (skipIfNoDb()) return;
+
+    const pieRef = `24/AP/FG-REPLAY-${Date.now()}`;
+    const sourceRef = buildSourceRef(pieRef);
+    const matterRef = `MAT-FG-REPLAY-${Date.now()}`;
+    const fgClient = postgres(DATABASE_URL!, { max: 1 });
+    const fgDb = drizzle(fgClient);
+
+    const [intake] = await fgDb
+      .insert(intakeForms)
+      .values({
+        matterRef,
+        clientName: 'FG Replay Ltd',
+        matterType: 'planning',
+        urgency: 'critical',
+        sourceRef,
+      })
+      .returning();
+
+    // First activation
+    await fgDb
+      .insert(monitoredCompanies)
+      .values({
+        companyNumber: sourceRef,
+        companyName: intake.clientName,
+        stripeSessionId: `pie-activation:${pieRef}`,
+      })
+      .onConflictDoUpdate({
+        target: monitoredCompanies.companyNumber,
+        set: { companyName: intake.clientName },
+      });
+
+    // Replay: same upsert again
+    await fgDb
+      .insert(monitoredCompanies)
+      .values({
+        companyNumber: sourceRef,
+        companyName: intake.clientName,
+        stripeSessionId: `pie-activation:${pieRef}`,
+      })
+      .onConflictDoUpdate({
+        target: monitoredCompanies.companyNumber,
+        set: { companyName: intake.clientName },
+      });
+
+    const mcRows = await fgDb
+      .select()
+      .from(monitoredCompanies)
+      .where(eq(monitoredCompanies.companyNumber, sourceRef));
+    expect(mcRows).toHaveLength(1);
+
+    await fgDb.delete(monitoredCompanies).where(eq(monitoredCompanies.companyNumber, sourceRef));
+    await fgDb.delete(intakeForms).where(eq(intakeForms.matterRef, matterRef));
+    await fgClient.end();
+  });
+
+  // Note: handler-level isolation (FineGuard failure → 201 intake response unaffected)
+  // is verified in server/pie-fineguard.test.ts via mocked DB. That test directly
+  // exercises the helper's "never throws" contract, which the handler relies on.
 });

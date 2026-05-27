@@ -10,7 +10,10 @@
   "routes": [
     {
       "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      "headers": {
+        "cache-control": "no-store"
+      }
     },
     {
       "route": "/*",

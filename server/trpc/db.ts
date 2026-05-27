@@ -15,6 +15,9 @@ import {
 import { ENV } from './_core/env';
 
 // ─── Lazy DB connection ───────────────────────────────────────────────────────
+// Uses postgres-js over TCP — works with Neon pooler URL, Supabase pooler URL,
+// and local PostgreSQL. Neon's HTTP driver is not used here because the tRPC
+// router types are bound to PostgresJsDatabase; the pooler URL is sufficient.
 
 type DrizzleDb = ReturnType<typeof drizzle>;
 
@@ -25,7 +28,8 @@ export async function getDb(): Promise<DrizzleDb | null> {
   const url = process.env.DATABASE_URL ?? ENV.databaseUrl;
   if (!url) return null;
   try {
-    const client = postgres(url, { max: 10 });
+    const max = process.env.VERCEL ? 1 : 10;
+    const client = postgres(url, { max, idle_timeout: 20, connect_timeout: 10 });
     _db = drizzle(client);
     return _db;
   } catch (err) {

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -85,11 +85,42 @@ export const contacts = pgTable('contacts', {
  */
 export const monitoredCompanies = pgTable('monitored_companies', {
   id: uuid('id').primaryKey().defaultRandom(),
-  companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
+  // Length 255 to accommodate synthetic identifiers from non-CH sources
+  // (e.g. "PIE:<externalRef>" from Accuracy PIE auto-activation).
+  // Real Companies House numbers are 8 chars; PIE sourceRefs are up to ~104.
+  companyNumber: varchar('company_number', { length: 255 }).notNull().unique(),
   companyName: varchar('company_name', { length: 255 }).notNull(),
   stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
+
+/**
+ * FineGuard Alerts Table
+ * Persists one row per compliance alert. Unique on (complianceRunId, alertType)
+ * so scheduler retries for the same run are idempotent.
+ */
+export const fineGuardAlerts = pgTable(
+  'fineguard_alerts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull(),
+    complianceRunId: uuid('compliance_run_id').notNull(),
+    alertType: varchar('alert_type', { length: 64 }).notNull(),
+    severity: varchar('severity', { length: 20 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    message: text('message').notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    metadata: text('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    runAlertTypeIdx: uniqueIndex('fineguard_alerts_run_alert_type_idx').on(
+      t.complianceRunId,
+      t.alertType,
+    ),
+  }),
+);
 
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
@@ -109,3 +140,6 @@ export type NewContact = typeof contacts.$inferInsert;
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+export type FineGuardAlert = typeof fineGuardAlerts.$inferSelect;
+export type NewFineGuardAlert = typeof fineGuardAlerts.$inferInsert;

@@ -307,3 +307,65 @@ export const auditEvents = pgTable(
 
 export type AuditEvent = typeof auditEvents.$inferSelect;
 export type InsertAuditEvent = typeof auditEvents.$inferInsert;
+
+// ─── Global Resilience State ──────────────────────────────────────────────────
+export const globalResilienceState = pgTable('global_resilience_state', {
+  dependency: text('dependency').primaryKey(),
+  circuitState: varchar('circuit_state', { length: 16 }).notNull().default('closed'),
+  failureCount: integer('failure_count').notNull().default(0),
+  lastFailureAt: timestamp('last_failure_at'),
+  cooldownUntil: timestamp('cooldown_until'),
+  lastSuccessAt: timestamp('last_success_at'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  instanceId: text('instance_id').notNull(),
+});
+
+// ─── Scheduler Leases ─────────────────────────────────────────────────────────
+export const schedulerLeases = pgTable('scheduler_leases', {
+  leaseName: text('lease_name').primaryKey(),
+  holderInstance: text('holder_instance').notNull(),
+  acquiredAt: timestamp('acquired_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+});
+
+// ─── Global Incident State ────────────────────────────────────────────────────
+export const globalIncidentState = pgTable('global_incident_state', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  status: text('status').notNull().default('nominal'),
+  signals: jsonb('signals'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  instanceId: text('instance_id').notNull(),
+});
+
+export type GlobalResilienceState = typeof globalResilienceState.$inferSelect;
+export type InsertGlobalResilienceState = typeof globalResilienceState.$inferInsert;
+export type SchedulerLease = typeof schedulerLeases.$inferSelect;
+export type InsertSchedulerLease = typeof schedulerLeases.$inferInsert;
+export type GlobalIncidentState = typeof globalIncidentState.$inferSelect;
+export type InsertGlobalIncidentState = typeof globalIncidentState.$inferInsert;
+
+// ─── Operational Overrides ────────────────────────────────────────────────────
+export const operationalOverrides = pgTable('operational_overrides', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  target: text('target').notNull(),
+  overrideType: varchar('override_type', { length: 32 }).notNull(),
+  value: jsonb('value').notNull().default({}),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: text('created_by').notNull(),
+  reason: text('reason').notNull(),
+});
+
+// ─── Operational Annotations ──────────────────────────────────────────────────
+export const operationalAnnotations = pgTable('operational_annotations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  incidentStatus: text('incident_status').notNull(),
+  note: text('note').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: text('created_by').notNull(),
+});
+
+export type OperationalOverride = typeof operationalOverrides.$inferSelect;
+export type InsertOperationalOverride = typeof operationalOverrides.$inferInsert;
+export type OperationalAnnotation = typeof operationalAnnotations.$inferSelect;
+export type InsertOperationalAnnotation = typeof operationalAnnotations.$inferInsert;

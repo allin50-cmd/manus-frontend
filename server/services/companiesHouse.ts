@@ -112,11 +112,8 @@ interface FilingDeadline {
 export class CompaniesHouseService {
   private apiKey: string;
 
-  constructor() {
-    if (!CH_API_KEY) {
-      throw new Error('COMPANIES_HOUSE_API_KEY environment variable is required');
-    }
-    this.apiKey = CH_API_KEY;
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
   }
 
   /**
@@ -440,5 +437,7 @@ export class CompaniesHouseService {
   }
 }
 
-// Export singleton instance
-export const companiesHouseService = new CompaniesHouseService();
+// null when COMPANIES_HOUSE_API_KEY is absent — callers must guard with `if (!companiesHouseService)`
+export const companiesHouseService: CompaniesHouseService | null = CH_API_KEY
+  ? new CompaniesHouseService(CH_API_KEY)
+  : null;

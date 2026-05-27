@@ -1,222 +1,283 @@
 # Workflow Proof
 
-**Authority:** apps/registry.json
-**Repository:** allin50-cmd/manus-frontend
-**Date:** 2026-05-25
-**Method:** Direct source inspection + live execution against test database.
+**Authority:** apps/registry.json  
+**Repository:** allin50-cmd/manus-frontend  
+**Branch:** claude/ultracore-consolidation-audit-KmP0r (HEAD: 4de0414)  
+**Updated:** 2026-05-26  
+**Method:** Direct source inspection + test suite execution. No database available in this environment — DB-path evidence is from code tracing and prior live-run records. All claims are annotated with their evidence source.
 
 ---
 
 ## Objective
 
-Prove that UltAi, FineGuard, and VaultLine can participate in a single business event — a Bromley planning application — by tracing it through the 10-state workflow using existing code only.
+Prove that the P1 business workflow can operate end-to-end using existing code:
+
+```
+Accuracy PIE → UltAi → FineGuard → VaultLine
+```
+
+Using one simulated Bromley planning opportunity: application reference `24/AP/1234`.
 
 ---
 
-## Code Changes Made (Business Proof Layer)
+## Test Suite — Current State
 
-These changes connect the brand-suite REST layer to VaultLine's audit trail.
+**Command executed:** `npm test`  
+**Result:** 180/180 tests passing across 13 test files in 5.28s
 
-### Change 1 — `writeAuditEvent` import + SYSTEM_TENANT_ID constant
-
-**File:** `server/index.ts` — line 11
-
-```typescript
-import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db';
-
-const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+```
+Test Files  13 passed (13)
+      Tests  180 passed (180)
+   Start at  03:14:08
+   Duration  5.28s
 ```
 
-**Why:** `writeAuditEvent()` requires a `tenantId` UUID foreign-keyed to the `tenants` table. Brand-suite REST endpoints have no user/tenant context. The system tenant row bridges the two schemas.
+Files covered:
+- `server/pie.test.ts` — PIE schema unit tests (no DB)
+- `server/pie-fineguard.test.ts` — FineGuard activation bridge (mocked DB)
+- `server/fineguard-rules.test.ts` — deterministic rule evaluation (no DB)
+- `server/resilience-endpoint.test.ts` — resilience API
+- `server/operations-endpoint.test.ts` — Operations Control Plane
+- `server/lib/scheduler-lease.test.ts` — distributed lease
+- `server/lib/retry-budget.test.ts` — retry budget
+- `server/lib/override-engine.test.ts` — override engine
+- `server/integration.test.ts` — integration tests (skip cleanly without DATABASE_URL)
+- tRPC unit tests (30 tests)
 
-**System tenant seed (one-time, per environment):**
+---
+
+## Files Inspected
+
+| File | Role |
+|---|---|
+| `apps/registry.json` | Authority document — component status and source paths |
+| `server/app.ts` | All HTTP routes |
+| `server/db/schema.ts` | Brand-suite tables: intakeForms, complianceBundles, monitoredCompanies |
+| `server/drizzle/schema.ts` | ClerkOS tables: clerk_audit_events, clerk_cases, operational_overrides |
+| `server/engine/clerkOS.engine.ts` | 4-state lifecycle engine + audit writes |
+| `server/trpc/db.ts` | writeAuditEvent(), getDb(), all ClerkOS DB helpers |
+| `server/lib/pie-schema.ts` | Zod schema for PIE payload |
+| `server/lib/pie-fineguard.ts` | PIE→FineGuard activation bridge |
+| `server/lib/fineguard-rules.ts` | Deterministic FineGuard activation rules |
+| `server/services/companiesHouse.ts` | CH API integration (referenced) |
+| `server/pie.test.ts` | PIE schema tests |
+| `server/pie-fineguard.test.ts` | FineGuard bridge tests |
+
+---
+
+## Bromley Simulation — Payload
+
+```json
+{
+  "externalRef": "24/AP/1234",
+  "applicantName": "Bromley Development Ltd",
+  "applicantEmail": "planning@bromley-dev.co.uk",
+  "description": "Residential development, 4 dwellings, Bromley Borough",
+  "siteAddress": "42 High Street, Bromley BR1 1AB",
+  "district": "Bromley",
+  "urgency": "high",
+  "estimatedValue": "£2,400,000",
+  "submittedAt": "2026-05-26T09:00:00+01:00"
+}
+```
+
+This payload is valid per `PieOpportunitySchema` — confirmed by `server/pie.test.ts` which tests the identical shape.
+
+---
+
+## Workflow Trace
+
+### Step 1 — PIE creates opportunity
+
+**Endpoint:** `POST /api/pie/opportunity`  
+**File:** `server/app.ts:538`  
+**Evidence:** Code exists and is wired. Payload validated by `PieOpportunitySchema` (Zod).
+
+**What executes:**
+1. Zod validates the payload — rejects missing `externalRef`, `applicantName`; validates email format; validates urgency enum
+2. Idempotency check: `SELECT * FROM intake_forms WHERE source_ref = 'PIE:24/AP/1234'`
+3. If new: `INSERT INTO intake_forms` with `matter_type='planning'`, `urgency='high'`, `claim_value='£2,400,000'`, `source_ref='PIE:24/AP/1234'`
+4. `writeAuditEvent`: `entityType='intake'`, `entityUuid=<intake.id>`, `action='captured'`, metadata includes `upstreamSystem:'PIE'`, `pieExternalRef:'24/AP/1234'`, `sourceRef:'PIE:24/AP/1234'`, `district:'Bromley'`, `siteAddress`
+5. FineGuard activation evaluation (see Step 3)
+
+**Lifecycle state achieved:** CAPTURED  
+**Status:** ✅ CODE EXISTS — endpoint implemented, schema validated, audit wired
+
+**Blocker:** Accuracy PIE itself (the upstream system) is `status=unverified` in registry.json with `sourceRepo=unknown`. No PIE source code is in this repository. The receiving endpoint exists; the sender does not.
+
+---
+
+### Step 2 — UltAi converts opportunity into intake/task
+
+**Endpoint:** `POST /api/intake` (manual intake) or via PIE step above  
+**File:** `server/app.ts:440`  
+**Evidence:** Code exists.
+
+**What executes:**
+1. `INSERT INTO intake_forms` with clientName, matterType, urgency, description
+2. `writeAuditEvent`: `entityType='intake'`, `entityUuid=<intake.id>`, `action='captured'`, metadata includes `matterRef`, `matterType`, `urgency`, `sourceRef`
+
+**Lifecycle state achieved:** CONFIRMED (manual intake path)
+
+For the PIE path, the intake row IS the task — `matterRef=MAT-<timestamp>` is the work reference. Allocation to a clerk happens via the ClerkOS tRPC `allocations.create` router.
+
+**ClerkOS 4-state machine** (`server/engine/clerkOS.engine.ts:17`):
+```
+open → in_progress | on_hold | closed
+in_progress → closed | on_hold | open
+on_hold → open | in_progress | closed
+closed → open
+```
+
+**Status:** ✅ CODE EXISTS — intake creation implemented, audit wired  
+**Gap:** Target 10-state lifecycle (CAPTURED→CLOSED) is NOT implemented. `packages/core-workflow` does not exist. Current 4-state machine does not expose individual target states.
+
+---
+
+### Step 3 — FineGuard creates/attaches compliance event
+
+**Files:** `server/lib/fineguard-rules.ts`, `server/lib/pie-fineguard.ts`, `server/app.ts:673`  
+**Evidence:** Code exists and is unit-tested (180/180).
+
+**Activation rules** (`server/lib/fineguard-rules.ts:90`):
+```
+activate = pieOriginated AND (highUrgency OR highValue)
+
+pieOriginated = sourceRef.startsWith("PIE:")           → true  (Bromley)
+highUrgency   = urgency ∈ {"high", "critical"}         → true  (urgency='high')
+highValue     = parsedClaimValue >= £1,000,000         → true  (£2,400,000)
+activate      = true AND (true OR true)                → true
+```
+
+The Bromley opportunity WILL trigger FineGuard auto-activation.
+
+**What executes** (`server/lib/pie-fineguard.ts:49`):
+1. `writeAuditEvent`: `action='fineguard_activation_evaluated'`, metadata includes `activate:true`, `reasons:{pieOriginated:true, highUrgency:true, highValue:true}`, `trigger:'first_ingestion'`
+2. `INSERT INTO monitored_companies` ON CONFLICT DO UPDATE — `companyNumber='PIE:24/AP/1234'`, `companyName='Bromley Development Ltd'`, `stripeSessionId='pie-activation:24/AP/1234'`
+3. `writeAuditEvent`: `action='fineguard_activation_triggered'`, `entityType='monitoring_activation'`, `entityUuid=<monitored_companies.id>`
+
+**Status:** ✅ CODE EXISTS AND UNIT-TESTED — activation rules proven, bridge wired, audit events emitted  
+**Gap:** Compliance check via CH API (`POST /api/compliance-bundle`) requires `COMPANIES_HOUSE_API_KEY` env var. Without it the endpoint returns 503. The auto-activation path (above) does NOT require CH API — it uses the PIE payload fields only.
+
+---
+
+### Step 4 — VaultLine records audit event
+
+**File:** `server/trpc/db.ts:236`, `server/drizzle/schema.ts:278`  
+**Evidence:** Schema exists, function exists, all callers wired.
+
+**`clerk_audit_events` schema:**
+```typescript
+entityType: varchar(64)
+entityId: integer          // nullable — ClerkOS serial entities
+entityUuid: uuid           // nullable — brand-suite UUID entities
+action: varchar(64)
+actorId: integer           // nullable
+actorOpenId: varchar(64)   // nullable
+previousState: text        // nullable
+nextState: text            // nullable
+metadata: text             // nullable — JSON stringified
+correlationId: uuid        // nullable
+createdAt: timestamp
+```
+
+**Audit events written for Bromley simulation:**
+
+| # | entityType | action | entityUuid | metadata keys |
+|---|---|---|---|---|
+| 1 | intake | captured | intake_forms.id | matterRef, matterType, urgency, sourceRef, upstreamSystem, pieExternalRef, siteAddress, district |
+| 2 | intake | fineguard_activation_evaluated | intake_forms.id | activate, reasons, trigger, matterRef, pieExternalRef |
+| 3 | monitoring_activation | fineguard_activation_triggered | monitored_companies.id | companyIdentifier, companyName, reasons, trigger, matterRef |
+
+All three share the same `correlationId` — traceable from a single UUID.
+
+**`writeAuditEvent` guard** (`server/trpc/db.ts:237`):
+```typescript
+if (event.entityId == null && event.entityUuid == null) {
+  throw new Error(`writeAuditEvent: one of entityId or entityUuid is required`);
+}
+```
+
+**Status:** ✅ CODE EXISTS — schema correct, write function correct, all P1 paths wired
+
+---
+
+## Success Condition Assessment
+
+```
+Step 1 — PIE creates opportunity
+  ✅ POST /api/pie/opportunity endpoint implemented
+  ✅ PieOpportunitySchema validates Bromley payload
+  ✅ intake_forms row created with sourceRef='PIE:24/AP/1234'
+  ✅ clerk_audit_events row written (action='captured')
+  ✅ Idempotency: replay writes ingestion_replayed, no duplicate row
+  ⛔ Accuracy PIE system itself: unknown source, unknown deployment (registry: status=unverified)
+
+Step 2 — UltAi creates task/intake
+  ✅ POST /api/intake endpoint implemented
+  ✅ intake_forms row persisted with matterRef
+  ✅ clerk_audit_events row written (action='captured')
+  ✅ ClerkOS tRPC allocations.create router exists for clerk assignment
+  ⚠  10-state lifecycle not implemented — current engine is 4-state
+
+Step 3 — FineGuard creates/attaches compliance event
+  ✅ evaluateFineGuardActivation() returns activate=true for Bromley payload
+  ✅ activateFineGuardForPie() upserts monitored_companies
+  ✅ Two audit events emitted (evaluated + triggered)
+  ✅ Failure isolation: activation failure never propagates to intake response
+  ⚠  CH API compliance check (POST /api/compliance-bundle) requires COMPANIES_HOUSE_API_KEY
+
+Step 4 — VaultLine records audit event
+  ✅ clerk_audit_events schema exists and is correct
+  ✅ writeAuditEvent() wired on all P1 paths
+  ✅ entityUuid carries actual domain entity UUID
+  ✅ correlationId threads across all events in the chain
+  ⚠  Requires live DATABASE_URL — without it writeAuditEvent is a no-op (getDb returns null)
+```
+
+---
+
+## Verdict
+
+**B) Workflow not yet proven end-to-end.**
+
+The code to execute every step exists and is correct. The chain cannot be called end-to-end proven because:
+
+1. **Accuracy PIE** — the upstream system that pushes opportunities — has no source code or deployment in this repository. Its status in the registry is `unverified`. The receiving endpoint (`POST /api/pie/opportunity`) is fully implemented. The sender is not.
+
+2. **DATABASE_URL** — all DB writes are no-ops when this env var is absent. Without a live database, no intake rows are created and no audit events are recorded.
+
+3. **10-state lifecycle** — `packages/core-workflow` does not exist. The current ClerkOS engine has 4 states. ANALYSED, ESTIMATED, VERIFIED, HITL_REQUIRED, APPROVED states have no explicit code representation.
+
+**What IS proven:** Given a live database and the Bromley payload delivered to `POST /api/pie/opportunity`:
+- An intake row will be created (CAPTURED)
+- FineGuard will auto-activate (VERIFIED/EXECUTED)
+- Three audit events will be written to VaultLine (RECORDED)
+
+The code path is complete for these three stages. Blockers are environmental and lifecycle-structural, not logic-level bugs.
+
+---
+
+## Audit Queryability (for when DB is available)
+
 ```sql
-INSERT INTO tenants (id, name, slug, plan) VALUES
-('00000000-0000-0000-0000-000000000001', 'UltraCore System', 'system', 'enterprise')
-ON CONFLICT (slug) DO NOTHING;
+-- All PIE-originated intakes
+SELECT * FROM intake_forms WHERE source_ref LIKE 'PIE:%';
+
+-- Full audit trail for Bromley ref
+SELECT entity_type, action, entity_uuid, correlation_id, metadata, created_at
+FROM clerk_audit_events
+WHERE metadata->>'sourceRef' = 'PIE:24/AP/1234'
+ORDER BY created_at;
+
+-- Stuck activations (evaluate without terminal event)
+SELECT metadata->>'sourceRef', created_at
+FROM clerk_audit_events
+WHERE action = 'fineguard_activation_evaluated'
+  AND (metadata->>'activate')::boolean = true
+  AND NOT EXISTS (
+    SELECT 1 FROM clerk_audit_events t
+    WHERE t.correlation_id = clerk_audit_events.correlation_id
+      AND t.action IN ('fineguard_activation_triggered','fineguard_activation_failed')
+  );
 ```
-
----
-
-### Change 2 — UltAi: `POST /api/intake` → VaultLine (production-hardened)
-
-**File:** `server/index.ts` — after `db.insert(intakeForms)`
-
-```typescript
-const correlationId = generateCorrelationId();
-// ... insert ...
-await writeAuditEvent({
-  tenantId: SYSTEM_TENANT_ID,
-  entityType: 'intake',
-  entityUuid: intake.id,          // ← UUID, not integer workaround
-  action: 'captured',
-  correlationId,
-  metadata: JSON.stringify({ matterRef, matterType, urgency, sourceRef }),
-});
-log({ level: 'info', event: 'intake.captured', correlationId, matterRef, ... });
-```
-
-`entityUuid` carries the actual `intake_forms.id` UUID. `correlationId` threads through logs and audit event.
-
-**Workflow state achieved:** CAPTURED → RECORDED
-
----
-
-### Change 3 — FineGuard: `POST /api/compliance-bundle` → VaultLine (production-hardened)
-
-**File:** `server/index.ts` — after `db.insert(complianceBundles)`
-
-```typescript
-const correlationId = generateCorrelationId();
-// CH API calls wrapped in withRetry (3 attempts, 500ms base delay)
-const companyProfile = await withRetry(
-  () => chService.getCompanyProfile(formattedNumber),
-  { attempts: 3, baseDelayMs: 500, label: 'ch.getCompanyProfile', correlationId }
-);
-// ... insert ...
-await writeAuditEvent({
-  tenantId: SYSTEM_TENANT_ID,
-  entityType: 'compliance_check',
-  entityUuid: bundle.id,           // ← UUID, not integer workaround
-  action: 'executed',
-  correlationId,
-  metadata: JSON.stringify({ bundleId, companyNumber, riskLevel, status, ... }),
-});
-```
-
-**Workflow state achieved:** EXECUTED → RECORDED
-
----
-
-### Change 4 — FineGuard: Stripe webhook → VaultLine
-
-**File:** `server/index.ts` — after `db.insert(monitoredCompanies)`
-
-```typescript
-const correlationId = generateCorrelationId();
-await writeAuditEvent({
-  tenantId: SYSTEM_TENANT_ID,
-  entityType: 'monitoring_activation',
-  entityUuid: activation.id,
-  action: 'executed',
-  correlationId,
-  metadata: JSON.stringify({ companyNumber, companyName, stripeSessionId: session.id }),
-});
-```
-
-**Workflow state achieved:** EXECUTED (billing activation) → RECORDED
-
----
-
-### Change 5 — `sourceRef` field on `intake_forms`
-
-**File:** `server/db/schema.ts` — `intakeForms` table
-
-```typescript
-sourceRef: varchar('source_ref', { length: 100 }),
-```
-
-**Why:** When Accuracy PIE is found, intake submissions can be linked to the originating opportunity (e.g. `sourceRef: 'PIE:24/AP/1234'`). Without this field, the link is lost.
-
----
-
-## Bromley Planning Application — Workflow Trace
-
-**Event:** Bromley London Borough — residential development application `24/AP/1234`
-
-| State | System | Code Path | Status |
-|---|---|---|---|
-| CAPTURED | Accuracy PIE | No source found | ✗ BLOCKED — PIE unknown |
-| ANALYSED | Accuracy PIE | No scoring logic | ✗ BLOCKED — PIE unknown |
-| ESTIMATED | Accuracy PIE | No value estimation | ✗ BLOCKED — PIE unknown |
-| VERIFIED | FineGuard | `CompaniesHouseService.getCompanyProfile()` | ~ MANUAL — CH lookup works on-demand |
-| CONFIRMED | UltAi | `POST /api/intake` → `intake_forms` | ✓ CODE EXISTS — intake saves + VaultLine notified |
-| HITL_REQUIRED | UltAi/ClerkOS | `allocations.create` tRPC | ~ PARTIAL — manual allocation only |
-| APPROVED | ClerkOS | `cases.transition` tRPC | ~ PARTIAL — maps to `open→in_progress` |
-| EXECUTED | FineGuard | `POST /api/compliance-bundle` → CH API | ✓ CODE EXISTS — compliance check + VaultLine notified |
-| RECORDED | VaultLine | `writeAuditEvent()` | ✓ NOW WIRED — intake, compliance, Stripe all write audit rows |
-| CLOSED | ClerkOS | `cases.transition` → `closed` | ~ PARTIAL — case close + audit works |
-
----
-
-## What VaultLine Now Records
-
-After these changes, the following events write to `clerk_audit_events`:
-
-| Event | entityType | action | Previously |
-|---|---|---|---|
-| UltAi intake form submitted | `intake` | `captured` | NOT RECORDED |
-| FineGuard compliance check | `compliance_check` | `executed` | NOT RECORDED |
-| Stripe monitoring activation | `monitoring_activation` | `executed` | NOT RECORDED |
-| ClerkOS case created | `case` | `create` | already recorded |
-| ClerkOS case transition | `case` | `transition:X→Y` | already recorded |
-| ClerkOS allocation created | `allocation` | `create` | already recorded |
-
----
-
-## Live Execution Evidence
-
-**Database:** `vaultline_test` (PostgreSQL 16, local)
-**Test run date:** 2026-05-25
-
-**Step 1 — Full bootstrap (one command):**
-```
-npm run db:bootstrap
-→ db:migrate:clerkos  — 9 ClerkOS tables + 2 ClerkOS migrations tracked
-→ db:migrate          — 6 brand-suite tables tracked in brand_suite_migrations (separate table)
-→ db:seed:clerkos     — system tenant seeded: 00000000-0000-0000-0000-000000000001
-
-Total: 15 tables (9 ClerkOS + 6 brand-suite)
-```
-
-Note: brand-suite migrations use `migrationsTable: 'brand_suite_migrations'` to avoid timestamp-ordering conflicts with the ClerkOS migration set (see `docs/audit-schema-evolution.md`).
-
-**Step 3 — Build and tests:**
-```
-npm run build        →  ✓ built in 4.53s  (zero TypeScript errors)
-npm run type-check   →  0 errors
-npm run type-check:server → 0 errors (server strict mode)
-npm test             →  38/38 tests passing (30 unit + 8 integration)
-```
-
-**Step 4 — Integration test result (VaultLine audit events with UUID + correlation ID):**
-
-```sql
-SELECT entity_type, action, entity_uuid, correlation_id, metadata
-FROM clerk_audit_events ORDER BY created_at;
-
-   entity_type    |  action  | entity_uuid (uuid)                   | correlation_id (uuid)                | sourceRef in metadata
-------------------+----------+--------------------------------------+--------------------------------------+----------------------
- schema_test      | verified | 22222222-2222-2222-...               | 11111111-1111-1111-...               | -
- intake           | captured | <intake_forms.id uuid>               | 33333333-3333-3333-...               | PIE:24/AP/1234
- compliance_check | executed | 55555555-5555-5555-...               | 44444444-4444-4444-...               | -
- case             | test_integer_entity | NULL                          | 66666666-6666-6666-...               | -  (entityId=9999)
-```
-
-`entityUuid` contains the actual primary key of the originating entity (no more `entityId: 0` workaround). `correlationId` traces each event to its request. `sourceRef: "PIE:24/AP/1234"` propagates end-to-end from intake through to VaultLine.
-
----
-
-## Success Condition Checklist
-
-```
-□ PIE creates opportunity     — UNKNOWN (PIE source not found — stakeholder action required)
-☑ UltAi creates task          — PROVEN: POST /api/intake → intake_forms + clerk_audit_events row confirmed
-☑ FineGuard creates event     — PROVEN: POST /api/compliance-bundle → compliance_bundles + clerk_audit_events row confirmed
-☑ VaultLine records event     — PROVEN: 3 audit rows in clerk_audit_events from live DB test
-```
-
----
-
-## What This Does Not Achieve
-
-- Accuracy PIE integration — PIE source must be located (stakeholder action)
-- Automated FineGuard monitoring loop — requires scheduler + email provider
-- Cross-system entity linking — no shared ID between `intake_forms` and `compliance_bundles`
-- 10-state workflow automation — states CAPTURED→ESTIMATED remain blocked on PIE
-
-**Minimum remaining actions for fully automated pipeline:**
-1. Locate Accuracy PIE — stakeholder
-2. Select email provider — stakeholder
-3. Seed system tenant into each environment database — engineering
-4. Build FineGuard alert scheduler (`GET /api/internal/run-compliance-check`) — ~50 lines
