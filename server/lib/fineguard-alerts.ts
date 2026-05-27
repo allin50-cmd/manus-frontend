@@ -43,7 +43,7 @@ export async function persistComplianceAlert(
         metadata: input.metadata != null ? JSON.stringify(input.metadata) : null,
       })
       .onConflictDoNothing()
-      .returning({ id: fineGuardAlerts.id });
+      .returning();
 
     if (rows.length === 0) {
       return { ok: true, id: '', action: 'duplicate' };
