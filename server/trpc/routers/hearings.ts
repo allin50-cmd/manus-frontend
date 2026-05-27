@@ -1,8 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { hearings } from '../../drizzle/schema';
-import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
-import { getAllHearings, getDb, getHearingsByCase, writeAuditEvent } from '../db';
+import { hearings } from '../../drizzle/schema.js';
+import { adminProcedure, tenantProcedure, router } from '../_core/trpc.js';
+import { getAllHearings, getDb, getHearingsByCase, writeAuditEvent } from '../db.js';
 
 const hearingStatusEnum = z.enum(['scheduled', 'completed', 'postponed', 'cancelled']);
 

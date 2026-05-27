@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import type { InsertAuditEvent, InsertUser } from '../drizzle/schema';
+import type { InsertAuditEvent, InsertUser } from '../drizzle/schema.js';
 import {
   auditEvents,
   cases,
@@ -11,8 +11,8 @@ import {
   hearings,
   tenants,
   users,
-} from '../drizzle/schema';
-import { ENV } from './_core/env';
+} from '../drizzle/schema.js';
+import { ENV } from './_core/env.js';
 
 // ─── Lazy DB connection ───────────────────────────────────────────────────────
 

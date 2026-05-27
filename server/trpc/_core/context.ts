@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { Tenant } from '../../drizzle/schema';
+import type { Tenant } from '../../drizzle/schema.js';
 
 export type TrpcUser = {
   id: number;

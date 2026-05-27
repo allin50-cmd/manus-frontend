@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { clerkDiaries } from '../../drizzle/schema';
-import { tenantProcedure, router } from '../_core/trpc';
-import { getClerkDiaryByDate, getDb } from '../db';
+import { clerkDiaries } from '../../drizzle/schema.js';
+import { tenantProcedure, router } from '../_core/trpc.js';
+import { getClerkDiaryByDate, getDb } from '../db.js';
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 

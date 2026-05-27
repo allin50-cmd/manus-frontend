@@ -1,4 +1,4 @@
-import { authedProcedure, router, tenantProcedure } from '../_core/trpc';
+import { authedProcedure, router, tenantProcedure } from '../_core/trpc.js';
 
 export const authRouter = router({
   /** Returns the authenticated user from context. */

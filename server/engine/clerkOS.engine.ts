@@ -1,8 +1,8 @@
 import { and, eq } from 'drizzle-orm';
-import { bundles, cases, documents } from '../drizzle/schema';
-import type { Case } from '../drizzle/schema';
-import { writeAuditEvent } from '../trpc/db';
-import type { DrizzleDb } from './types';
+import { bundles, cases, documents } from '../drizzle/schema.js';
+import type { Case } from '../drizzle/schema.js';
+import { writeAuditEvent } from '../trpc/db.js';
+import type { DrizzleDb } from './types.js';
 
 // ─── Type aliases ─────────────────────────────────────────────────────────────
 

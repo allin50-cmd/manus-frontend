@@ -1,11 +1,11 @@
-import { router } from './_core/trpc';
-import { allocationsRouter } from './routers/allocations';
-import { authRouter } from './routers/auth';
-import { casesRouter } from './routers/cases';
-import { dashboardRouter } from './routers/dashboard';
-import { diaryRouter } from './routers/diary';
-import { documentsRouter } from './routers/documents';
-import { hearingsRouter } from './routers/hearings';
+import { router } from './_core/trpc.js';
+import { allocationsRouter } from './routers/allocations.js';
+import { authRouter } from './routers/auth.js';
+import { casesRouter } from './routers/cases.js';
+import { dashboardRouter } from './routers/dashboard.js';
+import { diaryRouter } from './routers/diary.js';
+import { documentsRouter } from './routers/documents.js';
+import { hearingsRouter } from './routers/hearings.js';
 
 export const appRouter = router({
   auth: authRouter,

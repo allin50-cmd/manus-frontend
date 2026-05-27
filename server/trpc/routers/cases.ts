@@ -1,9 +1,9 @@
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
-import { cases } from '../../drizzle/schema';
-import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
-import { getAllCases, getCaseById, getDb, searchCases, writeAuditEvent } from '../db';
-import { ClerkOSEngine } from '../../engine/clerkOS.engine';
+import { cases } from '../../drizzle/schema.js';
+import { adminProcedure, tenantProcedure, router } from '../_core/trpc.js';
+import { getAllCases, getCaseById, getDb, searchCases, writeAuditEvent } from '../db.js';
+import { ClerkOSEngine } from '../../engine/clerkOS.engine.js';
 
 const caseStatusEnum = z.enum(['open', 'in_progress', 'closed', 'on_hold']);
 

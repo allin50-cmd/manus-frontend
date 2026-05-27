@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { documents } from '../../drizzle/schema';
-import { tenantProcedure, router } from '../_core/trpc';
-import { getDb, getDocumentsByCase, writeAuditEvent } from '../db';
-import { BlobStorage, buildBlobPath } from '../../services/blobStorage';
+import { documents } from '../../drizzle/schema.js';
+import { tenantProcedure, router } from '../_core/trpc.js';
+import { getDb, getDocumentsByCase, writeAuditEvent } from '../db.js';
+import { BlobStorage, buildBlobPath } from '../../services/blobStorage.js';
 
 export const documentsRouter = router({
   /**

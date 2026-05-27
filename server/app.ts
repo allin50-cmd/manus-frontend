@@ -5,7 +5,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
 import Stripe from 'stripe';
 import { fileURLToPath } from 'url';
-import { db } from './db/index';
+import { db } from './db/index.js';
 import {
   complianceBundles,
   contacts,
@@ -13,14 +13,14 @@ import {
   intakeForms,
   leads,
   monitoredCompanies,
-} from './db/schema';
-import { companiesHouseService } from './services/companiesHouse';
-import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db';
-import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth';
-import { appRouter } from './trpc/routers';
+} from './db/schema.js';
+import { companiesHouseService } from './services/companiesHouse.js';
+import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db.js';
+import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth.js';
+import { appRouter } from './trpc/routers.js';
 import { desc, eq } from 'drizzle-orm';
-import { log, generateCorrelationId } from './lib/logger';
-import { withRetry } from './lib/retry';
+import { log, generateCorrelationId } from './lib/logger.js';
+import { withRetry } from './lib/retry.js';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos

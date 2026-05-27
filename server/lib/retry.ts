@@ -1,4 +1,4 @@
-import { log } from './logger';
+import { log } from './logger.js';
 
 interface RetryOptions {
   attempts?: number;

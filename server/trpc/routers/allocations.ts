@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { clerkAllocations } from '../../drizzle/schema';
-import { adminProcedure, tenantProcedure, router } from '../_core/trpc';
-import { getAllocationsByClerk, getDb, getPendingAllocations, writeAuditEvent } from '../db';
-import { ClerkOSEngine } from '../../engine/clerkOS.engine';
+import { clerkAllocations } from '../../drizzle/schema.js';
+import { adminProcedure, tenantProcedure, router } from '../_core/trpc.js';
+import { getAllocationsByClerk, getDb, getPendingAllocations, writeAuditEvent } from '../db.js';
+import { ClerkOSEngine } from '../../engine/clerkOS.engine.js';
 
 const priorityEnum = z.enum(['low', 'medium', 'high', 'urgent']);
 const statusEnum = z.enum(['pending', 'in_progress', 'completed', 'cancelled']);

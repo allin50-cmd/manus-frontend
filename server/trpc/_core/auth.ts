@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { Request } from 'express';
-import type { Tenant } from '../../drizzle/schema';
+import type { Tenant } from '../../drizzle/schema.js';
 
 // ─── Azure AD B2C config (from env) ──────────────────────────────────────────
 

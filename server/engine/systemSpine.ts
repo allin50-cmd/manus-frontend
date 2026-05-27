@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
-import type { ClerkAllocation } from '../drizzle/schema';
-import { clerkAllocations } from '../drizzle/schema';
-import { getDb, writeAuditEvent } from '../trpc/db';
-import { ServiceBusClient } from '../services/serviceBus';
-import { ClerkOSEngine } from './clerkOS.engine';
+import type { ClerkAllocation } from '../drizzle/schema.js';
+import { clerkAllocations } from '../drizzle/schema.js';
+import { getDb, writeAuditEvent } from '../trpc/db.js';
+import { ServiceBusClient } from '../services/serviceBus.js';
+import { ClerkOSEngine } from './clerkOS.engine.js';
 
 // ─── Queue item payload sent via Service Bus ──────────────────────────────────
 

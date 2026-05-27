@@ -1,5 +1,5 @@
-import { tenantProcedure, router } from '../_core/trpc';
-import { getAllCases, getAllHearings, getPendingAllocations } from '../db';
+import { tenantProcedure, router } from '../_core/trpc.js';
+import { getAllCases, getAllHearings, getPendingAllocations } from '../db.js';
 
 export const dashboardRouter = router({
   stats: tenantProcedure.query(async ({ ctx }) => {
