@@ -55,12 +55,12 @@
 
 ### ULTRA-010 — Build core-workflow Package
 **Priority:** P2  
-**Status:** NEXT  
+**Status:** DONE  
 **Success:**
-- Shared 10-state lifecycle implemented in `packages/core-workflow`
-- Valid transitions pass
-- Invalid transitions throw
-- Tests added
+- Shared 10-state lifecycle implemented in `packages/core-workflow` ✅
+- Valid transitions pass ✅
+- Invalid transitions throw ✅
+- Tests added ✅ (42 tests)
 
 ---
 
