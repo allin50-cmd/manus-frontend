@@ -9,7 +9,6 @@ import fetch from 'node-fetch';
 
 const CH_API_BASE = 'https://api.company-information.service.gov.uk';
 const CH_STREAM_BASE = 'https://stream.companieshouse.gov.uk';
-const CH_API_KEY = process.env.COMPANIES_HOUSE_API_KEY;
 
 interface CompanyProfile {
   companyNumber: string;
@@ -110,19 +109,20 @@ interface FilingDeadline {
 }
 
 export class CompaniesHouseService {
-  private apiKey: string;
+  private apiKey?: string;
 
   constructor() {
-    if (!CH_API_KEY) {
-      throw new Error('COMPANIES_HOUSE_API_KEY environment variable is required');
-    }
-    this.apiKey = CH_API_KEY;
+    this.apiKey = process.env.COMPANIES_HOUSE_API_KEY;
   }
 
   /**
    * Get authentication headers for Companies House API
    */
   private getAuthHeaders() {
+    if (!this.apiKey) {
+      throw new Error('COMPANIES_HOUSE_API_KEY environment variable is required');
+    }
+
     return {
       'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
       'Content-Type': 'application/json',
