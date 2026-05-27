@@ -35,6 +35,7 @@ import { acquireSchedulerLease, releaseSchedulerLease, getSchedulerLeaseState } 
 import { getAllActiveOverrides, evaluateOperationalOverride, invalidateOverrideCache } from './lib/override-engine';
 import { operationalOverrides, operationalAnnotations } from './drizzle/schema';
 import type { InsertOperationalOverride, InsertOperationalAnnotation } from './drizzle/schema';
+import { writeAlertIfRequired, toAlertSeverity } from './lib/fineguard-alerts';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -1148,6 +1149,43 @@ export function createApp(): express.Express {
               status: complianceStatus.status,
               riskLevel: complianceStatus.riskLevel,
               overdueFilings: complianceStatus.overdueFilings.length,
+            });
+          }
+
+          // Persist alert row — idempotent, never throws (returns failedSafe on error).
+          const alertResult = await writeAlertIfRequired(
+            alertRequired,
+            {
+              tenantId: SYSTEM_TENANT_ID,
+              complianceRunId: companyCorrelationId,
+              alertType:
+                complianceStatus.status === 'overdue' ||
+                complianceStatus.overdueFilings.length > 0
+                  ? 'overdue_filings'
+                  : 'high_risk',
+              severity: toAlertSeverity(complianceStatus.riskLevel),
+              title: `Compliance alert: ${company.companyName}`,
+              message: `${company.companyNumber} requires attention — status: ${complianceStatus.status}, risk: ${complianceStatus.riskLevel}, overdue filings: ${complianceStatus.overdueFilings.length}`,
+              metadata: {
+                schedulerRunId: runId,
+                companyNumber: company.companyNumber,
+                companyName: company.companyName,
+                status: complianceStatus.status,
+                riskLevel: complianceStatus.riskLevel,
+                overdueFilings: complianceStatus.overdueFilings.length,
+                upcomingDeadlines: complianceStatus.upcomingDeadlines.length,
+              },
+            },
+            companyCorrelationId,
+          );
+
+          if (alertResult !== null && !alertResult.ok) {
+            log({
+              level: 'error',
+              event: 'compliance.alert.persist.failed_safe',
+              correlationId: alertResult.correlationId,
+              error: alertResult.error,
+              companyNumber: company.companyNumber,
             });
           }
 

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -94,6 +94,34 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
 
+/**
+ * FineGuard Alerts Table
+ * Persists one row per compliance alert. Unique on (complianceRunId, alertType)
+ * so scheduler retries for the same run are idempotent.
+ */
+export const fineGuardAlerts = pgTable(
+  'fineguard_alerts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull(),
+    complianceRunId: uuid('compliance_run_id').notNull(),
+    alertType: varchar('alert_type', { length: 64 }).notNull(),
+    severity: varchar('severity', { length: 20 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    message: text('message').notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    metadata: text('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    runAlertTypeIdx: uniqueIndex('fineguard_alerts_run_alert_type_idx').on(
+      t.complianceRunId,
+      t.alertType,
+    ),
+  }),
+);
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
@@ -112,3 +140,6 @@ export type NewContact = typeof contacts.$inferInsert;
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+export type FineGuardAlert = typeof fineGuardAlerts.$inferSelect;
+export type NewFineGuardAlert = typeof fineGuardAlerts.$inferInsert;
