@@ -1,7 +1,7 @@
 # Deployment Sequence
 
 **Repository:** allin50-cmd/manus-frontend  
-**Date:** 2026-05-26  
+**Date:** 2026-05-27  
 **Constraint:** Minimal sequence only. Evidence-based. No invented values.
 
 ---
@@ -56,7 +56,7 @@ npm run db:bootstrap
 
 `db:bootstrap` runs (`package.json:29`):
 1. `tsx server/drizzle/migrate.ts` — applies 4 ClerkOS migrations under `server/drizzle/migrations/`
-2. `tsx server/db/migrate.ts` — applies 3 brand-suite migrations under `drizzle/`
+2. `tsx server/db/migrate.ts` — applies 4 brand-suite migrations under `drizzle/` (includes `0003_fineguard_alerts.sql`)
 3. `tsx server/drizzle/seed.ts` — inserts system tenant `00000000-0000-0000-0000-000000000001`
 
 Expected output:
@@ -89,6 +89,7 @@ Expected tables (minimum):
 |---|---|
 | `brand_suite_migrations` | brand-suite migration tracking |
 | `clerk_audit_events` | VaultLine audit log |
+| `fineguard_alerts` | FineGuard persisted compliance alerts |
 | `global_resilience_state` | Circuit breaker state |
 | `intake_forms` | PIE/UltAi intake records |
 | `monitored_companies` | FineGuard watchlist |
@@ -132,10 +133,13 @@ In Vercel project → **Settings → Environment Variables**, add:
 |---|---|---|
 | `DATABASE_URL` | `postgresql://neondb_owner:<password>@ep-rough-river-abg1vkm1-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require` | Production, Preview |
 | `ADMIN_API_KEY` | `<same value used in local .env>` | Production, Preview |
+| `CRON_SECRET` | `<generate: openssl rand -hex 32>` | Production |
 | `NODE_ENV` | `production` | Production |
 | `APP_URL` | `https://<your-vercel-domain>.vercel.app` | Production |
 
 **Do not add** `DIRECT_URL` to Vercel — migrations do not run at deploy time.
+
+`CRON_SECRET` is required for the Vercel Cron job to authenticate against `GET /api/internal/run-compliance-check`. Vercel automatically sends `Authorization: Bearer <CRON_SECRET>` on scheduled invocations. Without it, cron calls return 401 and the hourly compliance check never runs.
 
 Optional (required to enable features):
 
@@ -263,10 +267,10 @@ All three queries returning rows confirms the full PIE → UltAi → FineGuard �
 |---|---|
 | 1. Create Neon project | DONE |
 | 2. Configure DATABASE_URL locally | DONE |
-| 3. Run db:bootstrap | **PENDING** — blocked on local MacBook (TCP 5432 unreachable from remote container) |
-| 4. Verify schema | **PENDING** — depends on Step 3 |
+| 3. Run db:bootstrap | **PENDING** — run from MacBook |
+| 4. Verify schema | **PENDING** — after Step 3 |
 | 5. Create Vercel project | **PENDING** |
-| 6. Configure environment variables | **PENDING** |
+| 6. Configure environment variables | **PENDING** — now includes `CRON_SECRET` |
 | 7. Deploy | **PENDING** |
 | 8. Verify health endpoints | **PENDING** |
 | 9. Execute end-to-end workflow | **PENDING** |
