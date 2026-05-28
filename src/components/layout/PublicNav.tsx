@@ -2,7 +2,9 @@ import {
   BookOpen,
   CalendarDays,
   ClipboardCheck,
+  CreditCard,
   Home,
+  Info,
   LockKeyhole,
   ShieldCheck,
   Sparkles,
@@ -16,6 +18,8 @@ const PUBLIC_LINKS = [
   { href: '/vaultline', label: 'VaultLine', icon: LockKeyhole },
   { href: '/compliance-bundle', label: 'Compliance', icon: ClipboardCheck },
   { href: '/book-demo', label: 'Demo', icon: CalendarDays },
+  { href: '/pricing', label: 'Pricing', icon: CreditCard },
+  { href: '/about', label: 'About', icon: Info },
 ];
 
 type PublicNavProps = {
@@ -48,7 +52,7 @@ export default function PublicNav({ variant = 'dark' }: PublicNavProps) {
           <span className="text-sm font-bold truncate">ClerkOS</span>
         </Link>
 
-        <nav className="flex flex-wrap items-center gap-1.5">
+        <nav aria-label="Public navigation" className="flex flex-wrap items-center gap-1.5">
           {PUBLIC_LINKS.map(({ href, label, icon: Icon }) => {
             const active = href === '/' ? location === '/' : location.startsWith(href);
             return (
