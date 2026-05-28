@@ -6,6 +6,7 @@ import {
   Home,
   Info,
   LockKeyhole,
+  Mic,
   Moon,
   ShieldCheck,
   Sparkles,
@@ -21,6 +22,7 @@ const PUBLIC_LINKS = [
   { href: '/vaultline', label: 'VaultLine', icon: LockKeyhole },
   { href: '/compliance-bundle', label: 'Compliance', icon: ClipboardCheck },
   { href: '/book-demo', label: 'Demo', icon: CalendarDays },
+  { href: '/voice-agent', label: 'Voice', icon: Mic },
   { href: '/pricing', label: 'Pricing', icon: CreditCard },
   { href: '/about', label: 'About', icon: Info },
 ];

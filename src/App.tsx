@@ -21,6 +21,7 @@ import Queue from './pages/Queue';
 import Team from './pages/Team';
 import UltAi from './pages/UltAi';
 import VaultLine from './pages/VaultLine';
+import VoiceAgent from './pages/VoiceAgent';
 
 function Router() {
   return (
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/hearings" component={Hearings} />
       <Route path="/documents" component={Documents} />
       <Route path="/queue" component={Queue} />
+      <Route path="/voice-agent" component={VoiceAgent} />
       <Route path="/diary" component={Diary} />
       <Route path="/bundles" component={Bundles} />
       <Route path="/team" component={Team} />

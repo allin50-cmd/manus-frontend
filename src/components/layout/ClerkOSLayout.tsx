@@ -24,6 +24,7 @@ import {
   Info,
   Users,
   Settings,
+  Mic,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
@@ -37,6 +38,7 @@ const NAV_SECTIONS = [
       { path: '/hearings', label: 'Hearings', icon: Gavel },
       { path: '/documents', label: 'Documents', icon: FileText },
       { path: '/queue', label: 'Queue', icon: ListTodo },
+      { path: '/voice-agent', label: 'Voice Agent', icon: Mic },
       { path: '/diary', label: 'Diary', icon: CalendarDays },
       { path: '/bundles', label: 'Bundles', icon: Layers },
     ],

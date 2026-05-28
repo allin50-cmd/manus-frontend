@@ -15,6 +15,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   MessageSquare,
+  Mic,
 } from 'lucide-react';
 import { Link } from 'wouter';
 
@@ -112,6 +113,12 @@ const LAUNCH_LINKS = [
     description: 'Capture sales interest and route it to admin leads.',
     href: '/book-demo',
     icon: MessageSquare,
+  },
+  {
+    label: 'Voice Agent',
+    description: 'Process call transcripts through intake policy controls.',
+    href: '/voice-agent',
+    icon: Mic,
   },
 ];
 
