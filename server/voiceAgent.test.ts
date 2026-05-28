@@ -36,7 +36,14 @@ describe('voice agent bridge logic', () => {
       transcript: 'We need AI automation and website design.',
     };
 
-    expect(processVoiceTranscript(input).audit_event_id).toBe(processVoiceTranscript(input).audit_event_id);
+    const first = processVoiceTranscript(input);
+    const second = processVoiceTranscript(input);
+
+    expect(first.audit_event_id).toBe(second.audit_event_id);
+    expect(first.events.map((event) => event.event_id)).toEqual(second.events.map((event) => event.event_id));
+    expect(first.events[0].event_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
   });
 
   it('denies irreversible actions', () => {
@@ -50,4 +57,3 @@ describe('voice agent bridge logic', () => {
     expect(classifyVoiceIntent('Hi')).toBe('unknown');
   });
 });
-

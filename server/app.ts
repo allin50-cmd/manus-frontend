@@ -16,13 +16,20 @@ import {
   monitoredCompanies,
 } from './db/schema.js';
 import { companiesHouseService } from './services/companiesHouse.js';
-import { getUserByOpenId, getTenantBySlug, setTenantContext, writeAuditEvent } from './trpc/db.js';
+import { auditEvents } from './drizzle/schema.js';
+import {
+  getUserByOpenId,
+  getTenantBySlug,
+  setTenantContext,
+  writeAuditEvent,
+  getDb as getClerkDb,
+} from './trpc/db.js';
 import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth.js';
 import { appRouter } from './trpc/routers.js';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { log, generateCorrelationId } from './lib/logger.js';
 import { withRetry } from './lib/retry.js';
-import { processVoiceTranscript, VoiceTranscriptInput } from './voiceAgent.js';
+import { processVoiceTranscript, VoiceAuditEvent, VoiceTranscriptInput } from './voiceAgent.js';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -94,6 +101,26 @@ function createCorsOptions(): CorsOptions {
       return callback(null, false);
     },
   };
+}
+
+async function voiceAuditEventExists(event: VoiceAuditEvent): Promise<boolean> {
+  const clerkDb = await getClerkDb();
+  if (!clerkDb) return false;
+
+  const existing = await clerkDb
+    .select({ id: auditEvents.id })
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.tenantId, SYSTEM_TENANT_ID),
+        eq(auditEvents.entityType, 'voice_agent_session'),
+        eq(auditEvents.entityUuid, event.event_id),
+        eq(auditEvents.action, event.event_type),
+      ),
+    )
+    .limit(1);
+
+  return existing.length > 0;
 }
 
 export function createApp(): express.Express {
@@ -299,6 +326,8 @@ export function createApp(): express.Express {
 
     for (const event of result.events) {
       try {
+        if (await voiceAuditEventExists(event)) continue;
+
         await writeAuditEvent({
           tenantId: SYSTEM_TENANT_ID,
           entityType: 'voice_agent_session',

@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 
 export type VoiceIntent =
   | 'construction_lead'
@@ -117,6 +117,32 @@ function containsAny(text: string, terms: Iterable<string>) {
   return false;
 }
 
+function deterministicUuid(seed: string): string {
+  const chars = createHash('sha256').update(seed).digest('hex').slice(0, 32).split('');
+  chars[12] = '5';
+  chars[16] = ((parseInt(chars[16], 16) & 0x3) | 0x8).toString(16);
+
+  return [
+    chars.slice(0, 8).join(''),
+    chars.slice(8, 12).join(''),
+    chars.slice(12, 16).join(''),
+    chars.slice(16, 20).join(''),
+    chars.slice(20, 32).join(''),
+  ].join('-');
+}
+
+function lifecycleEvent(
+  auditEventId: string,
+  eventType: VoiceAuditEvent['event_type'],
+  payload: Record<string, unknown>,
+): VoiceAuditEvent {
+  return {
+    event_id: deterministicUuid(`${auditEventId}:${eventType}`),
+    event_type: eventType,
+    payload,
+  };
+}
+
 export function classifyVoiceIntent(transcript: string): VoiceIntent {
   const text = transcript.trim().toLowerCase();
   if (!text) return 'unknown';
@@ -196,50 +222,28 @@ export function processVoiceTranscript(input: VoiceTranscriptInput): VoiceTransc
     .slice(0, 32);
 
   const events: VoiceAuditEvent[] = [
-    {
-      event_id: randomUUID(),
-      event_type: 'session_started',
-      payload: { caller: input.caller },
-    },
-    {
-      event_id: randomUUID(),
-      event_type: 'transcript_received',
-      payload: { transcript: input.transcript },
-    },
-    {
-      event_id: randomUUID(),
-      event_type: 'intent_classified',
-      payload: { intent },
-    },
-    {
-      event_id: randomUUID(),
-      event_type: 'policy_check_required',
-      payload: {
-        intent,
-        risk_level: policy.risk_level,
-        policy_decision: policy.policy_decision,
-      },
-    },
+    lifecycleEvent(audit_event_id, 'session_started', { caller: input.caller }),
+    lifecycleEvent(audit_event_id, 'transcript_received', { transcript: input.transcript }),
+    lifecycleEvent(audit_event_id, 'intent_classified', { intent }),
+    lifecycleEvent(audit_event_id, 'policy_check_required', {
+      intent,
+      risk_level: policy.risk_level,
+      policy_decision: policy.policy_decision,
+    }),
   ];
 
   if (policy.policy_decision === 'ESCALATE') {
-    events.push({
-      event_id: randomUUID(),
-      event_type: 'human_escalation_required',
-      payload: { intent, reason: policy.next_action },
-    });
+    events.push(lifecycleEvent(audit_event_id, 'human_escalation_required', { intent, reason: policy.next_action }));
   }
 
-  events.push({
-    event_id: randomUUID(),
-    event_type: 'session_completed',
-    payload: {
+  events.push(
+    lifecycleEvent(audit_event_id, 'session_completed', {
       intent,
       risk_level: policy.risk_level,
       policy_decision: policy.policy_decision,
       next_action: policy.next_action,
-    },
-  });
+    }),
+  );
 
   return {
     intent,
@@ -250,4 +254,3 @@ export function processVoiceTranscript(input: VoiceTranscriptInput): VoiceTransc
     events,
   };
 }
-
