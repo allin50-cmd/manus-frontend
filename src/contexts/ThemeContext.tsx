@@ -8,7 +8,15 @@ type ThemeContextType = {
   setTheme: (theme: Theme) => void;
 };
 
+const THEME_STORAGE_KEY = 'clerkos-theme';
+const THEME_DEFAULT_VERSION_KEY = 'clerkos-theme-default-version';
+const LIGHT_DEFAULT_VERSION = '2026-05-light-default';
+
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+function isTheme(value: string | null): value is Theme {
+  return value === 'light' || value === 'dark';
+}
 
 export function ThemeProvider({
   children,
@@ -20,15 +28,25 @@ export function ThemeProvider({
   switchable?: boolean;
 }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = typeof window !== 'undefined' ? localStorage.getItem('clerkos-theme') : null;
-    return (stored as Theme | null) ?? defaultTheme;
+    if (typeof window === 'undefined') return defaultTheme;
+
+    const storedDefaultVersion = localStorage.getItem(THEME_DEFAULT_VERSION_KEY);
+    if (storedDefaultVersion !== LIGHT_DEFAULT_VERSION) {
+      localStorage.setItem(THEME_DEFAULT_VERSION_KEY, LIGHT_DEFAULT_VERSION);
+      localStorage.setItem(THEME_STORAGE_KEY, defaultTheme);
+      return defaultTheme;
+    }
+
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return isTheme(stored) ? stored : defaultTheme;
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
-    localStorage.setItem('clerkos-theme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    localStorage.setItem(THEME_DEFAULT_VERSION_KEY, LIGHT_DEFAULT_VERSION);
   }, [theme]);
 
   const setTheme = (t: Theme) => {
