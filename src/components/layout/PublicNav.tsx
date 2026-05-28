@@ -1,0 +1,78 @@
+import {
+  BookOpen,
+  CalendarDays,
+  ClipboardCheck,
+  Home,
+  LockKeyhole,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
+import { Link, useLocation } from 'wouter';
+
+const PUBLIC_LINKS = [
+  { href: '/', label: 'App', icon: Home },
+  { href: '/fineguard', label: 'FineGuard', icon: ShieldCheck },
+  { href: '/ultai', label: 'UltAi', icon: Sparkles },
+  { href: '/vaultline', label: 'VaultLine', icon: LockKeyhole },
+  { href: '/compliance-bundle', label: 'Compliance', icon: ClipboardCheck },
+  { href: '/book-demo', label: 'Demo', icon: CalendarDays },
+];
+
+type PublicNavProps = {
+  variant?: 'dark' | 'light';
+};
+
+export default function PublicNav({ variant = 'dark' }: PublicNavProps) {
+  const [location] = useLocation();
+  const isLight = variant === 'light';
+
+  return (
+    <header
+      className={[
+        'px-4 py-4',
+        isLight
+          ? 'bg-white/80 border-b border-slate-200 text-slate-900'
+          : 'bg-slate-950/60 border-b border-white/10 text-white',
+      ].join(' ')}
+    >
+      <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/" className="flex items-center gap-2 min-w-0">
+          <span
+            className={[
+              'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+              isLight ? 'bg-blue-600 text-white' : 'bg-white/10 text-white',
+            ].join(' ')}
+          >
+            <BookOpen className="w-4 h-4" />
+          </span>
+          <span className="text-sm font-bold truncate">ClerkOS</span>
+        </Link>
+
+        <nav className="flex flex-wrap items-center gap-1.5">
+          {PUBLIC_LINKS.map(({ href, label, icon: Icon }) => {
+            const active = href === '/' ? location === '/' : location.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={[
+                  'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
+                  active
+                    ? isLight
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'bg-white/15 text-white'
+                    : isLight
+                      ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white',
+                ].join(' ')}
+              >
+                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+}

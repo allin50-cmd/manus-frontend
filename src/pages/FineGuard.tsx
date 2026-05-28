@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import PublicNav from '@/components/layout/PublicNav';
 import { Shield, ArrowRight } from 'lucide-react';
 
 export default function FineGuard() {
@@ -7,6 +8,7 @@ export default function FineGuard() {
 
   return (
     <div className="min-h-screen bg-[#F8F8F8]">
+      <PublicNav variant="light" />
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">

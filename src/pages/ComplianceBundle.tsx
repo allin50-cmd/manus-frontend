@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import PublicNav from '@/components/layout/PublicNav';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -212,8 +213,9 @@ export default function ComplianceBundle() {
 
   if (success && companyData && complianceData) {
     return (
-      <div className="min-h-screen bg-[#F8F8F8] py-8 px-4">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="min-h-screen bg-[#F8F8F8]">
+        <PublicNav variant="light" />
+        <div className="max-w-4xl mx-auto space-y-6 py-8 px-4">
           {/* Header */}
           <Card className="bg-white border-[#1A1A1A]/10">
             <CardHeader>
@@ -440,8 +442,9 @@ export default function ComplianceBundle() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] py-12 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-[#F8F8F8]">
+      <PublicNav variant="light" />
+      <div className="max-w-2xl mx-auto py-12 px-4">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-[#1A1A1A] mb-4">Compliance Bundle Request</h1>
           <p className="text-gray-600 text-lg">

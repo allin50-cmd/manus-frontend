@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import PublicNav from '@/components/layout/PublicNav';
 import { FileText, ArrowRight } from 'lucide-react';
 
 export default function UltAi() {
@@ -7,6 +8,7 @@ export default function UltAi() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10]">
+      <PublicNav />
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
