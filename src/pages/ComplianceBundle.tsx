@@ -213,8 +213,8 @@ export default function ComplianceBundle() {
 
   if (success && companyData && complianceData) {
     return (
-      <div className="min-h-screen bg-[#F8F8F8]">
-        <PublicNav variant="light" />
+      <div className="min-h-screen theme-light-default bg-[#F8F8F8]">
+        <PublicNav />
         <div className="max-w-4xl mx-auto space-y-6 py-8 px-4">
           {/* Header */}
           <Card className="bg-white border-[#1A1A1A]/10">
@@ -442,8 +442,8 @@ export default function ComplianceBundle() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8]">
-      <PublicNav variant="light" />
+    <div className="min-h-screen theme-light-default bg-[#F8F8F8]">
+      <PublicNav />
       <div className="max-w-2xl mx-auto py-12 px-4">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-[#1A1A1A] mb-4">Compliance Bundle Request</h1>

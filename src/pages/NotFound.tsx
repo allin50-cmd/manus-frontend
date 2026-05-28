@@ -6,7 +6,7 @@ export default function NotFound() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] flex items-center justify-center px-4">
+    <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] flex items-center justify-center px-4">
       <div className="text-center">
         <SearchX className="w-24 h-24 text-gray-600 mx-auto mb-6" />
         <h1 className="text-6xl font-bold text-white mb-4">404</h1>

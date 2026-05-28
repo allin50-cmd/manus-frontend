@@ -40,7 +40,7 @@ export default function Pricing() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
+    <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
       <PublicNav />
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">

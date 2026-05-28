@@ -72,7 +72,7 @@ export default function BookDemo() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
+      <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
         <PublicNav />
         <div className="min-h-[calc(100vh-73px)] flex items-center justify-center p-4">
           <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
@@ -117,7 +117,7 @@ export default function BookDemo() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
+    <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
       <PublicNav />
       <div className="max-w-2xl mx-auto py-12 px-4">
         <div className="mb-8 text-center">

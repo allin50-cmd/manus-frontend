@@ -31,8 +31,8 @@ export default function FineGuard() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8]">
-      <PublicNav variant="light" />
+    <div className="min-h-screen theme-light-default bg-[#F8F8F8]">
+      <PublicNav />
       <div className="max-w-7xl mx-auto px-4 py-16 space-y-14">
         <section className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
           <div>

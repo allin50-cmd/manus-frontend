@@ -25,9 +25,12 @@ import {
   Clock,
   ExternalLink,
   GitCommit,
-  Calendar
+  Calendar,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const ADMIN_KEY_STORAGE_KEY = 'vaultline-admin-api-key';
 
@@ -94,6 +97,7 @@ interface Deployment {
 }
 
 export default function Admin() {
+  const { theme, toggleTheme } = useTheme();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [intakeForms, setIntakeForms] = useState<IntakeForm[]>([]);
   const [complianceBundles, setComplianceBundles] = useState<ComplianceBundle[]>([]);
@@ -241,15 +245,33 @@ export default function Admin() {
            (order[b.environment.toLowerCase() as keyof typeof order] || 3);
   });
 
+  const themeToggle = (
+    <Button
+      type="button"
+      onClick={toggleTheme}
+      variant="outline"
+      aria-pressed={theme === 'dark'}
+      aria-label={theme === 'light' ? 'Turn dark mode on' : 'Turn dark mode off'}
+      className="bg-white dark:bg-[#1A1D28] border-slate-200 dark:border-[#2A2D3A] hover:bg-slate-50 dark:hover:bg-[#252830] text-slate-700 dark:text-white"
+    >
+      {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+    </Button>
+  );
+
   if (!adminKey) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4 flex items-center justify-center">
+      <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4 flex items-center justify-center">
         <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
           <CardHeader>
-            <CardTitle className="text-white">Admin Access</CardTitle>
-            <CardDescription className="text-gray-400">
-              Enter the deployment admin key to view operational data.
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-white">Admin Access</CardTitle>
+                <CardDescription className="text-gray-400 mt-1">
+                  Enter the deployment admin key to view operational data.
+                </CardDescription>
+              </div>
+              {themeToggle}
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAdminSubmit} className="space-y-4">
@@ -278,7 +300,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4">
+    <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -303,6 +325,7 @@ export default function Admin() {
               >
                 Lock
               </Button>
+              {themeToggle}
             </div>
           </div>
         </div>

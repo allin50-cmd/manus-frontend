@@ -6,10 +6,13 @@ import {
   Home,
   Info,
   LockKeyhole,
+  Moon,
   ShieldCheck,
   Sparkles,
+  Sun,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const PUBLIC_LINKS = [
   { href: '/', label: 'App', icon: Home },
@@ -23,12 +26,13 @@ const PUBLIC_LINKS = [
 ];
 
 type PublicNavProps = {
-  variant?: 'dark' | 'light';
+  variant?: 'auto' | 'dark' | 'light';
 };
 
-export default function PublicNav({ variant = 'dark' }: PublicNavProps) {
+export default function PublicNav({ variant = 'auto' }: PublicNavProps) {
   const [location] = useLocation();
-  const isLight = variant === 'light';
+  const { theme, toggleTheme } = useTheme();
+  const isLight = variant === 'auto' ? theme === 'light' : variant === 'light';
 
   return (
     <header
@@ -52,30 +56,47 @@ export default function PublicNav({ variant = 'dark' }: PublicNavProps) {
           <span className="text-sm font-bold truncate">ClerkOS</span>
         </Link>
 
-        <nav aria-label="Public navigation" className="flex flex-wrap items-center gap-1.5">
-          {PUBLIC_LINKS.map(({ href, label, icon: Icon }) => {
-            const active = href === '/' ? location === '/' : location.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={[
-                  'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
-                  active
-                    ? isLight
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'bg-white/15 text-white'
-                    : isLight
-                      ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                      : 'text-slate-300 hover:bg-white/10 hover:text-white',
-                ].join(' ')}
-              >
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex flex-wrap items-center gap-2">
+          <nav aria-label="Public navigation" className="flex flex-wrap items-center gap-1.5">
+            {PUBLIC_LINKS.map(({ href, label, icon: Icon }) => {
+              const active = href === '/' ? location === '/' : location.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={[
+                    'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
+                    active
+                      ? isLight
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'bg-white/15 text-white'
+                      : isLight
+                        ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                        : 'text-slate-300 hover:bg-white/10 hover:text-white',
+                  ].join(' ')}
+                >
+                  <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-pressed={theme === 'dark'}
+            aria-label={theme === 'light' ? 'Turn dark mode on' : 'Turn dark mode off'}
+            className={[
+              'inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors',
+              isLight
+                ? 'border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                : 'border-white/10 text-slate-300 hover:bg-white/10 hover:text-white',
+            ].join(' ')}
+          >
+            {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
     </header>
   );
