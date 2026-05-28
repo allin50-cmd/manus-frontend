@@ -1,5 +1,5 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import { timingSafeEqual } from 'crypto';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
@@ -28,6 +28,7 @@ import { withRetry } from './lib/retry.js';
 const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 const isVercel = Boolean(process.env.VERCEL);
+const LOCAL_ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:5173'];
 
 function getSingleHeader(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -55,6 +56,42 @@ function requireSecretHeader(headerName: string, expected: string | undefined, u
     }
 
     next();
+  };
+}
+
+function addOrigin(origins: Set<string>, value: string | undefined, assumeHttps = false) {
+  if (!value) return;
+  const normalized = value.startsWith('http://') || value.startsWith('https://') ? value : `https://${value}`;
+
+  try {
+    const url = new URL(normalized);
+    origins.add(url.origin);
+  } catch {
+    if (assumeHttps) origins.add(`https://${value}`);
+  }
+}
+
+function getAllowedOrigins(): Set<string> {
+  const origins = new Set<string>(LOCAL_ALLOWED_ORIGINS);
+  addOrigin(origins, process.env.APP_URL);
+  addOrigin(origins, process.env.VERCEL_URL, true);
+  return origins;
+}
+
+function createCorsOptions(): CorsOptions {
+  const allowedOrigins = getAllowedOrigins();
+
+  return {
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.has(origin)) return callback(null, true);
+
+      if (!isVercel && origin.startsWith('http://localhost:')) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
   };
 }
 
@@ -197,7 +234,7 @@ export function createApp(): express.Express {
   );
 
   // General middleware
-  app.use(cors());
+  app.use(cors(createCorsOptions()));
   app.use(express.json({ limit: '100kb' }));
   app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
