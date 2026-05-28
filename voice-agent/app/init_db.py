@@ -2,10 +2,7 @@ import os
 
 import psycopg
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://voice_agent:change-me-local@postgres:5432/voice_agent",
-)
+DEFAULT_DATABASE_URL = "postgresql://voice_agent:change-me-local@postgres:5432/voice_agent"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS voice_agent_audit_events (
@@ -30,9 +27,17 @@ ON voice_agent_audit_events(created_at DESC);
 """
 
 
-def main():
-    with psycopg.connect(DATABASE_URL) as conn:
+def get_database_url() -> str:
+    return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+
+
+def initialize_database(database_url: str | None = None) -> None:
+    with psycopg.connect(database_url or get_database_url()) as conn:
         conn.execute(SCHEMA)
+
+
+def main() -> None:
+    initialize_database()
     print("database initialized")
 
 

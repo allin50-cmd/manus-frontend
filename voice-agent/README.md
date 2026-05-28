@@ -17,6 +17,13 @@ cp .env.example .env
 docker compose up --build
 ```
 
+The service creates the audit table on startup when `DATABASE_URL` is set. To
+initialize it explicitly from inside the container:
+
+```bash
+docker compose exec voice-agent python -m app.init_db
+```
+
 The React control surface is available in the main app at `/voice-agent`. Set
 `VITE_VOICE_AGENT_URL` in the frontend environment when the service is not
 running at `http://localhost:8080`.
