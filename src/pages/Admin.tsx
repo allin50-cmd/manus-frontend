@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -26,6 +28,13 @@ import {
   Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const ADMIN_KEY_STORAGE_KEY = 'vaultline-admin-api-key';
+
+function readStoredAdminKey() {
+  if (typeof window === 'undefined') return '';
+  return window.sessionStorage.getItem(ADMIN_KEY_STORAGE_KEY) ?? '';
+}
 
 interface Lead {
   id: string;
@@ -91,21 +100,47 @@ export default function Admin() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adminKey, setAdminKey] = useState(readStoredAdminKey);
+  const [adminKeyInput, setAdminKeyInput] = useState(readStoredAdminKey);
+  const [authError, setAuthError] = useState('');
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
+  const clearAdminSession = (message?: string) => {
+    window.sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+    setAdminKey('');
+    setAdminKeyInput('');
+    if (message) setAuthError(message);
+  };
 
   const fetchAllData = async () => {
+    if (!adminKey) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    setAuthError('');
+
     try {
+      const adminHeaders = { 'X-ADMIN-KEY': adminKey };
       const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes] = await Promise.all([
-        fetch('/api/admin/leads'),
-        fetch('/api/admin/intake-forms'),
-        fetch('/api/admin/compliance-bundles'),
-        fetch('/api/admin/contacts'),
+        fetch('/api/admin/leads', { headers: adminHeaders }),
+        fetch('/api/admin/intake-forms', { headers: adminHeaders }),
+        fetch('/api/admin/compliance-bundles', { headers: adminHeaders }),
+        fetch('/api/admin/contacts', { headers: adminHeaders }),
         fetch('/api/deployments/status'),
       ]);
+
+      const protectedResponses = [leadsRes, intakeRes, bundlesRes, contactsRes];
+      if (protectedResponses.some((response) => response.status === 401)) {
+        clearAdminSession('Admin key was rejected.');
+        toast.error('Admin key was rejected');
+        return;
+      }
+      if (protectedResponses.some((response) => response.status === 503)) {
+        setAuthError('Admin access is not configured on the server.');
+        toast.error('Admin access is not configured');
+        return;
+      }
 
       if (leadsRes.ok) setLeads(await leadsRes.json());
       if (intakeRes.ok) setIntakeForms(await intakeRes.json());
@@ -121,6 +156,24 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, [adminKey]);
+
+  const handleAdminSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    const trimmedKey = adminKeyInput.trim();
+
+    if (!trimmedKey) {
+      setAuthError('Enter the admin key.');
+      return;
+    }
+
+    window.sessionStorage.setItem(ADMIN_KEY_STORAGE_KEY, trimmedKey);
+    setAdminKey(trimmedKey);
+    setAuthError('');
   };
 
   const formatDate = (dateString: string) => {
@@ -188,6 +241,42 @@ export default function Admin() {
            (order[b.environment.toLowerCase() as keyof typeof order] || 3);
   });
 
+  if (!adminKey) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
+          <CardHeader>
+            <CardTitle className="text-white">Admin Access</CardTitle>
+            <CardDescription className="text-gray-400">
+              Enter the deployment admin key to view operational data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAdminSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="admin-key" className="text-gray-300">
+                  Admin API Key
+                </Label>
+                <Input
+                  id="admin-key"
+                  type="password"
+                  value={adminKeyInput}
+                  onChange={(event) => setAdminKeyInput(event.target.value)}
+                  className="bg-[#1A1D28] border-[#2A2D3A] text-white focus:border-[#5A4BFF]"
+                  autoComplete="off"
+                />
+              </div>
+              {authError && <p className="text-sm text-red-400">{authError}</p>}
+              <Button type="submit" className="w-full bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white">
+                Unlock
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -198,14 +287,23 @@ export default function Admin() {
               <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
               <p className="text-gray-400">VaultLine Brand Suite Management</p>
             </div>
-            <Button
-              onClick={fetchAllData}
-              disabled={loading}
-              className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => fetchAllData()}
+                disabled={loading}
+                className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                onClick={() => clearAdminSession()}
+                variant="outline"
+                className="bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
+              >
+                Lock
+              </Button>
+            </div>
           </div>
         </div>
 

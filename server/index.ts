@@ -23,7 +23,7 @@ app.listen(PORT, () => {
   console.log('  GET    /api/admin/compliance-bundles');
   console.log('  POST   /api/contact');
   console.log('  GET    /api/admin/contacts');
-  console.log('  PATCH  /api/contacts/:id');
+  console.log('  PATCH  /api/admin/contacts/:id');
   console.log('  GET    /api/health');
   console.log('  GET    /health');
   console.log('  GET    /api/internal/run-compliance-check');

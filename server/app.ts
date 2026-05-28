@@ -1,5 +1,6 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
 import cors from 'cors';
+import { timingSafeEqual } from 'crypto';
 import dotenv from 'dotenv';
 import express, { NextFunction, Request, Response } from 'express';
 import path from 'path';
@@ -28,6 +29,35 @@ const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 const isVercel = Boolean(process.env.VERCEL);
 
+function getSingleHeader(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function secretMatches(candidate: string | undefined, expected: string | undefined): boolean {
+  if (!candidate || !expected) return false;
+
+  const candidateBuffer = Buffer.from(candidate);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (candidateBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(candidateBuffer, expectedBuffer);
+}
+
+function requireSecretHeader(headerName: string, expected: string | undefined, unconfiguredMessage: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!expected) {
+      return res.status(503).json({ error: unconfiguredMessage });
+    }
+
+    const supplied = getSingleHeader(req.headers[headerName.toLowerCase()]);
+    if (!secretMatches(supplied, expected)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    next();
+  };
+}
+
 export function createApp(): express.Express {
   dotenv.config();
 
@@ -36,6 +66,12 @@ export function createApp(): express.Express {
 
   const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
   const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+  const requireAdminKey = requireSecretHeader('x-admin-key', ADMIN_API_KEY, 'Admin access not configured');
+  const requireDeployRecordToken = requireSecretHeader(
+    'x-deploy-token',
+    DEPLOY_RECORD_TOKEN,
+    'Deployment recording not configured',
+  );
 
   // Stripe client – only initialised when key is present
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -172,16 +208,7 @@ export function createApp(): express.Express {
   });
 
   // Admin auth middleware — requires X-ADMIN-KEY header matching ADMIN_API_KEY env var
-  app.use('/api/admin', (req: Request, res: Response, next: NextFunction) => {
-    if (!ADMIN_API_KEY) {
-      return res.status(503).json({ error: 'Admin access not configured' });
-    }
-    const key = req.headers['x-admin-key'];
-    if (!key || key !== ADMIN_API_KEY) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    next();
-  });
+  app.use('/api/admin', requireAdminKey);
 
   // ==========================================================================
   // HEALTH CHECK ENDPOINTS
@@ -269,13 +296,8 @@ export function createApp(): express.Express {
   // DEPLOYMENT TRACKING API ENDPOINTS
   // ==========================================================================
 
-  app.post('/api/deployments/record', async (req: Request, res: Response) => {
+  app.post('/api/deployments/record', requireDeployRecordToken, async (req: Request, res: Response) => {
     try {
-      const token = req.headers['x-deploy-token'];
-      if (!token || token !== DEPLOY_RECORD_TOKEN) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
       const { environment, status, commit, workflowRun } = req.body;
 
       if (!environment || !status || !commit || !workflowRun) {
@@ -691,7 +713,7 @@ export function createApp(): express.Express {
     }
   });
 
-  app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
+  const updateContactStatus = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -715,18 +737,16 @@ export function createApp(): express.Express {
       console.error('Error updating contact:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
-  });
+  };
+
+  app.patch('/api/admin/contacts/:id', updateContactStatus);
+  app.patch('/api/contacts/:id', requireAdminKey, updateContactStatus);
 
   // ==========================================================================
   // FINEGUARD ALERT SCHEDULER
   // ==========================================================================
 
-  app.get('/api/internal/run-compliance-check', async (req: Request, res: Response) => {
-    const key = req.headers['x-admin-key'];
-    if (!ADMIN_API_KEY || key !== ADMIN_API_KEY) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+  app.get('/api/internal/run-compliance-check', requireAdminKey, async (_req: Request, res: Response) => {
     if (!companiesHouseService) {
       return res.status(503).json({ error: 'Companies House API not configured' });
     }
