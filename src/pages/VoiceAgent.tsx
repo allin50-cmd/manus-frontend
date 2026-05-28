@@ -78,18 +78,19 @@ function makeSessionId() {
   return `voice-${Date.now().toString(36)}`;
 }
 
+function getDefaultVoiceAgentUrl() {
+  const configured = import.meta.env.VITE_VOICE_AGENT_URL;
+  if (typeof window === 'undefined') return configured || 'http://localhost:8080';
+
+  const stored = localStorage.getItem(VOICE_AGENT_URL_STORAGE_KEY);
+  if (stored) return stored;
+  if (configured) return configured;
+
+  return window.location.protocol === 'https:' ? '' : 'http://localhost:8080';
+}
+
 export default function VoiceAgent() {
-  const defaultUrl = useMemo(
-    () =>
-      normalizeBaseUrl(
-        typeof window !== 'undefined'
-          ? localStorage.getItem(VOICE_AGENT_URL_STORAGE_KEY) ||
-              import.meta.env.VITE_VOICE_AGENT_URL ||
-              'http://localhost:8080'
-          : import.meta.env.VITE_VOICE_AGENT_URL || 'http://localhost:8080'
-      ),
-    []
-  );
+  const defaultUrl = useMemo(() => normalizeBaseUrl(getDefaultVoiceAgentUrl()), []);
   const [baseUrl, setBaseUrl] = useState(defaultUrl);
   const [sessionId, setSessionId] = useState(makeSessionId);
   const [caller, setCaller] = useState('+442000000000');
@@ -233,8 +234,13 @@ export default function VoiceAgent() {
                       id="voice-url"
                       value={baseUrl}
                       onChange={(event) => updateBaseUrl(event.target.value)}
-                      placeholder="http://localhost:8080"
+                      placeholder="https://voice-agent.example.com"
                     />
+                    {!liveUrl && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Set an HTTPS voice-agent URL for deployed environments.
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="session-id">Session ID</Label>
