@@ -1,6 +1,21 @@
 import ClerkOSLayout from '@/components/layout/ClerkOSLayout';
 import { trpc } from '@/lib/trpc';
-import { Scale, Gavel, ListTodo, TrendingUp, AlertCircle, XCircle, CalendarCheck, ArrowRight } from 'lucide-react';
+import {
+  Scale,
+  Gavel,
+  ListTodo,
+  TrendingUp,
+  AlertCircle,
+  XCircle,
+  CalendarCheck,
+  ArrowRight,
+  ShieldCheck,
+  Sparkles,
+  LockKeyhole,
+  ClipboardList,
+  ClipboardCheck,
+  MessageSquare,
+} from 'lucide-react';
 import { Link } from 'wouter';
 
 function Skeleton({ className = '' }: { className?: string }) {
@@ -60,6 +75,45 @@ const STATUS_BADGE: Record<string, string> = {
   scheduled: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   completed: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
 };
+
+const LAUNCH_LINKS = [
+  {
+    label: 'FineGuard',
+    description: 'Monitoring and alerting for filings and enforcement risk.',
+    href: '/fineguard',
+    icon: ShieldCheck,
+  },
+  {
+    label: 'UltAi',
+    description: 'Intake automation for new matters and company checks.',
+    href: '/ultai',
+    icon: Sparkles,
+  },
+  {
+    label: 'VaultLine',
+    description: 'Secure document vault and matter evidence workspace.',
+    href: '/vaultline',
+    icon: LockKeyhole,
+  },
+  {
+    label: 'Intake Sheet',
+    description: 'Submit a structured intake request for review.',
+    href: '/intake-sheet',
+    icon: ClipboardList,
+  },
+  {
+    label: 'Compliance Bundle',
+    description: 'Build the handoff pack for monitored companies.',
+    href: '/compliance-bundle',
+    icon: ClipboardCheck,
+  },
+  {
+    label: 'Book Demo',
+    description: 'Capture sales interest and route it to admin leads.',
+    href: '/book-demo',
+    icon: MessageSquare,
+  },
+];
 
 export default function Dashboard() {
   const { data: stats, isLoading, error } = trpc.dashboard.stats.useQuery(undefined, {
@@ -219,6 +273,48 @@ export default function Dashboard() {
               {label}
             </Link>
           ))}
+        </div>
+
+        <div className="mt-8">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Platform Launchpad
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Product pages and public workflows are available from here.
+              </p>
+            </div>
+            <Link
+              href="/pricing"
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 flex-shrink-0"
+            >
+              Pricing <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {LAUNCH_LINKS.map(({ label, description, href, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-blue-300 dark:hover:border-blue-800 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 group-hover:text-blue-700 dark:group-hover:bg-blue-900/30 dark:group-hover:text-blue-300 transition-colors flex-shrink-0">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {label}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      {description}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </ClerkOSLayout>

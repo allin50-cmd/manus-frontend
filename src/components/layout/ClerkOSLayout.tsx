@@ -14,18 +14,58 @@ import {
   X,
   User,
   Building2,
+  ShieldCheck,
+  Sparkles,
+  LockKeyhole,
+  ClipboardList,
+  ClipboardCheck,
+  MessageSquare,
+  CreditCard,
+  Info,
+  Users,
+  Settings,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 
-const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/cases', label: 'Cases', icon: Scale },
-  { path: '/hearings', label: 'Hearings', icon: Gavel },
-  { path: '/documents', label: 'Documents', icon: FileText },
-  { path: '/queue', label: 'Queue', icon: ListTodo },
-  { path: '/diary', label: 'Diary', icon: CalendarDays },
-  { path: '/bundles', label: 'Bundles', icon: Layers },
+const NAV_SECTIONS = [
+  {
+    label: 'Court Ops',
+    items: [
+      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/cases', label: 'Cases', icon: Scale },
+      { path: '/hearings', label: 'Hearings', icon: Gavel },
+      { path: '/documents', label: 'Documents', icon: FileText },
+      { path: '/queue', label: 'Queue', icon: ListTodo },
+      { path: '/diary', label: 'Diary', icon: CalendarDays },
+      { path: '/bundles', label: 'Bundles', icon: Layers },
+    ],
+  },
+  {
+    label: 'Products',
+    items: [
+      { path: '/fineguard', label: 'FineGuard', icon: ShieldCheck },
+      { path: '/ultai', label: 'UltAi', icon: Sparkles },
+      { path: '/vaultline', label: 'VaultLine', icon: LockKeyhole },
+    ],
+  },
+  {
+    label: 'Workflows',
+    items: [
+      { path: '/intake-sheet', label: 'Intake Sheet', icon: ClipboardList },
+      { path: '/compliance-bundle', label: 'Compliance Bundle', icon: ClipboardCheck },
+      { path: '/book-demo', label: 'Book Demo', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'More',
+    items: [
+      { path: '/pricing', label: 'Pricing', icon: CreditCard },
+      { path: '/about', label: 'About', icon: Info },
+      { path: '/team', label: 'Team', icon: Users },
+      { path: '/admin', label: 'Admin', icon: Settings },
+    ],
+  },
 ];
 
 export default function ClerkOSLayout({ children }: { children: React.ReactNode }) {
@@ -79,26 +119,33 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
-          const active = path === '/' ? location === '/' : location.startsWith(path);
-          return (
-            <Link
-              key={path}
-              href={path}
-              onClick={() => setSidebarOpen(false)}
-              className={[
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                active
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100',
-              ].join(' ')}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              {label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 py-3 px-3 space-y-4 overflow-y-auto">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.label} className="space-y-0.5">
+            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              {section.label}
+            </p>
+            {section.items.map(({ path, label, icon: Icon }) => {
+              const active = path === '/' ? location === '/' : location.startsWith(path);
+              return (
+                <Link
+                  key={path}
+                  href={path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={[
+                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100',
+                  ].join(' ')}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer */}
