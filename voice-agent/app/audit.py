@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import threading
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ class AuditLog:
     def __init__(self, file_path: str | Path, database_url: str | None = None) -> None:
         self.file_path = Path(file_path)
         self.database_url = database_url
+        self._lock = threading.Lock()
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         if self.database_url:
             self._ensure_table()
@@ -61,23 +63,24 @@ class AuditLog:
         payload: dict[str, Any],
     ) -> AuditEvent:
         idempotency_key = make_idempotency_key(event_type, session_id, payload)
-        existing = self._find_existing(idempotency_key)
-        if existing:
-            return existing.model_copy(update={"duplicate": True})
+        with self._lock:
+            existing = self._find_existing(idempotency_key)
+            if existing:
+                return existing.model_copy(update={"duplicate": True})
 
-        event = AuditEvent(
-            event_id=str(uuid.uuid4()),
-            idempotency_key=idempotency_key,
-            event_type=event_type,
-            session_id=session_id,
-            caller=caller,
-            payload=payload,
-            created_at=datetime.now(UTC).isoformat(),
-        )
-        self._append_file(event)
-        if self.database_url:
-            self._insert_db(event)
-        return event
+            event = AuditEvent(
+                event_id=make_event_id(idempotency_key),
+                idempotency_key=idempotency_key,
+                event_type=event_type,
+                session_id=session_id,
+                caller=caller,
+                payload=payload,
+                created_at=datetime.now(UTC).isoformat(),
+            )
+            self._append_file(event)
+            if self.database_url:
+                self._insert_db(event)
+            return event
 
     def _append_file(self, event: AuditEvent) -> None:
         with self.file_path.open("a", encoding="utf-8") as handle:
@@ -151,3 +154,8 @@ def make_idempotency_key(event_type: EventType, session_id: str, payload: dict[s
     normalized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     raw = f"{event_type.value}:{session_id}:{normalized}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def make_event_id(idempotency_key: str) -> str:
+    event_hex = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()[:32]
+    return str(uuid.UUID(event_hex, version=5))
