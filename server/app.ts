@@ -22,6 +22,7 @@ import { appRouter } from './trpc/routers.js';
 import { desc, eq } from 'drizzle-orm';
 import { log, generateCorrelationId } from './lib/logger.js';
 import { withRetry } from './lib/retry.js';
+import { processVoiceTranscript, VoiceTranscriptInput } from './voiceAgent.js';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -267,6 +268,62 @@ export function createApp(): express.Express {
     } catch {
       res.status(503).json({ status: 'unhealthy', timestamp: new Date().toISOString(), database: 'disconnected' });
     }
+  });
+
+  // ==========================================================================
+  // VOICE AGENT API BRIDGE
+  // ==========================================================================
+
+  app.get('/api/voice-agent/health', async (_req: Request, res: Response) => {
+    try {
+      await db.select().from(deploymentStatus).limit(1);
+      res.json({ status: 'healthy', service: 'voice-agent', database: 'connected', mode: 'same-origin' });
+    } catch {
+      res.status(200).json({ status: 'degraded', service: 'voice-agent', database: 'unavailable', mode: 'same-origin' });
+    }
+  });
+
+  app.post('/api/voice-agent/process-transcript', async (req: Request, res: Response) => {
+    const correlationId = generateCorrelationId();
+    const input = req.body as Partial<VoiceTranscriptInput>;
+
+    if (!input.session_id || !input.caller || !input.transcript) {
+      return res.status(400).json({ error: 'session_id, caller, and transcript are required' });
+    }
+
+    const result = processVoiceTranscript({
+      session_id: input.session_id,
+      caller: input.caller,
+      transcript: input.transcript,
+    });
+
+    for (const event of result.events) {
+      try {
+        await writeAuditEvent({
+          tenantId: SYSTEM_TENANT_ID,
+          entityType: 'voice_agent_session',
+          entityUuid: event.event_id,
+          action: event.event_type,
+          correlationId,
+          metadata: JSON.stringify({
+            auditEventId: result.audit_event_id,
+            sessionId: input.session_id,
+            caller: input.caller,
+            ...event.payload,
+          }),
+        });
+      } catch (error) {
+        log({ level: 'warn', event: 'voice_agent.audit_failed', correlationId, error: String(error) });
+      }
+    }
+
+    res.json({
+      intent: result.intent,
+      risk_level: result.risk_level,
+      policy_decision: result.policy_decision,
+      next_action: result.next_action,
+      audit_event_id: result.audit_event_id,
+    });
   });
 
   // ==========================================================================

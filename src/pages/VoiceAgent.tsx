@@ -80,13 +80,13 @@ function makeSessionId() {
 
 function getDefaultVoiceAgentUrl() {
   const configured = import.meta.env.VITE_VOICE_AGENT_URL;
-  if (typeof window === 'undefined') return configured || 'http://localhost:8080';
+  if (typeof window === 'undefined') return configured || '/api/voice-agent';
 
   const stored = localStorage.getItem(VOICE_AGENT_URL_STORAGE_KEY);
   if (stored) return stored;
   if (configured) return configured;
 
-  return window.location.protocol === 'https:' ? '' : 'http://localhost:8080';
+  return window.location.protocol === 'https:' ? '/api/voice-agent' : 'http://localhost:8080';
 }
 
 export default function VoiceAgent() {

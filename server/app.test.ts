@@ -82,3 +82,46 @@ describe('API CORS policy', () => {
     expect(response.headers.get('access-control-allow-origin')).toBeNull();
   });
 });
+
+describe('Voice agent API bridge', () => {
+  beforeEach(async () => {
+    process.env.APP_URL = 'https://manus-frontend-zeta.vercel.app';
+    process.env.ADMIN_API_KEY = 'test-admin-key';
+    await startTestServer();
+  });
+
+  afterEach(async () => {
+    await stopTestServer();
+    delete process.env.APP_URL;
+    delete process.env.ADMIN_API_KEY;
+  });
+
+  it('returns same-origin bridge health without requiring admin auth', async () => {
+    const response = await fetch(`${baseUrl}/api/voice-agent/health`);
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.service).toBe('voice-agent');
+    expect(body.mode).toBe('same-origin');
+  });
+
+  it('processes transcripts through the same deterministic contract as the control surface', async () => {
+    const response = await fetch(`${baseUrl}/api/voice-agent/process-transcript`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: 'voice-api-test-1',
+        caller: '+442000000000',
+        transcript: 'I need a builder for a renovation in South London.',
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.intent).toBe('construction_lead');
+    expect(body.risk_level).toBe('low');
+    expect(body.policy_decision).toBe('ALLOW');
+    expect(body.next_action).toBe('Route construction enquiry to Accuracy Developments Ltd.');
+    expect(body.audit_event_id).toBeTruthy();
+  });
+});
