@@ -161,7 +161,7 @@ export class CompaniesHouseService {
           throw new Error(`Companies House API error: ${response.status}`);
         }
 
-        const data = await response.json() as CompanyProfile;
+        const data = this.normalizeCompanyProfile(await response.json());
         console.log(`📊 Company profile fetched: ${data.companyName}`);
         return data;
       } catch (error) {
@@ -193,6 +193,71 @@ export class CompaniesHouseService {
    */
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Companies House returns snake_case JSON; the rest of this service uses
+   * camelCase names so route handlers do not need to know about API shape.
+   */
+  private normalizeCompanyProfile(data: any): CompanyProfile {
+    return {
+      companyNumber: data.company_number,
+      companyName: data.company_name,
+      companyStatus: data.company_status,
+      companyStatusDetail: data.company_status_detail,
+      dateOfCreation: data.date_of_creation,
+      jurisdiction: data.jurisdiction,
+      sicCodes: data.sic_codes,
+      hasBeenLiquidated: data.has_been_liquidated ?? false,
+      type: data.type,
+      hasInsolvencyHistory: data.has_insolvency_history ?? false,
+      registeredOfficeAddress: {
+        addressLine1: data.registered_office_address?.address_line_1,
+        addressLine2: data.registered_office_address?.address_line_2,
+        locality: data.registered_office_address?.locality,
+        region: data.registered_office_address?.region,
+        postalCode: data.registered_office_address?.postal_code,
+        country: data.registered_office_address?.country,
+      },
+      accounts: data.accounts
+        ? {
+            nextAccounts: data.accounts.next_accounts
+              ? {
+                  periodEndOn: data.accounts.next_accounts.period_end_on,
+                  periodStartOn: data.accounts.next_accounts.period_start_on,
+                  dueOn: data.accounts.next_accounts.due_on,
+                  overdue: data.accounts.next_accounts.overdue ?? false,
+                }
+              : undefined,
+            lastAccounts: data.accounts.last_accounts
+              ? {
+                  madeUpTo: data.accounts.last_accounts.made_up_to,
+                  type: data.accounts.last_accounts.type,
+                }
+              : undefined,
+            accountingReferenceDate: data.accounts.accounting_reference_date
+              ? {
+                  day: data.accounts.accounting_reference_date.day,
+                  month: data.accounts.accounting_reference_date.month,
+                }
+              : undefined,
+          }
+        : undefined,
+      confirmationStatement: data.confirmation_statement
+        ? {
+            nextDue: data.confirmation_statement.next_due,
+            nextMadeUpTo: data.confirmation_statement.next_made_up_to,
+            overdue: data.confirmation_statement.overdue ?? false,
+            lastMadeUpTo: data.confirmation_statement.last_made_up_to,
+          }
+        : undefined,
+      links: {
+        self: data.links?.self,
+        filingHistory: data.links?.filing_history,
+        officers: data.links?.officers,
+        charges: data.links?.charges,
+      },
+    };
   }
 
   /**
