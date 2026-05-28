@@ -24,6 +24,7 @@ type HealthResponse = {
   status: string;
   service: string;
   database: string;
+  mode?: string;
 };
 
 type ProcessResponse = {
@@ -59,6 +60,7 @@ const SAMPLE_TRANSCRIPTS = [
 ];
 
 const VOICE_AGENT_URL_STORAGE_KEY = 'clerkos-voice-agent-url';
+const SAME_ORIGIN_VOICE_AGENT_URL = '/api/voice-agent';
 
 const decisionClasses: Record<string, string> = {
   ALLOW: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800',
@@ -80,13 +82,13 @@ function makeSessionId() {
 
 function getDefaultVoiceAgentUrl() {
   const configured = import.meta.env.VITE_VOICE_AGENT_URL;
-  if (typeof window === 'undefined') return configured || '/api/voice-agent';
+  if (typeof window === 'undefined') return configured || SAME_ORIGIN_VOICE_AGENT_URL;
 
   const stored = localStorage.getItem(VOICE_AGENT_URL_STORAGE_KEY);
   if (stored) return stored;
   if (configured) return configured;
 
-  return window.location.protocol === 'https:' ? '/api/voice-agent' : 'http://localhost:8080';
+  return window.location.protocol === 'https:' ? SAME_ORIGIN_VOICE_AGENT_URL : 'http://localhost:8080';
 }
 
 export default function VoiceAgent() {
@@ -112,6 +114,12 @@ export default function VoiceAgent() {
     } else {
       localStorage.removeItem(VOICE_AGENT_URL_STORAGE_KEY);
     }
+  };
+
+  const useSameOriginBridge = () => {
+    updateBaseUrl(SAME_ORIGIN_VOICE_AGENT_URL);
+    setHealth(null);
+    setError('');
   };
 
   const checkHealth = async () => {
@@ -223,24 +231,29 @@ export default function VoiceAgent() {
           <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <CardHeader>
               <CardTitle className="text-slate-900 dark:text-slate-100">Session Input</CardTitle>
-              <CardDescription>Live transcript handoff to the Python intake service</CardDescription>
+              <CardDescription>Live transcript handoff to the voice intake service</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={processTranscript} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="voice-url">Voice Agent URL</Label>
-                    <Input
-                      id="voice-url"
-                      value={baseUrl}
-                      onChange={(event) => updateBaseUrl(event.target.value)}
-                      placeholder="https://voice-agent.example.com"
-                    />
-                    {!liveUrl && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400">
-                        Set an HTTPS voice-agent URL for deployed environments.
-                      </p>
-                    )}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        id="voice-url"
+                        value={baseUrl}
+                        onChange={(event) => updateBaseUrl(event.target.value)}
+                        placeholder="/api/voice-agent"
+                      />
+                      <Button type="button" variant="outline" onClick={useSameOriginBridge}>
+                        Use current app
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {liveUrl === SAME_ORIGIN_VOICE_AGENT_URL
+                        ? 'Using this app origin bridge; run the full API locally or use the deployed app.'
+                        : 'Use a hosted HTTPS service URL for an external voice-agent runtime.'}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="session-id">Session ID</Label>
@@ -319,7 +332,7 @@ export default function VoiceAgent() {
                 <CardTitle className="text-slate-900 dark:text-slate-100">Service Status</CardTitle>
                 <CardDescription>Runtime and audit backing store</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-4 xl:grid-cols-1 gap-3">
                 <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3">
                   <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Service</p>
                   <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
@@ -330,6 +343,12 @@ export default function VoiceAgent() {
                   <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Database</p>
                   <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
                     {health?.database ?? 'unchecked'}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Mode</p>
+                  <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                    {health?.mode ?? (liveUrl === SAME_ORIGIN_VOICE_AGENT_URL ? 'same-origin' : 'external')}
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3">
