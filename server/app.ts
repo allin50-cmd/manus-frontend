@@ -899,10 +899,17 @@ export function createApp(): express.Express {
     }
   });
 
+  const ADMIN_VALID_ALERT_STATUSES = ['pending', 'acknowledged', 'resolved', 'failed'] as const;
+
   // GET /api/admin/alerts — FineGuard compliance alerts, newest-first.
   // Optional ?status= filter.
   app.get('/api/admin/alerts', async (req: Request, res: Response) => {
     const { status } = req.query;
+    if (status !== undefined && !ADMIN_VALID_ALERT_STATUSES.includes(String(status) as typeof ADMIN_VALID_ALERT_STATUSES[number])) {
+      return res.status(400).json({
+        error: `Invalid status filter. Must be one of: ${ADMIN_VALID_ALERT_STATUSES.join(', ')}`,
+      });
+    }
     try {
       const baseQuery = db.select().from(fineGuardAlerts);
       const rows = status

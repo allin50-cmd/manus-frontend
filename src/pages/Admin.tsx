@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -105,22 +105,58 @@ export default function Admin() {
   const [alerts, setAlerts] = useState<FineGuardAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(
+    () => sessionStorage.getItem('admin_api_key'),
+  );
+  const [keyInput, setKeyInput] = useState('');
+  const keyInputRef = useRef<HTMLInputElement>(null);
+
+  const adminFetch = (url: string, init?: RequestInit): Promise<Response> => {
+    return fetch(url, {
+      ...init,
+      headers: {
+        ...(init?.headers as Record<string, string> | undefined),
+        'x-admin-key': apiKey ?? '',
+      },
+    });
+  };
+
+  const handleKeySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = keyInput.trim();
+    if (!trimmed) return;
+    sessionStorage.setItem('admin_api_key', trimmed);
+    setApiKey(trimmed);
+    setKeyInput('');
+  };
+
+  const handleUnauthorized = () => {
+    sessionStorage.removeItem('admin_api_key');
+    setApiKey(null);
+    toast.error('Invalid admin key — please re-enter');
+  };
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    if (apiKey) fetchAllData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
       const [leadsRes, intakeRes, bundlesRes, contactsRes, deploymentsRes, alertsRes] = await Promise.all([
-        fetch('/api/admin/leads'),
-        fetch('/api/admin/intake-forms'),
-        fetch('/api/admin/compliance-bundles'),
-        fetch('/api/admin/contacts'),
+        adminFetch('/api/admin/leads'),
+        adminFetch('/api/admin/intake-forms'),
+        adminFetch('/api/admin/compliance-bundles'),
+        adminFetch('/api/admin/contacts'),
         fetch('/api/deployments/status'),
-        fetch('/api/admin/alerts'),
+        adminFetch('/api/admin/alerts'),
       ]);
+
+      if (leadsRes.status === 401 || intakeRes.status === 401) {
+        handleUnauthorized();
+        return;
+      }
 
       if (leadsRes.ok) setLeads(await leadsRes.json());
       if (intakeRes.ok) setIntakeForms(await intakeRes.json());
@@ -231,7 +267,7 @@ export default function Admin() {
   const acknowledgeAlert = async (id: string) => {
     setAcknowledgingId(id);
     try {
-      const res = await fetch(`/api/admin/alerts/${id}/acknowledge`, { method: 'PATCH' });
+      const res = await adminFetch(`/api/admin/alerts/${id}/acknowledge`, { method: 'PATCH' });
       if (res.ok) {
         setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'acknowledged' } : a));
         toast.success('Alert acknowledged');
@@ -253,6 +289,38 @@ export default function Admin() {
     return (order[a.environment.toLowerCase() as keyof typeof order] || 3) -
            (order[b.environment.toLowerCase() as keyof typeof order] || 3);
   });
+
+  if (!apiKey) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] flex items-center justify-center px-4">
+        <Card className="bg-[#13151C] border-[#2A2D3A] w-full max-w-sm">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-[#5A4BFF]" />
+              Admin Access
+            </CardTitle>
+            <CardDescription className="text-gray-400">Enter your admin API key to continue.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleKeySubmit} className="flex flex-col gap-3">
+              <input
+                ref={keyInputRef}
+                type="password"
+                autoFocus
+                value={keyInput}
+                onChange={e => setKeyInput(e.target.value)}
+                placeholder="Admin API key"
+                className="w-full rounded-md border border-[#2A2D3A] bg-[#0F1014] px-3 py-2 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#5A4BFF]"
+              />
+              <Button type="submit" className="bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white w-full">
+                Unlock
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-8 px-4">
