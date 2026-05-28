@@ -37,6 +37,22 @@ def test_health_allows_local_vite_origin(monkeypatch, tmp_path) -> None:
     assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
 
 
+def test_health_allows_vercel_preview_origin(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("AUDIT_LOG_PATH", str(tmp_path / "audit.jsonl"))
+
+    import app.main as main
+
+    importlib.reload(main)
+    client = TestClient(main.app)
+
+    origin = "https://manus-frontend-preview-georges-projects-d3e17648.vercel.app"
+    response = client.get("/health", headers={"Origin": origin})
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == origin
+
+
 def test_process_transcript_returns_deterministic_json(monkeypatch, tmp_path) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("AUDIT_LOG_PATH", str(tmp_path / "audit.jsonl"))

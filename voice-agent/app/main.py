@@ -20,6 +20,7 @@ cors_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=os.getenv("VOICE_AGENT_CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app"),
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["content-type"],
 )

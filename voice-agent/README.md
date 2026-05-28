@@ -68,6 +68,7 @@ pytest
 | `DATABASE_URL` | Postgres URL for audit table writes |
 | `AUDIT_LOG_PATH` | Append-only JSONL audit log path |
 | `VOICE_AGENT_CORS_ORIGINS` | Comma-separated browser origins allowed to call the service |
+| `VOICE_AGENT_CORS_ORIGIN_REGEX` | Optional regex for preview origins, default allows Vercel preview apps |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | Future telephony ingress |
 | `DEEPGRAM_API_KEY` | Future speech-to-text provider |
 | `ELEVENLABS_API_KEY` | Future text-to-speech provider |
