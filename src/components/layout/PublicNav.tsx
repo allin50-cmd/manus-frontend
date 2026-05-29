@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useTheme } from '@/contexts/ThemeContext';
+import { isFineGuardHost } from '@/lib/host';
 
 const PUBLIC_LINKS = [
   { href: '/', label: 'App', icon: Home },
@@ -27,6 +28,14 @@ const PUBLIC_LINKS = [
   { href: '/about', label: 'About', icon: Info },
 ];
 
+const FINEGUARD_LINKS = [
+  { href: '/', label: 'Home', icon: ShieldCheck },
+  { href: '/compliance-bundle', label: 'Check', icon: ClipboardCheck },
+  { href: '/pricing', label: 'Pricing', icon: CreditCard },
+  { href: '/book-demo', label: 'Demo', icon: CalendarDays },
+  { href: '/app', label: 'App', icon: Home },
+];
+
 type PublicNavProps = {
   variant?: 'auto' | 'dark' | 'light';
 };
@@ -35,6 +44,10 @@ export default function PublicNav({ variant = 'auto' }: PublicNavProps) {
   const [location] = useLocation();
   const { theme, toggleTheme } = useTheme();
   const isLight = variant === 'auto' ? theme === 'light' : variant === 'light';
+  const fineGuardHost = isFineGuardHost();
+  const links = fineGuardHost ? FINEGUARD_LINKS : PUBLIC_LINKS;
+  const brand = fineGuardHost ? 'FineGuard' : 'ClerkOS';
+  const BrandIcon = fineGuardHost ? ShieldCheck : BookOpen;
 
   return (
     <header
@@ -50,17 +63,21 @@ export default function PublicNav({ variant = 'auto' }: PublicNavProps) {
           <span
             className={[
               'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-              isLight ? 'bg-blue-600 text-white' : 'bg-white/10 text-white',
+              fineGuardHost
+                ? 'bg-[#C9A64A] text-white'
+                : isLight
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white/10 text-white',
             ].join(' ')}
           >
-            <BookOpen className="w-4 h-4" />
+            <BrandIcon className="w-4 h-4" />
           </span>
-          <span className="text-sm font-bold truncate">ClerkOS</span>
+          <span className="text-sm font-bold truncate">{brand}</span>
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
           <nav aria-label="Public navigation" className="flex flex-wrap items-center gap-1.5">
-            {PUBLIC_LINKS.map(({ href, label, icon: Icon }) => {
+            {links.map(({ href, label, icon: Icon }) => {
               const active = href === '/' ? location === '/' : location.startsWith(href);
               return (
                 <Link
