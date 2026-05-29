@@ -10,7 +10,7 @@ export default function Team() {
           <Users className="w-16 h-16 text-[#5A4BFF] mx-auto mb-6" />
           <h1 className="text-4xl font-bold text-white mb-4">Our Team</h1>
           <p className="text-xl text-gray-400">
-            Meet the experts behind VaultLine Brand Suite
+            Meet the operators behind FineGuard Service
           </p>
         </div>
       </div>

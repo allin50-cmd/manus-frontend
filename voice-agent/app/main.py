@@ -8,7 +8,7 @@ from app.models import EnqueueTranscriptResponse, ProcessTranscriptResponse, Tra
 from app.processor import process_transcript_request
 from app.queue import enqueue_transcript_processing
 
-app = FastAPI(title="SME Voice Agent MVP", version="0.1.0")
+app = FastAPI(title="FineGuard AI Voice Reception", version="0.1.0")
 cors_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -31,7 +31,7 @@ audit_log = AuditLog.from_env()
 def health() -> dict[str, str]:
     database = audit_log.database_status()
     status = "healthy" if database in {"connected", "unconfigured"} else "degraded"
-    return {"status": status, "service": "voice-agent", "database": database}
+    return {"status": status, "service": "voice-reception", "database": database}
 
 
 @app.post("/process-transcript", response_model=ProcessTranscriptResponse)

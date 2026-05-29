@@ -57,7 +57,7 @@ const ROUTES = [
   },
   {
     title: 'Audit-ready handoff',
-    description: 'Every meaningful intake and monitoring event is ready for VaultLine audit logging.',
+    description: 'Every meaningful intake and monitoring event is ready for the FineGuard audit log.',
     icon: LockKeyhole,
   },
 ];
@@ -76,7 +76,7 @@ export default function FineGuard() {
               SME compliance monitoring
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold text-[#1A1A1A] mb-6">
-              FineGuard keeps Companies House risk visible before it becomes expensive.
+              FineGuard Service keeps company risk visible before it becomes expensive.
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mb-8">
               A lean compliance front door for SMEs: check a company, surface overdue filing risk,
@@ -96,6 +96,13 @@ export default function FineGuard() {
                 className="border-[#1A1A1A]/20 px-7 py-6 text-base"
               >
                 Book Operator Demo
+              </Button>
+              <Button
+                onClick={() => setLocation('/voice-reception')}
+                variant="outline"
+                className="border-[#1A1A1A]/20 px-7 py-6 text-base"
+              >
+                AI Voice Reception
               </Button>
             </div>
             <div className="mt-8 grid sm:grid-cols-3 gap-3 max-w-2xl">
@@ -166,7 +173,7 @@ export default function FineGuard() {
             </div>
             <h2 className="text-2xl font-bold text-[#1A1A1A]">Built for the stack you already started.</h2>
             <p className="text-gray-600 mt-3 leading-relaxed">
-              FineGuard sits in front of the existing compliance bundle, voice-agent intake, and audit
+              FineGuard Service sits in front of the existing compliance bundle, AI voice reception, and audit
               pipeline. It presents the business-facing entry point while the back office keeps the full
               operational control surface.
             </p>

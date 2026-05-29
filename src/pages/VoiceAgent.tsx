@@ -59,8 +59,8 @@ const SAMPLE_TRANSCRIPTS = [
   },
 ];
 
-const VOICE_AGENT_URL_STORAGE_KEY = 'clerkos-voice-agent-url';
-const SAME_ORIGIN_VOICE_AGENT_URL = '/api/voice-agent';
+const VOICE_AGENT_URL_STORAGE_KEY = 'fineguard-voice-reception-url';
+const SAME_ORIGIN_VOICE_AGENT_URL = '/api/voice-reception';
 
 const decisionClasses: Record<string, string> = {
   ALLOW: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800',
@@ -125,7 +125,7 @@ export default function VoiceAgent() {
   const checkHealth = async () => {
     if (!liveUrl) {
       setHealth(null);
-      setError('Enter a voice-agent URL before checking health.');
+      setError('Enter a reception service URL before checking health.');
       return;
     }
     setLoadingHealth(true);
@@ -137,7 +137,7 @@ export default function VoiceAgent() {
       setHealth(data);
     } catch (err) {
       setHealth(null);
-      setError(err instanceof Error ? err.message : 'Unable to reach voice agent');
+      setError(err instanceof Error ? err.message : 'Unable to reach reception service');
     } finally {
       setLoadingHealth(false);
     }
@@ -152,7 +152,7 @@ export default function VoiceAgent() {
   const processTranscript = async (event: FormEvent) => {
     event.preventDefault();
     if (!canProcess) {
-      setError('Enter a voice-agent URL, session ID, caller, and transcript before processing.');
+      setError('Enter a reception service URL, session ID, caller, and transcript before processing.');
       return;
     }
     setProcessing(true);
@@ -190,10 +190,10 @@ export default function VoiceAgent() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  Voice Agent Control
+                  Advanced AI Voice Reception
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  SME intake session console
+                  FineGuard call intake, policy gate, and human escalation console
                 </p>
               </div>
             </div>
@@ -230,20 +230,20 @@ export default function VoiceAgent() {
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] gap-6">
           <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
             <CardHeader>
-              <CardTitle className="text-slate-900 dark:text-slate-100">Session Input</CardTitle>
-              <CardDescription>Live transcript handoff to the voice intake service</CardDescription>
+              <CardTitle className="text-slate-900 dark:text-slate-100">Reception Input</CardTitle>
+              <CardDescription>Call transcript handoff to FineGuard Service reception</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={processTranscript} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="voice-url">Voice Agent URL</Label>
+                    <Label htmlFor="voice-url">Reception Service URL</Label>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Input
                         id="voice-url"
                         value={baseUrl}
                         onChange={(event) => updateBaseUrl(event.target.value)}
-                        placeholder="/api/voice-agent"
+                        placeholder="/api/voice-reception"
                       />
                       <Button type="button" variant="outline" onClick={useSameOriginBridge}>
                         Use current app
@@ -251,8 +251,8 @@ export default function VoiceAgent() {
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {liveUrl === SAME_ORIGIN_VOICE_AGENT_URL
-                        ? 'Using this app origin bridge; run the full API locally or use the deployed app.'
-                        : 'Use a hosted HTTPS service URL for an external voice-agent runtime.'}
+                        ? 'Using this app origin bridge for FineGuard reception.'
+                        : 'Use a hosted HTTPS service URL for an external reception runtime.'}
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -319,7 +319,7 @@ export default function VoiceAgent() {
                     ) : (
                       <PhoneCall className="w-4 h-4" />
                     )}
-                    Process Transcript
+                    Process Reception Transcript
                   </Button>
                 </div>
               </form>
@@ -330,13 +330,13 @@ export default function VoiceAgent() {
             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
               <CardHeader>
                 <CardTitle className="text-slate-900 dark:text-slate-100">Service Status</CardTitle>
-                <CardDescription>Runtime and audit backing store</CardDescription>
+                <CardDescription>Reception runtime and audit backing store</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 sm:grid-cols-4 xl:grid-cols-1 gap-3">
                 <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3">
                   <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Service</p>
                   <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
-                    {health?.service ?? 'voice-agent'}
+                    {health?.service ?? 'voice-reception'}
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-3">
@@ -361,7 +361,7 @@ export default function VoiceAgent() {
             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
               <CardHeader>
                 <CardTitle className="text-slate-900 dark:text-slate-100">Decision</CardTitle>
-                <CardDescription>Latest policy outcome</CardDescription>
+                <CardDescription>Latest reception policy outcome</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {result ? (
@@ -409,8 +409,8 @@ export default function VoiceAgent() {
 
         <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
           <CardHeader>
-            <CardTitle className="text-slate-900 dark:text-slate-100">Lifecycle</CardTitle>
-            <CardDescription>Meaningful events written to the append-only audit log</CardDescription>
+            <CardTitle className="text-slate-900 dark:text-slate-100">Reception Lifecycle</CardTitle>
+            <CardDescription>Meaningful call events written to the append-only FineGuard audit log</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3">

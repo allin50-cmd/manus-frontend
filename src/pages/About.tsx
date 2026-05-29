@@ -1,21 +1,21 @@
 import PublicNav from '@/components/layout/PublicNav';
-import { Building2, FileText, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { Building2, FileText, Mic, ShieldCheck } from 'lucide-react';
 
-const SUITE = [
+const SERVICE_AREAS = [
   {
-    title: 'FineGuard',
+    title: 'Company Monitoring',
     description: 'Company monitoring and compliance checks for filing risk.',
     icon: ShieldCheck,
   },
   {
-    title: 'UltAi',
+    title: 'Service Intake',
     description: 'Secure intake and matter triage for front-door workflows.',
     icon: FileText,
   },
   {
-    title: 'VaultLine',
-    description: 'Document vault operations for sensitive records and bundles.',
-    icon: LockKeyhole,
+    title: 'AI Voice Reception',
+    description: 'Call transcript capture, risk gating, and human escalation.',
+    icon: Mic,
   },
 ];
 
@@ -25,19 +25,19 @@ export default function About() {
       <PublicNav />
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <Building2 className="w-16 h-16 text-[#5A4BFF] mx-auto mb-6" />
-          <h1 className="text-4xl font-bold text-white mb-4">About VaultLine Brand Suite</h1>
+          <Building2 className="w-16 h-16 text-[#C9A64A] mx-auto mb-6" />
+          <h1 className="text-4xl font-bold text-white mb-4">About FineGuard Service</h1>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            A focused set of operational tools for compliance, intake, and secure document work.
+            A focused SME service for compliance checks, monitored companies, structured intake, and AI voice reception.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8 items-start">
           <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-            <h2 className="text-xl font-semibold text-white">What the suite is for</h2>
+            <h2 className="text-xl font-semibold text-white">What the service is for</h2>
             <p className="text-sm text-gray-400 mt-4 leading-relaxed">
-              The suite connects public product workflows to the ClerkOS operational dashboard:
-              leads, intake records, compliance bundle requests, and monitored company status.
+              FineGuard Service connects public enquiries to the operations dashboard:
+              leads, intake records, compliance bundle requests, monitored company status, and AI reception outcomes.
               Each route is designed to be useful alone while still feeding the same operational core.
             </p>
             <div className="grid grid-cols-3 gap-3 mt-6">
@@ -50,7 +50,7 @@ export default function About() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            {SUITE.map(({ title, description, icon: Icon }) => (
+            {SERVICE_AREAS.map(({ title, description, icon: Icon }) => (
               <div key={title} className="rounded-xl border border-white/10 bg-white/5 p-5">
                 <div className="w-10 h-10 rounded-lg bg-[#5A4BFF]/15 text-indigo-200 flex items-center justify-center mb-4">
                   <Icon className="w-5 h-5" />

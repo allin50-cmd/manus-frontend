@@ -5,11 +5,9 @@ import {
   CreditCard,
   Home,
   Info,
-  LockKeyhole,
   Mic,
   Moon,
   ShieldCheck,
-  Sparkles,
   Sun,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
@@ -18,12 +16,10 @@ import { isFineGuardHost } from '@/lib/host';
 
 const PUBLIC_LINKS = [
   { href: '/', label: 'App', icon: Home },
-  { href: '/fineguard', label: 'FineGuard', icon: ShieldCheck },
-  { href: '/ultai', label: 'UltAi', icon: Sparkles },
-  { href: '/vaultline', label: 'VaultLine', icon: LockKeyhole },
-  { href: '/compliance-bundle', label: 'Compliance', icon: ClipboardCheck },
+  { href: '/fineguard', label: 'Service', icon: ShieldCheck },
+  { href: '/compliance-bundle', label: 'Check', icon: ClipboardCheck },
+  { href: '/voice-reception', label: 'AI Reception', icon: Mic },
   { href: '/book-demo', label: 'Demo', icon: CalendarDays },
-  { href: '/voice-agent', label: 'Voice', icon: Mic },
   { href: '/pricing', label: 'Pricing', icon: CreditCard },
   { href: '/about', label: 'About', icon: Info },
 ];
@@ -31,6 +27,7 @@ const PUBLIC_LINKS = [
 const FINEGUARD_LINKS = [
   { href: '/', label: 'Home', icon: ShieldCheck },
   { href: '/compliance-bundle', label: 'Check', icon: ClipboardCheck },
+  { href: '/voice-reception', label: 'AI Reception', icon: Mic },
   { href: '/pricing', label: 'Pricing', icon: CreditCard },
   { href: '/book-demo', label: 'Demo', icon: CalendarDays },
   { href: '/app', label: 'App', icon: Home },
@@ -46,7 +43,7 @@ export default function PublicNav({ variant = 'auto' }: PublicNavProps) {
   const isLight = variant === 'auto' ? theme === 'light' : variant === 'light';
   const fineGuardHost = isFineGuardHost();
   const links = fineGuardHost ? FINEGUARD_LINKS : PUBLIC_LINKS;
-  const brand = fineGuardHost ? 'FineGuard' : 'ClerkOS';
+  const brand = fineGuardHost ? 'FineGuard Service' : 'FineGuard Ops';
   const BrandIcon = fineGuardHost ? ShieldCheck : BookOpen;
 
   return (

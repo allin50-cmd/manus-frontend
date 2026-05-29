@@ -131,7 +131,7 @@ export default function BookDemo() {
           <CardHeader>
             <CardTitle className="text-2xl text-white">Request a Demo</CardTitle>
             <CardDescription className="text-gray-400">
-              Fill out the form below and we'll get back to you within 24 hours
+              Fill out the form below and we'll get back to you about FineGuard Service.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -215,10 +215,9 @@ export default function BookDemo() {
                     <SelectValue placeholder="Select a product" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1A1D28] border-[#2A2D3A]">
-                    <SelectItem value="vaultline">VaultLine Cloud</SelectItem>
-                    <SelectItem value="ultai">UltAi Secure Intake</SelectItem>
-                    <SelectItem value="fineguard">FineGuard Compliance Cloud</SelectItem>
-                    <SelectItem value="all">All Products</SelectItem>
+                    <SelectItem value="fineguard-service">FineGuard Service</SelectItem>
+                    <SelectItem value="ai-voice-reception">Advanced AI Voice Reception</SelectItem>
+                    <SelectItem value="managed-service">Managed Service Setup</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

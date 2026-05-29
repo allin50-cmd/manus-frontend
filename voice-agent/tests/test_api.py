@@ -17,7 +17,7 @@ def test_health(monkeypatch, tmp_path) -> None:
     assert response.status_code == 200
     assert response.json() == {
         "status": "healthy",
-        "service": "voice-agent",
+        "service": "voice-reception",
         "database": "unconfigured",
     }
 

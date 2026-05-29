@@ -1,7 +1,7 @@
 {
   "name": "vaultline-brand-suite",
   "version": "1.0.0",
-  "description": "VaultLine Brand Suite - Landing pages for VaultLine Cloud, UltAi Secure Intake, and FineGuard Compliance Cloud",
+  "description": "FineGuard Service frontend, operations console, compliance checks, and AI voice reception",
   "type": "module",
   "scripts": {
     "dev": "vite",

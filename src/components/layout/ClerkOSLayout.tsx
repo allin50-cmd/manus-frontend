@@ -15,8 +15,6 @@ import {
   User,
   Building2,
   ShieldCheck,
-  Sparkles,
-  LockKeyhole,
   ClipboardList,
   ClipboardCheck,
   MessageSquare,
@@ -31,24 +29,24 @@ import { Link, useLocation } from 'wouter';
 
 const NAV_SECTIONS = [
   {
-    label: 'Court Ops',
+    label: 'Operations',
     items: [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/cases', label: 'Cases', icon: Scale },
       { path: '/hearings', label: 'Hearings', icon: Gavel },
       { path: '/documents', label: 'Documents', icon: FileText },
       { path: '/queue', label: 'Queue', icon: ListTodo },
-      { path: '/voice-agent', label: 'Voice Agent', icon: Mic },
+      { path: '/voice-reception', label: 'AI Reception', icon: Mic },
       { path: '/diary', label: 'Diary', icon: CalendarDays },
       { path: '/bundles', label: 'Bundles', icon: Layers },
     ],
   },
   {
-    label: 'Products',
+    label: 'FineGuard Service',
     items: [
-      { path: '/fineguard', label: 'FineGuard', icon: ShieldCheck },
-      { path: '/ultai', label: 'UltAi', icon: Sparkles },
-      { path: '/vaultline', label: 'VaultLine', icon: LockKeyhole },
+      { path: '/fineguard', label: 'Service Home', icon: ShieldCheck },
+      { path: '/compliance-bundle', label: 'Company Check', icon: ClipboardCheck },
+      { path: '/book-demo', label: 'Book Demo', icon: MessageSquare },
     ],
   },
   {
@@ -93,10 +91,10 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none">
-            ClerkOS
+            FineGuard Ops
           </p>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">
-            Core Engine v1.1
+            Service Console
           </p>
         </div>
         <button
@@ -200,7 +198,7 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
             <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
               <BookOpen className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">ClerkOS</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">FineGuard Ops</span>
           </div>
         </div>
 

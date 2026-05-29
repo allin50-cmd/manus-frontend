@@ -1,11 +1,11 @@
 # thefineguard.com Frontend
 
-`thefineguard.com` and `www.thefineguard.com` are intended to serve the FineGuard public frontend from the same Vercel project as the main ClerkOS app.
+`thefineguard.com` and `www.thefineguard.com` are intended to serve the FineGuard Service public frontend from the same Vercel project as the main operations app.
 
 ## Runtime Behavior
 
-- `manus-frontend-zeta.vercel.app` keeps `/` as the ClerkOS operational dashboard.
-- `thefineguard.com` serves `/` as the FineGuard landing/check frontend.
+- `manus-frontend-zeta.vercel.app` keeps `/` as the FineGuard operations dashboard.
+- `thefineguard.com` serves `/` as the FineGuard Service landing/check frontend.
 - `/app` remains available as a dashboard route when reached from the FineGuard domain.
 - `/compliance-bundle`, `/book-demo`, and `/pricing` are shared conversion routes.
 

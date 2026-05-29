@@ -97,16 +97,16 @@ describe('Voice agent API bridge', () => {
   });
 
   it('returns same-origin bridge health without requiring admin auth', async () => {
-    const response = await fetch(`${baseUrl}/api/voice-agent/health`);
+    const response = await fetch(`${baseUrl}/api/voice-reception/health`);
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.service).toBe('voice-agent');
+    expect(body.service).toBe('voice-reception');
     expect(body.mode).toBe('same-origin');
   });
 
   it('processes transcripts through the same deterministic contract as the control surface', async () => {
-    const response = await fetch(`${baseUrl}/api/voice-agent/process-transcript`, {
+    const response = await fetch(`${baseUrl}/api/voice-reception/process-transcript`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

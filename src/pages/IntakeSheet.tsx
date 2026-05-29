@@ -132,11 +132,11 @@ export default function IntakeSheet() {
                   Submit Another
                 </Button>
                 <Button
-                  onClick={() => setLocation('/ultai')}
+                  onClick={() => setLocation('/fineguard')}
                   className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to UltAi
+                  Back to FineGuard
                 </Button>
               </div>
             </CardContent>

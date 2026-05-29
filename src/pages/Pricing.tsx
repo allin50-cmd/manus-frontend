@@ -1,35 +1,35 @@
 import PublicNav from '@/components/layout/PublicNav';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, DollarSign } from 'lucide-react';
+import { CheckCircle, DollarSign, Mic, ShieldCheck } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 const PLANS = [
   {
-    name: 'FineGuard Monitor',
+    name: 'FineGuard Service',
     price: '3',
     unit: '/company/mo',
-    description: 'For company filing risk and compliance monitoring.',
-    features: ['Company protection status', 'Compliance bundle access', 'Deadline and overdue filing checks'],
+    description: 'For company filing risk, monitored status, and compliance checks.',
+    features: ['Company protection status', 'Compliance bundle access', 'Deadline and overdue filing checks', 'Audit-ready service handoff'],
     cta: 'Start Compliance Check',
     href: '/compliance-bundle',
     accent: 'gold',
   },
   {
-    name: 'UltAi Intake',
-    price: '49',
-    unit: '/seat/mo',
-    description: 'For teams capturing structured matter intake.',
-    features: ['Matter intake workflow', 'Urgency triage', 'Reference creation and routing'],
-    cta: 'Try Intake Sheet',
-    href: '/intake-sheet',
+    name: 'Advanced AI Voice Reception',
+    price: 'Custom',
+    unit: '',
+    description: 'For teams that want call capture, intent routing, and human escalation.',
+    features: ['Inbound transcript processing', 'Intent and risk classification', 'Policy gate before actions', 'Urgent legal/compliance escalation'],
+    cta: 'Open AI Reception',
+    href: '/voice-reception',
     accent: 'cyan',
   },
   {
-    name: 'VaultLine Cloud',
+    name: 'FineGuard Managed Service',
     price: 'Custom',
     unit: '',
-    description: 'For secure document operations and compliance workspaces.',
-    features: ['Document vault workflow', 'Team access model', 'Audit-ready handoff support'],
+    description: 'For teams that want setup help, monitoring workflow design, and operator support.',
+    features: ['Operator onboarding', 'Service routing rules', 'Compliance workflow review', 'Escalation playbook setup'],
     cta: 'Book Demo',
     href: '/book-demo',
     accent: 'indigo',
@@ -44,11 +44,24 @@ export default function Pricing() {
       <PublicNav />
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <DollarSign className="w-16 h-16 text-[#5A4BFF] mx-auto mb-6" />
-          <h1 className="text-4xl font-bold text-white mb-4">Pricing</h1>
+          <DollarSign className="w-16 h-16 text-[#C9A64A] mx-auto mb-6" />
+          <h1 className="text-4xl font-bold text-white mb-4">FineGuard Service Pricing</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Pick the workflow you need today, then expand across the suite when the operation grows.
+            Start with company monitoring, then add AI voice reception when calls need structured triage.
           </p>
+        </div>
+
+        <div className="mb-6 grid md:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+            <ShieldCheck className="w-5 h-5 text-[#C9A64A] mb-3" />
+            <h2 className="text-base font-semibold text-white">One service brand</h2>
+            <p className="text-sm text-gray-400 mt-2">FineGuard Service now covers monitoring, checks, intake, and audit-ready handoff.</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+            <Mic className="w-5 h-5 text-cyan-300 mb-3" />
+            <h2 className="text-base font-semibold text-white">Advanced AI reception</h2>
+            <p className="text-sm text-gray-400 mt-2">Voice transcripts are classified, gated by policy, and escalated before irreversible actions.</p>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-4">

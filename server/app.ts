@@ -230,7 +230,7 @@ export function createApp(): express.Express {
   );
 
   // ==========================================================================
-  // TRPC API (ClerkOS Core Engine)
+  // TRPC API (FineGuard operations engine)
   // ==========================================================================
 
   app.use(
@@ -298,19 +298,19 @@ export function createApp(): express.Express {
   });
 
   // ==========================================================================
-  // VOICE AGENT API BRIDGE
+  // AI VOICE RECEPTION API BRIDGE
   // ==========================================================================
 
-  app.get('/api/voice-agent/health', async (_req: Request, res: Response) => {
+  app.get(['/api/voice-agent/health', '/api/voice-reception/health'], async (_req: Request, res: Response) => {
     try {
       await db.select().from(deploymentStatus).limit(1);
-      res.json({ status: 'healthy', service: 'voice-agent', database: 'connected', mode: 'same-origin' });
+      res.json({ status: 'healthy', service: 'voice-reception', database: 'connected', mode: 'same-origin' });
     } catch {
-      res.status(200).json({ status: 'degraded', service: 'voice-agent', database: 'unavailable', mode: 'same-origin' });
+      res.status(200).json({ status: 'degraded', service: 'voice-reception', database: 'unavailable', mode: 'same-origin' });
     }
   });
 
-  app.post('/api/voice-agent/process-transcript', async (req: Request, res: Response) => {
+  app.post(['/api/voice-agent/process-transcript', '/api/voice-reception/process-transcript'], async (req: Request, res: Response) => {
     const correlationId = generateCorrelationId();
     const input = req.body as Partial<VoiceTranscriptInput>;
 

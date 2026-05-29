@@ -10,8 +10,6 @@ import {
   CalendarCheck,
   ArrowRight,
   ShieldCheck,
-  Sparkles,
-  LockKeyhole,
   ClipboardList,
   ClipboardCheck,
   MessageSquare,
@@ -79,31 +77,19 @@ const STATUS_BADGE: Record<string, string> = {
 
 const LAUNCH_LINKS = [
   {
-    label: 'FineGuard',
-    description: 'Monitoring and alerting for filings and enforcement risk.',
+    label: 'FineGuard Service',
+    description: 'Compliance monitoring, company checks, and SME intake in one service.',
     href: '/fineguard',
     icon: ShieldCheck,
   },
   {
-    label: 'UltAi',
-    description: 'Intake automation for new matters and company checks.',
-    href: '/ultai',
-    icon: Sparkles,
-  },
-  {
-    label: 'VaultLine',
-    description: 'Secure document vault and matter evidence workspace.',
-    href: '/vaultline',
-    icon: LockKeyhole,
-  },
-  {
-    label: 'Intake Sheet',
-    description: 'Submit a structured intake request for review.',
+    label: 'Service Intake',
+    description: 'Submit a structured enquiry for compliance or business review.',
     href: '/intake-sheet',
     icon: ClipboardList,
   },
   {
-    label: 'Compliance Bundle',
+    label: 'Company Check',
     description: 'Build the handoff pack for monitored companies.',
     href: '/compliance-bundle',
     icon: ClipboardCheck,
@@ -115,9 +101,9 @@ const LAUNCH_LINKS = [
     icon: MessageSquare,
   },
   {
-    label: 'Voice Agent',
-    description: 'Process call transcripts through intake policy controls.',
-    href: '/voice-agent',
+    label: 'AI Voice Reception',
+    description: 'Capture calls, classify intent, gate risk, and escalate urgent matters.',
+    href: '/voice-reception',
     icon: Mic,
   },
 ];
@@ -135,7 +121,7 @@ export default function Dashboard() {
         <div className="mb-7">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Court Clerk Management — live overview
+            FineGuard Service operations — live overview
           </p>
         </div>
 
@@ -289,7 +275,7 @@ export default function Dashboard() {
                 Platform Launchpad
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Product pages and public workflows are available from here.
+                Service pages, intake, checks, and AI reception are available from here.
               </p>
             </div>
             <Link

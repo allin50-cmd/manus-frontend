@@ -20,8 +20,6 @@ import IntakeSheet from './pages/IntakeSheet';
 import Pricing from './pages/Pricing';
 import Queue from './pages/Queue';
 import Team from './pages/Team';
-import UltAi from './pages/UltAi';
-import VaultLine from './pages/VaultLine';
 import VoiceAgent from './pages/VoiceAgent';
 
 function Router() {
@@ -29,7 +27,7 @@ function Router() {
 
   return (
     <Switch>
-      {/* ClerkOS operational routes */}
+      {/* FineGuard operational routes */}
       <Route path="/" component={Home} />
       <Route path="/app" component={Dashboard} />
       <Route path="/cases" component={Cases} />
@@ -37,14 +35,15 @@ function Router() {
       <Route path="/documents" component={Documents} />
       <Route path="/queue" component={Queue} />
       <Route path="/voice-agent" component={VoiceAgent} />
+      <Route path="/voice-reception" component={VoiceAgent} />
       <Route path="/diary" component={Diary} />
       <Route path="/bundles" component={Bundles} />
       <Route path="/team" component={Team} />
       <Route path="/admin" component={Admin} />
-      {/* P1 product landing pages */}
-      <Route path="/ultai" component={UltAi} />
+      {/* FineGuard Service public pages */}
       <Route path="/fineguard" component={FineGuard} />
-      <Route path="/vaultline" component={VaultLine} />
+      <Route path="/ultai" component={FineGuard} />
+      <Route path="/vaultline" component={FineGuard} />
       {/* Conversion and intake */}
       <Route path="/intake-sheet" component={IntakeSheet} />
       <Route path="/compliance-bundle" component={ComplianceBundle} />

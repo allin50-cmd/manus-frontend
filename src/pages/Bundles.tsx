@@ -162,7 +162,7 @@ function EventRow({
   );
 }
 
-// Demo chain data (simulated from a real ClerkOS bundle)
+// Demo chain data (simulated from a real FineGuard bundle)
 function buildDemoChain(caseId: number): EventNode[] {
   const ts = (daysAgo: number) =>
     new Date(Date.now() - daysAgo * 86_400_000).toISOString();

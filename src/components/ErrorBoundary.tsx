@@ -18,7 +18,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[ClerkOS] Uncaught error:', error, info);
+    console.error('[FineGuard] Uncaught error:', error, info);
   }
 
   render() {
