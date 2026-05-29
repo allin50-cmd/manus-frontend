@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { trpc } from '@/lib/trpc';
-import { AlertCircle, Clock, Plus, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Clock, ListTodo, Plus, TimerReset } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -26,6 +26,32 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'] as const;
+
+function SummaryCard({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  icon: typeof ListTodo;
+  tone: string;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+        </div>
+        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${tone}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CreateAllocationDialog({
   open,
@@ -173,7 +199,17 @@ export default function Queue() {
     updateMutation.mutate({ id, status });
   };
 
-  // Group by priority
+  const queueStats = allocations.reduce(
+    (acc, item) => {
+      if (item.status === 'pending') acc.pending += 1;
+      if (item.status === 'in_progress') acc.inProgress += 1;
+      if (item.priority === 'urgent') acc.urgent += 1;
+      if (item.dueDate && item.dueDate < today) acc.overdue += 1;
+      return acc;
+    },
+    { pending: 0, inProgress: 0, urgent: 0, overdue: 0 },
+  );
+
   const grouped = PRIORITY_ORDER.reduce(
     (acc, p) => {
       const items = allocations.filter((a) => a.priority === p);
@@ -185,36 +221,66 @@ export default function Queue() {
 
   return (
     <ClerkOSLayout>
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-6 max-w-6xl mx-auto">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Queue</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Work Queue</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Workflow ingestion — pending clerk task allocations
+              ClerkOS allocations, escalation work, and operator handoff tasks
             </p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             Allocate
           </button>
         </div>
 
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <SummaryCard
+            label="Pending"
+            value={queueStats.pending}
+            icon={ListTodo}
+            tone="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300"
+          />
+          <SummaryCard
+            label="In Progress"
+            value={queueStats.inProgress}
+            icon={TimerReset}
+            tone="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300"
+          />
+          <SummaryCard
+            label="Urgent"
+            value={queueStats.urgent}
+            icon={AlertTriangle}
+            tone="bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300"
+          />
+          <SummaryCard
+            label="Overdue"
+            value={queueStats.overdue}
+            icon={Clock}
+            tone="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          />
+        </div>
+
         {error && (
-          <div className="mb-4 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+          <div className="mb-4 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              Database not connected — no queue items to display.
-            </p>
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Queue data unavailable</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-0.5">
+                The control surface is online, but the database-backed allocation feed did not respond.
+              </p>
+            </div>
           </div>
         )}
 
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+              <div key={i} className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4">
                 <div className="space-y-2 animate-pulse">
                   <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/3" />
                   <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/2" />
@@ -223,12 +289,22 @@ export default function Queue() {
             ))}
           </div>
         ) : allocations.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-10 text-center">
-            <Clock className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-400 dark:text-slate-500">No pending allocations</p>
+          <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-10 text-center">
+            <CheckCircle2 className="w-9 h-9 text-emerald-500 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">No active queue items</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              New allocations and human escalation tasks will appear here.
+            </p>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="mt-5 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add allocation
+            </button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {Object.entries(grouped).map(([priority, items]) => (
               <div key={priority}>
                 <div className="flex items-center gap-2 mb-3">
@@ -245,7 +321,7 @@ export default function Queue() {
                       <div
                         key={a.id}
                         className={[
-                          'rounded-xl border p-4 flex items-start justify-between gap-4',
+                          'rounded-lg border p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4',
                           isOverdue
                             ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/50'
                             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800',
@@ -281,7 +357,7 @@ export default function Queue() {
                           )}
                         </div>
 
-                        <div className="flex gap-2 flex-shrink-0">
+                        <div className="flex gap-2 flex-shrink-0 sm:justify-end">
                           <button
                             onClick={() => handleStatusChange(a.id, 'in_progress')}
                             disabled={updateMutation.isLoading || a.status === 'in_progress'}

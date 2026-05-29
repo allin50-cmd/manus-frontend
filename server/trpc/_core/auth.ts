@@ -78,8 +78,14 @@ export async function getUserFromRequest(req: Request): Promise<VerifiedAuthUser
     if (user) return user;
   }
 
-  // 2. Dev/test fallback: x-user-open-id header (only in non-production)
-  if (process.env.NODE_ENV !== 'production') {
+  // 2. Operator fallback for deployments that have not configured Azure B2C yet.
+  // Once B2C is configured, production stops accepting this header unless
+  // ALLOW_HEADER_AUTH=true is explicitly set.
+  const headerAuthAllowed =
+    process.env.NODE_ENV !== 'production' ||
+    !B2C_TENANT ||
+    process.env.ALLOW_HEADER_AUTH === 'true';
+  if (headerAuthAllowed) {
     const openId = req.headers['x-user-open-id'] as string | undefined;
     if (openId) {
       return {

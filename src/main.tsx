@@ -21,11 +21,11 @@ const trpcClient = (trpc.createClient as any)({
     httpBatchLink({
       url: '/api/trpc',
       headers() {
-        const openId = localStorage.getItem('clerk-open-id');
-        const tenant = localStorage.getItem('clerk-tenant');
+        const openId = localStorage.getItem('clerk-open-id') ?? 'fineguard-operator';
+        const tenant = localStorage.getItem('clerk-tenant') ?? 'system';
         const headers: Record<string, string> = {};
-        if (openId) headers['x-user-open-id'] = openId;
-        if (tenant) headers['x-tenant'] = tenant;
+        headers['x-user-open-id'] = openId;
+        headers['x-tenant'] = tenant;
         return headers;
       },
     }),

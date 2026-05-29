@@ -80,6 +80,16 @@ Expected async response shape:
 }
 ```
 
+Use the Postgres workflow engine instead of Celery:
+
+```bash
+VOICE_AGENT_QUEUE_BACKEND=postgres docker compose --profile postgres-queue up --build
+```
+
+The Postgres backend persists jobs through `pending -> processing -> completed`
+or `dead_letter`, records attempts in `job_attempts`, emits append-only
+`system_events`, and stores transcript chunks with `UNIQUE(session_id, seq)`.
+
 ## Running Tests
 
 ```bash
@@ -96,6 +106,7 @@ pytest
 | `VOICE_AGENT_PORT` | Local exposed service port, default `8080` |
 | `DATABASE_URL` | Postgres URL for audit table writes |
 | `REDIS_URL` | Redis broker/backend URL for background transcript tasks |
+| `VOICE_AGENT_QUEUE_BACKEND` | `celery` by default; set `postgres` for the Postgres workflow engine |
 | `AUDIT_LOG_PATH` | Append-only JSONL audit log path |
 | `VOICE_AGENT_CORS_ORIGINS` | Comma-separated browser origins allowed to call the service |
 | `VOICE_AGENT_CORS_ORIGIN_REGEX` | Optional regex for preview origins, default allows Vercel preview apps |

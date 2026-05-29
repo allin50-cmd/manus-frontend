@@ -21,6 +21,7 @@ import {
   getUserByOpenId,
   getTenantBySlug,
   setTenantContext,
+  upsertUser,
   writeAuditEvent,
   getDb as getClerkDb,
 } from './trpc/db.js';
@@ -34,6 +35,7 @@ import { processVoiceTranscript, VoiceAuditEvent, VoiceTranscriptInput } from '.
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
 const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+const FALLBACK_OPERATOR_OPEN_ID = process.env.PUBLIC_OPERATOR_OPEN_ID ?? 'fineguard-operator';
 
 const isVercel = Boolean(process.env.VERCEL);
 const LOCAL_ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:5173'];
@@ -248,7 +250,19 @@ export function createApp(): express.Express {
 
             if (tenantId) await setTenantContext(tenantId);
 
-            const dbUser = await getUserByOpenId(authUser.openId, tenantId ?? undefined);
+            let dbUser = await getUserByOpenId(authUser.openId, tenantId ?? undefined);
+            if (!dbUser && tenantId && authUser.openId === FALLBACK_OPERATOR_OPEN_ID) {
+              await upsertUser({
+                tenantId,
+                openId: authUser.openId,
+                email: authUser.email ?? 'operator@fineguard.local',
+                name: authUser.name ?? 'FineGuard Operator',
+                loginMethod: 'operator-fallback',
+                role: 'admin (senior clerk / manager)',
+                lastSignedIn: new Date(),
+              });
+              dbUser = await getUserByOpenId(authUser.openId, tenantId);
+            }
             if (dbUser) user = dbUser;
 
             return { user, tenantId: tenantId ?? null, tenant: tenant ?? null, req, res };

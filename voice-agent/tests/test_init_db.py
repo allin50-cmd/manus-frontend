@@ -29,6 +29,18 @@ def test_initialize_database_uses_runtime_audit_schema(monkeypatch) -> None:
 
     assert seen_urls == ["postgresql://example/voice"]
     schema = fake_connection.statements[0]
+    assert "CREATE TABLE IF NOT EXISTS system_events" in schema
+    assert "id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY" in schema
+    assert "CREATE TABLE IF NOT EXISTS job_queue" in schema
+    assert "failure_fingerprint TEXT" in schema
+    assert "idx_job_queue_pending" in schema
+    assert "WHERE status = 'pending'" in schema
+    assert "idx_job_queue_failure_fingerprint" in schema
+    assert "CREATE TABLE IF NOT EXISTS transcript_chunks" in schema
+    assert "UNIQUE(session_id, seq)" in schema
+    assert "idx_transcript_chunks_session_seq" in schema
+    assert "CREATE TABLE IF NOT EXISTS worker_heartbeats" in schema
+    assert "metadata JSONB NOT NULL" in schema
     assert "event_id UUID PRIMARY KEY" in schema
     assert "idempotency_key TEXT UNIQUE NOT NULL" in schema
     assert "event_type TEXT NOT NULL" in schema

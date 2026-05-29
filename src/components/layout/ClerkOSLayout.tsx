@@ -69,8 +69,8 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
 
   const tenantSlug =
     typeof window !== 'undefined'
-      ? (localStorage.getItem('clerk-tenant') ?? 'alpha')
-      : 'alpha';
+      ? (localStorage.getItem('clerk-tenant') ?? 'system')
+      : 'system';
   const userName =
     typeof window !== 'undefined'
       ? (localStorage.getItem('clerk-name') ?? 'FineGuard Operator')
