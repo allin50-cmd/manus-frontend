@@ -1,10 +1,9 @@
 import {
-  BookOpen,
   CalendarDays,
   ClipboardCheck,
   CreditCard,
-  Home,
   Info,
+  LayoutDashboard,
   Mic,
   Moon,
   ShieldCheck,
@@ -12,25 +11,24 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useTheme } from '@/contexts/ThemeContext';
-import { isFineGuardHost } from '@/lib/host';
 
 const PUBLIC_LINKS = [
-  { href: '/', label: 'App', icon: Home },
-  { href: '/fineguard', label: 'Service', icon: ShieldCheck },
+  { href: '/', label: 'Service', icon: ShieldCheck },
   { href: '/compliance-bundle', label: 'Check', icon: ClipboardCheck },
   { href: '/voice-reception', label: 'AI Reception', icon: Mic },
-  { href: '/book-demo', label: 'Demo', icon: CalendarDays },
+  { href: '/clerkos', label: 'ClerkOS', icon: LayoutDashboard },
   { href: '/pricing', label: 'Pricing', icon: CreditCard },
+  { href: '/book-demo', label: 'Demo', icon: CalendarDays },
   { href: '/about', label: 'About', icon: Info },
 ];
 
 const FINEGUARD_LINKS = [
-  { href: '/', label: 'Home', icon: ShieldCheck },
+  { href: '/', label: 'Service', icon: ShieldCheck },
   { href: '/compliance-bundle', label: 'Check', icon: ClipboardCheck },
   { href: '/voice-reception', label: 'AI Reception', icon: Mic },
+  { href: '/clerkos', label: 'ClerkOS', icon: LayoutDashboard },
   { href: '/pricing', label: 'Pricing', icon: CreditCard },
   { href: '/book-demo', label: 'Demo', icon: CalendarDays },
-  { href: '/app', label: 'App', icon: Home },
 ];
 
 type PublicNavProps = {
@@ -41,15 +39,12 @@ export default function PublicNav({ variant = 'auto' }: PublicNavProps) {
   const [location] = useLocation();
   const { theme, toggleTheme } = useTheme();
   const isLight = variant === 'auto' ? theme === 'light' : variant === 'light';
-  const fineGuardHost = isFineGuardHost();
-  const links = fineGuardHost ? FINEGUARD_LINKS : PUBLIC_LINKS;
-  const brand = fineGuardHost ? 'FineGuard Service' : 'FineGuard Ops';
-  const BrandIcon = fineGuardHost ? ShieldCheck : BookOpen;
+  const links = location === '/' ? FINEGUARD_LINKS : PUBLIC_LINKS;
 
   return (
     <header
       className={[
-        'px-4 py-4',
+        'sticky top-0 z-30 px-4 py-3 backdrop-blur',
         isLight
           ? 'bg-white/80 border-b border-slate-200 text-slate-900'
           : 'bg-slate-950/60 border-b border-white/10 text-white',
@@ -60,16 +55,12 @@ export default function PublicNav({ variant = 'auto' }: PublicNavProps) {
           <span
             className={[
               'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-              fineGuardHost
-                ? 'bg-[#C9A64A] text-white'
-                : isLight
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white/10 text-white',
+              'bg-[#C9A64A] text-white',
             ].join(' ')}
           >
-            <BrandIcon className="w-4 h-4" />
+            <ShieldCheck className="w-4 h-4" />
           </span>
-          <span className="text-sm font-bold truncate">{brand}</span>
+          <span className="text-sm font-bold truncate">FineGuard Service</span>
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">

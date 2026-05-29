@@ -1,6 +1,6 @@
 import PublicNav from '@/components/layout/PublicNav';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, DollarSign, Mic, ShieldCheck } from 'lucide-react';
+import { CheckCircle, DollarSign, LayoutDashboard, Mic, ShieldCheck } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 const PLANS = [
@@ -25,13 +25,13 @@ const PLANS = [
     accent: 'cyan',
   },
   {
-    name: 'FineGuard Managed Service',
+    name: 'ClerkOS Control Surface',
     price: 'Custom',
     unit: '',
-    description: 'For teams that want setup help, monitoring workflow design, and operator support.',
-    features: ['Operator onboarding', 'Service routing rules', 'Compliance workflow review', 'Escalation playbook setup'],
-    cta: 'Book Demo',
-    href: '/book-demo',
+    description: 'For teams that need an operational console behind FineGuard Service.',
+    features: ['Case and queue dashboard', 'Document and bundle workflow', 'Service routing rules', 'Escalation review workspace'],
+    cta: 'Open ClerkOS',
+    href: '/clerkos',
     accent: 'indigo',
   },
 ];
@@ -58,6 +58,11 @@ export default function Pricing() {
             <p className="text-sm text-gray-400 mt-2">FineGuard Service now covers monitoring, checks, intake, and audit-ready handoff.</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+            <LayoutDashboard className="w-5 h-5 text-cyan-300 mb-3" />
+            <h2 className="text-base font-semibold text-white">ClerkOS included as a service</h2>
+            <p className="text-sm text-gray-400 mt-2">ClerkOS is the control surface for reviewing checks, calls, cases, and handoffs.</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-5 md:col-span-2">
             <Mic className="w-5 h-5 text-cyan-300 mb-3" />
             <h2 className="text-base font-semibold text-white">Advanced AI reception</h2>
             <p className="text-sm text-gray-400 mt-2">Voice transcripts are classified, gated by policy, and escalated before irreversible actions.</p>

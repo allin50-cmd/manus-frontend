@@ -29,9 +29,9 @@ import { Link, useLocation } from 'wouter';
 
 const NAV_SECTIONS = [
   {
-    label: 'Operations',
+    label: 'ClerkOS',
     items: [
-      { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/clerkos', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/cases', label: 'Cases', icon: Scale },
       { path: '/hearings', label: 'Hearings', icon: Gavel },
       { path: '/documents', label: 'Documents', icon: FileText },
@@ -44,21 +44,15 @@ const NAV_SECTIONS = [
   {
     label: 'FineGuard Service',
     items: [
-      { path: '/fineguard', label: 'Service Home', icon: ShieldCheck },
+      { path: '/fineguard', label: 'Front Door', icon: ShieldCheck },
       { path: '/compliance-bundle', label: 'Company Check', icon: ClipboardCheck },
+      { path: '/voice-reception', label: 'AI Reception', icon: Mic },
+      { path: '/intake-sheet', label: 'Service Intake', icon: ClipboardList },
       { path: '/book-demo', label: 'Book Demo', icon: MessageSquare },
     ],
   },
   {
-    label: 'Workflows',
-    items: [
-      { path: '/intake-sheet', label: 'Intake Sheet', icon: ClipboardList },
-      { path: '/compliance-bundle', label: 'Compliance Bundle', icon: ClipboardCheck },
-      { path: '/book-demo', label: 'Book Demo', icon: MessageSquare },
-    ],
-  },
-  {
-    label: 'More',
+    label: 'Manage',
     items: [
       { path: '/pricing', label: 'Pricing', icon: CreditCard },
       { path: '/about', label: 'About', icon: Info },
@@ -79,8 +73,8 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
       : 'alpha';
   const userName =
     typeof window !== 'undefined'
-      ? (localStorage.getItem('clerk-name') ?? 'Court Clerk')
-      : 'Court Clerk';
+      ? (localStorage.getItem('clerk-name') ?? 'FineGuard Operator')
+      : 'FineGuard Operator';
 
   const sidebar = (
     <aside className="w-60 flex-shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-full">
@@ -91,10 +85,10 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none">
-            FineGuard Ops
+            ClerkOS
           </p>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">
-            Service Console
+            FineGuard control surface
           </p>
         </div>
         <button
@@ -198,7 +192,7 @@ export default function ClerkOSLayout({ children }: { children: React.ReactNode 
             <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
               <BookOpen className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">FineGuard Ops</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">ClerkOS</span>
           </div>
         </div>
 

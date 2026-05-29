@@ -1,5 +1,5 @@
 import PublicNav from '@/components/layout/PublicNav';
-import { Building2, FileText, Mic, ShieldCheck } from 'lucide-react';
+import { Building2, FileText, LayoutDashboard, Mic, ShieldCheck } from 'lucide-react';
 
 const SERVICE_AREAS = [
   {
@@ -16,6 +16,11 @@ const SERVICE_AREAS = [
     title: 'AI Voice Reception',
     description: 'Call transcript capture, risk gating, and human escalation.',
     icon: Mic,
+  },
+  {
+    title: 'ClerkOS',
+    description: 'The FineGuard control surface for service operations and review work.',
+    icon: LayoutDashboard,
   },
 ];
 
@@ -36,7 +41,7 @@ export default function About() {
           <div className="rounded-xl border border-white/10 bg-white/5 p-6">
             <h2 className="text-xl font-semibold text-white">What the service is for</h2>
             <p className="text-sm text-gray-400 mt-4 leading-relaxed">
-              FineGuard Service connects public enquiries to the operations dashboard:
+              FineGuard Service connects public enquiries to ClerkOS, the operations dashboard:
               leads, intake records, compliance bundle requests, monitored company status, and AI reception outcomes.
               Each route is designed to be useful alone while still feeding the same operational core.
             </p>
@@ -49,7 +54,7 @@ export default function About() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             {SERVICE_AREAS.map(({ title, description, icon: Icon }) => (
               <div key={title} className="rounded-xl border border-white/10 bg-white/5 p-5">
                 <div className="w-10 h-10 rounded-lg bg-[#5A4BFF]/15 text-indigo-200 flex items-center justify-center mb-4">

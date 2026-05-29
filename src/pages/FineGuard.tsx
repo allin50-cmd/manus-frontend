@@ -12,6 +12,9 @@ import {
   AlertTriangle,
   LockKeyhole,
   ScanSearch,
+  LayoutDashboard,
+  Mic,
+  MessageSquare,
 } from 'lucide-react';
 
 const FEATURES = [
@@ -44,6 +47,37 @@ const SIGNALS = [
   { label: 'Human review', value: 'Escalates', tone: 'text-rose-700 bg-rose-50 border-rose-200' },
 ];
 
+const ENTRY_POINTS = [
+  {
+    title: 'Company Check',
+    description: 'Run a Companies House compliance check and create a bundle for review.',
+    href: '/compliance-bundle',
+    cta: 'Start check',
+    icon: FileSearch,
+  },
+  {
+    title: 'AI Voice Reception',
+    description: 'Process caller transcripts, classify intent, and escalate urgent matters.',
+    href: '/voice-reception',
+    cta: 'Open reception',
+    icon: Mic,
+  },
+  {
+    title: 'ClerkOS',
+    description: 'Open the operational control surface for cases, documents, queues, and bundles.',
+    href: '/clerkos',
+    cta: 'Open ClerkOS',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Talk to an Operator',
+    description: 'Book a setup call for monitoring, routing rules, or managed service support.',
+    href: '/book-demo',
+    cta: 'Book demo',
+    icon: MessageSquare,
+  },
+];
+
 const ROUTES = [
   {
     title: 'South London contractors',
@@ -68,7 +102,7 @@ export default function FineGuard() {
   return (
     <div className="min-h-screen theme-light-default bg-[#F8F8F8]">
       <PublicNav />
-      <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16 space-y-14">
+      <div className="max-w-7xl mx-auto px-4 py-10 sm:py-14 space-y-12">
         <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white border border-[#C9A64A]/30 px-3 py-1 text-xs font-semibold text-[#8A6D1F] mb-6">
@@ -79,8 +113,8 @@ export default function FineGuard() {
               FineGuard Service keeps company risk visible before it becomes expensive.
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mb-8">
-              A lean compliance front door for SMEs: check a company, surface overdue filing risk,
-              activate monitoring, and escalate urgent legal or compliance matters to a human.
+              A simple front door for SMEs: check a company, receive calls through AI reception,
+              open ClerkOS for operations, and escalate urgent legal or compliance matters to a human.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
@@ -91,18 +125,18 @@ export default function FineGuard() {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               <Button
-                onClick={() => setLocation('/book-demo')}
-                variant="outline"
-                className="border-[#1A1A1A]/20 px-7 py-6 text-base"
-              >
-                Book Operator Demo
-              </Button>
-              <Button
                 onClick={() => setLocation('/voice-reception')}
                 variant="outline"
                 className="border-[#1A1A1A]/20 px-7 py-6 text-base"
               >
                 AI Voice Reception
+              </Button>
+              <Button
+                onClick={() => setLocation('/clerkos')}
+                variant="outline"
+                className="border-[#1A1A1A]/20 px-7 py-6 text-base"
+              >
+                Open ClerkOS
               </Button>
             </div>
             <div className="mt-8 grid sm:grid-cols-3 gap-3 max-w-2xl">
@@ -152,6 +186,27 @@ export default function FineGuard() {
               ))}
             </div>
           </div>
+        </section>
+
+        <section aria-label="FineGuard control surface" className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {ENTRY_POINTS.map(({ title, description, href, cta, icon: Icon }) => (
+            <button
+              key={title}
+              type="button"
+              onClick={() => setLocation(href)}
+              className="group text-left bg-white border border-[#1A1A1A]/10 rounded-lg p-5 shadow-sm hover:border-[#C9A64A]/60 hover:shadow-md transition-all"
+            >
+              <div className="w-10 h-10 rounded-lg bg-[#C9A64A]/10 text-[#A98427] flex items-center justify-center mb-4">
+                <Icon className="w-5 h-5" />
+              </div>
+              <h2 className="text-base font-semibold text-[#1A1A1A]">{title}</h2>
+              <p className="text-sm text-gray-600 mt-2 leading-relaxed min-h-[62px]">{description}</p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#8A6D1F]">
+                {cta}
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </button>
+          ))}
         </section>
 
         <section className="grid md:grid-cols-3 gap-4">

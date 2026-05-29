@@ -4,9 +4,9 @@
 
 ## Runtime Behavior
 
-- `manus-frontend-zeta.vercel.app` keeps `/` as the FineGuard operations dashboard.
-- `thefineguard.com` serves `/` as the FineGuard Service landing/check frontend.
-- `/app` remains available as a dashboard route when reached from the FineGuard domain.
+- `/` serves the FineGuard Service front door.
+- `/clerkos` and `/app` serve ClerkOS, the operational control-surface service.
+- `thefineguard.com` should serve the same FineGuard Service front door once the domain is attached to the project.
 - `/compliance-bundle`, `/book-demo`, and `/pricing` are shared conversion routes.
 
 ## Domain Setup

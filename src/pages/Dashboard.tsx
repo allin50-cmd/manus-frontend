@@ -77,10 +77,16 @@ const STATUS_BADGE: Record<string, string> = {
 
 const LAUNCH_LINKS = [
   {
-    label: 'FineGuard Service',
-    description: 'Compliance monitoring, company checks, and SME intake in one service.',
-    href: '/fineguard',
-    icon: ShieldCheck,
+    label: 'Company Check',
+    description: 'Run a compliance check and create the handoff pack.',
+    href: '/compliance-bundle',
+    icon: ClipboardCheck,
+  },
+  {
+    label: 'AI Voice Reception',
+    description: 'Capture calls, classify intent, gate risk, and escalate urgent matters.',
+    href: '/voice-reception',
+    icon: Mic,
   },
   {
     label: 'Service Intake',
@@ -89,22 +95,16 @@ const LAUNCH_LINKS = [
     icon: ClipboardList,
   },
   {
-    label: 'Company Check',
-    description: 'Build the handoff pack for monitored companies.',
-    href: '/compliance-bundle',
-    icon: ClipboardCheck,
+    label: 'FineGuard Front Door',
+    description: 'Return to the customer-facing service intro screen.',
+    href: '/fineguard',
+    icon: ShieldCheck,
   },
   {
     label: 'Book Demo',
     description: 'Capture sales interest and route it to admin leads.',
     href: '/book-demo',
     icon: MessageSquare,
-  },
-  {
-    label: 'AI Voice Reception',
-    description: 'Capture calls, classify intent, gate risk, and escalate urgent matters.',
-    href: '/voice-reception',
-    icon: Mic,
   },
 ];
 
@@ -119,9 +119,9 @@ export default function Dashboard() {
       <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-7">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">ClerkOS Control Surface</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            FineGuard Service operations — live overview
+            The FineGuard Service operations hub for cases, documents, queues, and escalation work.
           </p>
         </div>
 
@@ -272,10 +272,10 @@ export default function Dashboard() {
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Platform Launchpad
+                Service Shortcuts
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Service pages, intake, checks, and AI reception are available from here.
+                Jump into the main FineGuard service workflows from ClerkOS.
               </p>
             </div>
             <Link

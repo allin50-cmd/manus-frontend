@@ -4,7 +4,6 @@ import NotFound from '@/pages/NotFound';
 import { Route, Switch } from 'wouter';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { isFineGuardHost } from './lib/host';
 import About from './pages/About';
 import Admin from './pages/Admin';
 import BookDemo from './pages/BookDemo';
@@ -23,13 +22,12 @@ import Team from './pages/Team';
 import VoiceAgent from './pages/VoiceAgent';
 
 function Router() {
-  const Home = isFineGuardHost() ? FineGuard : Dashboard;
-
   return (
     <Switch>
       {/* FineGuard operational routes */}
-      <Route path="/" component={Home} />
+      <Route path="/" component={FineGuard} />
       <Route path="/app" component={Dashboard} />
+      <Route path="/clerkos" component={Dashboard} />
       <Route path="/cases" component={Cases} />
       <Route path="/hearings" component={Hearings} />
       <Route path="/documents" component={Documents} />
