@@ -4,9 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.audit import AuditLog
-from app.intent import classify_intent
-from app.models import EventType, PolicyDecision, ProcessTranscriptResponse, TranscriptRequest
-from app.policy import evaluate_policy
+from app.models import EnqueueTranscriptResponse, ProcessTranscriptResponse, TranscriptRequest
+from app.processor import process_transcript_request
+from app.queue import enqueue_transcript_processing
 
 app = FastAPI(title="SME Voice Agent MVP", version="0.1.0")
 cors_origins = [
@@ -36,66 +36,9 @@ def health() -> dict[str, str]:
 
 @app.post("/process-transcript", response_model=ProcessTranscriptResponse)
 def process_transcript(request: TranscriptRequest) -> ProcessTranscriptResponse:
-    audit_log.record(
-        EventType.SESSION_STARTED,
-        request.session_id,
-        request.caller,
-        {"caller": request.caller},
-    )
-    audit_log.record(
-        EventType.TRANSCRIPT_RECEIVED,
-        request.session_id,
-        request.caller,
-        {"transcript": request.transcript},
-    )
+    return process_transcript_request(request, audit_log)
 
-    intent = classify_intent(request.transcript)
-    audit_log.record(
-        EventType.INTENT_CLASSIFIED,
-        request.session_id,
-        request.caller,
-        {"intent": intent.value},
-    )
 
-    policy = evaluate_policy(intent, request.transcript)
-    audit_log.record(
-        EventType.POLICY_CHECK_REQUIRED,
-        request.session_id,
-        request.caller,
-        {
-            "intent": intent.value,
-            "risk_level": policy.risk_level.value,
-            "policy_decision": policy.decision.value,
-        },
-    )
-
-    if policy.decision == PolicyDecision.ESCALATE:
-        audit_log.record(
-            EventType.HUMAN_ESCALATION_REQUIRED,
-            request.session_id,
-            request.caller,
-            {
-                "intent": intent.value,
-                "reason": policy.next_action,
-            },
-        )
-
-    completed = audit_log.record(
-        EventType.SESSION_COMPLETED,
-        request.session_id,
-        request.caller,
-        {
-            "intent": intent.value,
-            "risk_level": policy.risk_level.value,
-            "policy_decision": policy.decision.value,
-            "next_action": policy.next_action,
-        },
-    )
-
-    return ProcessTranscriptResponse(
-        intent=intent,
-        risk_level=policy.risk_level,
-        policy_decision=policy.decision,
-        next_action=policy.next_action,
-        audit_event_id=completed.event_id,
-    )
+@app.post("/voice/events", response_model=EnqueueTranscriptResponse, status_code=202)
+def enqueue_voice_event(request: TranscriptRequest) -> EnqueueTranscriptResponse:
+    return enqueue_transcript_processing(request)

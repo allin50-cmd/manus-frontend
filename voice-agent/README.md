@@ -58,6 +58,28 @@ Expected response shape:
 }
 ```
 
+Enqueue a transcript for background processing:
+
+```bash
+curl -s http://localhost:8080/voice/events \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "session_id": "demo-session-async-001",
+    "caller": "+442000000000",
+    "transcript": "Urgent legal compliance deadline today"
+  }'
+```
+
+Expected async response shape:
+
+```json
+{
+  "status": "accepted",
+  "correlation_id": "...",
+  "task_id": "..."
+}
+```
+
 ## Running Tests
 
 ```bash
@@ -73,6 +95,7 @@ pytest
 | --- | --- |
 | `VOICE_AGENT_PORT` | Local exposed service port, default `8080` |
 | `DATABASE_URL` | Postgres URL for audit table writes |
+| `REDIS_URL` | Redis broker/backend URL for background transcript tasks |
 | `AUDIT_LOG_PATH` | Append-only JSONL audit log path |
 | `VOICE_AGENT_CORS_ORIGINS` | Comma-separated browser origins allowed to call the service |
 | `VOICE_AGENT_CORS_ORIGIN_REGEX` | Optional regex for preview origins, default allows Vercel preview apps |

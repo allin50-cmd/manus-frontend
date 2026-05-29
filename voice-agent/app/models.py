@@ -48,6 +48,12 @@ class ProcessTranscriptResponse(BaseModel):
     audit_event_id: str
 
 
+class EnqueueTranscriptResponse(BaseModel):
+    status: str
+    correlation_id: str
+    task_id: str
+
+
 class PolicyResult(BaseModel):
     risk_level: RiskLevel
     decision: PolicyDecision
@@ -63,4 +69,3 @@ class AuditEvent(BaseModel):
     payload: dict[str, Any]
     duplicate: bool = False
     created_at: str
-
