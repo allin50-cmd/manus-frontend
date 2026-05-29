@@ -63,3 +63,4 @@ Thumbs.db
 *.key
 *.cert
 credentials.json
+.vercel
