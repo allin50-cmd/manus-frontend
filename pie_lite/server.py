@@ -42,6 +42,11 @@ class PIEHandler(SimpleHTTPRequestHandler):
             self.send_error(404, "Not found")
 
     def do_GET(self):
+        # Block access to Python source and bytecode files
+        path = urlparse(self.path).path
+        if path.endswith(('.py', '.pyc', '.pyo')):
+            self.send_error(403, "Forbidden")
+            return
         super().do_GET()
 
     def log_message(self, format, *args):

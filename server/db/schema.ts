@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb, integer, index, numeric } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb, integer, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -196,7 +196,7 @@ export type Alert = typeof alerts.$inferSelect;
 export type EscalationRule = typeof escalationRules.$inferSelect;
 export type AlertEvent = typeof alertEvents.$inferSelect;
 
-// ── Governance Layer ──���─────────────────────────���─────────────────────────────
+// ── Governance Layer ──────────────────────────────────────────────────────────
 
 export const governancePolicies = pgTable('governance_policies', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -243,7 +243,7 @@ export type NewGovernancePolicy = typeof governancePolicies.$inferInsert;
 export type GovernanceDecision = typeof governanceDecisions.$inferSelect;
 export type NewGovernanceDecision = typeof governanceDecisions.$inferInsert;
 
-// ── PIE Leads ─────────────────────────────────────��───────────────────────────
+// ── PIE Leads ─────────────────────────────────────────────────────────────────
 
 export const pieLeads = pgTable('pie_leads', {
   id: uuid('id').primaryKey().defaultRandom(),

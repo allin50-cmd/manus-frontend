@@ -22,7 +22,7 @@ def extract_floor_area(description: str, build_type: str) -> tuple[float, str, s
     Returns (area, source, confidence).
     """
     match = re.search(
-        r"(\d+(?:\.\d+)?)\s?(?:sq\.?\s?m|square\s?metres|m\s?²|sqm)",
+        r"(\d+(?:\.\d+)?)\s?(?:sqm\b|sq\.?\s?m(?:etre)?s?\b|m\s?²)",
         description,
         re.IGNORECASE,
     )

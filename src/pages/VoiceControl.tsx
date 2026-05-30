@@ -222,6 +222,9 @@ export default function VoiceControl() {
   useEffect(() => {
     checkHealth();
     let retryDelay = 2000;
+    // cancelled prevents the onerror handler (which some browsers fire on
+    // manual es.close()) from scheduling a ghost reconnect after cleanup.
+    let cancelled = false;
 
     function connect() {
       const es = new EventSource(`${baseUrl}/stream`);
@@ -230,16 +233,19 @@ export default function VoiceControl() {
       es.onopen = () => { setSseConnected(true); retryDelay = 2000; };
 
       es.onerror = () => {
+        if (cancelled) return;
         setSseConnected(false);
         es.close();
         sseRef.current = null;
         sseRetryRef.current = setTimeout(() => {
+          if (cancelled) return;
           retryDelay = Math.min(retryDelay * 2, 30000);
           connect();
         }, retryDelay);
       };
 
       es.onmessage = (e) => {
+        if (cancelled) return;
         const msg = JSON.parse(e.data) as { type: string; sessions?: Session[]; session?: Session; id?: string };
         if (msg.type === 'init' && msg.sessions) {
           setSessions(msg.sessions);
@@ -266,6 +272,7 @@ export default function VoiceControl() {
     connect();
 
     return () => {
+      cancelled = true;
       if (sseRetryRef.current) clearTimeout(sseRetryRef.current);
       sseRef.current?.close();
       sseRef.current = null;

@@ -9,7 +9,7 @@ const router = Router();
 const ADMIN_KEY = process.env.ADMIN_API_KEY;
 
 function requireAuth(req: Request, res: Response): boolean {
-  if (!ADMIN_KEY) return true;
+  if (!ADMIN_KEY || ADMIN_KEY.length === 0) return true;
   if (req.headers['x-admin-key'] !== ADMIN_KEY) {
     res.status(401).json({ error: 'Unauthorized' });
     return false;
@@ -112,16 +112,24 @@ router.get('/decisions', async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
   const limit = Math.min(parseInt(req.query['limit'] as string) || 50, 200);
   const agentId = req.query['agent_id'] as string | undefined;
-  const since = req.query['since'] as string | undefined;
+  const sinceRaw = req.query['since'] as string | undefined;
+
+  let sinceDate: Date | undefined;
+  if (sinceRaw !== undefined) {
+    sinceDate = new Date(sinceRaw);
+    if (isNaN(sinceDate.getTime())) {
+      return res.status(400).json({ error: `Invalid 'since' value: ${sinceRaw}. Use ISO 8601 format.` });
+    }
+  }
 
   try {
     let query = db.select().from(governanceDecisions);
-    if (agentId && since) {
-      query = query.where(and(eq(governanceDecisions.agentId, agentId), gte(governanceDecisions.decidedAt, new Date(since)))) as typeof query;
+    if (agentId && sinceDate) {
+      query = query.where(and(eq(governanceDecisions.agentId, agentId), gte(governanceDecisions.decidedAt, sinceDate))) as typeof query;
     } else if (agentId) {
       query = query.where(eq(governanceDecisions.agentId, agentId)) as typeof query;
-    } else if (since) {
-      query = query.where(gte(governanceDecisions.decidedAt, new Date(since))) as typeof query;
+    } else if (sinceDate) {
+      query = query.where(gte(governanceDecisions.decidedAt, sinceDate)) as typeof query;
     }
     const rows = await query.orderBy(desc(governanceDecisions.decidedAt)).limit(limit);
     res.json(rows);

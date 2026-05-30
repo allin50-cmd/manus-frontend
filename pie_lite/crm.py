@@ -38,6 +38,12 @@ def process_new_leads(
     assign placeholder scores, and append to the leads store.
     Returns list of newly created Leads.
     """
+    if not csv_path.exists():
+        raise FileNotFoundError(
+            f"CSV input not found: {csv_path}\n"
+            "Run the scraper first: python3 run_daily.py"
+        )
+
     existing_leads = load_leads(leads_path)
     seen_refs = _load_seen_refs(seen_refs_path)
 

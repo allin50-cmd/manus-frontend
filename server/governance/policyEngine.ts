@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { db } from '../db/index';
 import { governancePolicies, governanceDecisions, rateLimitCounters } from '../db/schema';
-import { eq, and, gt, count } from 'drizzle-orm';
+import { eq, and, gt, lt, count } from 'drizzle-orm';
 
 export type GovernanceDecisionValue = 'ALLOW' | 'DENY' | 'ALLOW_WITH_CONDITIONS' | 'ESCALATE';
 
@@ -30,6 +30,15 @@ interface PolicyRow {
   priority: number;
 }
 
+function canonicalize(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(canonicalize);
+  const obj = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.keys(obj).sort().map((k) => [k, canonicalize(obj[k])]),
+  );
+}
+
 export class PolicyEngine {
   async evaluate(opts: {
     agentId: string;
@@ -40,11 +49,9 @@ export class PolicyEngine {
   }): Promise<GovernanceResult> {
     const { agentId, sessionId, actionType, targetResource, parameters } = opts;
 
-    // 1. Canonical request digest (deterministic JSON stringify)
-    const payload = JSON.stringify(
-      { agent_id: agentId, session_id: sessionId, action_type: actionType, target_resource: targetResource, parameters },
-      Object.keys({ agent_id: '', session_id: '', action_type: '', target_resource: '', parameters: {} }).sort(),
-    );
+    // 1. Canonical request digest — sort all object keys recursively so the
+    //    digest is stable regardless of insertion order in `parameters`.
+    const payload = JSON.stringify(canonicalize({ agent_id: agentId, session_id: sessionId, action_type: actionType, target_resource: targetResource, parameters }));
     const requestDigest = crypto.createHash('sha256').update(payload).digest('hex');
 
     // 2. Load active policies (TTL-cached)
@@ -137,13 +144,21 @@ export class PolicyEngine {
     const windowSeconds = cfg.window_seconds ?? 60;
     const windowStart = new Date(Date.now() - windowSeconds * 1000);
 
-    // Insert a tick (best-effort — ignore duplicate-key errors)
-    await db.insert(rateLimitCounters).values({ agentId, bucket: 'rpm' }).catch(() => {});
+    // Insert a tick — log failures (don't silently swallow connection errors)
+    await db.insert(rateLimitCounters).values({ agentId, bucket: 'rpm' }).catch((err) => {
+      console.error('[governance] rate-limit tick insert failed:', err);
+    });
 
+    // Count ticks in the current window
     const [row] = await db
       .select({ count: count() })
       .from(rateLimitCounters)
       .where(and(eq(rateLimitCounters.agentId, agentId), eq(rateLimitCounters.bucket, 'rpm'), gt(rateLimitCounters.requestTime, windowStart)));
+
+    // Prune expired rows for this agent to keep the table bounded
+    db.delete(rateLimitCounters)
+      .where(and(eq(rateLimitCounters.agentId, agentId), eq(rateLimitCounters.bucket, 'rpm'), lt(rateLimitCounters.requestTime, windowStart)))
+      .catch((err) => console.error('[governance] rate-limit cleanup failed:', err));
 
     return (row?.count ?? 0) > maxRpm;
   }

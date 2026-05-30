@@ -26,7 +26,6 @@ FLOOR_AREA_DEFAULTS = {
     "extension":        25,
     "new_build":        120,
     "loft_conversion":  40,
-    "refurbishment":    80,
     "other":            80
 }
 
@@ -35,5 +34,5 @@ LEADS_JSON_PATH = "pie_lite/data/leads.json"
 SEEN_REFS_PATH = "seen_refs.json"          # shared with idox-scraper
 CSV_INPUT_PATH = "real_council_leads.csv"
 
-# Vercel API base URL for push command
+# Vercel API target (override with PIE_API_URL env var for staging/prod)
 VERCEL_API_URL = os.environ.get("PIE_API_URL", "http://localhost:3000")

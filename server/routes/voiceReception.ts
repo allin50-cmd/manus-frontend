@@ -19,7 +19,7 @@ const ADMIN_KEY = process.env.ADMIN_API_KEY;
 const MAX_TRANSCRIPT_LEN = 4000;
 
 function requireAuth(req: Request, res: Response): boolean {
-  if (!ADMIN_KEY) return true;
+  if (!ADMIN_KEY || ADMIN_KEY.length === 0) return true;
   if (req.headers['x-admin-key'] !== ADMIN_KEY) {
     res.status(401).json({ error: 'Unauthorized' });
     return false;

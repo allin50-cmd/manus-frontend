@@ -10,20 +10,22 @@ declare global {
   }
 }
 
+// GET requests and these sub-paths are never governed (read-only or streaming)
+const UNGOVERNED_PATHS = new Set(['/health', '/stream']);
+
 /**
- * Returns an Express middleware that evaluates governance policies for each
- * matching request.  protectedPaths are matched against req.path (relative to
- * the router mount point).  Only POST requests on matched paths are governed.
+ * Governs all mutating (non-GET) requests to the voice-reception router,
+ * passing /health and /stream through ungoverned.
  *
  * On DENY  → 403 JSON + short-circuits the request.
  * On error → 403 JSON (fail-closed).
  * Otherwise → attaches result to req.governanceDecision and sets response
  *              headers X-Governance-Decision-ID / -Decision / -Request-Digest.
  */
-export function governanceMiddleware(protectedPaths: string[] = ['/process-transcript']) {
+export function governanceMiddleware() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Only govern listed paths; pass everything else straight through
-    if (!protectedPaths.includes(req.path) || req.method !== 'POST') {
+    // Pass through read-only and infrastructure paths
+    if (req.method === 'GET' || UNGOVERNED_PATHS.has(req.path)) {
       return next();
     }
 

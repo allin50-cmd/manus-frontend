@@ -67,14 +67,14 @@ export function createApp() {
     next();
   });
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   app.use('/api/governance', governanceRouter);
+  app.use('/api/pie', pieRouter);
   app.use('/api/alerts', alertRouter);
   app.use('/api/companies', companiesRouter);
-  // Governance middleware intercepts POST /process-transcript before the router handler
-  app.use('/api/voice-reception', governanceMiddleware(['/process-transcript']));
+  // Governance middleware: governs all non-GET/health/stream voice-reception requests
+  app.use('/api/voice-reception', governanceMiddleware());
   app.use('/api/voice-reception', voiceReceptionRouter);
-  app.use('/api/pie', pieRouter);
-  app.use(express.urlencoded({ extended: true }));
   app.use((req: Request, _res: Response, next: NextFunction) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
