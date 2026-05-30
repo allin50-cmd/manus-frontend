@@ -64,3 +64,4 @@ Thumbs.db
 credentials.json
 *.env
 .azure-secrets.env
+.claude/
