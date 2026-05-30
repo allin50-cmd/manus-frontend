@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import PublicNav from '@/components/layout/PublicNav';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -72,54 +71,50 @@ export default function BookDemo() {
 
   if (success) {
     return (
-      <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
-        <PublicNav />
-        <div className="min-h-[calc(100vh-73px)] flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-400" />
-              </div>
-              <CardTitle className="text-2xl text-white">Request Submitted!</CardTitle>
-              <CardDescription className="text-gray-400">
-                We've received your demo booking request
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-center">
-              <div className="p-4 bg-[#1A1D28] border border-[#2A2D3A] rounded-lg">
-                <p className="text-sm text-gray-400 mb-2">Your Reference ID</p>
-                <p className="text-lg font-mono text-[#5A4BFF] font-semibold">{leadId}</p>
-              </div>
-              <p className="text-gray-300">
-                Our team will contact you within 24 hours to schedule your personalized demo.
-              </p>
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setSuccess(false)}
-                  variant="outline"
-                  className="flex-1 bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
-                >
-                  Submit Another
-                </Button>
-                <Button
-                  onClick={() => setLocation('/')}
-                  className="flex-1 bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Home
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+            <CardTitle className="text-2xl text-white">Request Submitted!</CardTitle>
+            <CardDescription className="text-gray-400">
+              We've received your demo booking request
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <div className="p-4 bg-[#1A1D28] border border-[#2A2D3A] rounded-lg">
+              <p className="text-sm text-gray-400 mb-2">Your Reference ID</p>
+              <p className="text-lg font-mono text-[#5A4BFF] font-semibold">{leadId}</p>
+            </div>
+            <p className="text-gray-300">
+              Our team will contact you within 24 hours to schedule your personalized demo.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setSuccess(false)}
+                variant="outline"
+                className="flex-1 bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
+              >
+                Submit Another
+              </Button>
+              <Button
+                onClick={() => setLocation('/')}
+                className="flex-1 bg-[#5A4BFF] hover:bg-[#6B5BFF] text-white"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014]">
-      <PublicNav />
-      <div className="max-w-2xl mx-auto py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0F1014] via-[#1A1D28] to-[#0F1014] py-12 px-4">
+      <div className="max-w-2xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-white mb-4">Book a Demo</h1>
           <p className="text-gray-400 text-lg">
@@ -131,7 +126,7 @@ export default function BookDemo() {
           <CardHeader>
             <CardTitle className="text-2xl text-white">Request a Demo</CardTitle>
             <CardDescription className="text-gray-400">
-              Fill out the form below and we'll get back to you about FineGuard Service.
+              Fill out the form below and we'll get back to you within 24 hours
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -215,9 +210,10 @@ export default function BookDemo() {
                     <SelectValue placeholder="Select a product" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1A1D28] border-[#2A2D3A]">
-                    <SelectItem value="fineguard-service">FineGuard Service</SelectItem>
-                    <SelectItem value="ai-voice-reception">Advanced AI Voice Reception</SelectItem>
-                    <SelectItem value="managed-service">Managed Service Setup</SelectItem>
+                    <SelectItem value="vaultline">VaultLine Cloud</SelectItem>
+                    <SelectItem value="ultai">UltAi Secure Intake</SelectItem>
+                    <SelectItem value="fineguard">FineGuard Compliance Cloud</SelectItem>
+                    <SelectItem value="all">All Products</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
