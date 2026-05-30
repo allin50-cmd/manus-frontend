@@ -1,5 +1,7 @@
 import { Route, Switch } from 'wouter';
 import { Toaster } from 'sonner';
+import Layout from './components/Layout';
+import Home from './pages/Home';
 import FineGuard from './pages/FineGuard';
 import ComplianceBundle from './pages/ComplianceBundle';
 import VaultLine from './pages/VaultLine';
@@ -7,6 +9,10 @@ import UltAi from './pages/UltAi';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Team from './pages/Team';
+import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import AlertsDashboard from './pages/AlertsDashboard';
 import BookDemo from './pages/BookDemo';
 import IntakeSheet from './pages/IntakeSheet';
 import Admin from './pages/Admin';
@@ -17,19 +23,23 @@ export default function App() {
   return (
     <>
       <Switch>
-        <Route path="/" component={FineGuard} />
-        <Route path="/fineguard" component={FineGuard} />
-        <Route path="/compliance-bundle" component={ComplianceBundle} />
-        <Route path="/vaultline" component={VaultLine} />
-        <Route path="/ultai" component={UltAi} />
-        <Route path="/pricing" component={Pricing} />
-        <Route path="/about" component={About} />
-        <Route path="/team" component={Team} />
-        <Route path="/book-demo" component={BookDemo} />
-        <Route path="/intake" component={IntakeSheet} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/audit" component={AuditLanding} />
-        <Route component={NotFound} />
+        <Route path="/" component={() => <Layout><Home /></Layout>} />
+        <Route path="/fineguard" component={() => <Layout><FineGuard /></Layout>} />
+        <Route path="/vaultline" component={() => <Layout><VaultLine /></Layout>} />
+        <Route path="/ultai" component={() => <Layout><UltAi /></Layout>} />
+        <Route path="/pricing" component={() => <Layout><Pricing /></Layout>} />
+        <Route path="/about" component={() => <Layout><About /></Layout>} />
+        <Route path="/team" component={() => <Layout><Team /></Layout>} />
+        <Route path="/contact" component={() => <Layout><Contact /></Layout>} />
+        <Route path="/privacy" component={() => <Layout><Privacy /></Layout>} />
+        <Route path="/terms" component={() => <Layout><Terms /></Layout>} />
+        <Route path="/alerts" component={() => <Layout><AlertsDashboard /></Layout>} />
+        <Route path="/compliance-bundle" component={() => <Layout><ComplianceBundle /></Layout>} />
+        <Route path="/book-demo" component={() => <Layout><BookDemo /></Layout>} />
+        <Route path="/intake" component={() => <Layout><IntakeSheet /></Layout>} />
+        <Route path="/admin" component={() => <Layout><Admin /></Layout>} />
+        <Route path="/audit" component={() => <Layout><AuditLanding /></Layout>} />
+        <Route component={() => <Layout><NotFound /></Layout>} />
       </Switch>
       <Toaster richColors position="top-right" />
     </>
