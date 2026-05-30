@@ -89,7 +89,7 @@ export default function PIEDashboard() {
       if (e instanceof Error && e.name === 'AbortError') return;
       throw e;
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
