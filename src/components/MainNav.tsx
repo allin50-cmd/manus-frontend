@@ -20,9 +20,17 @@ const company = [
   { label: 'Pricing', href: '/pricing' },
 ];
 
+const platform = [
+  { label: 'Portal', href: '/portal', icon: '⬡' },
+  { label: 'Admin', href: '/admin', icon: '🛠' },
+  { label: 'Clerk Dashboard', href: '/clerk-dashboard', icon: '⚖️' },
+  { label: 'PIE Control Plane', href: '/pie', icon: '🧠' },
+];
+
 export default function MainNav({ theme = 'dark', active }: MainNavProps) {
   const [, setLocation] = useLocation();
   const [productsOpen, setProductsOpen] = useState(false);
+  const [platformOpen, setPlatformOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isDark = theme === 'dark';
@@ -94,6 +102,36 @@ export default function MainNav({ theme = 'dark', active }: MainNavProps) {
               {label}
             </button>
           ))}
+
+          {/* Platform dropdown */}
+          <div className="relative">
+            <button
+              onMouseEnter={() => setPlatformOpen(true)}
+              onMouseLeave={() => setPlatformOpen(false)}
+              onClick={() => setPlatformOpen(v => !v)}
+              className={`flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${muted} hover:text-white`}
+            >
+              Platform <ChevronDown className={`h-3.5 w-3.5 transition-transform ${platformOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {platformOpen && (
+              <div
+                onMouseEnter={() => setPlatformOpen(true)}
+                onMouseLeave={() => setPlatformOpen(false)}
+                className="absolute right-0 top-full mt-1 w-52 rounded-xl border border-white/10 bg-[#0F1014] p-2 shadow-xl"
+              >
+                {platform.map(({ label, href, icon }) => (
+                  <button
+                    key={label}
+                    onClick={() => { setLocation(href); setPlatformOpen(false); }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-white/5 ${active === label ? 'text-white bg-white/5' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    <span>{icon}</span>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* CTA */}
@@ -144,6 +182,17 @@ export default function MainNav({ theme = 'dark', active }: MainNavProps) {
                 onClick={() => { setLocation(href); setMobileOpen(false); }}
                 className="block w-full rounded-lg px-3 py-2.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white"
               >
+                {label}
+              </button>
+            ))}
+            <div className="my-2 border-t border-white/10" />
+            {platform.map(({ label, href, icon }) => (
+              <button
+                key={label}
+                onClick={() => { setLocation(href); setMobileOpen(false); }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white"
+              >
+                <span>{icon}</span>
                 {label}
               </button>
             ))}

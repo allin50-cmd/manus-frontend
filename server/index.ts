@@ -22,6 +22,8 @@ import {
 import clerksRouter from './routes/clerks.js';
 import { fgQueue, type AuditJobData } from './queue/fgQueue.js';
 import { openApiSpec } from './openapi.js';
+import { pieState } from './pie/stateEngine.js';
+import { getJob } from './jobs/jobStore.js';
 
 // Load environment variables
 dotenv.config();
@@ -815,6 +817,67 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {
   customSiteTitle: 'Allin50 API Docs',
   customCss: '.swagger-ui .topbar { display: none }',
 }));
+
+// ============================================================================
+// PIE ENGINE ENDPOINTS
+// ============================================================================
+
+app.get('/api/pie/health', (_req: Request, res: Response) => {
+  res.json(pieState.getState());
+});
+
+app.get('/api/pie/history', (_req: Request, res: Response) => {
+  res.json({ history: pieState.getHistory() });
+});
+
+app.get('/api/pie/rules', (_req: Request, res: Response) => {
+  res.json({
+    rules: [
+      { id: 1, rule: 'extreme-error-rate',        target: 'failsafe', condition: 'errorRate > 0.2' },
+      { id: 2, rule: 'sustained-high-errors',     target: 'failsafe', condition: 'last5 non-healthy & errorRate > 0.08' },
+      { id: 3, rule: 'dual-transport-failure',    target: 'failsafe', condition: 'queueDepth > 0.9 & errorRate > 0.15' },
+      { id: 4, rule: 'high-error-rate',           target: 'critical', condition: 'errorRate > 0.1' },
+      { id: 5, rule: 'deep-queue-with-errors',    target: 'critical', condition: 'queueDepth > 0.7 & errorRate > 0.05' },
+      { id: 6, rule: 'low-ultai-confidence',      target: 'critical', condition: 'avgConfidence < 0.5 & errorRate > 0.03' },
+      { id: 7, rule: 'moderate-error-rate',       target: 'degraded', condition: 'errorRate > 0.03' },
+      { id: 8, rule: 'high-queue-depth',          target: 'degraded', condition: 'queueDepth > 0.5' },
+      { id: 9, rule: 'tenant-concentration-risk', target: 'degraded', condition: 'tenantConcentration > 0.9 & errorRate > 0.01' },
+      { id: 10, rule: 'mode-instability',         target: 'degraded', condition: '>=3 distinct modes in last 10 & errorRate > 0.01' },
+      { id: 11, rule: 'all-clear',                target: 'healthy',  condition: 'none triggered' },
+    ],
+  });
+});
+
+// ============================================================================
+// OPS SUMMARY ENDPOINT
+// ============================================================================
+
+app.get('/api/ops/summary', async (_req: Request, res: Response) => {
+  try {
+    const [waiting, active, completed, failed] = await Promise.all([
+      fgQueue.getWaitingCount(),
+      fgQueue.getActiveCount(),
+      fgQueue.getCompletedCount(),
+      fgQueue.getFailedCount(),
+    ]);
+    const state = pieState.getState();
+    res.json({ waiting, active, completed, failed, concurrency: state ? (
+      state.mode === 'healthy' ? 20 : state.mode === 'degraded' ? 10 : state.mode === 'critical' ? 3 : 1
+    ) : 20 });
+  } catch {
+    res.json({ waiting: 0, active: 0, completed: 0, failed: 0, concurrency: 20 });
+  }
+});
+
+// ============================================================================
+// JOB STATUS ENDPOINT
+// ============================================================================
+
+app.get('/api/job/:id', async (req: Request, res: Response) => {
+  const job = await getJob(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  res.json(job);
+});
 
 // ============================================================================
 // ZAPIER REST-HOOK ENDPOINTS

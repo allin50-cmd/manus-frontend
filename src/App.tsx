@@ -17,6 +17,8 @@ const AuditLanding = lazy(() => import('./pages/AuditLanding'));
 const LawClerks = lazy(() => import('./pages/LawClerks'));
 const ClerkDashboard = lazy(() => import('./pages/ClerkDashboard'));
 const LegalSuite = lazy(() => import('./pages/LegalSuite'));
+const Portal = lazy(() => import('./pages/Portal'));
+const PIEDashboard = lazy(() => import('./pages/PIEDashboard'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const PageSpinner = (
@@ -50,6 +52,8 @@ export default function App() {
             <Route path="/legal" component={LegalSuite} />
             <Route path="/law-clerks" component={LawClerks} />
             <Route path="/clerk-dashboard" component={ClerkDashboard} />
+            <Route path="/portal" component={Portal} />
+            <Route path="/pie" component={PIEDashboard} />
             <Route component={NotFound} />
           </Switch>
         </Suspense>
