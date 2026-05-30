@@ -853,26 +853,26 @@ app.get('/api/pie/rules', (_req: Request, res: Response) => {
 // ============================================================================
 
 app.get('/api/ops/summary', async (_req: Request, res: Response) => {
-  const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 2000));
+  let timerId: ReturnType<typeof setTimeout>;
+  const concurrency = pieState.getConcurrency();
+  const fallback = { waiting: 0, active: 0, completed: 0, failed: 0, concurrency, queueUnavailable: true };
   try {
-    const result = await Promise.race([
-      Promise.all([
-        fgQueue.getWaitingCount(),
-        fgQueue.getActiveCount(),
-        fgQueue.getCompletedCount(),
-        fgQueue.getFailedCount(),
-      ]),
-      timeout,
+    const countsPromise = Promise.all([
+      fgQueue.getWaitingCount(),
+      fgQueue.getActiveCount(),
+      fgQueue.getCompletedCount(),
+      fgQueue.getFailedCount(),
     ]);
-    const state = pieState.getState();
-    const concurrency = state.mode === 'healthy' ? 20 : state.mode === 'degraded' ? 10 : state.mode === 'critical' ? 3 : 1;
-    if (!result) return res.json({ waiting: 0, active: 0, completed: 0, failed: 0, concurrency, queueUnavailable: true });
+    countsPromise.catch(() => {}); // prevent unhandled rejection if timeout wins
+    const timeout = new Promise<null>(resolve => { timerId = setTimeout(() => resolve(null), 2000); });
+    const result = await Promise.race([countsPromise, timeout]);
+    clearTimeout(timerId!);
+    if (!result) return res.json(fallback);
     const [waiting, active, completed, failed] = result;
     res.json({ waiting, active, completed, failed, concurrency });
   } catch {
-    const state = pieState.getState();
-    const concurrency = state.mode === 'healthy' ? 20 : state.mode === 'degraded' ? 10 : state.mode === 'critical' ? 3 : 1;
-    res.json({ waiting: 0, active: 0, completed: 0, failed: 0, concurrency, queueUnavailable: true });
+    clearTimeout(timerId!);
+    res.json(fallback);
   }
 });
 
@@ -1162,6 +1162,46 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // ============================================================================
+// PIE METRICS SAMPLER — evaluates engine every 30s with real queue data
+// ============================================================================
+
+const MAX_QUEUE_DEPTH = 100; // treat 100 waiting jobs as 100% depth
+
+async function samplePIEMetrics(): Promise<void> {
+  try {
+    const countsPromise = Promise.all([
+      fgQueue.getWaitingCount(),
+      fgQueue.getActiveCount(),
+      fgQueue.getCompletedCount(),
+      fgQueue.getFailedCount(),
+    ]);
+    countsPromise.catch(() => {}); // prevent unhandled rejection if timeout wins
+    const timer = new Promise<null>(resolve => setTimeout(() => resolve(null), 2000));
+    const result = await Promise.race([countsPromise, timer]);
+    if (!result) return; // Redis unavailable — skip evaluation this tick
+
+    const [waiting, , completed, failed] = result;
+    const total = completed + failed;
+    const errorRate = total > 0 ? failed / total : 0;
+    const queueDepth = Math.min(waiting / MAX_QUEUE_DEPTH, 1);
+
+    pieState.evaluate({
+      errorRate,
+      queueDepth,
+      avgConfidence: 1.0,       // populated by UltraCore when integrated
+      tenantConcentration: 0,   // populated by tenant analytics when available
+      recentModeSwitches: 0,    // derived by pieState internally from history
+    });
+  } catch {
+    // Non-fatal — PIE state remains at last known good
+  }
+}
+
+// Run immediately on startup then every 30 seconds
+samplePIEMetrics();
+const pieInterval = setInterval(samplePIEMetrics, 30_000);
+
+// ============================================================================
 // START SERVER
 // ============================================================================
 
@@ -1209,6 +1249,7 @@ const server = app.listen(PORT, () => {
 
 const shutdown = () => {
   console.log('\n[SHUTDOWN] Gracefully closing server...');
+  clearInterval(pieInterval);
   server.close(() => {
     console.log('[SHUTDOWN] Server closed.');
     process.exit(0);

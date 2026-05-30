@@ -68,29 +68,35 @@ export default function PIEDashboard() {
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (signal?: AbortSignal) => {
     try {
       const [stateRes, opsRes, histRes] = await Promise.all([
-        fetch('/api/pie/health'),
-        fetch('/api/ops/summary'),
-        fetch('/api/pie/history'),
+        fetch('/api/pie/health', { signal }),
+        fetch('/api/ops/summary', { signal }),
+        fetch('/api/pie/history', { signal }),
       ]);
       if (stateRes.ok) setState(await stateRes.json());
       if (opsRes.ok) setOps(await opsRes.json());
       if (histRes.ok) {
         const d = await histRes.json();
-        setHistory(Array.isArray(d.history) ? d.history : []);
+        const known = (Array.isArray(d.history) ? d.history : []).filter(
+          (m: unknown): m is PIEMode => typeof m === 'string' && m in MODE_CONFIG
+        );
+        setHistory(known);
       }
       setLastRefresh(new Date());
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'AbortError') return;
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchAll();
-    const id = setInterval(fetchAll, 10_000);
-    return () => clearInterval(id);
+    const controller = new AbortController();
+    fetchAll(controller.signal);
+    const id = setInterval(() => fetchAll(controller.signal), 10_000);
+    return () => { controller.abort(); clearInterval(id); };
   }, [fetchAll]);
 
   const mode: PIEMode = state?.mode ?? 'healthy';

@@ -85,34 +85,31 @@ export default function Portal() {
   const [pie, setPie] = useState<PIEState | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/ops/summary').then(r => r.ok ? r.json() : null),
-      fetch('/api/pie/health').then(r => r.ok ? r.json() : null),
-    ]).then(([, pieData]) => {
-      if (pieData) setPie(pieData);
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    fetch('/api/pie/health', { signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPie(d); })
+      .catch(() => {});
+
+    const STAT_SOURCES: { url: string; key: keyof Stats }[] = [
+      { url: '/api/admin/leads?limit=1',               key: 'leads' },
+      { url: '/api/admin/intake-forms?limit=1',         key: 'intakeForms' },
+      { url: '/api/admin/compliance-bundles?limit=1',   key: 'complianceBundles' },
+      { url: '/api/admin/contacts?limit=1',             key: 'contacts' },
+    ];
+
+    const defaults: Stats = { leads: 0, intakeForms: 0, complianceBundles: 0, contacts: 0 };
+
+    STAT_SOURCES.forEach(({ url, key }) => {
+      fetch(url, { signal })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.pagination) setStats(s => ({ ...defaults, ...s, [key]: d.pagination.total })); })
+        .catch(() => {});
     });
 
-    // Fetch rough stats from admin endpoint
-    fetch('/api/leads?limit=1').then(async r => {
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.pagination) setStats(s => ({ ...s ?? { leads: 0, intakeForms: 0, complianceBundles: 0, contacts: 0 }, leads: d.pagination.total }));
-    });
-    fetch('/api/intake?limit=1').then(async r => {
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.pagination) setStats(s => ({ ...s ?? { leads: 0, intakeForms: 0, complianceBundles: 0, contacts: 0 }, intakeForms: d.pagination.total }));
-    });
-    fetch('/api/compliance-bundles?limit=1').then(async r => {
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.pagination) setStats(s => ({ ...s ?? { leads: 0, intakeForms: 0, complianceBundles: 0, contacts: 0 }, complianceBundles: d.pagination.total }));
-    });
-    fetch('/api/contacts?limit=1').then(async r => {
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.pagination) setStats(s => ({ ...s ?? { leads: 0, intakeForms: 0, complianceBundles: 0, contacts: 0 }, contacts: d.pagination.total }));
-    });
+    return () => controller.abort();
   }, []);
 
   const mode = pie?.mode ?? 'healthy';
