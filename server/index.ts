@@ -28,6 +28,34 @@ import { getJob } from './jobs/jobStore.js';
 // Load environment variables
 dotenv.config();
 
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+/** Parse ?page and ?limit query params with safe defaults and clamping. */
+function parsePagination(req: Request): { page: number; limit: number; offset: number } {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+  return { page, limit, offset: (page - 1) * limit };
+}
+
+/**
+ * Fetch all four BullMQ queue counts with a timeout fallback.
+ * Returns null when Redis is unavailable (timeout elapsed or error thrown).
+ */
+async function getBullMQCounts(timeoutMs = 2000): Promise<[number, number, number, number] | null> {
+  const countsPromise = Promise.all([
+    fgQueue.getWaitingCount(),
+    fgQueue.getActiveCount(),
+    fgQueue.getCompletedCount(),
+    fgQueue.getFailedCount(),
+  ]);
+  countsPromise.catch(() => {}); // prevent unhandled rejection if timeout wins
+  let timerId!: ReturnType<typeof setTimeout>;
+  const timer = new Promise<null>(resolve => { timerId = setTimeout(() => resolve(null), timeoutMs); });
+  const result = await Promise.race([countsPromise, timer]);
+  clearTimeout(timerId);
+  return result;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -427,9 +455,7 @@ app.post('/api/lead', submitLimiter, validateBody(LeadSchema), async (req: Reque
  */
 app.get('/api/admin/leads', async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = parsePagination(req);
 
     const [allLeads, [{ count: total }]] = await Promise.all([
       db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit).offset(offset),
@@ -496,9 +522,7 @@ app.post('/api/intake', submitLimiter, validateBody(IntakeSchema), async (req: R
  */
 app.get('/api/admin/intake-forms', async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = parsePagination(req);
 
     const [allForms, [{ count: total }]] = await Promise.all([
       db.select().from(intakeForms).orderBy(desc(intakeForms.createdAt)).limit(limit).offset(offset),
@@ -657,9 +681,7 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
  */
 app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = parsePagination(req);
 
     const [data, [{ count: total }]] = await Promise.all([
       db.select().from(complianceBundles).orderBy(desc(complianceBundles.createdAt)).limit(limit).offset(offset),
@@ -723,9 +745,7 @@ app.post('/api/contact', submitLimiter, validateBody(ContactSchema), async (req:
  */
 app.get('/api/admin/contacts', async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = parsePagination(req);
 
     const [allContacts, [{ count: total }]] = await Promise.all([
       db.select().from(contacts).orderBy(desc(contacts.createdAt)).limit(limit).offset(offset),
@@ -858,25 +878,14 @@ app.get('/api/pie/rules', (_req: Request, res: Response) => {
 // ============================================================================
 
 app.get('/api/ops/summary', async (_req: Request, res: Response) => {
-  let timerId: ReturnType<typeof setTimeout>;
   const concurrency = pieState.getConcurrency();
   const fallback = { waiting: 0, active: 0, completed: 0, failed: 0, concurrency, queueUnavailable: true };
   try {
-    const countsPromise = Promise.all([
-      fgQueue.getWaitingCount(),
-      fgQueue.getActiveCount(),
-      fgQueue.getCompletedCount(),
-      fgQueue.getFailedCount(),
-    ]);
-    countsPromise.catch(() => {}); // prevent unhandled rejection if timeout wins
-    const timeout = new Promise<null>(resolve => { timerId = setTimeout(() => resolve(null), 2000); });
-    const result = await Promise.race([countsPromise, timeout]);
-    clearTimeout(timerId!);
+    const result = await getBullMQCounts();
     if (!result) return res.json(fallback);
     const [waiting, active, completed, failed] = result;
     res.json({ waiting, active, completed, failed, concurrency });
   } catch {
-    clearTimeout(timerId!);
     res.json(fallback);
   }
 });
@@ -1108,6 +1117,16 @@ app.delete('/api/admin/contacts/:id', async (req: Request, res: Response) => {
   }
 });
 
+app.delete('/api/admin/intake-forms/:id', async (req: Request, res: Response) => {
+  try {
+    await db.delete(intakeForms).where(eq(intakeForms.id, req.params.id));
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting intake form:', error);
+    res.status(500).json({ error: 'Failed to delete intake form' });
+  }
+});
+
 /**
  * GET /api/stats
  * Public summary stats endpoint (used by homepage)
@@ -1174,18 +1193,8 @@ const MAX_QUEUE_DEPTH = 100; // treat 100 waiting jobs as 100% depth
 
 async function samplePIEMetrics(): Promise<void> {
   try {
-    const countsPromise = Promise.all([
-      fgQueue.getWaitingCount(),
-      fgQueue.getActiveCount(),
-      fgQueue.getCompletedCount(),
-      fgQueue.getFailedCount(),
-    ]);
-    countsPromise.catch(() => {}); // prevent unhandled rejection if timeout wins
-    const timer = new Promise<null>(resolve => setTimeout(() => resolve(null), 2000));
-    const result = await Promise.race([countsPromise, timer]);
-
     // Evaluate with real counts when Redis is available, zeroed metrics otherwise
-    const [waiting, , completed, failed] = result ?? [0, 0, 0, 0];
+    const [waiting = 0, , completed = 0, failed = 0] = await getBullMQCounts() ?? [];
     const total = completed + failed;
     const errorRate = total > 0 ? failed / total : 0;
     const queueDepth = Math.min(waiting / MAX_QUEUE_DEPTH, 1);
@@ -1195,15 +1204,15 @@ async function samplePIEMetrics(): Promise<void> {
       queueDepth,
       avgConfidence: 1.0,       // populated by UltraCore when integrated
       tenantConcentration: 0,   // populated by tenant analytics when available
-      recentModeSwitches: 0,    // derived by pieState internally from history
     });
   } catch {
     // Non-fatal — PIE state remains at last known good
   }
 }
 
-// Run immediately on startup then every 30 seconds
-samplePIEMetrics();
+// Delay the first sample by 5 s so Redis has time to warm up on cold starts,
+// then evaluate every 30 s.
+setTimeout(samplePIEMetrics, 5_000);
 const pieInterval = setInterval(samplePIEMetrics, 30_000);
 
 // ============================================================================

@@ -6,7 +6,6 @@ const DEFAULT_FEATURES: PIEFeatures = {
   queueDepth: 0,
   avgConfidence: 1.0,
   tenantConcentration: 0,
-  recentModeSwitches: 0,
 };
 
 function features(overrides: Partial<PIEFeatures>): PIEFeatures {

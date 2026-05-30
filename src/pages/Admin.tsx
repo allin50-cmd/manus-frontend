@@ -128,10 +128,10 @@ export default function Admin() {
         fetch('/api/deployments/status'),
       ]);
 
-      if (leadsRes.ok) setLeads(await leadsRes.json());
-      if (intakeRes.ok) setIntakeForms(await intakeRes.json());
-      if (bundlesRes.ok) setComplianceBundles(await bundlesRes.json());
-      if (contactsRes.ok) setContacts(await contactsRes.json());
+      if (leadsRes.ok) { const d = await leadsRes.json(); setLeads(d.data ?? d); }
+      if (intakeRes.ok) { const d = await intakeRes.json(); setIntakeForms(d.data ?? d); }
+      if (bundlesRes.ok) { const d = await bundlesRes.json(); setComplianceBundles(d.data ?? d); }
+      if (contactsRes.ok) { const d = await contactsRes.json(); setContacts(d.data ?? d); }
       if (deploymentsRes.ok) {
         const data = await deploymentsRes.json();
         setDeployments(data.deployments || []);
@@ -144,12 +144,17 @@ export default function Admin() {
     }
   };
 
-  async function handleDelete(type: 'lead' | 'contact', id: string) {
+  async function handleDelete(type: 'lead' | 'intake' | 'contact', id: string) {
     if (!confirm('Delete this record?')) return;
-    const endpoint = type === 'lead' ? `/api/admin/leads/${id}` : `/api/admin/contacts/${id}`;
+    const endpoint = type === 'lead'
+      ? `/api/admin/leads/${id}`
+      : type === 'intake'
+      ? `/api/admin/intake-forms/${id}`
+      : `/api/admin/contacts/${id}`;
     const res = await fetch(endpoint, { method: 'DELETE' });
     if (res.ok) {
       if (type === 'lead') setLeads(prev => prev.filter(l => l.id !== id));
+      else if (type === 'intake') setIntakeForms(prev => prev.filter(f => f.id !== id));
       else setContacts(prev => prev.filter(c => c.id !== id));
       toast.success('Record deleted');
     } else {
@@ -556,7 +561,7 @@ export default function Admin() {
                           </TableCell>
                           <TableCell>
                             <button
-                              onClick={() => handleDelete('lead', form.id)}
+                              onClick={() => handleDelete('intake', form.id)}
                               className="text-red-400/60 hover:text-red-400 transition-colors p-1 rounded"
                               aria-label="Delete record"
                             >

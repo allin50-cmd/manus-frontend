@@ -105,7 +105,7 @@ export default function Portal() {
     STAT_SOURCES.forEach(({ url, key }) => {
       fetch(url, { signal })
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.pagination) setStats(s => ({ ...defaults, ...s, [key]: d.pagination.total })); })
+        .then(d => { if (d?.pagination) setStats(s => ({ ...(s ?? defaults), [key]: d.pagination.total })); })
         .catch(() => {});
     });
 

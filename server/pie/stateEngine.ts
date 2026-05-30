@@ -5,7 +5,6 @@ export interface PIEFeatures {
   queueDepth: number;
   avgConfidence: number;
   tenantConcentration: number;
-  recentModeSwitches: number;
 }
 
 export interface PIESystemState {
