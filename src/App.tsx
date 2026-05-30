@@ -35,7 +35,7 @@ export default function App() {
         <Route path="/privacy" component={() => <Layout><Privacy /></Layout>} />
         <Route path="/terms" component={() => <Layout><Terms /></Layout>} />
         <Route path="/alerts" component={() => <Layout><AlertsDashboard /></Layout>} />
-        <Route path="/voice-reception" component={() => <Layout><VoiceControl /></Layout>} />
+        <Route path="/voice-reception" component={VoiceControl} />
         <Route path="/compliance-bundle" component={() => <Layout><ComplianceBundle /></Layout>} />
         <Route path="/book-demo" component={() => <Layout><BookDemo /></Layout>} />
         <Route path="/intake" component={() => <Layout><IntakeSheet /></Layout>} />

@@ -27,7 +27,7 @@ import ClerkOSLayout from '@/components/layout/ClerkOSLayout';
 type VoiceIntent = 'construction_lead' | 'legal_or_compliance' | 'urgent_issue' | 'general_enquiry' | 'unknown';
 type RiskLevel = 'low' | 'medium' | 'high';
 type PolicyDecision = 'ALLOW' | 'MODIFY' | 'DENY' | 'ESCALATE';
-type SessionStatus = 'active' | 'escalated' | 'resolved' | 'completed';
+type SessionStatus = 'active' | 'escalated' | 'denied' | 'resolved' | 'completed';
 
 interface AuditEvent {
   event_id: string;
@@ -85,6 +85,7 @@ const RISK_CONFIG: Record<RiskLevel, { label: string; color: string }> = {
 const STATUS_CONFIG: Record<SessionStatus, { label: string; dot: string }> = {
   active: { label: 'Active', dot: 'bg-blue-400' },
   escalated: { label: 'Escalated', dot: 'bg-orange-400 animate-pulse' },
+  denied: { label: 'Denied', dot: 'bg-red-400' },
   resolved: { label: 'Resolved', dot: 'bg-emerald-400' },
   completed: { label: 'Completed', dot: 'bg-gray-500' },
 };
@@ -199,6 +200,7 @@ export default function VoiceControl() {
   const [processing, setProcessing] = useState(false);
 
   const sseRef = useRef<EventSource | null>(null);
+  const sseRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const baseUrl = '/api/voice-reception';
 
   // ── Stats ────────────────────────────────────────────────────────────────
@@ -219,43 +221,66 @@ export default function VoiceControl() {
   // ── SSE connection ────────────────────────────────────────────────────────
   useEffect(() => {
     checkHealth();
-    const es = new EventSource(`${baseUrl}/stream`);
-    sseRef.current = es;
+    let retryDelay = 2000;
 
-    es.onopen = () => setSseConnected(true);
-    es.onerror = () => setSseConnected(false);
+    function connect() {
+      const es = new EventSource(`${baseUrl}/stream`);
+      sseRef.current = es;
 
-    es.onmessage = (e) => {
-      const msg = JSON.parse(e.data) as { type: string; sessions?: Session[]; session?: Session; id?: string };
-      if (msg.type === 'init' && msg.sessions) {
-        setSessions(msg.sessions);
-      } else if ((msg.type === 'session_created' || msg.type === 'session_updated') && msg.session) {
-        setSessions((prev) => {
-          const idx = prev.findIndex((s) => s.id === msg.session!.id);
-          if (idx >= 0) {
-            const next = [...prev];
-            next[idx] = msg.session!;
-            return next;
+      es.onopen = () => { setSseConnected(true); retryDelay = 2000; };
+
+      es.onerror = () => {
+        setSseConnected(false);
+        es.close();
+        sseRef.current = null;
+        sseRetryRef.current = setTimeout(() => {
+          retryDelay = Math.min(retryDelay * 2, 30000);
+          connect();
+        }, retryDelay);
+      };
+
+      es.onmessage = (e) => {
+        const msg = JSON.parse(e.data) as { type: string; sessions?: Session[]; session?: Session; id?: string };
+        if (msg.type === 'init' && msg.sessions) {
+          setSessions(msg.sessions);
+        } else if ((msg.type === 'session_created' || msg.type === 'session_updated') && msg.session) {
+          setSessions((prev) => {
+            const idx = prev.findIndex((s) => s.id === msg.session!.id);
+            if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = msg.session!;
+              return next;
+            }
+            return [msg.session!, ...prev];
+          });
+          if (msg.type === 'session_updated') {
+            setActiveSession((prev) => (prev?.id === msg.session!.id ? msg.session! : prev));
           }
-          return [msg.session!, ...prev];
-        });
-        if (msg.type === 'session_updated') {
-          setActiveSession((prev) => (prev?.id === msg.session!.id ? msg.session! : prev));
+        } else if (msg.type === 'session_deleted' && msg.id) {
+          setSessions((prev) => prev.filter((s) => s.id !== msg.id));
+          setActiveSession((prev) => (prev?.id === msg.id ? null : prev));
         }
-      } else if (msg.type === 'session_deleted' && msg.id) {
-        setSessions((prev) => prev.filter((s) => s.id !== msg.id));
-        setActiveSession((prev) => (prev?.id === msg.id ? null : prev));
-      }
-    };
+      };
+    }
 
-    return () => { es.close(); sseRef.current = null; };
+    connect();
+
+    return () => {
+      if (sseRetryRef.current) clearTimeout(sseRetryRef.current);
+      sseRef.current?.close();
+      sseRef.current = null;
+    };
   }, [checkHealth]);
 
-  // ── Fetch sessions on mount (fallback) ───────────────────────────────────
+  // ── Fetch sessions on mount (fallback if SSE init hasn't fired yet) ──────
   useEffect(() => {
     fetch(`${baseUrl}/sessions`)
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setSessions(data as Session[]); })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setSessions((prev) => (prev.length === 0 ? (data as Session[]) : prev));
+        }
+      })
       .catch(() => {});
   }, []);
 

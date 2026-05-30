@@ -15,7 +15,7 @@ export interface StoredSession {
   ai_model?: string;
   created_at: string;
   updated_at: string;
-  status: 'active' | 'escalated' | 'resolved' | 'completed';
+  status: 'active' | 'escalated' | 'denied' | 'resolved' | 'completed';
 }
 
 const MAX_SESSIONS = 200;

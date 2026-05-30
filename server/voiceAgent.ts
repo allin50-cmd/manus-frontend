@@ -280,6 +280,10 @@ export type VoiceTranscriptResultAI = VoiceTranscriptResult & {
   ai_model?: string;
 };
 
+const VALID_INTENTS = new Set<string>(['construction_lead', 'legal_or_compliance', 'urgent_issue', 'general_enquiry', 'unknown']);
+const VALID_RISKS = new Set<string>(['low', 'medium', 'high']);
+const VALID_DECISIONS = new Set<string>(['ALLOW', 'MODIFY', 'DENY', 'ESCALATE']);
+
 export async function processVoiceTranscriptAI(
   input: VoiceTranscriptInput,
 ): Promise<VoiceTranscriptResultAI> {
@@ -300,19 +304,38 @@ export async function processVoiceTranscriptAI(
         max_tokens: 300,
         temperature: 0,
       });
-      const raw = completion.choices[0]?.message?.content ?? '{}';
-      const parsed = JSON.parse(raw) as {
-        intent: VoiceIntent;
-        risk_level: VoiceRiskLevel;
-        policy_decision: VoicePolicyDecision;
-        next_action: string;
-        reasoning: string;
-      };
-      const { intent, risk_level, policy_decision, next_action, reasoning } = parsed;
-      const audit_event_id = createHash('sha256')
-        .update(`${input.session_id}:${input.caller}:${input.transcript}`)
-        .digest('hex')
-        .slice(0, 32);
+      const raw = completion.choices[0]?.message?.content;
+      if (!raw) throw new Error('Empty OpenAI response content');
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+      // Runtime validation — fall back if any required field is missing or out-of-enum
+      if (
+        !VALID_INTENTS.has(parsed.intent as string) ||
+        !VALID_RISKS.has(parsed.risk_level as string) ||
+        !VALID_DECISIONS.has(parsed.policy_decision as string) ||
+        typeof parsed.next_action !== 'string' ||
+        !parsed.next_action
+      ) {
+        throw new Error(`Invalid AI response shape: ${raw}`);
+      }
+
+      let intent = parsed.intent as VoiceIntent;
+      let risk_level = parsed.risk_level as VoiceRiskLevel;
+      let policy_decision = parsed.policy_decision as VoicePolicyDecision;
+      let next_action = parsed.next_action as string;
+      const reasoning = typeof parsed.reasoning === 'string' ? parsed.reasoning : undefined;
+
+      // Hardcoded safety guard — IRREVERSIBLE_TERMS always DENY regardless of AI decision
+      if (containsAny(input.transcript.toLowerCase(), IRREVERSIBLE_TERMS)) {
+        intent = 'unknown';
+        risk_level = 'high';
+        policy_decision = 'DENY';
+        next_action = 'Do not execute irreversible action. Escalate for human review.';
+      }
+
+      // Reuse the shared audit-event builder
+      const base = processVoiceTranscript(input);
+      const audit_event_id = base.audit_event_id;
       const events: VoiceAuditEvent[] = [
         lifecycleEvent(audit_event_id, 'session_started', { caller: input.caller }),
         lifecycleEvent(audit_event_id, 'transcript_received', { transcript: input.transcript }),
@@ -323,6 +346,7 @@ export async function processVoiceTranscriptAI(
         events.push(lifecycleEvent(audit_event_id, 'human_escalation_required', { intent, reason: next_action }));
       }
       events.push(lifecycleEvent(audit_event_id, 'session_completed', { intent, risk_level, policy_decision, next_action }));
+
       return { intent, risk_level, policy_decision, next_action, audit_event_id, events, ai_reasoning: reasoning, ai_model: 'gpt-4o' };
     } catch (err) {
       console.error('[voiceAgent] OpenAI error, falling back to keyword matching:', err);
