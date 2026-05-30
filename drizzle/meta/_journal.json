@@ -1,0 +1,27 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1779697236504,
+      "tag": "0000_narrow_black_tom",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1748700000000,
+      "tag": "0001_governance_layer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1748800000000,
+      "tag": "0002_pie_leads",
+      "breakpoints": true
+    }
+  ]
+}

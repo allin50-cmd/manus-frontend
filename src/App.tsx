@@ -17,6 +17,7 @@ import BookDemo from './pages/BookDemo';
 import IntakeSheet from './pages/IntakeSheet';
 import Admin from './pages/Admin';
 import AuditLanding from './pages/AuditLanding';
+import PieDashboard from './pages/PieDashboard';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/intake" component={() => <Layout><IntakeSheet /></Layout>} />
         <Route path="/admin" component={() => <Layout><Admin /></Layout>} />
         <Route path="/audit" component={() => <Layout><AuditLanding /></Layout>} />
+        <Route path="/pie" component={() => <Layout><PieDashboard /></Layout>} />
         <Route component={() => <Layout><NotFound /></Layout>} />
       </Switch>
       <Toaster richColors position="top-right" />

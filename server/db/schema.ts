@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb, integer, numeric, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -194,3 +194,31 @@ export type Company = typeof companies.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type EscalationRule = typeof escalationRules.$inferSelect;
 export type AlertEvent = typeof alertEvents.$inferSelect;
+
+// ── PIE Leads ─────────────────────────────────────────────────────────────────
+
+export const pieLeads = pgTable('pie_leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ref: text('ref').notNull().unique(),
+  address: text('address').notNull(),
+  description: text('description').notNull().default(''),
+  source: text('source').notNull().default(''),
+  dateScraped: text('date_scraped').notNull(),
+  inferredBuildType: text('inferred_build_type').notNull(),
+  inferredFloorAreaM2: numeric('inferred_floor_area_m2').notNull(),
+  estimateConfidence: text('estimate_confidence').notNull().default('low'),
+  rateSource: text('rate_source').notNull().default('placeholder'),
+  rateValidationStatus: text('rate_validation_status').notNull().default('PLACEHOLDER_RATE_REQUIRES_ACCURACY_VALIDATION'),
+  floorAreaSource: text('floor_area_source').notNull(),
+  floorAreaConfidence: text('floor_area_confidence').notNull().default('low'),
+  opportunityScore: integer('opportunity_score').notNull(),
+  estimatedBuildValue: numeric('estimated_build_value').notNull(),
+  crmStage: text('crm_stage').notNull().default('New'),
+  lastUpdated: timestamp('last_updated', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  crmStageIdx: index('idx_pie_leads_crm_stage').on(t.crmStage),
+}));
+
+export type PieLead = typeof pieLeads.$inferSelect;
+export type NewPieLead = typeof pieLeads.$inferInsert;
