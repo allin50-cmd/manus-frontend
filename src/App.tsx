@@ -13,6 +13,7 @@ import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import AlertsDashboard from './pages/AlertsDashboard';
+import VoiceControl from './pages/VoiceControl';
 import BookDemo from './pages/BookDemo';
 import IntakeSheet from './pages/IntakeSheet';
 import Admin from './pages/Admin';
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/privacy" component={() => <Layout><Privacy /></Layout>} />
         <Route path="/terms" component={() => <Layout><Terms /></Layout>} />
         <Route path="/alerts" component={() => <Layout><AlertsDashboard /></Layout>} />
+        <Route path="/voice-reception" component={() => <Layout><VoiceControl /></Layout>} />
         <Route path="/compliance-bundle" component={() => <Layout><ComplianceBundle /></Layout>} />
         <Route path="/book-demo" component={() => <Layout><BookDemo /></Layout>} />
         <Route path="/intake" component={() => <Layout><IntakeSheet /></Layout>} />

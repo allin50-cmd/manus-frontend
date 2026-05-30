@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import OpenAI from 'openai';
 
 export type VoiceIntent =
   | 'construction_lead'
@@ -253,4 +254,79 @@ export function processVoiceTranscript(input: VoiceTranscriptInput): VoiceTransc
     audit_event_id,
     events,
   };
+}
+
+const AI_SYSTEM_PROMPT = `You are a voice call intake classifier for FineGuard Service.
+Given a caller phone number and transcript, classify intent and apply a policy gate.
+
+Intents (pick one): construction_lead | legal_or_compliance | urgent_issue | general_enquiry | unknown
+Risk levels: low | medium | high
+Policy decisions: ALLOW | MODIFY | DENY | ESCALATE
+
+Rules:
+- Irreversible actions (delete, transfer money, sign contract, submit filing, accept payment) → DENY, high
+- Urgent phrases (urgent, emergency, deadline today, asap, immediately) → ESCALATE, high
+- Legal/compliance (compliance, gdpr, court, fine, regulation, solicitor) → ESCALATE, medium
+- Construction in South London → ALLOW, low
+- AI/software/automation → ALLOW, low
+- Unknown intent → MODIFY, medium
+- Default → ALLOW, low
+
+Respond with JSON only matching this shape exactly:
+{"intent":"...","risk_level":"...","policy_decision":"...","next_action":"...","reasoning":"..."}`;
+
+export type VoiceTranscriptResultAI = VoiceTranscriptResult & {
+  ai_reasoning?: string;
+  ai_model?: string;
+};
+
+export async function processVoiceTranscriptAI(
+  input: VoiceTranscriptInput,
+): Promise<VoiceTranscriptResultAI> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (apiKey) {
+    try {
+      const openai = new OpenAI({ apiKey });
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: AI_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: `Caller: ${input.caller}\nTranscript: ${input.transcript}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 300,
+        temperature: 0,
+      });
+      const raw = completion.choices[0]?.message?.content ?? '{}';
+      const parsed = JSON.parse(raw) as {
+        intent: VoiceIntent;
+        risk_level: VoiceRiskLevel;
+        policy_decision: VoicePolicyDecision;
+        next_action: string;
+        reasoning: string;
+      };
+      const { intent, risk_level, policy_decision, next_action, reasoning } = parsed;
+      const audit_event_id = createHash('sha256')
+        .update(`${input.session_id}:${input.caller}:${input.transcript}`)
+        .digest('hex')
+        .slice(0, 32);
+      const events: VoiceAuditEvent[] = [
+        lifecycleEvent(audit_event_id, 'session_started', { caller: input.caller }),
+        lifecycleEvent(audit_event_id, 'transcript_received', { transcript: input.transcript }),
+        lifecycleEvent(audit_event_id, 'intent_classified', { intent, model: 'gpt-4o' }),
+        lifecycleEvent(audit_event_id, 'policy_check_required', { intent, risk_level, policy_decision }),
+      ];
+      if (policy_decision === 'ESCALATE') {
+        events.push(lifecycleEvent(audit_event_id, 'human_escalation_required', { intent, reason: next_action }));
+      }
+      events.push(lifecycleEvent(audit_event_id, 'session_completed', { intent, risk_level, policy_decision, next_action }));
+      return { intent, risk_level, policy_decision, next_action, audit_event_id, events, ai_reasoning: reasoning, ai_model: 'gpt-4o' };
+    } catch (err) {
+      console.error('[voiceAgent] OpenAI error, falling back to keyword matching:', err);
+    }
+  }
+  return processVoiceTranscript(input);
 }
