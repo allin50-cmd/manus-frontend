@@ -36,7 +36,11 @@ import { acquireSchedulerLease, releaseSchedulerLease, getSchedulerLeaseState } 
 import { getAllActiveOverrides, evaluateOperationalOverride, invalidateOverrideCache } from './lib/override-engine';
 import { operationalOverrides, operationalAnnotations } from './drizzle/schema';
 import type { InsertOperationalOverride, InsertOperationalAnnotation } from './drizzle/schema';
-import { writeAlertIfRequired, toAlertSeverity } from './lib/fineguard-alerts';
+import { writeAlertIfRequired, toAlertSeverity, persistComplianceAlert } from './lib/fineguard-alerts';
+import type { AlertSeverity } from './lib/fineguard-alerts';
+import { classifyVoiceIntake } from './lib/voice-classifier';
+import { z } from 'zod';
+import { v5 as uuidv5 } from 'uuid';
 
 // System tenant for brand-suite events that have no user/tenant context.
 // Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
@@ -1617,6 +1621,134 @@ export function createApp(): express.Express {
       log({ level: 'error', event: 'operations.incidents.list_failed', error: String(err) });
       return res.status(500).json({ error: 'Failed to list annotations' });
     }
+  });
+
+  // ==========================================================================
+  // VOICE INTAKE WEBHOOK
+  // ==========================================================================
+
+  // Deterministic UUID namespace: maps provider call IDs → stable complianceRunId UUIDs.
+  // Fixed constant — changing this would break idempotency for existing rows.
+  const VOICE_INTAKE_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+
+  const VoiceIntakeSchema = z.object({
+    provider_call_id: z.string().min(1),
+    caller_name: z.string().min(1),
+    phone_number: z.string().min(1),
+    company_name: z.string().min(1),
+    caller_role: z.string().min(1),
+    reason_for_call: z.string().min(1),
+    deadline_date: z.string().optional().nullable(),
+    companies_house_number: z.string().optional().nullable(),
+    transcript: z.string().optional().nullable(),
+    summary: z.string().optional().nullable(),
+    received_at: z.string().optional().nullable(),
+  });
+
+  /**
+   * POST /api/voice/intake
+   *
+   * Receives a call transcript from a voice provider (Twilio/Vapi/Retell/Bland).
+   * Validates → classifies risk → persists one FineGuard alert → writes audit event.
+   *
+   * SAFETY CONSTRAINT: This endpoint does NOT give legal or accounting advice,
+   * file documents, make commitments, or execute compliance actions.
+   */
+  app.post('/api/voice/intake', async (req: Request, res: Response) => {
+    const correlationId = generateCorrelationId();
+
+    // Optional bearer-token auth — set VOICE_WEBHOOK_SECRET to enable
+    const webhookSecret = process.env.VOICE_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      if (req.headers['authorization'] !== `Bearer ${webhookSecret}`) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' });
+      }
+    }
+
+    const parsed = VoiceIntakeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid payload',
+        details: parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`),
+      });
+    }
+
+    const data = parsed.data;
+    const searchText = [data.reason_for_call, data.summary ?? '', data.transcript ?? ''].join(' ');
+    const classification = classifyVoiceIntake(searchText, data.deadline_date ?? null);
+
+    // Deterministic run ID so duplicate webhook replays are idempotent
+    const callRunId = uuidv5(data.provider_call_id, VOICE_INTAKE_NAMESPACE);
+
+    const alertResult = await persistComplianceAlert(
+      {
+        tenantId: SYSTEM_TENANT_ID,
+        complianceRunId: callRunId,
+        alertType: 'voice_intake',
+        severity: classification.urgency.toLowerCase() as AlertSeverity,
+        title: `Voice intake: ${data.company_name} — ${classification.urgency}`,
+        message:
+          `Caller: ${data.caller_name} (${data.caller_role}). ` +
+          `Reason: ${data.reason_for_call}. ` +
+          `I can record the details and route this for review, but I cannot provide legal or accounting advice.`,
+        metadata: {
+          providerCallId: data.provider_call_id,
+          callerName: data.caller_name,
+          phoneNumber: data.phone_number,
+          companyName: data.company_name,
+          callerRole: data.caller_role,
+          reasonForCall: data.reason_for_call,
+          deadlineDate: data.deadline_date ?? null,
+          companiesHouseNumber: data.companies_house_number ?? null,
+          transcript: data.transcript ?? null,
+          summary: data.summary ?? null,
+          urgencyClassification: classification.urgency,
+          humanReviewRequired: classification.humanReviewRequired,
+          classificationReasons: classification.reasons,
+          receivedAt: data.received_at ?? new Date().toISOString(),
+        },
+      },
+      correlationId,
+    );
+
+    // Duplicate replay — idempotent 200
+    if (alertResult.ok && alertResult.action === 'duplicate') {
+      log({ level: 'info', event: 'voice.intake.duplicate', correlationId, providerCallId: data.provider_call_id });
+      return res.json({
+        ok: true,
+        action: 'duplicate',
+        message: 'I can record the details and route this for review, but I cannot provide legal or accounting advice.',
+      });
+    }
+
+    if (!alertResult.ok) {
+      log({ level: 'error', event: 'voice.intake.persist_failed', correlationId, error: alertResult.error });
+      return res.status(500).json({ ok: false, error: 'Failed to record intake' });
+    }
+
+    await writeAuditEvent({
+      tenantId: SYSTEM_TENANT_ID,
+      entityType: 'voice_intake',
+      entityUuid: alertResult.id,
+      action: 'voice_intake_received',
+      correlationId,
+      metadata: JSON.stringify({
+        providerCallId: data.provider_call_id,
+        companyName: data.company_name,
+        urgency: classification.urgency,
+        humanReviewRequired: classification.humanReviewRequired,
+      }),
+    }).catch(() => {});
+
+    return res.status(201).json({
+      ok: true,
+      action: 'created',
+      alertId: alertResult.id,
+      urgency: classification.urgency,
+      humanReviewRequired: classification.humanReviewRequired,
+      message: 'I can record the details and route this for review, but I cannot provide legal or accounting advice.',
+    });
   });
 
   // ==========================================================================
