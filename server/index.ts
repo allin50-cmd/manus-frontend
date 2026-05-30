@@ -853,19 +853,26 @@ app.get('/api/pie/rules', (_req: Request, res: Response) => {
 // ============================================================================
 
 app.get('/api/ops/summary', async (_req: Request, res: Response) => {
+  const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 2000));
   try {
-    const [waiting, active, completed, failed] = await Promise.all([
-      fgQueue.getWaitingCount(),
-      fgQueue.getActiveCount(),
-      fgQueue.getCompletedCount(),
-      fgQueue.getFailedCount(),
+    const result = await Promise.race([
+      Promise.all([
+        fgQueue.getWaitingCount(),
+        fgQueue.getActiveCount(),
+        fgQueue.getCompletedCount(),
+        fgQueue.getFailedCount(),
+      ]),
+      timeout,
     ]);
     const state = pieState.getState();
-    res.json({ waiting, active, completed, failed, concurrency: state ? (
-      state.mode === 'healthy' ? 20 : state.mode === 'degraded' ? 10 : state.mode === 'critical' ? 3 : 1
-    ) : 20 });
+    const concurrency = state.mode === 'healthy' ? 20 : state.mode === 'degraded' ? 10 : state.mode === 'critical' ? 3 : 1;
+    if (!result) return res.json({ waiting: 0, active: 0, completed: 0, failed: 0, concurrency, queueUnavailable: true });
+    const [waiting, active, completed, failed] = result;
+    res.json({ waiting, active, completed, failed, concurrency });
   } catch {
-    res.json({ waiting: 0, active: 0, completed: 0, failed: 0, concurrency: 20 });
+    const state = pieState.getState();
+    const concurrency = state.mode === 'healthy' ? 20 : state.mode === 'degraded' ? 10 : state.mode === 'critical' ? 3 : 1;
+    res.json({ waiting: 0, active: 0, completed: 0, failed: 0, concurrency, queueUnavailable: true });
   }
 });
 
