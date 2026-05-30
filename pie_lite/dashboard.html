@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PIE Lite – Development Leads</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
+    h1 { color: #1a2b4c; }
+    .board { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; }
+    .column {
+      background: #e9edf2; border-radius: 8px; min-width: 280px; max-width: 320px;
+      padding: 12px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;
+    }
+    .column h2 { margin: 0 0 8px; font-size: 1.1rem; color: #1a2b4c; }
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .card {
+      background: white; border-radius: 6px; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;
+    }
+    .card .addr { font-weight: 600; }
+    .card .desc { color: #555; }
+    .card .meta { display: flex; justify-content: space-between; font-size: 0.8rem; }
+    .badge {
+      display: inline-block; background: #ffd966; color: #3d3d3d; font-size: 0.75rem;
+      padding: 2px 8px; border-radius: 4px; font-weight: bold;
+    }
+    .score { font-weight: bold; color: #1a2b4c; }
+    .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .actions button {
+      background: #0066cc; border: none; color: white; border-radius: 3px;
+      padding: 3px 8px; font-size: 0.7rem; cursor: pointer;
+    }
+    .actions button:hover { background: #004a99; }
+    .placeholder-warning { color: #b85c00; font-size: 0.7rem; }
+    .empty { color: #aaa; font-size: 0.85rem; text-align: center; padding: 20px 0; }
+    #status { color: #c00; font-size: 0.85rem; margin: 8px 0; display: none; }
+  </style>
+</head>
+<body>
+  <h1>PIE Lite – Development Leads</h1>
+  <p style="color:#555; font-size:0.85rem;">
+    All estimates are <strong>indicative placeholder estimates — Accuracy validation required.</strong>
+  </p>
+  <div id="status"></div>
+  <div id="board" class="board"></div>
+
+  <script>
+    const STAGES = ["New", "Contacted", "Site Visit", "Quoted", "Won", "Lost"];
+
+    async function loadLeads() {
+      const res = await fetch("data/leads.json");
+      if (!res.ok) throw new Error(`Failed to load leads.json (${res.status})`);
+      return res.json();
+    }
+
+    function setStatus(msg) {
+      const el = document.getElementById("status");
+      if (msg) { el.textContent = msg; el.style.display = "block"; }
+      else { el.style.display = "none"; }
+    }
+
+    function renderBoard(leads) {
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+
+      const grouped = Object.fromEntries(STAGES.map(s => [s, []]));
+      leads.forEach(lead => {
+        const stage = lead.crm_stage || "New";
+        if (grouped[stage]) grouped[stage].push(lead);
+      });
+
+      STAGES.forEach(stage => {
+        const col = document.createElement("div");
+        col.className = "column";
+
+        const heading = document.createElement("h2");
+        heading.textContent = `${stage} (${grouped[stage].length})`;
+        col.appendChild(heading);
+
+        const cards = document.createElement("div");
+        cards.className = "cards";
+
+        if (grouped[stage].length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No leads";
+          cards.appendChild(empty);
+        } else {
+          grouped[stage].forEach(lead => cards.appendChild(createCard(lead)));
+        }
+
+        col.appendChild(cards);
+        board.appendChild(col);
+      });
+    }
+
+    function createCard(lead) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const addr = document.createElement("div");
+      addr.className = "addr";
+      addr.textContent = lead.address || "No address";
+      card.appendChild(addr);
+
+      const desc = document.createElement("div");
+      desc.className = "desc";
+      desc.textContent = (lead.description || "").substring(0, 80) + ((lead.description || "").length > 80 ? "…" : "");
+      card.appendChild(desc);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const typeArea = document.createElement("span");
+      typeArea.textContent = `${lead.inferred_build_type} | ${lead.inferred_floor_area_m2} m²`;
+      const score = document.createElement("span");
+      score.className = "score";
+      score.textContent = `Score: ${lead.opportunity_score}`;
+      meta.appendChild(typeArea);
+      meta.appendChild(score);
+      card.appendChild(meta);
+
+      const badge = document.createElement("div");
+      const badgeSpan = document.createElement("span");
+      badgeSpan.className = "badge";
+      badgeSpan.textContent = `Indicative estimate: £${Number(lead.estimated_build_value).toLocaleString()}`;
+      badge.appendChild(badgeSpan);
+      card.appendChild(badge);
+
+      const warning = document.createElement("div");
+      warning.className = "placeholder-warning";
+      warning.textContent = "⚠ Accuracy validation required.";
+      card.appendChild(warning);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      STAGES.forEach(s => {
+        if (s === lead.crm_stage) return;
+        const btn = document.createElement("button");
+        btn.textContent = `→ ${s}`;
+        btn.onclick = () => moveLead(lead.ref, s);
+        actions.appendChild(btn);
+      });
+      card.appendChild(actions);
+
+      return card;
+    }
+
+    async function moveLead(ref, newStage) {
+      setStatus("");
+      try {
+        const res = await fetch("/move", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ref, stage: newStage }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || res.statusText);
+        }
+        const leads = await loadLeads();
+        renderBoard(leads);
+      } catch (err) {
+        setStatus(`Error: ${err.message}`);
+      }
+    }
+
+    (async () => {
+      try {
+        const leads = await loadLeads();
+        renderBoard(leads);
+      } catch (err) {
+        setStatus(err.message);
+        renderBoard([]);
+      }
+    })();
+  </script>
+</body>
+</html>

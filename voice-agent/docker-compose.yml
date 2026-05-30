@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-voice_agent}
+      POSTGRES_USER: ${POSTGRES_USER:-voice_agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local}
+    ports:
+      - "5433:5432"
+    volumes:
+      - voice_agent_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  voice-agent:
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://voice_agent:change-me-local@postgres:5432/voice_agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AUDIT_LOG_PATH: ${AUDIT_LOG_PATH:-/data/voice-agent/audit.jsonl}
+      VOICE_AGENT_QUEUE_BACKEND: ${VOICE_AGENT_QUEUE_BACKEND:-celery}
+      VOICE_AGENT_CORS_ORIGINS: ${VOICE_AGENT_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,https://manus-frontend-zeta.vercel.app}
+      VOICE_AGENT_CORS_ORIGIN_REGEX: ${VOICE_AGENT_CORS_ORIGIN_REGEX:-https://.*\.vercel\.app}
+    ports:
+      - "${VOICE_AGENT_PORT:-8080}:8080"
+    volumes:
+      - voice_agent_audit:/data/voice-agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    command: celery -A app.workers.celery_app.celery worker --loglevel=INFO
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://voice_agent:change-me-local@postgres:5432/voice_agent}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AUDIT_LOG_PATH: ${AUDIT_LOG_PATH:-/data/voice-agent/audit.jsonl}
+    volumes:
+      - voice_agent_audit:/data/voice-agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app.celery inspect ping --destination celery@$$(hostname) | grep -q OK"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+
+  postgres-worker:
+    build: .
+    command: python -m app.workers.postgres_worker
+    profiles:
+      - postgres-queue
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://voice_agent:change-me-local@postgres:5432/voice_agent}
+      AUDIT_LOG_PATH: ${AUDIT_LOG_PATH:-/data/voice-agent/audit.jsonl}
+      VOICE_AGENT_QUEUE_BACKEND: postgres
+    volumes:
+      - voice_agent_audit:/data/voice-agent
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  voice_agent_pg:
+  voice_agent_audit:

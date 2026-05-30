@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import Stripe from 'stripe';
 import alertRouter from './routes/alerts';
 import companiesRouter from './routes/companies';
+import voiceReceptionRouter from './routes/voiceReception';
+import governanceRouter from './routes/governance';
+import { governanceMiddleware } from './governance/middleware';
 import pieRouter from './routes/pie';
 import { db } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions } from './db/schema';
@@ -57,15 +60,19 @@ export function createApp() {
   app.use(cors());
   app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('Permissions-Policy', 'camera=(), geolocation=()');
     next();
   });
   app.use(express.json());
+  app.use('/api/governance', governanceRouter);
   app.use('/api/alerts', alertRouter);
   app.use('/api/companies', companiesRouter);
+  // Governance middleware intercepts POST /process-transcript before the router handler
+  app.use('/api/voice-reception', governanceMiddleware(['/process-transcript']));
+  app.use('/api/voice-reception', voiceReceptionRouter);
   app.use('/api/pie', pieRouter);
   app.use(express.urlencoded({ extended: true }));
   app.use((req: Request, _res: Response, next: NextFunction) => {

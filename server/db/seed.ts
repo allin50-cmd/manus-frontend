@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
-import { db } from './index';
-import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './schema';
+import { db } from './index.js';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts } from './schema.js';
 
 // Load environment variables
 dotenv.config();
