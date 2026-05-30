@@ -657,12 +657,17 @@ app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
  */
 app.get('/api/admin/compliance-bundles', async (req: Request, res: Response) => {
   try {
-    const allBundles = await db
-      .select()
-      .from(complianceBundles)
-      .orderBy(desc(complianceBundles.createdAt));
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = (page - 1) * limit;
 
-    res.json(allBundles);
+    const [data, [{ count: total }]] = await Promise.all([
+      db.select().from(complianceBundles).orderBy(desc(complianceBundles.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql`count(*)` }).from(complianceBundles),
+    ]);
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ data, pagination: { page, limit, total: Number(total) } });
   } catch (error) {
     console.error('Error fetching compliance bundles:', error);
     res.status(500).json({ error: 'Failed to fetch compliance bundles' });
@@ -1178,9 +1183,9 @@ async function samplePIEMetrics(): Promise<void> {
     countsPromise.catch(() => {}); // prevent unhandled rejection if timeout wins
     const timer = new Promise<null>(resolve => setTimeout(() => resolve(null), 2000));
     const result = await Promise.race([countsPromise, timer]);
-    if (!result) return; // Redis unavailable — skip evaluation this tick
 
-    const [waiting, , completed, failed] = result;
+    // Evaluate with real counts when Redis is available, zeroed metrics otherwise
+    const [waiting, , completed, failed] = result ?? [0, 0, 0, 0];
     const total = completed + failed;
     const errorRate = total > 0 ? failed / total : 0;
     const queueDepth = Math.min(waiting / MAX_QUEUE_DEPTH, 1);
