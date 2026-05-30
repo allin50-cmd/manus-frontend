@@ -66,3 +66,5 @@ credentials.json
 *.env
 .azure-secrets.env
 .claude/
+__pycache__/
+*.pyc
