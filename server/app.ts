@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import Stripe from 'stripe';
+import alertRouter from './routes/alerts';
 import { db } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
@@ -53,6 +54,7 @@ export function createApp() {
 
   app.use(cors());
   app.use(express.json());
+  app.use('/api/alerts', alertRouter);
   app.use(express.urlencoded({ extended: true }));
   app.use((req: Request, _res: Response, next: NextFunction) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);

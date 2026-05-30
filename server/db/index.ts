@@ -22,6 +22,9 @@ export const db = drizzle(client, { schema });
 // Export schema for use in queries
 export { schema };
 
+// Raw postgres.js client — used by workers that need FOR UPDATE SKIP LOCKED
+export { client as pgClient };
+
 // Health check function
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {

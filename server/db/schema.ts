@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -143,3 +143,54 @@ export type NewContact = typeof contacts.$inferInsert;
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+// ── FineGuard Alert Centre ────────────────────────────────────────────────────
+
+export const companies = pgTable('companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const alerts = pgTable('alerts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id),
+  title: text('title').notNull(),
+  description: text('description'),
+  source: varchar('source', { length: 20 }).notNull(),       // voice_agent|api|manual|system
+  severity: varchar('severity', { length: 10 }).notNull(),   // LOW|MEDIUM|HIGH|CRITICAL
+  status: varchar('status', { length: 10 }).notNull().default('OPEN'), // OPEN|ESCALATED|CRITICAL|CLOSED
+  ownerId: uuid('owner_id'),
+  acknowledgedAt: timestamp('acknowledged_at', { withTimezone: true }),
+  statusChangedAt: timestamp('status_changed_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const escalationRules = pgTable('escalation_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id),
+  name: text('name').notNull(),
+  condition: jsonb('condition').notNull(), // {"status":"OPEN","severity":"HIGH","min_minutes":15}
+  targetStatus: varchar('target_status', { length: 10 }).notNull(), // ESCALATED|CRITICAL
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const alertEvents = pgTable('alert_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  alertId: uuid('alert_id').notNull(),
+  companyId: uuid('company_id').notNull(),
+  eventType: varchar('event_type', { length: 30 }).notNull(),
+  previousValue: jsonb('previous_value'),
+  newValue: jsonb('new_value'),
+  createdBy: text('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type Company = typeof companies.$inferSelect;
+export type Alert = typeof alerts.$inferSelect;
+export type EscalationRule = typeof escalationRules.$inferSelect;
+export type AlertEvent = typeof alertEvents.$inferSelect;
