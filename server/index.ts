@@ -1,41 +1,23 @@
-import { createApp } from './app.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createApp } from './app';
+import { runEscalationWorker } from './worker/escalationWorker';
 
-const PORT = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = createApp();
+const PORT = process.env.PORT || 3000;
+
+// Static files + SPA fallback (local/self-hosted only — Vercel serves dist/ natively)
+import express from 'express';
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
 
 app.listen(PORT, () => {
-  console.log('');
-  console.log('🚀 VaultLine Brand Suite Server');
-  console.log('================================');
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🌐 http://localhost:${PORT}`);
-  console.log('');
-  console.log('API Endpoints:');
-  console.log('  POST   /api/deployments/record');
-  console.log('  GET    /api/deployments/status');
-  console.log('  GET    /api/deployments/history');
-  console.log('  POST   /api/lead');
-  console.log('  GET    /api/admin/leads');
-  console.log('  POST   /api/intake');
-  console.log('  GET    /api/admin/intake-forms');
-  console.log('  POST   /api/compliance-bundle');
-  console.log('  GET    /api/admin/compliance-bundles');
-  console.log('  POST   /api/contact');
-  console.log('  GET    /api/admin/contacts');
-  console.log('  PATCH  /api/admin/contacts/:id');
-  console.log('  GET    /api/health');
-  console.log('  GET    /health');
-  console.log('  GET    /api/internal/run-compliance-check');
-  console.log('');
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled promise rejection:', reason);
-  process.exit(1);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
-  process.exit(1);
+  console.log(`Server running on port ${PORT}`);
+  if (process.env.NODE_ENV !== 'test') {
+    runEscalationWorker().catch(console.error);
+  }
 });

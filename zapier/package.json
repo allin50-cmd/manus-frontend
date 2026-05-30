@@ -1,0 +1,21 @@
+{
+  "name": "vaultline-zapier-app",
+  "version": "1.0.0",
+  "description": "VaultLine Zapier Platform App",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test":   "jest --forceExit",
+    "deploy": "zapier push"
+  },
+  "dependencies": {
+    "zapier-platform-core": "^18.5.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}

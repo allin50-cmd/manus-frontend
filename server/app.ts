@@ -1,298 +1,69 @@
-import * as trpcExpress from '@trpc/server/adapters/express';
-import cors, { CorsOptions } from 'cors';
-import { timingSafeEqual } from 'crypto';
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
-import express, { NextFunction, Request, Response } from 'express';
-import path from 'path';
 import Stripe from 'stripe';
-import { fileURLToPath } from 'url';
-import { db } from './db/index.js';
-import {
-  complianceBundles,
-  contacts,
-  deploymentStatus,
-  intakeForms,
-  leads,
-  monitoredCompanies,
-} from './db/schema.js';
-import { companiesHouseService } from './services/companiesHouse.js';
-import { auditEvents } from './drizzle/schema.js';
-import {
-  getUserByOpenId,
-  getTenantBySlug,
-  setTenantContext,
-  upsertUser,
-  writeAuditEvent,
-  getDb as getClerkDb,
-} from './trpc/db.js';
-import { getUserFromRequest, getTenantSlugFromRequest } from './trpc/_core/auth.js';
-import { appRouter } from './trpc/routers.js';
-import { and, desc, eq } from 'drizzle-orm';
-import { log, generateCorrelationId } from './lib/logger.js';
-import { withRetry } from './lib/retry.js';
-import { processVoiceTranscript, VoiceAuditEvent, VoiceTranscriptInput } from './voiceAgent.js';
+import alertRouter from './routes/alerts';
+import companiesRouter from './routes/companies';
+import { db } from './db/index';
+import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions } from './db/schema';
+import { desc, eq } from 'drizzle-orm';
+import { companiesHouseService } from './services/companiesHouse';
+import { runSalesAgent } from './services/salesAgent';
+import { sendAuditReady, sendAgentMessage } from './services/emailService';
+import { subscribe, unsubscribe, fire, listByEvent, type ZapierEvent } from './services/zapierWebhook';
 
-// System tenant for brand-suite events that have no user/tenant context.
-// Row must exist in tenants table — provisioned by: npm run db:seed:clerkos
-const SYSTEM_TENANT_ID = '00000000-0000-0000-0000-000000000001';
-const FALLBACK_OPERATOR_OPEN_ID = process.env.PUBLIC_OPERATOR_OPEN_ID ?? 'fineguard-operator';
+dotenv.config();
 
-const isVercel = Boolean(process.env.VERCEL);
-const LOCAL_ALLOWED_ORIGINS = ['http://localhost:3000', 'http://localhost:5173'];
-
-function getSingleHeader(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function secretMatches(candidate: string | undefined, expected: string | undefined): boolean {
-  if (!candidate || !expected) return false;
-
-  const candidateBuffer = Buffer.from(candidate);
-  const expectedBuffer = Buffer.from(expected);
-
-  if (candidateBuffer.length !== expectedBuffer.length) return false;
-  return timingSafeEqual(candidateBuffer, expectedBuffer);
-}
-
-function requireSecretHeader(headerName: string, expected: string | undefined, unconfiguredMessage: string) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!expected) {
-      return res.status(503).json({ error: unconfiguredMessage });
-    }
-
-    const supplied = getSingleHeader(req.headers[headerName.toLowerCase()]);
-    if (!secretMatches(supplied, expected)) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    next();
-  };
-}
-
-function addOrigin(origins: Set<string>, value: string | undefined, assumeHttps = false) {
-  if (!value) return;
-  const normalized = value.startsWith('http://') || value.startsWith('https://') ? value : `https://${value}`;
-
-  try {
-    const url = new URL(normalized);
-    origins.add(url.origin);
-  } catch {
-    if (assumeHttps) origins.add(`https://${value}`);
-  }
-}
-
-function getAllowedOrigins(): Set<string> {
-  const origins = new Set<string>(LOCAL_ALLOWED_ORIGINS);
-  addOrigin(origins, process.env.APP_URL);
-  addOrigin(origins, process.env.VERCEL_URL, true);
-  return origins;
-}
-
-function createCorsOptions(): CorsOptions {
-  const allowedOrigins = getAllowedOrigins();
-
-  return {
-    origin(origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.has(origin)) return callback(null, true);
-
-      if (!isVercel && origin.startsWith('http://localhost:')) {
-        return callback(null, true);
-      }
-
-      return callback(null, false);
-    },
-  };
-}
-
-async function voiceAuditEventExists(event: VoiceAuditEvent): Promise<boolean> {
-  const clerkDb = await getClerkDb();
-  if (!clerkDb) return false;
-
-  const existing = await clerkDb
-    .select({ id: auditEvents.id })
-    .from(auditEvents)
-    .where(
-      and(
-        eq(auditEvents.tenantId, SYSTEM_TENANT_ID),
-        eq(auditEvents.entityType, 'voice_agent_session'),
-        eq(auditEvents.entityUuid, event.event_id),
-        eq(auditEvents.action, event.event_type),
-      ),
-    )
-    .limit(1);
-
-  return existing.length > 0;
-}
-
-export function createApp(): express.Express {
-  dotenv.config();
-
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-
-  const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
-  const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
-  const requireAdminKey = requireSecretHeader('x-admin-key', ADMIN_API_KEY, 'Admin access not configured');
-  const requireDeployRecordToken = requireSecretHeader(
-    'x-deploy-token',
-    DEPLOY_RECORD_TOKEN,
-    'Deployment recording not configured',
-  );
-
-  // Stripe client – only initialised when key is present
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }) : null;
-
+export function createApp() {
   const app = express();
+  const DEPLOY_RECORD_TOKEN = process.env.DEPLOY_RECORD_TOKEN;
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' }) : null;
 
-  // Trust Cloudflare/Vercel reverse proxy so req.ip and req.protocol are accurate
-  if (isVercel) {
-    app.set('trust proxy', 1);
-  }
-
-  // ==========================================================================
-  // STRIPE WEBHOOK  (must be registered BEFORE express.json() to access raw body)
-  // ==========================================================================
-
+  // Stripe webhook — must be before express.json()
   app.post(
     '/api/stripe/webhook',
     express.raw({ type: 'application/json' }),
     async (req: Request, res: Response) => {
-      const correlationId = generateCorrelationId();
-
-      if (!stripe) {
-        log({ level: 'error', event: 'stripe.webhook.unconfigured', correlationId });
-        return res.status(500).json({ error: 'Stripe not configured' });
-      }
-
+      if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
       const sig = req.headers['stripe-signature'] as string;
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-      if (!webhookSecret) {
-        log({ level: 'error', event: 'stripe.webhook.secret_missing', correlationId });
-        return res.status(500).json({ error: 'Stripe webhook secret not configured' });
-      }
-
+      if (!webhookSecret) return res.status(500).json({ error: 'Stripe webhook secret not configured' });
       let event: Stripe.Event;
       try {
         event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       } catch (err) {
-        log({ level: 'warn', event: 'stripe.webhook.signature_failed', correlationId, error: String(err) });
+        console.error('Stripe webhook signature verification failed:', err);
         return res.status(400).json({ error: 'Invalid signature' });
       }
-
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
         const companyNumber = session.metadata?.companyNumber;
         const companyName = session.metadata?.companyName;
-
         if (companyNumber && companyName) {
           try {
-            const [activation] = await db
-              .insert(monitoredCompanies)
-              .values({
-                companyNumber,
-                companyName,
-                stripeSessionId: session.id,
-              })
-              .onConflictDoUpdate({
-                target: monitoredCompanies.companyNumber,
-                set: { stripeSessionId: session.id },
-              })
-              .returning();
-
-            await writeAuditEvent({
-              tenantId: SYSTEM_TENANT_ID,
-              entityType: 'monitoring_activation',
-              entityUuid: activation.id,
-              action: 'executed',
-              correlationId,
-              metadata: JSON.stringify({ companyNumber, companyName, stripeSessionId: session.id }),
-            }).catch(e =>
-              log({
-                level: 'error',
-                event: 'vaultline.write.failed',
-                correlationId,
-                endpoint: 'stripe-webhook',
-                error: String(e),
-              }),
-            );
-
-            log({ level: 'info', event: 'stripe.monitoring_activation', correlationId, companyNumber, companyName });
+            await db.insert(monitoredCompanies).values({ companyNumber, companyName, stripeSessionId: session.id }).onConflictDoNothing();
           } catch (err) {
-            log({ level: 'error', event: 'stripe.monitoring_activation.failed', correlationId, error: String(err) });
+            console.error('Error persisting monitored company:', err);
             return res.status(500).json({ error: 'Database error' });
           }
         }
       }
-
       res.json({ received: true });
-    },
+    }
   );
 
-  // ==========================================================================
-  // TRPC API (FineGuard operations engine)
-  // ==========================================================================
-
-  app.use(
-    '/api/trpc',
-    trpcExpress.createExpressMiddleware({
-      router: appRouter,
-      createContext: async ({ req, res }) => {
-        let user = null;
-        try {
-          const authUser = await getUserFromRequest(req);
-          if (authUser) {
-            const slug = getTenantSlugFromRequest(req);
-            const tenant = slug ? await getTenantBySlug(slug) : undefined;
-            const tenantId = tenant?.id ?? null;
-
-            if (tenantId) await setTenantContext(tenantId);
-
-            let dbUser = await getUserByOpenId(authUser.openId, tenantId ?? undefined);
-            if (!dbUser && tenantId && authUser.openId === FALLBACK_OPERATOR_OPEN_ID) {
-              await upsertUser({
-                tenantId,
-                openId: authUser.openId,
-                email: authUser.email ?? 'operator@fineguard.local',
-                name: authUser.name ?? 'FineGuard Operator',
-                loginMethod: 'operator-fallback',
-                role: 'admin (senior clerk / manager)',
-                lastSignedIn: new Date(),
-              });
-              dbUser = await getUserByOpenId(authUser.openId, tenantId);
-            }
-            if (dbUser) user = dbUser;
-
-            return { user, tenantId: tenantId ?? null, tenant: tenant ?? null, req, res };
-          }
-        } catch {
-          // graceful degradation — return null context on any error
-        }
-        return { user: null, tenantId: null, tenant: null, req, res };
-      },
-    }),
-  );
-
-  // General middleware
-  app.use(cors(createCorsOptions()));
-  app.use(express.json({ limit: '100kb' }));
-  app.use(express.urlencoded({ extended: true, limit: '100kb' }));
-
-  // Logging middleware
+  app.use(cors());
+  app.use(express.json());
+  app.use('/api/alerts', alertRouter);
+  app.use('/api/companies', companiesRouter);
+  app.use(express.urlencoded({ extended: true }));
   app.use((req: Request, _res: Response, next: NextFunction) => {
-    log({ level: 'info', event: 'request.received', method: req.method, path: req.path });
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
   });
 
-  // Admin auth middleware — requires X-ADMIN-KEY header matching ADMIN_API_KEY env var
-  app.use('/api/admin', requireAdminKey);
-
-  // ==========================================================================
-  // HEALTH CHECK ENDPOINTS
-  // ==========================================================================
-
+  // ── Health ────────────────────────────────────────────────────────────────
   app.get('/api/health', async (_req: Request, res: Response) => {
     try {
       await db.select().from(deploymentStatus).limit(1);
@@ -311,87 +82,14 @@ export function createApp(): express.Express {
     }
   });
 
-  // ==========================================================================
-  // AI VOICE RECEPTION API BRIDGE
-  // ==========================================================================
-
-  app.get(['/api/voice-agent/health', '/api/voice-reception/health'], async (_req: Request, res: Response) => {
-    try {
-      await db.select().from(deploymentStatus).limit(1);
-      res.json({ status: 'healthy', service: 'voice-reception', database: 'connected', mode: 'same-origin' });
-    } catch {
-      res.status(200).json({ status: 'degraded', service: 'voice-reception', database: 'unavailable', mode: 'same-origin' });
-    }
-  });
-
-  app.post(['/api/voice-agent/process-transcript', '/api/voice-reception/process-transcript'], async (req: Request, res: Response) => {
-    const correlationId = generateCorrelationId();
-    const input = req.body as Partial<VoiceTranscriptInput>;
-
-    if (!input.session_id || !input.caller || !input.transcript) {
-      return res.status(400).json({ error: 'session_id, caller, and transcript are required' });
-    }
-
-    const result = processVoiceTranscript({
-      session_id: input.session_id,
-      caller: input.caller,
-      transcript: input.transcript,
-    });
-
-    for (const event of result.events) {
-      try {
-        if (await voiceAuditEventExists(event)) continue;
-
-        await writeAuditEvent({
-          tenantId: SYSTEM_TENANT_ID,
-          entityType: 'voice_agent_session',
-          entityUuid: event.event_id,
-          action: event.event_type,
-          correlationId,
-          metadata: JSON.stringify({
-            auditEventId: result.audit_event_id,
-            sessionId: input.session_id,
-            caller: input.caller,
-            ...event.payload,
-          }),
-        });
-      } catch (error) {
-        log({ level: 'warn', event: 'voice_agent.audit_failed', correlationId, error: String(error) });
-      }
-    }
-
-    res.json({
-      intent: result.intent,
-      risk_level: result.risk_level,
-      policy_decision: result.policy_decision,
-      next_action: result.next_action,
-      audit_event_id: result.audit_event_id,
-    });
-  });
-
-  // ==========================================================================
-  // STRIPE CHECKOUT API ENDPOINTS
-  // ==========================================================================
-
+  // ── Stripe ────────────────────────────────────────────────────────────────
   app.post('/api/stripe/checkout', async (req: Request, res: Response) => {
-    if (!stripe) {
-      return res.status(500).json({ error: 'Stripe not configured' });
-    }
-
+    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
     const { companyNumber, companyName } = req.body;
-
-    if (!companyNumber || !companyName) {
-      return res.status(400).json({ error: 'companyNumber and companyName are required' });
-    }
-
+    if (!companyNumber || !companyName) return res.status(400).json({ error: 'companyNumber and companyName are required' });
     const priceId = process.env.STRIPE_PRICE_ID;
-    if (!priceId) {
-      return res.status(500).json({ error: 'STRIPE_PRICE_ID not configured' });
-    }
-
-    const PORT = process.env.PORT || 3000;
-    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-
+    if (!priceId) return res.status(500).json({ error: 'STRIPE_PRICE_ID not configured' });
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
     try {
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
@@ -400,7 +98,6 @@ export function createApp(): express.Express {
         success_url: `${appUrl}/compliance-bundle?activated=1&company=${encodeURIComponent(companyNumber)}`,
         cancel_url: `${appUrl}/compliance-bundle`,
       });
-
       res.json({ url: session.url });
     } catch (err) {
       console.error('Stripe checkout session error:', err);
@@ -410,18 +107,9 @@ export function createApp(): express.Express {
 
   app.get('/api/protection-status', async (req: Request, res: Response) => {
     const { companyNumber } = req.query;
-
-    if (!companyNumber || typeof companyNumber !== 'string') {
-      return res.status(400).json({ error: 'companyNumber query param is required' });
-    }
-
+    if (!companyNumber || typeof companyNumber !== 'string') return res.status(400).json({ error: 'companyNumber query param is required' });
     try {
-      const [row] = await db
-        .select()
-        .from(monitoredCompanies)
-        .where(eq(monitoredCompanies.companyNumber, companyNumber))
-        .limit(1);
-
+      const [row] = await db.select().from(monitoredCompanies).where(eq(monitoredCompanies.companyNumber, companyNumber)).limit(1);
       res.json({ monitored: !!row, activatedAt: row?.activatedAt ?? null });
     } catch (err) {
       console.error('Error checking protection status:', err);
@@ -429,40 +117,16 @@ export function createApp(): express.Express {
     }
   });
 
-  // ==========================================================================
-  // DEPLOYMENT TRACKING API ENDPOINTS
-  // ==========================================================================
-
-  app.post('/api/deployments/record', requireDeployRecordToken, async (req: Request, res: Response) => {
+  // ── Deployments ───────────────────────────────────────────────────────────
+  app.post('/api/deployments/record', async (req: Request, res: Response) => {
     try {
+      const token = req.headers['x-deploy-token'];
+      if (!token || token !== DEPLOY_RECORD_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
       const { environment, status, commit, workflowRun } = req.body;
-
-      if (!environment || !status || !commit || !workflowRun) {
-        return res.status(400).json({
-          error: 'Missing required fields: environment, status, commit, workflowRun',
-        });
-      }
-
-      if (!['dev', 'staging', 'prod'].includes(environment)) {
-        return res.status(400).json({ error: 'Invalid environment. Must be: dev, staging, or prod' });
-      }
-
-      if (!['success', 'failed', 'in_progress'].includes(status)) {
-        return res.status(400).json({ error: 'Invalid status. Must be: success, failed, or in_progress' });
-      }
-
-      const [deployment] = await db
-        .insert(deploymentStatus)
-        .values({
-          environment,
-          status,
-          commit: commit.substring(0, 50),
-          workflowRun: workflowRun.toString(),
-        })
-        .returning();
-
-      console.log(`✅ Deployment recorded: ${environment} - ${status} - ${commit}`);
-
+      if (!environment || !status || !commit || !workflowRun) return res.status(400).json({ error: 'Missing required fields' });
+      if (!['dev', 'staging', 'prod'].includes(environment)) return res.status(400).json({ error: 'Invalid environment' });
+      if (!['success', 'failed', 'in_progress'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+      const [deployment] = await db.insert(deploymentStatus).values({ environment, status, commit: commit.substring(0, 50), workflowRun: workflowRun.toString() }).returning();
       res.status(201).json({ success: true, id: deployment.id });
     } catch (error) {
       console.error('Error recording deployment:', error);
@@ -472,19 +136,10 @@ export function createApp(): express.Express {
 
   app.get('/api/deployments/status', async (_req: Request, res: Response) => {
     try {
-      const allDeployments = await db
-        .select()
-        .from(deploymentStatus)
-        .orderBy(desc(deploymentStatus.deployedAt));
-
-      const latestDeployments = new Map();
-      for (const deployment of allDeployments) {
-        if (!latestDeployments.has(deployment.environment)) {
-          latestDeployments.set(deployment.environment, deployment);
-        }
-      }
-
-      res.json({ deployments: Array.from(latestDeployments.values()) });
+      const all = await db.select().from(deploymentStatus).orderBy(desc(deploymentStatus.deployedAt));
+      const latest = new Map();
+      for (const d of all) { if (!latest.has(d.environment)) latest.set(d.environment, d); }
+      res.json({ deployments: Array.from(latest.values()) });
     } catch (error) {
       console.error('Error fetching deployment status:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -494,17 +149,9 @@ export function createApp(): express.Express {
   app.get('/api/deployments/history', async (req: Request, res: Response) => {
     try {
       const { environment, limit = '50' } = req.query;
-
       let query = db.select().from(deploymentStatus);
-
-      if (environment && typeof environment === 'string') {
-        query = query.where(eq(deploymentStatus.environment, environment)) as typeof query;
-      }
-
-      const deployments = await query
-        .orderBy(desc(deploymentStatus.deployedAt))
-        .limit(parseInt(limit as string));
-
+      if (environment && typeof environment === 'string') query = query.where(eq(deploymentStatus.environment, environment)) as any;
+      const deployments = await query.orderBy(desc(deploymentStatus.deployedAt)).limit(parseInt(limit as string));
       res.json({ deployments });
     } catch (error) {
       console.error('Error fetching deployment history:', error);
@@ -512,43 +159,17 @@ export function createApp(): express.Express {
     }
   });
 
-  // ==========================================================================
-  // LEAD CAPTURE API ENDPOINTS
-  // ==========================================================================
-
+  // ── Leads ─────────────────────────────────────────────────────────────────
   app.post('/api/lead', async (req: Request, res: Response) => {
-    const correlationId = generateCorrelationId();
     try {
       const { name, email, company, product, phone, message } = req.body;
-
-      if (!name || !email) {
-        return res.status(400).json({ ok: false, error: 'Name and email are required' });
-      }
-
+      if (!name || !email) return res.status(400).json({ ok: false, error: 'Name and email are required' });
       const leadId = `LEAD-${Date.now()}`;
-
-      const [lead] = await db
-        .insert(leads)
-        .values({
-          leadId,
-          name,
-          email,
-          company: company || null,
-          product: product || null,
-          phone: phone || null,
-          message: message || null,
-        })
-        .returning();
-
-      log({ level: 'info', event: 'lead.captured', correlationId, leadId: lead.leadId, product: product || null });
-
-      res.status(201).json({
-        ok: true,
-        message: "Thank you for your interest! We'll be in touch soon.",
-        leadId: lead.leadId,
-      });
+      const [lead] = await db.insert(leads).values({ leadId, name, email, company: company || null, product: product || null, phone: phone || null, message: message || null }).returning();
+      fire('new_lead', { id: lead.id, leadId: lead.leadId, name, email, company: company ?? null, product: product ?? null, phone: phone ?? null, createdAt: lead.createdAt }).catch((err) => console.error('[zapier] fire new_lead error:', err));
+      res.status(201).json({ ok: true, message: "Thank you for your interest! We'll be in touch soon.", leadId: lead.leadId });
     } catch (error) {
-      log({ level: 'error', event: 'lead.failed', correlationId, error: String(error) });
+      console.error('Error creating lead:', error);
       res.status(500).json({ ok: false, error: 'Failed to save lead. Please try again.' });
     }
   });
@@ -563,78 +184,14 @@ export function createApp(): express.Express {
     }
   });
 
-  // ==========================================================================
-  // INTAKE FORM API ENDPOINTS
-  // ==========================================================================
-
+  // ── Intake ────────────────────────────────────────────────────────────────
   app.post('/api/intake', async (req: Request, res: Response) => {
-    const correlationId = generateCorrelationId();
-    const startMs = Date.now();
     try {
-      const {
-        clientName,
-        clientEmail,
-        clientPhone,
-        matterType,
-        urgency,
-        description,
-        claimValue,
-        sourceRef: rawSourceRef,
-      } = req.body;
-
-      if (!clientName || !matterType || !urgency) {
-        return res.status(400).json({
-          ok: false,
-          error: 'Client name, matter type, and urgency are required',
-        });
-      }
-
-      const sourceRef = (rawSourceRef as string | undefined) || 'MANUAL';
+      const { clientName, clientEmail, clientPhone, matterType, urgency, description, claimValue } = req.body;
+      if (!clientName || !matterType || !urgency) return res.status(400).json({ ok: false, error: 'Client name, matter type, and urgency are required' });
       const matterRef = `MAT-${Date.now()}`;
-
-      const [intake] = await db
-        .insert(intakeForms)
-        .values({
-          matterRef,
-          clientName,
-          clientEmail: clientEmail || null,
-          clientPhone: clientPhone || null,
-          matterType,
-          urgency,
-          description: description || null,
-          claimValue: claimValue || null,
-          sourceRef: sourceRef !== 'MANUAL' ? sourceRef : null,
-        })
-        .returning();
-
-      await writeAuditEvent({
-        tenantId: SYSTEM_TENANT_ID,
-        entityType: 'intake',
-        entityUuid: intake.id,
-        action: 'captured',
-        correlationId,
-        metadata: JSON.stringify({ matterRef: intake.matterRef, matterType, urgency, sourceRef }),
-      }).catch(e =>
-        log({ level: 'error', event: 'vaultline.write.failed', correlationId, endpoint: 'intake', error: String(e) }),
-      );
-
-      log({
-        level: 'info',
-        event: 'intake.captured',
-        correlationId,
-        matterRef: intake.matterRef,
-        matterType,
-        urgency,
-        sourceRef,
-        durationMs: Date.now() - startMs,
-      });
-
-      res.status(201).json({
-        ok: true,
-        message: 'Matter intake recorded successfully',
-        matterRef: intake.matterRef,
-        urgency: intake.urgency,
-      });
+      const [intake] = await db.insert(intakeForms).values({ matterRef, clientName, clientEmail: clientEmail || null, clientPhone: clientPhone || null, matterType, urgency, description: description || null, claimValue: claimValue || null }).returning();
+      res.status(201).json({ ok: true, message: 'Matter intake recorded successfully', matterRef: intake.matterRef, urgency: intake.urgency });
     } catch (error) {
       console.error('Error creating intake form:', error);
       res.status(500).json({ ok: false, error: 'Failed to save intake form. Please try again.' });
@@ -651,148 +208,33 @@ export function createApp(): express.Express {
     }
   });
 
-  // ==========================================================================
-  // COMPLIANCE BUNDLE API ENDPOINTS
-  // ==========================================================================
-
+  // ── Compliance bundles ────────────────────────────────────────────────────
   app.post('/api/compliance-bundle', async (req: Request, res: Response) => {
-    const correlationId = generateCorrelationId();
-    const startMs = Date.now();
     try {
-      const { companyName: _companyName, companyNumber, requestorName, requestorEmail, bundleType } = req.body;
-
-      if (!companyNumber) {
-        return res.status(400).json({ ok: false, error: 'Company number is required' });
-      }
-
-      if (!companiesHouseService.validateCompanyNumber(companyNumber)) {
-        return res.status(400).json({
-          ok: false,
-          error: 'Invalid company number format. Must be 8 digits or 2 letters + 6 digits.',
-        });
-      }
-
+      const { companyNumber, requestorName, requestorEmail, bundleType } = req.body;
+      if (!companyNumber) return res.status(400).json({ ok: false, error: 'Company number is required' });
+      if (!companiesHouseService.validateCompanyNumber(companyNumber)) return res.status(400).json({ ok: false, error: 'Invalid company number format.' });
       const formattedNumber = companiesHouseService.formatCompanyNumber(companyNumber);
-
-      const companyProfile = await withRetry(
-        () => companiesHouseService.getCompanyProfile(formattedNumber),
-        { label: 'ch.getCompanyProfile', correlationId, attempts: 3, baseDelayMs: 400 },
-      );
-
-      if (!companyProfile) {
-        log({ level: 'warn', event: 'compliance.company_not_found', correlationId, companyNumber: formattedNumber });
-        return res.status(404).json({
-          ok: false,
-          error: 'Company not found in Companies House register. Please check the company number.',
-        });
-      }
-
-      const complianceStatus = await withRetry(
-        () => companiesHouseService.getComplianceStatus(formattedNumber),
-        { label: 'ch.getComplianceStatus', correlationId, attempts: 3, baseDelayMs: 400 },
-      );
-
+      const companyProfile = await companiesHouseService.getCompanyProfile(formattedNumber);
+      if (!companyProfile) return res.status(404).json({ ok: false, error: 'Company not found in Companies House register.' });
+      const complianceStatus = await companiesHouseService.getComplianceStatus(formattedNumber);
       const bundleId = `BUNDLE-${Date.now()}`;
-
-      const [bundle] = await db
-        .insert(complianceBundles)
-        .values({
-          bundleId,
-          companyName: companyProfile.companyName,
-          companyNumber: formattedNumber,
-          requestorName: requestorName || null,
-          requestorEmail: requestorEmail || null,
-          bundleType: bundleType || 'full',
-          estimatedTime: 'Generated instantly',
-        })
-        .returning();
-
-      await writeAuditEvent({
-        tenantId: SYSTEM_TENANT_ID,
-        entityType: 'compliance_check',
-        entityUuid: bundle.id,
-        action: 'executed',
-        correlationId,
-        metadata: JSON.stringify({
-          bundleId: bundle.bundleId,
-          companyNumber: formattedNumber,
-          companyName: companyProfile.companyName,
-          riskLevel: complianceStatus.riskLevel,
-          status: complianceStatus.status,
-          overdueFilings: complianceStatus.overdueFilings.length,
-        }),
-      }).catch(e =>
-        log({
-          level: 'error',
-          event: 'vaultline.write.failed',
-          correlationId,
-          endpoint: 'compliance-bundle',
-          error: String(e),
-        }),
-      );
-
-      log({
-        level: 'info',
-        event: 'compliance.check.executed',
-        correlationId,
-        companyNumber: formattedNumber,
-        companyName: companyProfile.companyName,
-        riskLevel: complianceStatus.riskLevel,
-        status: complianceStatus.status,
-        overdueFilings: complianceStatus.overdueFilings.length,
-        durationMs: Date.now() - startMs,
-      });
-
+      const [bundle] = await db.insert(complianceBundles).values({ bundleId, companyName: companyProfile.companyName, companyNumber: formattedNumber, requestorName: requestorName || null, requestorEmail: requestorEmail || null, bundleType: bundleType || 'full', estimatedTime: 'Generated instantly' }).returning();
       res.status(201).json({
-        ok: true,
-        message: 'Real-time compliance check complete',
-        bundleId: bundle.bundleId,
-        company: {
-          number: companyProfile.companyNumber,
-          name: companyProfile.companyName,
-          status: companyProfile.companyStatus,
-          type: companyProfile.type,
-          incorporationDate: companyProfile.dateOfCreation,
-        },
+        ok: true, message: 'Real-time compliance check complete', bundleId: bundle.bundleId,
+        company: { number: companyProfile.companyNumber, name: companyProfile.companyName, status: companyProfile.companyStatus, type: companyProfile.type, incorporationDate: companyProfile.dateOfCreation },
         compliance: {
-          status: complianceStatus.status,
-          riskLevel: complianceStatus.riskLevel,
-          accounts: {
-            nextDue: complianceStatus.accountsStatus.nextDue,
-            daysUntilDue: complianceStatus.accountsStatus.daysUntilDue,
-            overdue: complianceStatus.accountsStatus.overdue,
-          },
-          confirmationStatement: {
-            nextDue: complianceStatus.confirmationStatementStatus.nextDue,
-            daysUntilDue: complianceStatus.confirmationStatementStatus.daysUntilDue,
-            overdue: complianceStatus.confirmationStatementStatus.overdue,
-          },
-          overdueFilings: complianceStatus.overdueFilings.map(f => ({
-            type: f.type,
-            description: f.description,
-            dueDate: f.dueDate,
-            daysOverdue: Math.abs(f.daysUntilDue),
-            penaltyRisk: f.penaltyRisk,
-          })),
-          upcomingDeadlines: complianceStatus.upcomingDeadlines.map(d => ({
-            type: d.type,
-            description: d.description,
-            dueDate: d.dueDate,
-            daysUntilDue: d.daysUntilDue,
-          })),
+          status: complianceStatus.status, riskLevel: complianceStatus.riskLevel,
+          accounts: { nextDue: complianceStatus.accountsStatus.nextDue, daysUntilDue: complianceStatus.accountsStatus.daysUntilDue, overdue: complianceStatus.accountsStatus.overdue },
+          confirmationStatement: { nextDue: complianceStatus.confirmationStatementStatus.nextDue, daysUntilDue: complianceStatus.confirmationStatementStatus.daysUntilDue, overdue: complianceStatus.confirmationStatementStatus.overdue },
+          overdueFilings: complianceStatus.overdueFilings.map(f => ({ type: f.type, description: f.description, dueDate: f.dueDate, daysOverdue: Math.abs(f.daysUntilDue), penaltyRisk: f.penaltyRisk })),
+          upcomingDeadlines: complianceStatus.upcomingDeadlines.map(d => ({ type: d.type, description: d.description, dueDate: d.dueDate, daysUntilDue: d.daysUntilDue })),
           penalties: complianceStatus.penalties,
         },
       });
     } catch (error) {
       console.error('Error fetching Companies House data:', error);
-
-      if (error instanceof Error && error.message.includes('COMPANIES_HOUSE_API_KEY')) {
-        return res.status(500).json({
-          ok: false,
-          error: 'Companies House API not configured. Please contact support.',
-        });
-      }
-
+      if (error instanceof Error && error.message.includes('COMPANIES_HOUSE_API_KEY')) return res.status(500).json({ ok: false, error: 'Companies House API not configured.' });
       res.status(500).json({ ok: false, error: 'Failed to fetch company information. Please try again.' });
     }
   });
@@ -807,35 +249,16 @@ export function createApp(): express.Express {
     }
   });
 
-  // ==========================================================================
-  // CONTACT FORM API ENDPOINTS
-  // ==========================================================================
-
+  // ── Contacts ──────────────────────────────────────────────────────────────
   app.post('/api/contact', async (req: Request, res: Response) => {
-    const correlationId = generateCorrelationId();
     try {
       const { name, email, subject, message } = req.body;
-
-      if (!name || !email || !message) {
-        return res.status(400).json({ ok: false, error: 'Name, email, and message are required' });
-      }
-
+      if (!name || !email || !message) return res.status(400).json({ ok: false, error: 'Name, email, and message are required' });
       const ticketId = `TICKET-${Date.now()}`;
-
-      const [contact] = await db
-        .insert(contacts)
-        .values({ ticketId, name, email, subject: subject || null, message, status: 'new' })
-        .returning();
-
-      log({ level: 'info', event: 'contact.captured', correlationId, ticketId: contact.ticketId });
-
-      res.status(201).json({
-        ok: true,
-        message: "Thank you for contacting us. We'll respond within 24 hours.",
-        ticketId: contact.ticketId,
-      });
+      const [contact] = await db.insert(contacts).values({ ticketId, name, email, subject: subject || null, message, status: 'new' }).returning();
+      res.status(201).json({ ok: true, message: "Thank you for contacting us. We'll respond within 24 hours.", ticketId: contact.ticketId });
     } catch (error) {
-      log({ level: 'error', event: 'contact.failed', correlationId, error: String(error) });
+      console.error('Error creating contact:', error);
       res.status(500).json({ ok: false, error: 'Failed to save contact form. Please try again.' });
     }
   });
@@ -850,195 +273,109 @@ export function createApp(): express.Express {
     }
   });
 
-  const updateContactStatus = async (req: Request, res: Response) => {
+  app.patch('/api/contacts/:id', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
-
-      if (!status || !['new', 'read', 'replied'].includes(status)) {
-        return res.status(400).json({ error: 'Invalid status. Must be: new, read, or replied' });
-      }
-
-      const [contact] = await db
-        .update(contacts)
-        .set({ status })
-        .where(eq(contacts.id, id))
-        .returning();
-
-      if (!contact) {
-        return res.status(404).json({ error: 'Contact not found' });
-      }
-
+      if (!status || !['new', 'read', 'replied'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+      const [contact] = await db.update(contacts).set({ status }).where(eq(contacts.id, id)).returning();
+      if (!contact) return res.status(404).json({ error: 'Contact not found' });
       res.json({ success: true, contact });
     } catch (error) {
       console.error('Error updating contact:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
-  };
+  });
 
-  app.patch('/api/admin/contacts/:id', updateContactStatus);
-  app.patch('/api/contacts/:id', requireAdminKey, updateContactStatus);
+  // ── Zapier ────────────────────────────────────────────────────────────────
+  const ZAPIER_API_KEY = process.env.ZAPIER_API_KEY;
+  const VALID_EVENTS: ZapierEvent[] = ['new_audit_lead', 'new_lead', 'deal_escalated', 'deal_closed'];
 
-  // ==========================================================================
-  // FINEGUARD ALERT SCHEDULER
-  // ==========================================================================
+  function requireZapierAuth(req: Request, res: Response): boolean {
+    if (!ZAPIER_API_KEY) return true;
+    const key = req.headers['x-api-key'] ?? req.query.api_key;
+    if (key !== ZAPIER_API_KEY) { res.status(401).json({ error: 'Unauthorized' }); return false; }
+    return true;
+  }
 
-  app.get('/api/internal/run-compliance-check', requireAdminKey, async (_req: Request, res: Response) => {
-    if (!companiesHouseService) {
-      return res.status(503).json({ error: 'Companies House API not configured' });
-    }
-
-    const runId = generateCorrelationId();
-    const started = Date.now();
-    const results: Array<{
-      companyNumber: string;
-      companyName: string;
-      status: string;
-      riskLevel: string;
-      overdueFilings: number;
-      alertRequired: boolean;
-      error?: string;
-    }> = [];
-
+  app.post('/api/zapier/subscribe', async (req: Request, res: Response) => {
+    if (!requireZapierAuth(req, res)) return;
+    const { hookUrl, event } = req.body;
+    if (!hookUrl || !event) return res.status(400).json({ error: 'hookUrl and event are required' });
+    if (!VALID_EVENTS.includes(event)) return res.status(400).json({ error: `event must be one of: ${VALID_EVENTS.join(', ')}` });
     try {
-      const companies = await db.select().from(monitoredCompanies);
+      const sub = await subscribe(hookUrl, event as ZapierEvent, ZAPIER_API_KEY ?? 'none');
+      res.status(201).json({ id: sub.id, hookUrl, event });
+    } catch (err) { console.error('[zapier] subscribe error:', err); res.status(500).json({ error: 'Failed to subscribe' }); }
+  });
 
-      log({ level: 'info', event: 'scheduler.run.start', correlationId: runId, companiesTotal: companies.length });
+  app.delete('/api/zapier/subscribe', async (req: Request, res: Response) => {
+    if (!requireZapierAuth(req, res)) return;
+    const { hookUrl, event } = req.body;
+    if (!hookUrl || !event) return res.status(400).json({ error: 'hookUrl and event are required' });
+    try { await unsubscribe(hookUrl, event as ZapierEvent); res.json({ ok: true }); }
+    catch (err) { console.error('[zapier] unsubscribe error:', err); res.status(500).json({ error: 'Failed to unsubscribe' }); }
+  });
 
-      for (const company of companies) {
-        const companyCorrelationId = generateCorrelationId();
-        try {
-          const complianceStatus = await withRetry(
-            () => companiesHouseService.getComplianceStatus(company.companyNumber),
-            { label: 'ch.scheduler.getComplianceStatus', correlationId: companyCorrelationId, attempts: 3, baseDelayMs: 600 },
-          );
+  app.get('/api/zapier/sample/:event', (req: Request, res: Response) => {
+    if (!requireZapierAuth(req, res)) return;
+    const samples: Record<string, object> = {
+      new_audit_lead: { id: 'a62fe1f7-225e-4288-b2bc-8853cb9c2f4b', tenantId: '3ed1ef2d-2d56-45f1-98ae-1c76548c2beb', email: 'sample@chambers.co.uk', name: 'Jane Barrister', chamberSize: '11-30', painPoints: ['Unbilled emails & calls'], stage: 'signed_up', createdAt: new Date().toISOString() },
+      new_lead: { id: '8856a199-f568-4d03-ac36-cab598c78a41', leadId: 'LEAD-1776413871087', name: 'Alice Smith', email: 'alice@chambers.co.uk', company: 'Gray Inn', product: 'vaultline', createdAt: new Date().toISOString() },
+      deal_escalated: { leadId: 'LEAD-1776413871087', email: 'alice@chambers.co.uk', reason: 'High-value close £6000 requires human approval', agentAction: 'escalate', priceMonthly: 6000, escalatedAt: new Date().toISOString() },
+      deal_closed: { leadId: 'LEAD-1776413871087', email: 'alice@chambers.co.uk', priceMonthly: 2500, closedAt: new Date().toISOString() },
+    };
+    const sample = samples[req.params.event];
+    if (!sample) return res.status(404).json({ error: 'Unknown event' });
+    res.json([sample]);
+  });
 
-          const alertRequired =
-            complianceStatus.status === 'overdue' ||
-            complianceStatus.riskLevel === 'high' ||
-            complianceStatus.overdueFilings.length > 0;
+  app.get('/api/zapier/subscriptions', async (req: Request, res: Response) => {
+    if (!requireZapierAuth(req, res)) return;
+    try { res.json(await db.select().from(zapierSubscriptions)); }
+    catch (err) { res.status(500).json({ error: 'Failed to fetch subscriptions' }); }
+  });
 
-          await writeAuditEvent({
-            tenantId: SYSTEM_TENANT_ID,
-            entityType: 'compliance_alert',
-            entityUuid: company.id,
-            action: alertRequired ? 'alert_required' : 'checked',
-            correlationId: companyCorrelationId,
-            metadata: JSON.stringify({
-              schedulerRunId: runId,
-              companyNumber: company.companyNumber,
-              companyName: company.companyName,
-              status: complianceStatus.status,
-              riskLevel: complianceStatus.riskLevel,
-              overdueFilings: complianceStatus.overdueFilings.length,
-              upcomingDeadlines: complianceStatus.upcomingDeadlines.length,
-              alertRequired,
-            }),
-          }).catch(e =>
-            log({
-              level: 'error',
-              event: 'vaultline.write.failed',
-              correlationId: companyCorrelationId,
-              endpoint: 'scheduler',
-              error: String(e),
-            }),
-          );
-
-          if (alertRequired) {
-            log({
-              level: 'warn',
-              event: 'compliance.alert.required',
-              correlationId: companyCorrelationId,
-              companyNumber: company.companyNumber,
-              companyName: company.companyName,
-              status: complianceStatus.status,
-              riskLevel: complianceStatus.riskLevel,
-              overdueFilings: complianceStatus.overdueFilings.length,
-            });
-          }
-
-          results.push({
-            companyNumber: company.companyNumber,
-            companyName: company.companyName,
-            status: complianceStatus.status,
-            riskLevel: complianceStatus.riskLevel,
-            overdueFilings: complianceStatus.overdueFilings.length,
-            alertRequired,
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          log({
-            level: 'error',
-            event: 'scheduler.company.failed',
-            correlationId: companyCorrelationId,
-            companyNumber: company.companyNumber,
-            error: message,
-          });
-          results.push({
-            companyNumber: company.companyNumber,
-            companyName: company.companyName,
-            status: 'error',
-            riskLevel: 'unknown',
-            overdueFilings: 0,
-            alertRequired: false,
-            error: message,
-          });
+  // ── Audit funnel ──────────────────────────────────────────────────────────
+  app.post('/api/audit-signup', async (req: Request, res: Response) => {
+    try {
+      const { email, name, chamberSize, painPoints } = req.body;
+      if (!email || typeof email !== 'string') return res.status(400).json({ ok: false, error: 'email is required' });
+      const tenantId = crypto.randomUUID();
+      const appUrl = process.env.APP_URL || 'http://localhost:3000';
+      const [auditLead] = await db.insert(auditLeads).values({ tenantId, email, name: name ?? null, chamberSize: chamberSize ?? null, painPoints: painPoints ? JSON.stringify(painPoints) : null }).returning();
+      await sendAuditReady(email, name ?? '', tenantId, appUrl);
+      fire('new_audit_lead', { id: auditLead.id, tenantId, email, name: name ?? null, chamberSize: chamberSize ?? null, painPoints: painPoints ?? [], stage: 'signed_up', createdAt: auditLead.createdAt }).catch((err) => console.error('[zapier] fire new_audit_lead error:', err));
+      const agentMode = process.env.AGENT_MODE ?? 'shadow';
+      const decision = await runSalesAgent(auditLead).catch((err) => { console.error('[salesAgent] error:', err); return null; });
+      if (decision) {
+        await db.update(auditLeads).set({ agentDecision: JSON.stringify(decision) }).where(eq(auditLeads.id, auditLead.id));
+        if (agentMode === 'shadow') { console.log('[salesAgent] shadow decision:', decision); }
+        else if (decision.action === 'negotiate' || decision.action === 'close') {
+          await sendAgentMessage(email, 'Your chambers recovery plan', decision.message);
+          if (decision.action === 'close') fire('deal_closed', { email, priceMonthly: decision.priceMonthly, closedAt: new Date().toISOString() }).catch((err) => console.error('[zapier] fire deal_closed error:', err));
+        } else if (decision.action === 'escalate') {
+          fire('deal_escalated', { email, reason: decision.reasoning, agentAction: 'escalate', priceMonthly: decision.priceMonthly, escalatedAt: new Date().toISOString() }).catch((err) => console.error('[zapier] fire deal_escalated error:', err));
         }
       }
-
-      const alertCount = results.filter(r => r.alertRequired).length;
-      log({
-        level: 'info',
-        event: 'scheduler.run.complete',
-        correlationId: runId,
-        companiesChecked: results.length,
-        alertsRequired: alertCount,
-        durationMs: Date.now() - started,
-      });
-
-      res.json({
-        ok: true,
-        runId,
-        durationMs: Date.now() - started,
-        companiesChecked: results.length,
-        alertsRequired: alertCount,
-        results,
-      });
-    } catch (err) {
-      log({ level: 'error', event: 'scheduler.run.failed', correlationId: runId, error: String(err) });
-      res.status(500).json({ error: 'Compliance check failed' });
+      res.status(201).json({ ok: true, tenantId });
+    } catch (error) {
+      console.error('Error in audit-signup:', error);
+      res.status(500).json({ ok: false, error: 'Failed to process signup' });
     }
   });
 
-  // ==========================================================================
-  // STATIC FILE SERVING & SPA FALLBACK
-  // Skipped on Vercel — Vercel serves the built frontend directly from CDN
-  // ==========================================================================
+  app.get('/api/admin/audit-leads', async (_req: Request, res: Response) => {
+    try {
+      const all = await db.select().from(auditLeads).orderBy(desc(auditLeads.createdAt));
+      res.json(all);
+    } catch (error) {
+      console.error('Error fetching audit leads:', error);
+      res.status(500).json({ error: 'Failed to fetch audit leads' });
+    }
+  });
 
-  if (!isVercel) {
-    const distPath = path.join(__dirname, '../dist');
-    app.use(express.static(distPath));
-
-    // Guard: any /api/* route not matched above returns JSON 404
-    app.all('/api/*', (_req: Request, res: Response) => {
-      res.status(404).json({ error: 'Not found' });
-    });
-
-    // SPA fallback — serve index.html for all non-API routes
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  } else {
-    // On Vercel the CDN handles filesystem; only the API 404 guard is needed
-    app.all('/api/*', (_req: Request, res: Response) => {
-      res.status(404).json({ error: 'Not found' });
-    });
-  }
-
-  // ==========================================================================
-  // ERROR HANDLING
-  // ==========================================================================
-
+  // ── Error handler ─────────────────────────────────────────────────────────
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal server error' });
