@@ -5,6 +5,8 @@ import Stripe from 'stripe';
 import alertRouter from './routes/alerts';
 import companiesRouter from './routes/companies';
 import voiceReceptionRouter from './routes/voiceReception';
+import governanceRouter from './routes/governance';
+import { governanceMiddleware } from './governance/middleware';
 import { db } from './db/index';
 import { deploymentStatus, leads, intakeForms, complianceBundles, contacts, monitoredCompanies, auditLeads, zapierSubscriptions } from './db/schema';
 import { desc, eq } from 'drizzle-orm';
@@ -64,8 +66,11 @@ export function createApp() {
     next();
   });
   app.use(express.json());
+  app.use('/api/governance', governanceRouter);
   app.use('/api/alerts', alertRouter);
   app.use('/api/companies', companiesRouter);
+  // Governance middleware intercepts POST /process-transcript before the router handler
+  app.use('/api/voice-reception', governanceMiddleware(['/process-transcript']));
   app.use('/api/voice-reception', voiceReceptionRouter);
   app.use(express.urlencoded({ extended: true }));
   app.use((req: Request, _res: Response, next: NextFunction) => {

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb, integer, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -195,3 +195,50 @@ export type Company = typeof companies.$inferSelect;
 export type Alert = typeof alerts.$inferSelect;
 export type EscalationRule = typeof escalationRules.$inferSelect;
 export type AlertEvent = typeof alertEvents.$inferSelect;
+
+// ── Governance Layer ──────────────────────────────────────────────────────────
+
+export const governancePolicies = pgTable('governance_policies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  description: text('description'),
+  ruleType: text('rule_type').notNull(),   // 'rate_limit' | 'resource_allowlist' | 'hard_block' | 'condition_always'
+  ruleConfig: jsonb('rule_config').notNull(),
+  priority: integer('priority').notNull().default(100),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const governanceDecisions = pgTable('governance_decisions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  decisionId: text('decision_id').notNull().unique(),
+  requestDigest: text('request_digest').notNull(),
+  agentId: text('agent_id').notNull(),
+  sessionId: text('session_id').notNull(),
+  actionType: text('action_type').notNull(),
+  targetResource: text('target_resource').notNull(),
+  decision: text('decision').notNull(),    // 'ALLOW' | 'DENY' | 'ALLOW_WITH_CONDITIONS' | 'ESCALATE'
+  policyId: text('policy_id'),
+  conditions: jsonb('conditions'),
+  reason: text('reason'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  agentIdx: index('idx_gov_decisions_agent_id').on(t.agentId, t.decidedAt),
+  sessionIdx: index('idx_gov_decisions_session_id').on(t.sessionId),
+}));
+
+export const rateLimitCounters = pgTable('rate_limit_counters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  agentId: text('agent_id').notNull(),
+  bucket: text('bucket').notNull(),
+  requestTime: timestamp('request_time', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  counterIdx: index('idx_rl_counters').on(t.agentId, t.bucket, t.requestTime),
+}));
+
+export type GovernancePolicy = typeof governancePolicies.$inferSelect;
+export type NewGovernancePolicy = typeof governancePolicies.$inferInsert;
+export type GovernanceDecision = typeof governanceDecisions.$inferSelect;
+export type NewGovernanceDecision = typeof governanceDecisions.$inferInsert;
