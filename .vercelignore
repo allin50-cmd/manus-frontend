@@ -1,0 +1,20 @@
+# Python pipeline — not needed on Vercel
+pie_lite/
+
+# Voice agent microservice (separate Docker deployment)
+voice-agent/
+
+# Azure / legacy deployment artefacts
+deploy/
+azure-functions/
+.azure-secrets.env
+
+# Docs
+docs/
+
+# Local dev
+*.local
+.env
+
+# Test output
+coverage/
