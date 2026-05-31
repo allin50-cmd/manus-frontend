@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, boolean, jsonb, integer, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -91,6 +91,41 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
 });
 
+/**
+ * Audit Leads Table
+ * Tracks prospects who signed up for the free AI revenue audit
+ */
+export const auditLeads = pgTable('audit_leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }),
+  chamberSize: varchar('chamber_size', { length: 50 }),
+  painPoints: text('pain_points'), // JSON array stored as text
+  stage: varchar('stage', { length: 50 }).default('signed_up').notNull(), // signed_up, audit_viewed, negotiating, closed_won, escalated
+  agentDecision: text('agent_decision'), // Last JSON decision from sales agent
+  auditViewedAt: timestamp('audit_viewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type AuditLead = typeof auditLeads.$inferSelect;
+export type NewAuditLead = typeof auditLeads.$inferInsert;
+
+/**
+ * Zapier REST-hook Subscriptions Table
+ * Stores active Zapier webhook subscriptions per event type.
+ */
+export const zapierSubscriptions = pgTable('zapier_subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  hookUrl: text('hook_url').notNull(),
+  event: varchar('event', { length: 100 }).notNull(), // new_audit_lead | new_lead | deal_escalated | deal_closed
+  apiKey: varchar('api_key', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type ZapierSubscription = typeof zapierSubscriptions.$inferSelect;
+export type NewZapierSubscription = typeof zapierSubscriptions.$inferInsert;
+
 // Export types for use in the application
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
@@ -109,3 +144,129 @@ export type NewContact = typeof contacts.$inferInsert;
 
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+
+// ── FineGuard Alert Centre ────────────────────────────────────────────────────
+
+export const companies = pgTable('companies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const alerts = pgTable('alerts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id),
+  title: text('title').notNull(),
+  description: text('description'),
+  source: varchar('source', { length: 20 }).notNull(),       // voice_agent|api|manual|system
+  severity: varchar('severity', { length: 10 }).notNull(),   // LOW|MEDIUM|HIGH|CRITICAL
+  status: varchar('status', { length: 10 }).notNull().default('OPEN'), // OPEN|ESCALATED|CRITICAL|CLOSED
+  ownerId: uuid('owner_id'),
+  acknowledgedAt: timestamp('acknowledged_at', { withTimezone: true }),
+  statusChangedAt: timestamp('status_changed_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const escalationRules = pgTable('escalation_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id),
+  name: text('name').notNull(),
+  condition: jsonb('condition').notNull(), // {"status":"OPEN","severity":"HIGH","min_minutes":15}
+  targetStatus: varchar('target_status', { length: 10 }).notNull(), // ESCALATED|CRITICAL
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const alertEvents = pgTable('alert_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  alertId: uuid('alert_id').notNull(),
+  companyId: uuid('company_id').notNull(),
+  eventType: varchar('event_type', { length: 30 }).notNull(),
+  previousValue: jsonb('previous_value'),
+  newValue: jsonb('new_value'),
+  createdBy: text('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type Company = typeof companies.$inferSelect;
+export type Alert = typeof alerts.$inferSelect;
+export type EscalationRule = typeof escalationRules.$inferSelect;
+export type AlertEvent = typeof alertEvents.$inferSelect;
+
+// ── Governance Layer ──────────────────────────────────────────────────────────
+
+export const governancePolicies = pgTable('governance_policies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  description: text('description'),
+  ruleType: text('rule_type').notNull(),   // 'rate_limit' | 'resource_allowlist' | 'hard_block' | 'condition_always'
+  ruleConfig: jsonb('rule_config').notNull(),
+  priority: integer('priority').notNull().default(100),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const governanceDecisions = pgTable('governance_decisions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  decisionId: text('decision_id').notNull().unique(),
+  requestDigest: text('request_digest').notNull(),
+  agentId: text('agent_id').notNull(),
+  sessionId: text('session_id').notNull(),
+  actionType: text('action_type').notNull(),
+  targetResource: text('target_resource').notNull(),
+  decision: text('decision').notNull(),    // 'ALLOW' | 'DENY' | 'ALLOW_WITH_CONDITIONS' | 'ESCALATE'
+  policyId: text('policy_id'),
+  conditions: jsonb('conditions'),
+  reason: text('reason'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  agentIdx: index('idx_gov_decisions_agent_id').on(t.agentId, t.decidedAt),
+  sessionIdx: index('idx_gov_decisions_session_id').on(t.sessionId),
+}));
+
+export const rateLimitCounters = pgTable('rate_limit_counters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  agentId: text('agent_id').notNull(),
+  bucket: text('bucket').notNull(),
+  requestTime: timestamp('request_time', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  counterIdx: index('idx_rl_counters').on(t.agentId, t.bucket, t.requestTime),
+}));
+
+export type GovernancePolicy = typeof governancePolicies.$inferSelect;
+export type NewGovernancePolicy = typeof governancePolicies.$inferInsert;
+export type GovernanceDecision = typeof governanceDecisions.$inferSelect;
+export type NewGovernanceDecision = typeof governanceDecisions.$inferInsert;
+
+// ── PIE Leads ─────────────────────────────────────────────────────────────────
+
+export const pieLeads = pgTable('pie_leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ref: text('ref').notNull().unique(),
+  address: text('address').notNull(),
+  description: text('description').notNull().default(''),
+  source: text('source').notNull().default(''),
+  dateScraped: text('date_scraped').notNull(),
+  inferredBuildType: text('inferred_build_type').notNull(),
+  inferredFloorAreaM2: numeric('inferred_floor_area_m2').notNull(),
+  estimateConfidence: text('estimate_confidence').notNull().default('low'),
+  rateSource: text('rate_source').notNull().default('placeholder'),
+  rateValidationStatus: text('rate_validation_status').notNull().default('PLACEHOLDER_RATE_REQUIRES_ACCURACY_VALIDATION'),
+  floorAreaSource: text('floor_area_source').notNull(),
+  floorAreaConfidence: text('floor_area_confidence').notNull().default('low'),
+  opportunityScore: integer('opportunity_score').notNull(),
+  estimatedBuildValue: numeric('estimated_build_value').notNull(),
+  crmStage: text('crm_stage').notNull().default('New'),
+  lastUpdated: timestamp('last_updated', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  crmStageIdx: index('idx_pie_leads_crm_stage').on(t.crmStage),
+}));
+
+export type PieLead = typeof pieLeads.$inferSelect;
+export type NewPieLead = typeof pieLeads.$inferInsert;

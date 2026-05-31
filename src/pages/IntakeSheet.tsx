@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import PublicNav from '@/components/layout/PublicNav';
 import { Loader2, CheckCircle, AlertCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -91,65 +90,61 @@ export default function IntakeSheet() {
 
   if (success) {
     return (
-      <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10]">
-        <PublicNav />
-        <div className="min-h-[calc(100vh-73px)] flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-cyan-400" />
-              </div>
-              <CardTitle className="text-2xl text-white">Intake Recorded!</CardTitle>
-              <CardDescription className="text-gray-400">
-                Your client matter has been successfully recorded
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-center">
-              <div className="p-4 bg-[#1A1D28] border border-[#2A2D3A] rounded-lg">
-                <p className="text-sm text-gray-400 mb-2">Matter Reference</p>
-                <p className="text-lg font-mono text-cyan-400 font-semibold">{matterRef}</p>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10] flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-[#13151C] border-[#2A2D3A]">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-cyan-400" />
+            </div>
+            <CardTitle className="text-2xl text-white">Intake Recorded!</CardTitle>
+            <CardDescription className="text-gray-400">
+              Your client matter has been successfully recorded
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-center">
+            <div className="p-4 bg-[#1A1D28] border border-[#2A2D3A] rounded-lg">
+              <p className="text-sm text-gray-400 mb-2">Matter Reference</p>
+              <p className="text-lg font-mono text-cyan-400 font-semibold">{matterRef}</p>
+            </div>
 
-              {urgencyLevel && (
-                <div className={`p-3 rounded-lg border ${getUrgencyColor(urgencyLevel)}`}>
-                  <div className="flex items-center justify-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    <span className="font-semibold">Priority: {urgencyLevel.toUpperCase()}</span>
-                  </div>
+            {urgencyLevel && (
+              <div className={`p-3 rounded-lg border ${getUrgencyColor(urgencyLevel)}`}>
+                <div className="flex items-center justify-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-semibold">Priority: {urgencyLevel.toUpperCase()}</span>
                 </div>
-              )}
-
-              <p className="text-gray-300">
-                Our team has been notified and will review this matter shortly.
-              </p>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setSuccess(false)}
-                  variant="outline"
-                  className="flex-1 bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
-                >
-                  Submit Another
-                </Button>
-                <Button
-                  onClick={() => setLocation('/fineguard')}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to FineGuard
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+
+            <p className="text-gray-300">
+              Our team has been notified and will review this matter shortly.
+            </p>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setSuccess(false)}
+                variant="outline"
+                className="flex-1 bg-[#1A1D28] border-[#2A2D3A] hover:bg-[#252830] text-white"
+              >
+                Submit Another
+              </Button>
+              <Button
+                onClick={() => setLocation('/ultai')}
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to UltAi
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen theme-light-default bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10]">
-      <PublicNav />
-      <div className="max-w-3xl mx-auto py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#0B0C10] via-[#1A1D28] to-[#0B0C10] py-12 px-4">
+      <div className="max-w-3xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-white mb-4">Client Matter Intake Sheet</h1>
           <p className="text-gray-400 text-lg">

@@ -1,0 +1,320 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'What to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options: [all, os, marketing, vaultline]
+      environment:
+        description: 'Target environment (os/vaultline)'
+        required: false
+        default: 'aios'
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ============================================================
+  # Detect which areas changed to drive conditional jobs
+  # ============================================================
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.filter.outputs.os }}
+      marketing: ${{ steps.filter.outputs.marketing }}
+      vaultline: ${{ steps.filter.outputs.vaultline }}
+      target: ${{ steps.target.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve dispatch target
+        id: target
+        run: echo "value=${{ github.event.inputs.target || 'all' }}" >> $GITHUB_OUTPUT
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            os:
+              - 'os/**'
+              - 'infra/main.bicep'
+              - '.github/workflows/deploy.yml'
+            marketing:
+              - 'src/**'
+              - 'public/**'
+              - 'index.html'
+              - 'package.json'
+              - 'vite.config.*'
+              - 'tailwind.config.*'
+              - 'staticwebapp.config.json'
+            vaultline:
+              - 'vaultline/**'
+              - 'apps/vaultline/**'
+
+  # ============================================================
+  # OS: Unified Intelligence OS (Next.js → ACR → Container App)
+  # ============================================================
+  os-test:
+    name: OS · Tests
+    needs: changes
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'os')) ||
+      (github.event_name == 'pull_request' && needs.changes.outputs.os == 'true')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: os
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: os/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run type-check
+      - run: npm test
+
+  os-deploy:
+    name: OS · Build & Deploy
+    needs: [changes, os-test]
+    if: |
+      github.event_name != 'pull_request' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'os')))
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: unified-intelligence-os
+      RESOURCE_GROUP: rg-unified-os
+      ENVIRONMENT_NAME: ${{ github.event.inputs.environment || 'aios' }}
+      LOCATION: uksouth
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required secrets
+        id: check
+        run: |
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ] || [ -z "${{ secrets.ACR_LOGIN_SERVER }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::Skipping OS deploy — AZURE_CREDENTIALS or ACR_LOGIN_SERVER not configured"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Azure login
+        if: steps.check.outputs.skip == 'false'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        if: steps.check.outputs.skip == 'false'
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build and push image
+        if: steps.check.outputs.skip == 'false'
+        working-directory: os
+        run: |
+          TAG=${GITHUB_SHA::7}
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/$IMAGE_NAME:$TAG -t ${{ secrets.ACR_LOGIN_SERVER }}/$IMAGE_NAME:latest .
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/$IMAGE_NAME:$TAG
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/$IMAGE_NAME:latest
+          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Resolve optional secrets
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          echo "OPENAI_KEY=${{ secrets.OPENAI_API_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "RESEND_KEY=${{ secrets.RESEND_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "STRIPE_KEY=${{ secrets.STRIPE_SECRET_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "STRIPE_WEBHOOK=${{ secrets.STRIPE_WEBHOOK_SECRET || 'placeholder' }}" >> $GITHUB_ENV
+          echo "STRIPE_PRICE=${{ secrets.STRIPE_PRICE_ID || '' }}" >> $GITHUB_ENV
+          echo "SESSION_SECRET=${{ secrets.SESSION_SECRET || secrets.WEBHOOK_SIGNING_SECRET || 'placeholder' }}" >> $GITHUB_ENV
+          echo "CH_KEY=${{ secrets.COMPANIES_HOUSE_API_KEY || 'placeholder' }}" >> $GITHUB_ENV
+          echo "CRM_URL=${{ secrets.CRM_WEBHOOK_URL || 'https://example.invalid' }}" >> $GITHUB_ENV
+
+      - name: Deploy Bicep
+        if: steps.check.outputs.skip == 'false'
+        uses: azure/arm-deploy@v2
+        with:
+          resourceGroupName: ${{ env.RESOURCE_GROUP }}
+          template: infra/main.bicep
+          parameters: >-
+            environmentName=${{ env.ENVIRONMENT_NAME }}
+            location=${{ env.LOCATION }}
+            acrLoginServer=${{ secrets.ACR_LOGIN_SERVER }}
+            acrUsername=${{ secrets.ACR_USERNAME }}
+            acrPassword=${{ secrets.ACR_PASSWORD }}
+            osImageTag=${{ env.IMAGE_TAG }}
+            dbPassword=${{ secrets.DB_PASSWORD }}
+            openaiKey=${{ env.OPENAI_KEY }}
+            resendKey=${{ env.RESEND_KEY }}
+            stripeSecretKey=${{ env.STRIPE_KEY }}
+            stripeWebhookSecret=${{ env.STRIPE_WEBHOOK }}
+            stripePriceId=${{ env.STRIPE_PRICE }}
+            sessionSecret=${{ env.SESSION_SECRET }}
+            companiesHouseApiKey=${{ env.CH_KEY }}
+            webhookSigningSecret=${{ secrets.WEBHOOK_SIGNING_SECRET }}
+            crmWebhookUrl=${{ env.CRM_URL }}
+
+      - name: Run Prisma migrations
+        if: steps.check.outputs.skip == 'false'
+        working-directory: os
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          npm ci
+          if [ -d prisma/migrations ] && [ "$(ls -A prisma/migrations 2>/dev/null)" ]; then
+            npx prisma migrate deploy
+          else
+            npx prisma db push --skip-generate --accept-data-loss
+          fi
+
+      - name: Output URL
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          FQDN=$(az containerapp show -n os-$ENVIRONMENT_NAME -g $RESOURCE_GROUP --query properties.configuration.ingress.fqdn -o tsv)
+          echo "Deployed to https://$FQDN"
+
+  # ============================================================
+  # Marketing: Vite static site → Azure Static Web Apps
+  # ============================================================
+  marketing:
+    name: Marketing · Build & Deploy SWA
+    needs: changes
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'marketing')) ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed' && needs.changes.outputs.marketing == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm test --if-present
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+        env:
+          CI: true
+          NODE_ENV: production
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          api_location: ""
+          output_location: "dist"
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-dist
+          path: dist/
+          retention-days: 7
+
+  marketing-close-pr:
+    name: Marketing · Close PR preview
+    needs: changes
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: "close"
+
+  # ============================================================
+  # VaultLine: pnpm build → Azure App Service
+  # ============================================================
+  vaultline:
+    name: VaultLine · Build & Deploy
+    needs: changes
+    if: |
+      github.event_name != 'pull_request' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      ((github.event_name == 'push' && needs.changes.outputs.vaultline == 'true') ||
+       (github.event_name == 'workflow_dispatch' && (needs.changes.outputs.target == 'all' || needs.changes.outputs.target == 'vaultline') && needs.changes.outputs.vaultline == 'true'))
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required secrets
+        id: check
+        run: |
+          if [ -z "${{ secrets.AZURE_WEBAPP_NAME }}" ] || [ -z "${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::Skipping VaultLine deploy — AZURE_WEBAPP_NAME or AZURE_WEBAPP_PUBLISH_PROFILE not configured"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install pnpm
+        if: steps.check.outputs.skip == 'false'
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        if: steps.check.outputs.skip == 'false'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        if: steps.check.outputs.skip == 'false'
+        run: pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Azure App Service
+        if: steps.check.outputs.skip == 'false'
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./dist
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## VaultLine Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY

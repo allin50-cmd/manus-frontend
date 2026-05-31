@@ -9,6 +9,7 @@ coverage/
 # Production
 dist/
 build/
+.next/
 
 # Environment files
 .env
@@ -30,7 +31,6 @@ lerna-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
-src/pages/## GitHub Copilot Chat.md
 .DS_Store
 *.suo
 *.ntvs*
@@ -43,8 +43,8 @@ src/pages/## GitHub Copilot Chat.md
 *.sqlite3
 *.db
 
-# Drizzle studio generated files only
-.drizzle/
+# Drizzle
+drizzle/
 
 # OS
 .DS_Store
@@ -63,4 +63,8 @@ Thumbs.db
 *.key
 *.cert
 credentials.json
-.vercel
+*.env
+.azure-secrets.env
+.claude/
+__pycache__/
+*.pyc

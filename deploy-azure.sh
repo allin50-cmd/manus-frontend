@@ -25,9 +25,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-APP_NAME="FineGuard"
+$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')v
 DEFAULT_RESOURCE_GROUP="fineguard-rg"
-DEFAULT_LOCATION="uksouth"  # UK South (London)
+DEFAULT_LOCATION="westeurope"
 DEFAULT_SKU="Free"
 
 ##############################################################################

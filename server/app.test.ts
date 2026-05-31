@@ -100,7 +100,8 @@ describe('Voice agent API bridge', () => {
     const response = await fetch(`${baseUrl}/api/voice-reception/health`);
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = await response.json() as any;
     expect(body.service).toBe('voice-reception');
     expect(body.mode).toBe('same-origin');
   });
@@ -117,7 +118,8 @@ describe('Voice agent API bridge', () => {
     });
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = await response.json() as any;
     expect(body.intent).toBe('construction_lead');
     expect(body.risk_level).toBe('low');
     expect(body.policy_decision).toBe('ALLOW');
