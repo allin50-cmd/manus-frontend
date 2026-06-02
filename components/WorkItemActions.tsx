@@ -134,37 +134,37 @@ export default function WorkItemActions({
     if (ok) router.refresh()
   }
 
-  const btnBase = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50'
+  const btn = 'py-3 px-3 rounded-xl text-sm font-semibold text-center transition-colors disabled:opacity-50'
 
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Actions</h2>
 
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => togglePanel('logNote')} className={`${btnBase} bg-slate-200 hover:bg-slate-300 text-slate-800`}>
+      {/* Action buttons — 2-col grid, solid fills for clear tap affordance */}
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={() => togglePanel('logNote')} className={`${btn} bg-slate-800 hover:bg-slate-700 text-white`}>
           Log Note
         </button>
-        <button onClick={() => togglePanel('followUp')} className={`${btnBase} bg-blue-100 hover:bg-blue-200 text-blue-800`}>
+        <button onClick={() => togglePanel('followUp')} className={`${btn} bg-blue-600 hover:bg-blue-700 text-white`}>
           Create Follow-Up
         </button>
-        <button onClick={() => togglePanel('changeStatus')} className={`${btnBase} bg-yellow-100 hover:bg-yellow-200 text-yellow-900`}>
+        <button onClick={() => togglePanel('changeStatus')} className={`${btn} bg-amber-500 hover:bg-amber-600 text-white`}>
           Change Status
         </button>
-        <button onClick={() => togglePanel('escalate')} className={`${btnBase} bg-purple-100 hover:bg-purple-200 text-purple-800`}>
+        <button onClick={() => togglePanel('escalate')} className={`${btn} bg-purple-600 hover:bg-purple-700 text-white`}>
           Escalate to George
         </button>
         <button
           onClick={handleMarkComplete}
           disabled={loading || currentStatus === 'Completed'}
-          className={`${btnBase} bg-green-100 hover:bg-green-200 text-green-800`}
+          className={`${btn} bg-green-600 hover:bg-green-700 text-white`}
         >
           Mark Complete
         </button>
         <button
           onClick={handleArchive}
           disabled={loading || currentStatus === 'Archived'}
-          className={`${btnBase} bg-red-50 hover:bg-red-100 text-red-700`}
+          className={`${btn} border border-red-200 bg-white hover:bg-red-50 text-red-600`}
         >
           Archive
         </button>

@@ -47,13 +47,16 @@ export default async function DashboardPage() {
         <p className="text-slate-500 text-sm mt-1">Welcome back, {session.person}</p>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {/* Stats grid — 2×2 + slim banner avoids an orphan card on mobile */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total Items" value={stats.total} color="blue" />
         <StatCard label="Due / Overdue" value={stats.dueToday} color={stats.dueToday > 0 ? 'orange' : 'green'} />
         <StatCard label="Decision Needed" value={stats.decisionNeeded} color={stats.decisionNeeded > 0 ? 'purple' : 'green'} />
         <StatCard label="Open Actions" value={stats.openActions} color={stats.openActions > 0 ? 'yellow' : 'green'} />
-        <StatCard label="Done This Week" value={stats.completedThisWeek} color="green" />
+      </div>
+      <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+        <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Done this week</span>
+        <span className="text-3xl font-bold text-green-700">{stats.completedThisWeek}</span>
       </div>
 
       {/* Big action buttons */}
