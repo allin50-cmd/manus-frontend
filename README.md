@@ -1,89 +1,77 @@
-# FineGuard - Azure Deployment
+# UltraCore SheetOps
 
-A React/Vite application deployed to Azure Static Web Apps.
+Spreadsheets that do the work, not just store the work.
 
-## Current Deployments
+## Deploy to Vercel + Neon
 
-- **Production:** https://zhoqgoan.manus.space/
-- **Compliance:** https://compliance-t2rtvc.manus.space/
+### 1. Create Neon database
 
-This repository includes automated Azure deployment to run alongside or migrate from existing Manus deployments.
+Go to [neon.tech](https://neon.tech), create a project, and copy the connection string.
 
-## Quick Start
+### 2. Add environment variables to Vercel
 
-### 1. Check Prerequisites
+In your Vercel project settings → Environment Variables, add:
+
+```
+DATABASE_URL=postgresql://...your neon connection string...
+APP_PASSCODE=your-secure-passcode
+JWT_SECRET=your-32-char-random-secret
+```
+
+Generate `JWT_SECRET` with: `openssl rand -hex 32`
+
+### 3. Push schema and seed data
 
 ```bash
-./check-azure-prereqs.sh
+npx prisma db push
+npm run db:seed
 ```
 
-### 2. Deploy to Azure
+### 4. Deploy to Vercel
+
+Connect your GitHub repo in the Vercel dashboard, or run `vercel deploy`.
+
+### 5. Open on iPhone Safari
+
+Navigate to your Vercel URL in Safari on iPhone.
+
+### 6. Add to Home Screen
+
+Tap **Share → Add to Home Screen** to install as a PWA.
+
+---
+
+## Local development
 
 ```bash
-./deploy-azure.sh
+cp .env.example .env
+# Fill in DATABASE_URL, APP_PASSCODE, JWT_SECRET
+
+npm install
+npx prisma db push
+npm run db:seed
+npm run dev
 ```
 
-### 3. Monitor Deployment
+Open [http://localhost:3000](http://localhost:3000)
 
-```bash
-gh run watch
-```
+## Scripts
 
-## Documentation
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Start Next.js dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run db:push` | Push Prisma schema to database |
+| `npm run db:seed` | Seed work items and templates |
+| `npm run prisma:generate` | Regenerate Prisma client |
 
-**[AZURE-DEPLOYMENT-GUIDE.md](./AZURE-DEPLOYMENT-GUIDE.md)** - Complete deployment guide
-**[MIGRATION-GUIDE.md](./MIGRATION-GUIDE.md)** - Migration from Manus to Azure
+## Stack
 
-## Prerequisites
-
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
-- [GitHub CLI](https://cli.github.com/)
-- [Node.js](https://nodejs.org/) (v16+)
-- [Git](https://git-scm.com/)
-- Azure account
-- GitHub account
-
-## What's Included
-
-- **deploy-azure.sh** - Automated deployment script
-- **check-azure-prereqs.sh** - Prerequisites verification
-- **.github/workflows/azure-static-web-apps-ci-cd.yml** - GitHub Actions CI/CD
-- **staticwebapp.config.json** - Azure Static Web Apps configuration
-- **AZURE-DEPLOYMENT-GUIDE.md** - Comprehensive deployment guide
-- **MIGRATION-GUIDE.md** - Migration from Manus to Azure
-
-## Features
-
-- Automatic deployments on push to main branch
-- Preview environments for pull requests
-- Free SSL certificate
-- Global CDN
-- Custom domain support (Standard tier)
-- Staging environments
-
-## Architecture
-
-```
-┌─────────────┐      ┌──────────────┐      ┌─────────────────┐
-│   GitHub    │─────▶│ GitHub       │─────▶│ Azure Static    │
-│ Repository  │      │ Actions      │      │ Web Apps        │
-└─────────────┘      └──────────────┘      └─────────────────┘
-                            │                        │
-                            │                        ▼
-                            ▼                 ┌─────────────┐
-                     ┌──────────────┐         │   Global    │
-                     │ npm build    │         │     CDN     │
-                     └──────────────┘         └─────────────┘
-```
-
-## Support
-
-See [AZURE-DEPLOYMENT-GUIDE.md](./AZURE-DEPLOYMENT-GUIDE.md) for:
-- Detailed setup instructions
-- Troubleshooting common issues
-- Post-deployment tasks
-- FAQ
-
-## License
-
-[Your License Here]
+- Next.js 14 App Router
+- TypeScript
+- Tailwind CSS
+- Prisma ORM
+- Neon Postgres
+- PWA (installable on iPhone)
+- Simple passcode login

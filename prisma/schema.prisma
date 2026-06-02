@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkItemType {
+  Partnership
+  ConstructionLead
+  PlanningLead
+  ComplianceAlert
+  DocumentRecord
+  MediaBrief
+  InternalTask
+  Other
+}
+
+enum WorkItemStatus {
+  Captured
+  Controlled
+  InProgress
+  Waiting
+  FollowUpDue
+  Escalated
+  DecisionNeeded
+  Completed
+  Paused
+  NotFit
+  Archived
+}
+
+enum Priority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+enum ActionType {
+  LogNote
+  CreateFollowUp
+  ChangeStatus
+  DraftMessage
+  EscalateToGeorge
+  GenerateDocument
+  MarkComplete
+  Archive
+  Other
+}
+
+enum ActionStatus {
+  Open
+  Done
+  Cancelled
+  Blocked
+}
+
+enum EventType {
+  Created
+  NoteAdded
+  StatusChanged
+  ActionCreated
+  ActionCompleted
+  DecisionRequested
+  DecisionMade
+  FollowUpSet
+  Archived
+}
+
+enum DecisionStatus {
+  Open
+  Approved
+  Rejected
+  MoreInfoNeeded
+  Paused
+}
+
+model WorkItem {
+  id             String         @id @default(cuid())
+  type           WorkItemType
+  title          String
+  company        String?
+  contactName    String?
+  owner          String
+  status         WorkItemStatus @default(Captured)
+  priority       Priority       @default(Medium)
+  nextAction     String?
+  dueDate        DateTime?
+  decisionNeeded Boolean        @default(false)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  actions      Action[]
+  activityLogs ActivityLog[]
+  decisions    Decision[]
+}
+
+model Action {
+  id          String       @id @default(cuid())
+  workItemId  String
+  actionType  ActionType
+  label       String
+  status      ActionStatus @default(Open)
+  assignedTo  String?
+  dueDate     DateTime?
+  result      String?
+  createdAt   DateTime     @default(now())
+  completedAt DateTime?
+
+  workItem     WorkItem      @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  activityLogs ActivityLog[]
+}
+
+model ActivityLog {
+  id           String    @id @default(cuid())
+  workItemId   String
+  actionId     String?
+  person       String
+  eventType    EventType
+  summary      String
+  oldStatus    String?
+  newStatus    String?
+  evidenceLink String?
+  createdAt    DateTime  @default(now())
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  action   Action?  @relation(fields: [actionId], references: [id])
+}
+
+model Decision {
+  id             String         @id @default(cuid())
+  workItemId     String
+  question       String
+  options        String?
+  recommendation String?
+  decisionBy     String         @default("George")
+  decision       String?
+  status         DecisionStatus @default(Open)
+  dueDate        DateTime?
+  decidedAt      DateTime?
+  createdAt      DateTime       @default(now())
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+}
+
+model Template {
+  id        String   @id @default(cuid())
+  name      String
+  useCase   String
+  body      String
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
