@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UltraCore SheetOps — UI Preview</title>
+  <link rel="stylesheet" href="./tw-output.css" />
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .frame { box-shadow: 0 10px 40px rgba(0,0,0,.12); }
+  </style>
+</head>
+<body class="bg-slate-200 p-6">
+  <div class="max-w-[1400px] mx-auto space-y-10">
+
+    <!-- ============ LOGIN ============ -->
+    <section>
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">1 · Login (mobile)</h2>
+      <div class="frame w-[390px] bg-slate-900 rounded-2xl overflow-hidden">
+        <div class="min-h-[600px] flex items-center justify-center px-4">
+          <div class="w-full max-w-sm">
+            <div class="text-center mb-8">
+              <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/></svg>
+              </div>
+              <h1 class="text-2xl font-bold text-white">UltraCore SheetOps</h1>
+              <p class="text-slate-400 text-sm mt-1">Spreadsheets that do the work</p>
+            </div>
+            <div class="bg-slate-800 rounded-2xl p-6 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Passcode</label>
+                <input type="password" value="••••••" class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white text-lg tracking-widest" />
+              </div>
+              <button class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg">Sign In</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section>
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">2 · Dashboard (mobile)</h2>
+      <div class="frame w-[390px] bg-slate-50 rounded-2xl overflow-hidden">
+        <nav class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
+          <span class="font-bold text-sm tracking-wide">SheetOps</span>
+        </nav>
+        <div class="px-4 py-6 pb-24 space-y-6">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
+            <p class="text-slate-500 text-sm mt-1">Welcome back, George</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl border p-4 bg-blue-50 border-blue-200 text-blue-700"><div class="text-3xl font-bold">6</div><div class="text-xs font-medium mt-1 opacity-80">Total Items</div></div>
+            <div class="rounded-xl border p-4 bg-orange-50 border-orange-200 text-orange-700"><div class="text-3xl font-bold">2</div><div class="text-xs font-medium mt-1 opacity-80">Due / Overdue</div></div>
+            <div class="rounded-xl border p-4 bg-green-50 border-green-200 text-green-700"><div class="text-3xl font-bold">0</div><div class="text-xs font-medium mt-1 opacity-80">Decision Needed</div></div>
+            <div class="rounded-xl border p-4 bg-yellow-50 border-yellow-200 text-yellow-700"><div class="text-3xl font-bold">3</div><div class="text-xs font-medium mt-1 opacity-80">Open Actions</div></div>
+            <div class="rounded-xl border p-4 bg-green-50 border-green-200 text-green-700 col-span-2"><div class="text-3xl font-bold">1</div><div class="text-xs font-medium mt-1 opacity-80">Done This Week</div></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <a class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-blue-600 text-white">+ Add Work Item</a>
+            <a class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-orange-500 text-white">Today's Actions</a>
+            <a class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-purple-600 text-white">Decision Queue</a>
+            <a class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-slate-200 text-slate-800">Activity Log</a>
+          </div>
+        </div>
+        <nav class="bg-slate-900 border-t border-slate-700 flex items-center -mt-20">
+          <div class="flex-1 flex flex-col items-center py-2 text-xs text-white"><span class="text-base mb-0.5">⊞</span>Dashboard</div>
+          <div class="flex-1 flex flex-col items-center py-2 text-xs text-slate-400"><span class="text-base mb-0.5">≡</span>Work Items</div>
+          <div class="flex-1 flex flex-col items-center py-2 text-xs text-slate-400"><span class="text-base mb-0.5">◎</span>Today</div>
+          <div class="flex-1 flex flex-col items-center py-2 text-xs text-slate-400"><span class="text-base mb-0.5">✓</span>Decisions</div>
+          <div class="flex-1 flex flex-col items-center py-2 text-xs text-slate-400"><span class="text-base mb-0.5">⋯</span>More</div>
+        </nav>
+      </div>
+    </section>
+
+    <!-- ============ WORK ITEMS (mobile cards) ============ -->
+    <section>
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">3 · Work Items — mobile cards</h2>
+      <div class="frame w-[390px] bg-slate-50 rounded-2xl overflow-hidden">
+        <nav class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between"><span class="font-bold text-sm">SheetOps</span></nav>
+        <div class="px-4 py-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-slate-900">Work Items</h1>
+            <a class="bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg">+ Add</a>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Statuses</option></select>
+            <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Types</option></select>
+            <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Owners</option></select>
+            <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Priorities</option></select>
+          </div>
+          <p class="text-xs text-slate-500">6 items</p>
+          <div class="space-y-3">
+            <!-- card 1 -->
+            <div class="block bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex flex-wrap gap-1">
+                  <span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Partnership</span>
+                  <span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span>
+                </div>
+                <span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Captured</span>
+              </div>
+              <p class="font-semibold text-slate-900">EasyEstimate partnership target</p>
+              <p class="text-xs text-slate-500">EasyEstimate · Paul Gosden</p>
+              <p class="text-xs text-slate-600">Owner: <span class="font-medium">Dagon</span></p>
+              <p class="text-xs text-slate-700 bg-blue-50 rounded px-2 py-1">Next: Send soft partnership outreach</p>
+            </div>
+            <!-- card 2 -->
+            <div class="block bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex flex-wrap gap-1">
+                  <span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Construction Lead</span>
+                  <span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span>
+                </div>
+                <span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span>
+              </div>
+              <p class="font-semibold text-slate-900">Accuracy Havelock Walk quote</p>
+              <p class="text-xs text-slate-500">Accuracy Developments Ltd</p>
+              <p class="text-xs text-slate-600">Owner: <span class="font-medium">Alissa</span></p>
+              <p class="text-xs text-slate-700 bg-blue-50 rounded px-2 py-1">Next: Clean quote figures and prepare review</p>
+              <div class="flex items-center justify-between"><span class="text-xs text-red-600 font-medium">Due: 30 May 2026</span></div>
+            </div>
+            <!-- card 3 -->
+            <div class="block bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex flex-wrap gap-1">
+                  <span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Compliance Alert</span>
+                  <span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span>
+                </div>
+                <span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Captured</span>
+              </div>
+              <p class="font-semibold text-slate-900">FineGuard alert workflow</p>
+              <p class="text-xs text-slate-500">FineGuard</p>
+              <p class="text-xs text-slate-600">Owner: <span class="font-medium">George</span></p>
+              <p class="text-xs text-slate-700 bg-blue-50 rounded px-2 py-1">Next: Define alert recipient workflow</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ WORK ITEMS (desktop table) ============ -->
+    <section>
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">4 · Work Items — desktop table</h2>
+      <div class="frame w-[1100px] bg-slate-50 rounded-2xl overflow-hidden">
+        <nav class="bg-slate-900 text-white px-6 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-6">
+            <span class="font-bold text-sm tracking-wide">SheetOps</span>
+            <span class="text-sm text-slate-400">Dashboard</span>
+            <span class="text-sm text-white font-medium">Work Items</span>
+            <span class="text-sm text-slate-400">Today</span>
+            <span class="text-sm text-slate-400">Decisions</span>
+            <span class="text-sm text-slate-400">Activity Log</span>
+            <span class="text-sm text-slate-400">Templates</span>
+          </div>
+          <span class="text-xs text-slate-400">Log out</span>
+        </nav>
+        <div class="px-6 py-6 space-y-4">
+          <div class="flex items-center justify-between"><h1 class="text-2xl font-bold text-slate-900">Work Items</h1><a class="bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg">+ Add</a></div>
+          <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 border-b border-slate-200"><tr>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Type</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Title</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Company</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Owner</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Status</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Priority</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Next Action</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">Due</th>
+                <th class="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">?</th>
+              </tr></thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr class="hover:bg-slate-50">
+                  <td class="px-3 py-3 text-xs text-slate-500">Partnership</td>
+                  <td class="px-3 py-3 font-medium text-blue-700">EasyEstimate partnership target</td>
+                  <td class="px-3 py-3 text-slate-600 text-xs">EasyEstimate</td>
+                  <td class="px-3 py-3 text-slate-700 text-xs font-medium">Dagon</td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Captured</span></td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span></td>
+                  <td class="px-3 py-3 text-xs text-slate-600">Send soft partnership outreach</td>
+                  <td class="px-3 py-3 text-xs text-slate-600">—</td>
+                  <td class="px-3 py-3 text-center"></td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="px-3 py-3 text-xs text-slate-500">Partnership</td>
+                  <td class="px-3 py-3 font-medium text-blue-700">HBXL benchmark trial</td>
+                  <td class="px-3 py-3 text-slate-600 text-xs">HBXL</td>
+                  <td class="px-3 py-3 text-slate-700 text-xs font-medium">George</td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span></td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Medium</span></td>
+                  <td class="px-3 py-3 text-xs text-slate-600">Run one Accuracy quote through HBXL trial</td>
+                  <td class="px-3 py-3 text-xs text-slate-600">—</td>
+                  <td class="px-3 py-3 text-center"></td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="px-3 py-3 text-xs text-slate-500">Construction Lead</td>
+                  <td class="px-3 py-3 font-medium text-blue-700">Accuracy Havelock Walk quote</td>
+                  <td class="px-3 py-3 text-slate-600 text-xs">Accuracy Developments Ltd</td>
+                  <td class="px-3 py-3 text-slate-700 text-xs font-medium">Alissa</td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span></td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span></td>
+                  <td class="px-3 py-3 text-xs text-slate-600">Clean quote figures and prepare review</td>
+                  <td class="px-3 py-3 text-xs text-red-600 font-medium">30 May 2026</td>
+                  <td class="px-3 py-3 text-center"></td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="px-3 py-3 text-xs text-slate-500">Compliance Alert</td>
+                  <td class="px-3 py-3 font-medium text-blue-700">FineGuard alert workflow</td>
+                  <td class="px-3 py-3 text-slate-600 text-xs">FineGuard</td>
+                  <td class="px-3 py-3 text-slate-700 text-xs font-medium">George</td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Captured</span></td>
+                  <td class="px-3 py-3"><span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span></td>
+                  <td class="px-3 py-3 text-xs text-slate-600">Define alert recipient workflow</td>
+                  <td class="px-3 py-3 text-xs text-slate-600">—</td>
+                  <td class="px-3 py-3 text-center"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DETAIL + ACTIONS ============ -->
+    <section>
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">5 · Work Item detail + action buttons (mobile)</h2>
+      <div class="frame w-[390px] bg-slate-50 rounded-2xl overflow-hidden">
+        <nav class="bg-slate-900 text-white px-4 py-3"><span class="font-bold text-sm">SheetOps</span></nav>
+        <div class="px-4 py-6 space-y-6">
+          <div class="flex items-start gap-3">
+            <span class="text-slate-400 mt-1">←</span>
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Construction Lead</span>
+                <span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span>
+                <span class="text-xs font-medium text-orange-700">High</span>
+              </div>
+              <h1 class="text-xl font-bold text-slate-900">Accuracy Havelock Walk quote</h1>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 text-sm">
+            <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-28">Company</span><span class="text-slate-900">Accuracy Developments Ltd</span></div>
+            <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-28">Owner</span><span class="text-slate-900">Alissa</span></div>
+            <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-28">Next Action</span><span class="text-slate-900">Clean quote figures and prepare review</span></div>
+            <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-28">Due Date</span><span class="text-slate-900">30 May 2026</span></div>
+          </div>
+          <div class="space-y-3">
+            <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Actions</h2>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-800">Log Note</span>
+              <span class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800">Create Follow-Up</span>
+              <span class="px-4 py-2 rounded-lg text-sm font-medium bg-yellow-100 text-yellow-900">Change Status</span>
+              <span class="px-4 py-2 rounded-lg text-sm font-medium bg-purple-100 text-purple-800">Escalate to George</span>
+              <span class="px-4 py-2 rounded-lg text-sm font-medium bg-green-100 text-green-800">Mark Complete</span>
+              <span class="px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-700">Archive</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Activity Log</h2>
+            <div class="space-y-1">
+              <div class="flex gap-3 text-sm py-2 border-b border-slate-100">
+                <span class="text-xs text-slate-400 pt-0.5">28 May 2026</span>
+                <div><span class="text-xs font-medium text-slate-600">System</span> · <span class="text-xs text-slate-500">Created</span><p class="text-sm text-slate-800">Work item "Accuracy Havelock Walk quote" created</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DECISION QUEUE ============ -->
+    <section>
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">6 · Decision Queue (mobile)</h2>
+      <div class="frame w-[390px] bg-slate-50 rounded-2xl overflow-hidden">
+        <nav class="bg-slate-900 text-white px-4 py-3"><span class="font-bold text-sm">SheetOps</span></nav>
+        <div class="px-4 py-6 space-y-6">
+          <h1 class="text-2xl font-bold text-slate-900">Decision Queue</h1>
+          <div class="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-xs text-blue-600">HBXL benchmark trial · HBXL</span>
+                <p class="font-semibold text-slate-900 mt-1">Approve £2k spend on HBXL annual licence for the trial?</p>
+              </div>
+              <span class="text-xs font-medium text-slate-500">Due: 05 Jun 2026</span>
+            </div>
+            <div class="bg-blue-50 rounded-lg px-3 py-2 text-sm text-blue-800"><span class="text-xs font-semibold text-blue-600 uppercase">Recommendation: </span>Proceed — strongest quoting benchmark.</div>
+            <p class="text-xs text-slate-500">Awaiting decision from: <span class="font-medium text-slate-700">George</span></p>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg">Approve</span>
+              <span class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg">Reject</span>
+              <span class="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg">More Info Needed</span>
+              <span class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg">+ Add note</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TEMPLATES ============ -->
+    <section>
+      <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">7 · Templates (mobile)</h2>
+      <div class="frame w-[390px] bg-slate-50 rounded-2xl overflow-hidden">
+        <nav class="bg-slate-900 text-white px-4 py-3"><span class="font-bold text-sm">SheetOps</span></nav>
+        <div class="px-4 py-6 space-y-4">
+          <h1 class="text-2xl font-bold text-slate-900">Templates</h1>
+          <p class="text-sm text-slate-500">Approved reusable text. Copy and use.</p>
+          <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div><h2 class="font-semibold text-slate-900">EasyEstimate outreach</h2><span class="text-xs text-slate-500">Partnership outreach</span></div>
+              <span class="text-xs font-medium rounded px-3 py-1.5 bg-blue-600 text-white shrink-0">Copy</span>
+            </div>
+            <pre class="text-sm text-slate-700 whitespace-pre-wrap font-sans bg-slate-50 rounded-lg p-3 leading-relaxed">Hi Paul, we are testing a planning-lead-to-quote workflow for UK residential builders. We identify planning-approved jobs and help builders move from opportunity to priced quote faster…</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>
