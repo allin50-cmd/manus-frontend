@@ -52,9 +52,11 @@ export default async function ActivityPage() {
             <div className={`absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm ${dotColor[log.eventType] ?? 'bg-slate-400'}`} />
             <div className="space-y-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <Link href={`/work-items/${log.workItem.id}`} className="text-xs font-medium text-blue-600 hover:underline truncate max-w-[200px]">
-                  {log.workItem.title}
-                </Link>
+                {log.workItem && (
+                  <span className="text-xs font-medium text-slate-600 truncate max-w-[200px]">
+                    {log.workItem.title}
+                  </span>
+                )}
                 <span className={`text-xs font-medium rounded px-1.5 py-0.5 ${eventBadge[log.eventType] ?? 'bg-slate-100 text-slate-600'}`}>
                   {log.eventType.replace(/([A-Z])/g, ' $1').trim()}
                 </span>
@@ -63,7 +65,17 @@ export default async function ActivityPage() {
               {log.oldStatus && log.newStatus && (
                 <p className="text-xs text-slate-500">{log.oldStatus} → {log.newStatus}</p>
               )}
-              <p className="text-xs text-slate-400">{log.person} · {formatUKDate(log.createdAt)}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-slate-400">{log.person} · {formatUKDate(log.createdAt)}</p>
+                {log.workItem && (
+                  <Link
+                    href={`/work-items/${log.workItem.id}`}
+                    className="text-xs font-medium text-blue-600 hover:underline shrink-0"
+                  >
+                    Open work item →
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         ))}
