@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>UltraCore SheetOps — Interactive Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background:#e2e8f0; }
+    .phone { box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+    .screen { display:none; }
+    .screen.active { display:block; }
+    .panel { display:none; }
+    .panel.open { display:block; }
+    input, select, textarea { outline:none; }
+    input:focus, select:focus, textarea:focus { ring:2px; }
+    details > summary { list-style:none; }
+    details > summary::-webkit-details-marker { display:none; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+<div class="flex flex-col items-center gap-4">
+  <p class="text-xs font-bold uppercase tracking-widest text-slate-500">UltraCore SheetOps — Interactive Prototype</p>
+
+  <!-- Phone frame -->
+  <div class="phone w-[390px] bg-slate-50 rounded-[2.5rem] overflow-hidden relative" style="height:844px">
+
+    <!-- ===================== LOGIN ===================== -->
+    <div id="screen-login" class="screen active h-full bg-slate-900 flex items-center justify-center px-4">
+      <div class="w-full max-w-sm">
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/></svg>
+          </div>
+          <h1 class="text-2xl font-bold text-white">UltraCore SheetOps</h1>
+          <p class="text-slate-400 text-sm mt-1">Spreadsheets that do the work</p>
+        </div>
+        <div class="bg-slate-800 rounded-2xl p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Passcode</label>
+            <input id="passcode-input" type="password" placeholder="Enter passcode" class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 text-lg tracking-widest" />
+          </div>
+          <p id="login-error" class="text-red-400 text-sm text-center hidden">Incorrect passcode. Try again.</p>
+          <button onclick="doLogin()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">Sign In</button>
+          <p class="text-xs text-slate-500 text-center">Demo passcode: <span class="text-slate-300 font-mono">demo</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== SHARED LAYOUT WRAPPER ===================== -->
+    <!-- Desktop top nav (hidden on mobile) -->
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <div id="screen-dashboard" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-5">
+        <div>
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">TUE, 02 JUN 2026</p>
+          <h1 class="text-2xl font-bold text-slate-900 mt-0.5">Dashboard</h1>
+          <p class="text-slate-500 text-sm mt-0.5">Welcome back, George</p>
+        </div>
+        <!-- urgency bar -->
+        <button onclick="nav('today')" class="w-full flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-3 transition-colors">
+          <span class="text-xl shrink-0">🔴</span>
+          <div class="flex-1 text-left">
+            <p class="text-sm font-semibold">2 overdue · 1 due today</p>
+            <p class="text-xs opacity-80">Tap to see Today's Actions</p>
+          </div>
+          <span class="opacity-70 text-lg">→</span>
+        </button>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-xl border p-4 bg-blue-50 border-blue-200 text-blue-700"><div class="text-3xl font-bold">6</div><div class="text-xs font-medium mt-1 opacity-80">Total Items</div></div>
+          <div class="rounded-xl border p-4 bg-orange-50 border-orange-200 text-orange-700"><div class="text-3xl font-bold">3</div><div class="text-xs font-medium mt-1 opacity-80">Due / Overdue</div></div>
+          <div class="rounded-xl border p-4 bg-purple-50 border-purple-200 text-purple-700"><div class="text-3xl font-bold">1</div><div class="text-xs font-medium mt-1 opacity-80">Decision Needed</div></div>
+          <div class="rounded-xl border p-4 bg-yellow-50 border-yellow-200 text-yellow-700"><div class="text-3xl font-bold">3</div><div class="text-xs font-medium mt-1 opacity-80">Open Actions</div></div>
+        </div>
+        <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+          <span class="text-xs font-semibold text-green-600 uppercase tracking-wide">Done this week</span>
+          <span class="text-3xl font-bold text-green-700">1</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="nav('new-item')" class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-colors">+ Add Work Item</button>
+          <button onclick="nav('today')" class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-orange-500 hover:bg-orange-600 text-white transition-colors">Today's Actions</button>
+          <button onclick="nav('decisions')" class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-purple-600 hover:bg-purple-700 text-white transition-colors">Decision Queue</button>
+          <button onclick="nav('activity')" class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors">Activity Log</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="nav('work-items')" class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors">All Work Items</button>
+          <button onclick="nav('templates')" class="block rounded-xl px-4 py-4 text-center font-semibold text-sm bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors">Templates</button>
+        </div>
+      </div>
+      <div id="nav-dashboard"></div>
+    </div>
+
+    <!-- ===================== WORK ITEMS ===================== -->
+    <div id="screen-work-items" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-4">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-slate-900">Work Items</h1>
+          <button onclick="nav('new-item')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">+ Add</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Statuses</option></select>
+          <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Types</option></select>
+          <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Owners</option></select>
+          <select class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"><option>All Priorities</option></select>
+        </div>
+        <p class="text-xs text-slate-500">6 items</p>
+        <div class="space-y-3">
+          <!-- card 1 -->
+          <button onclick="nav('detail')" class="w-full text-left block bg-white rounded-xl border border-slate-200 p-4 space-y-2 hover:border-blue-300 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex flex-wrap gap-1"><span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Partnership</span><span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span></div>
+              <span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Captured</span>
+            </div>
+            <p class="font-semibold text-slate-900">EasyEstimate partnership target</p>
+            <p class="text-xs text-slate-500">EasyEstimate · Paul Gosden</p>
+            <p class="text-xs text-slate-600">Owner: <span class="font-medium">Dagon</span></p>
+            <div class="flex items-center gap-2 border-l-2 border-blue-400 bg-blue-50 rounded-r-lg pl-2 pr-3 py-1.5">
+              <span class="text-xs font-medium text-blue-800 flex-1">Send soft partnership outreach</span>
+              <span class="text-blue-400 text-sm">→</span>
+            </div>
+          </button>
+          <!-- card 2 -->
+          <button onclick="nav('detail')" class="w-full text-left block bg-white rounded-xl border border-slate-200 p-4 space-y-2 hover:border-blue-300 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex flex-wrap gap-1"><span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Construction Lead</span><span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span></div>
+              <span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span>
+            </div>
+            <p class="font-semibold text-slate-900">Accuracy Havelock Walk quote</p>
+            <p class="text-xs text-slate-500">Accuracy Developments Ltd</p>
+            <p class="text-xs text-slate-600">Owner: <span class="font-medium">Alissa</span></p>
+            <div class="flex items-center gap-2 border-l-2 border-blue-400 bg-blue-50 rounded-r-lg pl-2 pr-3 py-1.5">
+              <span class="text-xs font-medium text-blue-800 flex-1">Clean quote figures and prepare review</span>
+              <span class="text-blue-400 text-sm">→</span>
+            </div>
+            <div class="flex items-center justify-between"><span class="text-xs text-red-600 font-medium">Overdue: 30 May 2026</span></div>
+          </button>
+          <!-- card 3 -->
+          <button onclick="nav('detail')" class="w-full text-left block bg-white rounded-xl border border-slate-200 p-4 space-y-2 hover:border-blue-300 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex flex-wrap gap-1"><span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Compliance Alert</span><span class="text-xs font-medium rounded px-2 py-0.5 bg-orange-100 text-orange-700">High</span></div>
+              <span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Captured</span>
+            </div>
+            <p class="font-semibold text-slate-900">FineGuard alert workflow</p>
+            <p class="text-xs text-slate-500">FineGuard</p>
+            <p class="text-xs text-slate-600">Owner: <span class="font-medium">George</span></p>
+            <div class="flex items-center gap-2 border-l-2 border-blue-400 bg-blue-50 rounded-r-lg pl-2 pr-3 py-1.5">
+              <span class="text-xs font-medium text-blue-800 flex-1">Define alert recipient workflow</span>
+              <span class="text-blue-400 text-sm">→</span>
+            </div>
+          </button>
+          <!-- card 4 -->
+          <button onclick="nav('detail')" class="w-full text-left block bg-white rounded-xl border border-slate-200 p-4 space-y-2 hover:border-blue-300 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex flex-wrap gap-1"><span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Partnership</span><span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Medium</span></div>
+              <span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span>
+            </div>
+            <p class="font-semibold text-slate-900">HBXL benchmark trial</p>
+            <p class="text-xs text-slate-500">HBXL</p>
+            <p class="text-xs text-slate-600">Owner: <span class="font-medium">George</span></p>
+            <div class="flex items-center gap-2 border-l-2 border-blue-400 bg-blue-50 rounded-r-lg pl-2 pr-3 py-1.5">
+              <span class="text-xs font-medium text-blue-800 flex-1">Run one Accuracy quote through HBXL trial</span>
+              <span class="text-blue-400 text-sm">→</span>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div id="nav-work-items"></div>
+    </div>
+
+    <!-- ===================== WORK ITEM DETAIL ===================== -->
+    <div id="screen-detail" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-5">
+        <div class="flex items-start gap-3">
+          <button onclick="nav('work-items')" class="text-slate-400 hover:text-slate-600 mt-1 shrink-0">←</button>
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <span class="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">Construction Lead</span>
+              <span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span>
+              <span class="text-xs font-medium text-orange-700">High</span>
+            </div>
+            <h1 class="text-xl font-bold text-slate-900">Accuracy Havelock Walk quote</h1>
+          </div>
+        </div>
+        <!-- next action strip -->
+        <div class="flex items-start gap-3 border-l-4 border-blue-500 bg-blue-50 rounded-r-xl px-3 py-3">
+          <div class="flex-1">
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wide">Next Action</span>
+            <p class="text-sm font-semibold text-blue-900 mt-0.5">Clean quote figures and prepare review</p>
+          </div>
+          <span class="text-blue-400 text-xl mt-0.5">→</span>
+        </div>
+        <!-- detail grid -->
+        <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+          <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-24 shrink-0 pt-0.5">Company</span><span class="text-sm text-slate-900">Accuracy Developments Ltd</span></div>
+          <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-24 shrink-0 pt-0.5">Owner</span><span class="text-sm text-slate-900">Alissa</span></div>
+          <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-24 shrink-0 pt-0.5">Status</span><span class="text-sm text-slate-900">Controlled</span></div>
+          <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-24 shrink-0 pt-0.5">Due Date</span><span class="text-sm font-semibold text-red-600">30 May 2026</span></div>
+          <div class="flex gap-3 px-4 py-3"><span class="text-xs font-semibold text-slate-500 uppercase w-24 shrink-0 pt-0.5">Created</span><span class="text-sm text-slate-900">28 May 2026</span></div>
+        </div>
+        <!-- actions -->
+        <div class="space-y-3">
+          <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Actions</h2>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="openPanel('log-note')" class="py-3 px-3 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white transition-colors">Log Note</button>
+            <button onclick="openPanel('follow-up')" class="py-3 px-3 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors">Create Follow-Up</button>
+            <button onclick="openPanel('change-status')" class="py-3 px-3 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors">Change Status</button>
+            <button onclick="openPanel('escalate')" class="py-3 px-3 rounded-xl text-sm font-semibold bg-purple-600 hover:bg-purple-700 text-white transition-colors">Escalate to George</button>
+            <button onclick="markComplete()" class="py-3 px-3 rounded-xl text-sm font-semibold bg-green-600 hover:bg-green-700 text-white transition-colors">Mark Complete</button>
+            <button class="py-3 px-3 rounded-xl text-sm font-semibold border border-red-200 bg-white hover:bg-red-50 text-red-600 transition-colors">Archive</button>
+          </div>
+        </div>
+        <!-- inline panels -->
+        <div id="panel-log-note" class="panel bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between"><h3 class="text-sm font-semibold text-slate-800">Log Note</h3><button onclick="closePanel('log-note')" class="text-slate-400 text-lg">×</button></div>
+          <textarea rows="3" placeholder="What happened? What was said?" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white resize-none"></textarea>
+          <button onclick="closePanel('log-note');showToast('Note saved')" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg">Save Note</button>
+        </div>
+        <div id="panel-follow-up" class="panel bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between"><h3 class="text-sm font-semibold text-slate-800">Create Follow-Up</h3><button onclick="closePanel('follow-up')" class="text-slate-400 text-lg">×</button></div>
+          <input placeholder="What needs to happen?" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+          <input placeholder="Assigned to (default: Alissa)" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+          <input type="date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+          <button onclick="closePanel('follow-up');showToast('Follow-up created')" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg">Create Follow-Up</button>
+        </div>
+        <div id="panel-change-status" class="panel bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between"><h3 class="text-sm font-semibold text-slate-800">Change Status</h3><button onclick="closePanel('change-status')" class="text-slate-400 text-lg">×</button></div>
+          <select class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+            <option>Controlled</option><option>Captured</option><option>In Progress</option><option>Waiting</option><option>Follow-Up Due</option><option>Completed</option>
+          </select>
+          <button onclick="closePanel('change-status');showToast('Status updated')" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg">Update Status</button>
+        </div>
+        <div id="panel-escalate" class="panel bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between"><h3 class="text-sm font-semibold text-slate-800">Escalate to George</h3><button onclick="closePanel('escalate')" class="text-slate-400 text-lg">×</button></div>
+          <textarea rows="2" placeholder="What decision is needed?" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white resize-none"></textarea>
+          <input placeholder="Your recommendation (optional)" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+          <button onclick="closePanel('escalate');showToast('Escalated to George')" class="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg">Escalate</button>
+        </div>
+        <!-- activity log -->
+        <section>
+          <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Activity Log</h2>
+          <div class="space-y-0">
+            <div class="relative pl-7 pb-4">
+              <div class="absolute left-[9px] top-5 bottom-0 w-px bg-slate-200"></div>
+              <div class="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm bg-blue-500"></div>
+              <div><div class="flex items-center gap-2"><span class="text-xs font-medium rounded px-1.5 py-0.5 bg-blue-100 text-blue-700">Created</span></div><p class="text-sm text-slate-800">Work item created</p><p class="text-xs text-slate-400">System · 28 May 2026</p></div>
+            </div>
+            <div class="relative pl-7">
+              <div class="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm bg-yellow-500"></div>
+              <div><div class="flex items-center gap-2"><span class="text-xs font-medium rounded px-1.5 py-0.5 bg-yellow-100 text-yellow-800">Status Changed</span></div><p class="text-sm text-slate-800">Status updated</p><p class="text-xs text-slate-500">Captured → Controlled</p><p class="text-xs text-slate-400">Alissa · 29 May 2026</p></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div id="nav-detail"></div>
+    </div>
+
+    <!-- ===================== TODAY ===================== -->
+    <div id="screen-today" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-5">
+        <h1 class="text-2xl font-bold text-slate-900">Today's Actions</h1>
+        <section class="space-y-3">
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span><h2 class="text-sm font-semibold text-red-700 uppercase tracking-wide">Overdue (2)</h2></div>
+          <button onclick="nav('detail')" class="w-full text-left block bg-red-50 rounded-xl border border-red-200 px-4 py-3 space-y-1 hover:border-red-400 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1"><p class="font-semibold text-slate-900">Accuracy Havelock Walk quote</p><p class="text-xs text-slate-500">Accuracy Developments Ltd · Owner: Alissa</p>
+                <div class="flex items-center gap-2 mt-1.5 border-l-2 border-blue-400 bg-white rounded-r pl-2 pr-3 py-1"><span class="text-xs font-medium text-blue-800 flex-1">Clean quote figures and prepare review</span><span class="text-blue-400 text-sm">→</span></div>
+              </div>
+              <div class="flex flex-col items-end gap-1 shrink-0"><span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span><span class="text-xs font-semibold text-red-600">30 May</span></div>
+            </div>
+          </button>
+          <button onclick="nav('detail')" class="w-full text-left block bg-red-50 rounded-xl border border-red-200 px-4 py-3 space-y-1 hover:border-red-400 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1"><p class="font-semibold text-slate-900">FineGuard alert workflow</p><p class="text-xs text-slate-500">FineGuard · Owner: George</p>
+                <div class="flex items-center gap-2 mt-1.5 border-l-2 border-blue-400 bg-white rounded-r pl-2 pr-3 py-1"><span class="text-xs font-medium text-blue-800 flex-1">Define alert recipient workflow</span><span class="text-blue-400 text-sm">→</span></div>
+              </div>
+              <div class="flex flex-col items-end gap-1 shrink-0"><span class="text-xs font-medium rounded px-2 py-0.5 bg-blue-100 text-blue-700">Captured</span><span class="text-xs font-semibold text-red-600">29 May</span></div>
+            </div>
+          </button>
+        </section>
+        <section class="space-y-3">
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span><h2 class="text-sm font-semibold text-orange-700 uppercase tracking-wide">Due Today (1)</h2></div>
+          <button onclick="nav('detail')" class="w-full text-left block bg-orange-50 rounded-xl border border-orange-200 px-4 py-3 space-y-1 hover:border-orange-400 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex-1"><p class="font-semibold text-slate-900">HBXL benchmark trial</p><p class="text-xs text-slate-500">HBXL · Owner: George</p>
+                <div class="flex items-center gap-2 mt-1.5 border-l-2 border-blue-400 bg-white rounded-r pl-2 pr-3 py-1"><span class="text-xs font-medium text-blue-800 flex-1">Run one Accuracy quote through HBXL trial</span><span class="text-blue-400 text-sm">→</span></div>
+              </div>
+              <div class="flex flex-col items-end gap-1 shrink-0"><span class="text-xs font-medium rounded px-2 py-0.5 bg-indigo-100 text-indigo-700">Controlled</span><span class="text-xs font-semibold text-orange-600">Today</span></div>
+            </div>
+          </button>
+        </section>
+      </div>
+      <div id="nav-today"></div>
+    </div>
+
+    <!-- ===================== DECISIONS ===================== -->
+    <div id="screen-decisions" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-4">
+        <h1 class="text-2xl font-bold text-slate-900">Decision Queue</h1>
+        <div class="bg-white rounded-xl border border-red-200 p-5 space-y-3">
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span><span class="text-xs font-semibold text-red-600 uppercase tracking-wide">Overdue · 28 May 2026</span></div>
+          <div><button onclick="nav('detail')" class="text-xs text-blue-600 hover:underline">HBXL benchmark trial · HBXL</button><p class="font-semibold text-slate-900 mt-1">Approve £2k spend on HBXL annual licence for the trial?</p></div>
+          <div class="bg-blue-50 rounded-lg px-3 py-2 text-sm text-blue-800"><span class="text-xs font-semibold text-blue-600 uppercase">Recommendation: </span>Proceed — strongest quoting benchmark.</div>
+          <p class="text-xs text-slate-500">Awaiting: <span class="font-medium text-slate-700">George</span></p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="showToast('Approved ✓')" class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">Approve</button>
+            <button onclick="showToast('Rejected')" class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">Reject</button>
+            <button onclick="showToast('Sent back for more info')" class="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600">More Info</button>
+            <button class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200">+ Note</button>
+          </div>
+        </div>
+      </div>
+      <div id="nav-decisions"></div>
+    </div>
+
+    <!-- ===================== ACTIVITY ===================== -->
+    <div id="screen-activity" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-4">
+        <h1 class="text-2xl font-bold text-slate-900">Activity Log</h1>
+        <p class="text-xs text-slate-500">Append-only · last 100 events</p>
+        <div class="space-y-0">
+          <div class="relative pl-7 pb-4"><div class="absolute left-[9px] top-5 bottom-0 w-px bg-slate-200"></div><div class="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm bg-blue-500"></div><div><div class="flex items-center gap-2 flex-wrap"><button onclick="nav('detail')" class="text-xs font-medium text-blue-600 hover:underline">FineGuard alert workflow</button><span class="text-xs font-medium rounded px-1.5 py-0.5 bg-blue-100 text-blue-700">Created</span></div><p class="text-sm text-slate-800">Work item created</p><p class="text-xs text-slate-400">System · 02 Jun 2026</p></div></div>
+          <div class="relative pl-7 pb-4"><div class="absolute left-[9px] top-5 bottom-0 w-px bg-slate-200"></div><div class="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm bg-yellow-500"></div><div><div class="flex items-center gap-2 flex-wrap"><button onclick="nav('detail')" class="text-xs font-medium text-blue-600 hover:underline">Accuracy Havelock Walk quote</button><span class="text-xs font-medium rounded px-1.5 py-0.5 bg-yellow-100 text-yellow-800">Status Changed</span></div><p class="text-sm text-slate-800">Status updated</p><p class="text-xs text-slate-500">Captured → Controlled</p><p class="text-xs text-slate-400">Alissa · 29 May 2026</p></div></div>
+          <div class="relative pl-7 pb-4"><div class="absolute left-[9px] top-5 bottom-0 w-px bg-slate-200"></div><div class="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm bg-slate-400"></div><div><div class="flex items-center gap-2 flex-wrap"><button onclick="nav('detail')" class="text-xs font-medium text-blue-600 hover:underline">EasyEstimate partnership target</button><span class="text-xs font-medium rounded px-1.5 py-0.5 bg-slate-100 text-slate-700">Note Added</span></div><p class="text-sm text-slate-800">Spoke with Paul, very interested.</p><p class="text-xs text-slate-400">Dagon · 30 May 2026</p></div></div>
+          <div class="relative pl-7 pb-4"><div class="absolute left-[9px] top-5 bottom-0 w-px bg-slate-200"></div><div class="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm bg-orange-400"></div><div><div class="flex items-center gap-2 flex-wrap"><button onclick="nav('detail')" class="text-xs font-medium text-blue-600 hover:underline">EasyEstimate partnership target</button><span class="text-xs font-medium rounded px-1.5 py-0.5 bg-orange-100 text-orange-700">Action Created</span></div><p class="text-sm text-slate-800">Follow-up: Send soft partnership outreach</p><p class="text-xs text-slate-400">Dagon · 30 May 2026</p></div></div>
+          <div class="relative pl-7"><div class="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm bg-purple-500"></div><div><div class="flex items-center gap-2 flex-wrap"><button onclick="nav('detail')" class="text-xs font-medium text-blue-600 hover:underline">HBXL benchmark trial</button><span class="text-xs font-medium rounded px-1.5 py-0.5 bg-purple-100 text-purple-700">Decision Requested</span></div><p class="text-sm text-slate-800">Escalated: Approve £2k HBXL licence?</p><p class="text-xs text-slate-400">George · 01 Jun 2026</p></div></div>
+        </div>
+      </div>
+      <div id="nav-activity"></div>
+    </div>
+
+    <!-- ===================== TEMPLATES ===================== -->
+    <div id="screen-templates" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-4">
+        <h1 class="text-2xl font-bold text-slate-900">Templates</h1>
+        <p class="text-sm text-slate-500">Approved reusable text. Copy and use.</p>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-start justify-between gap-2 mb-3">
+            <div><h2 class="font-semibold text-slate-900">EasyEstimate outreach</h2><span class="text-xs text-slate-500">Partnership outreach</span></div>
+            <button onclick="copyTemplate(this,'Hi Paul, we are testing a planning-lead-to-quote workflow for UK residential builders...')" class="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">Copy</button>
+          </div>
+          <pre class="text-sm text-slate-700 whitespace-pre-wrap font-sans bg-slate-50 rounded-lg p-3 leading-relaxed text-xs">Hi Paul, we are testing a planning-lead-to-quote workflow for UK residential builders. We identify planning-approved jobs and help builders move from opportunity to priced quote faster. EasyEstimate looks like it could be a strong quoting engine in that chain. Would you be open to a short conversation about a referral, reseller or light integration pilot?</pre>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-start justify-between gap-2 mb-3">
+            <div><h2 class="font-semibold text-slate-900">Handoff to George</h2><span class="text-xs text-slate-500">Internal escalation</span></div>
+            <button onclick="copyTemplate(this,'Company:\nContact:\nWhat happened:\n...')" class="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">Copy</button>
+          </div>
+          <pre class="text-sm text-slate-700 whitespace-pre-wrap font-sans bg-slate-50 rounded-lg p-3 leading-relaxed text-xs">Company:
+Contact:
+What happened:
+What they need:
+Commercial opportunity:
+Risk:
+Recommended next step:
+Decision needed:
+Follow-up date:</pre>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-start justify-between gap-2 mb-3">
+            <div><h2 class="font-semibold text-slate-900">Call note format</h2><span class="text-xs text-slate-500">Note taking</span></div>
+            <button onclick="copyTemplate(this,'Date:\nCalled:\n...')" class="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">Copy</button>
+          </div>
+          <pre class="text-sm text-slate-700 whitespace-pre-wrap font-sans bg-slate-50 rounded-lg p-3 leading-relaxed text-xs">Date:
+Called:
+Duration:
+What they said:
+What we said:
+Their concern:
+Our response:
+Agreed next step:
+Follow-up date:</pre>
+        </div>
+      </div>
+      <div id="nav-templates"></div>
+    </div>
+
+    <!-- ===================== ADD ITEM ===================== -->
+    <div id="screen-new-item" class="screen h-full flex flex-col">
+      <div class="flex-1 overflow-y-auto px-4 py-5 pb-24 space-y-5">
+        <div class="flex items-center gap-3">
+          <button onclick="nav('work-items')" class="text-slate-500 hover:text-slate-700">← Back</button>
+          <h1 class="text-xl font-bold text-slate-900">Add Work Item</h1>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Type *</label><select class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white"><option>Partnership</option><option>Construction Lead</option><option>Internal Task</option></select></div>
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Priority</label><select class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white"><option>Medium</option><option>High</option><option>Urgent</option></select></div>
+          </div>
+          <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Title *</label><input placeholder="What is this?" class="w-full px-3 py-2.5 border border-blue-400 rounded-lg text-sm bg-white ring-2 ring-blue-100" /></div>
+          <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Next Action</label><input placeholder="What needs to happen next?" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white" /></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Owner *</label><select class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white"><option>Dagon</option><option>George</option><option>Alissa</option></select></div>
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Due Date</label><input type="date" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white" /></div>
+          </div>
+          <button id="more-toggle" onclick="toggleMore()" class="flex items-center gap-1.5 text-xs font-semibold text-blue-600 py-1">
+            <span id="more-arrow" class="transition-transform">▶</span>
+            <span id="more-label">More options (company, contact, status, notes…)</span>
+          </button>
+          <div id="more-fields" class="hidden space-y-4 pt-3 border-t border-slate-100">
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Company</label><input placeholder="Company name" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white" /></div>
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Contact Name</label><input placeholder="Contact person" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white" /></div>
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Status</label><select class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white"><option>Captured</option><option>Controlled</option><option>In Progress</option></select></div>
+            <div><label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Notes</label><textarea rows="3" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white resize-none"></textarea></div>
+            <label class="flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-purple-600" /><span class="text-sm text-slate-700">Decision needed from George</span></label>
+          </div>
+        </div>
+        <button onclick="showToast('Work item created!');nav('work-items')" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">Create Work Item</button>
+      </div>
+      <div id="nav-new-item"></div>
+    </div>
+
+    <!-- ===================== BOTTOM NAV (injected) ===================== -->
+
+    <!-- Toast notification -->
+    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-full opacity-0 transition-opacity duration-300 z-50 pointer-events-none whitespace-nowrap"></div>
+
+  </div><!-- end phone -->
+
+  <!-- Screen nav links (outside phone) -->
+  <div class="flex flex-wrap gap-2 justify-center max-w-[500px]">
+    <button onclick="nav('login')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Login</button>
+    <button onclick="nav('dashboard')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Dashboard</button>
+    <button onclick="nav('work-items')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Work Items</button>
+    <button onclick="nav('detail')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Item Detail</button>
+    <button onclick="nav('today')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Today</button>
+    <button onclick="nav('decisions')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Decisions</button>
+    <button onclick="nav('activity')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Activity</button>
+    <button onclick="nav('templates')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Templates</button>
+    <button onclick="nav('new-item')" class="text-xs px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Add Item</button>
+  </div>
+</div>
+
+<script>
+const SCREENS = ['login','dashboard','work-items','detail','today','decisions','activity','templates','new-item']
+const NAV_TABS = [
+  { id:'dashboard', label:'Dashboard', icon:'⊞' },
+  { id:'work-items', label:'Work Items', icon:'≡' },
+  { id:'today', label:'Today', icon:'◎' },
+  { id:'decisions', label:'Decisions', icon:'✓' },
+]
+let current = 'login'
+
+function buildNav(screenId) {
+  const el = document.getElementById('nav-' + screenId)
+  if (!el) return
+  const isMore = screenId === 'activity' || screenId === 'templates'
+  el.innerHTML = `<nav class="bg-slate-900 border-t border-slate-700 flex items-center px-1 py-1">
+    ${NAV_TABS.map(t => {
+      const active = t.id === screenId || (isMore && false)
+      return `<button onclick="nav('${t.id}')" class="flex-1 flex flex-col items-center py-1.5 text-xs transition-colors rounded-lg ${active ? 'text-white bg-slate-700 font-semibold':'text-slate-400'}">
+        <span class="text-base leading-none mb-0.5">${t.icon}</span>
+        <span class="leading-none">${t.label}</span>
+      </button>`
+    }).join('')}
+    <button onclick="toggleMore2()" class="flex-1 flex flex-col items-center py-1.5 text-xs text-slate-400 rounded-lg ${isMore ? 'bg-slate-700 font-semibold text-white' : ''}">
+      <span class="text-base leading-none mb-0.5">⋯</span>
+      <span class="leading-none">More</span>
+    </button>
+  </nav>`
+}
+
+// Build all navs
+SCREENS.filter(s => s !== 'login').forEach(buildNav)
+
+let moreMenuOpen = false
+function toggleMore2() {
+  // Simple cycle: activity → templates → back
+  if (current === 'activity') nav('templates')
+  else nav('activity')
+}
+
+function nav(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'))
+  const el = document.getElementById('screen-' + screenId)
+  if (el) { el.classList.add('active'); el.scrollTop = 0 }
+  current = screenId
+  // Rebuild nav to update active state
+  SCREENS.filter(s => s !== 'login').forEach(buildNav)
+}
+
+function doLogin() {
+  const v = document.getElementById('passcode-input').value
+  if (v === 'demo' || v === 'demo1234') {
+    nav('dashboard')
+    document.getElementById('login-error').classList.add('hidden')
+  } else {
+    document.getElementById('login-error').classList.remove('hidden')
+  }
+}
+document.getElementById('passcode-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin() })
+
+function openPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'))
+  document.getElementById('panel-' + id).classList.add('open')
+  document.getElementById('panel-' + id).scrollIntoView({ behavior:'smooth', block:'nearest' })
+}
+function closePanel(id) { document.getElementById('panel-' + id).classList.remove('open') }
+
+function markComplete() { showToast('Marked complete ✓'); nav('work-items') }
+
+let toastTimer
+function showToast(msg) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.style.opacity = '1'
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { t.style.opacity = '0' }, 2000)
+}
+
+function copyTemplate(btn, text) {
+  navigator.clipboard.writeText(text).catch(()=>{})
+  const orig = btn.textContent
+  btn.textContent = '✓ Copied'
+  btn.classList.replace('bg-blue-600','bg-green-600')
+  setTimeout(() => { btn.textContent = orig; btn.classList.replace('bg-green-600','bg-blue-600') }, 2000)
+}
+
+let moreOpen = false
+function toggleMore() {
+  moreOpen = !moreOpen
+  document.getElementById('more-fields').classList.toggle('hidden', !moreOpen)
+  document.getElementById('more-arrow').style.transform = moreOpen ? 'rotate(90deg)' : ''
+  document.getElementById('more-label').textContent = moreOpen ? 'Fewer options' : 'More options (company, contact, status, notes…)'
+}
+</script>
+</body>
+</html>
