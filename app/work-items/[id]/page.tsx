@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import WorkItemActions from '@/components/WorkItemActions'
+import CompleteActionButton from '@/components/CompleteActionButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,11 +103,16 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
           <div className="space-y-2">
             {item.actions.filter((a) => a.status === 'Open').map((action) => (
               <div key={action.id} className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm">
-                <p className="font-medium text-slate-900">{action.label}</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {action.assignedTo && `Assigned: ${action.assignedTo} · `}
-                  {action.dueDate && `Due: ${formatUKDate(action.dueDate)}`}
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-900">{action.label}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {action.assignedTo && `Assigned: ${action.assignedTo} · `}
+                      {action.dueDate && `Due: ${formatUKDate(action.dueDate)}`}
+                    </p>
+                  </div>
+                  <CompleteActionButton workItemId={item.id} actionId={action.id} />
+                </div>
               </div>
             ))}
           </div>
