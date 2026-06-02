@@ -122,7 +122,7 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
       {/* Recently completed actions */}
       {(() => {
         const done = item.actions
-          .filter((a) => a.status === 'Done')
+          .filter((a) => a.status === 'Done' && a.actionType !== 'LogNote')
           .sort((a, b) => new Date(b.completedAt ?? b.createdAt).getTime() - new Date(a.completedAt ?? a.createdAt).getTime())
           .slice(0, 5)
         return (
