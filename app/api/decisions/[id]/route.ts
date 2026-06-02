@@ -34,16 +34,35 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
   })
 
-  // If approved/rejected, clear the decisionNeeded flag if no other open decisions
-  const openDecisions = await db.decision.count({
-    where: { workItemId: dec.workItemId, status: 'Open' },
-  })
+  const resolved = newStatus === 'Approved' || newStatus === 'Rejected'
 
-  if (openDecisions === 0) {
-    await db.workItem.update({
-      where: { id: dec.workItemId },
-      data: { decisionNeeded: false },
+  if (resolved) {
+    const openDecisions = await db.decision.count({
+      where: { workItemId: dec.workItemId, status: 'Open' },
     })
+
+    if (openDecisions === 0) {
+      const workItem = await db.workItem.findUnique({
+        where: { id: dec.workItemId },
+        select: { status: true },
+      })
+
+      await db.workItem.update({
+        where: { id: dec.workItemId },
+        data: { decisionNeeded: false, status: 'InProgress' },
+      })
+
+      await db.activityLog.create({
+        data: {
+          workItemId: dec.workItemId,
+          person: session.person,
+          eventType: 'StatusChanged',
+          summary: 'Decision resolved; work item returned to In Progress.',
+          oldStatus: workItem?.status ?? null,
+          newStatus: 'InProgress',
+        },
+      })
+    }
   }
 
   return NextResponse.json(updated)
