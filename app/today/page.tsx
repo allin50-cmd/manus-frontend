@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { formatUKDate } from '@/lib/utils'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
+import CompleteActionButton from '@/components/CompleteActionButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -154,28 +155,36 @@ export default async function TodayPage() {
           </div>
           <div className="space-y-2">
             {overdueActions.map((action) => (
-              <Link
-                key={action.id}
-                href={`/work-items/${action.workItem.id}`}
-                className="block bg-yellow-50 rounded-xl border border-yellow-200 px-4 py-3 hover:border-yellow-400 transition-colors"
-              >
+              <div key={action.id} className="bg-yellow-50 rounded-xl border border-yellow-200 px-4 py-3 space-y-2">
                 <p className="font-medium text-slate-900">{action.label}</p>
-                <p className="text-xs text-slate-600 mt-0.5">On: {action.workItem.title}</p>
+                <p className="text-xs text-slate-600">On: {action.workItem.title}</p>
                 {action.assignedTo && <p className="text-xs text-slate-500">Assigned: {action.assignedTo}</p>}
-                <span className="text-xs font-semibold text-red-600">Overdue: {formatUKDate(action.dueDate)}</span>
-              </Link>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-xs font-semibold text-red-600">Overdue: {formatUKDate(action.dueDate)}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link href={`/work-items/${action.workItem.id}`} className="text-xs font-medium text-blue-600 hover:underline">
+                      Open work item →
+                    </Link>
+                    <CompleteActionButton workItemId={action.workItem.id} actionId={action.id} />
+                  </div>
+                </div>
+              </div>
             ))}
             {dueTodayActions.map((action) => (
-              <Link
-                key={action.id}
-                href={`/work-items/${action.workItem.id}`}
-                className="block bg-yellow-50 rounded-xl border border-yellow-200 px-4 py-3 hover:border-yellow-400 transition-colors"
-              >
+              <div key={action.id} className="bg-yellow-50 rounded-xl border border-yellow-200 px-4 py-3 space-y-2">
                 <p className="font-medium text-slate-900">{action.label}</p>
-                <p className="text-xs text-slate-600 mt-0.5">On: {action.workItem.title}</p>
+                <p className="text-xs text-slate-600">On: {action.workItem.title}</p>
                 {action.assignedTo && <p className="text-xs text-slate-500">Assigned: {action.assignedTo}</p>}
-                <span className="text-xs font-semibold text-orange-600">Due: Today</span>
-              </Link>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-xs font-semibold text-orange-600">Due: Today</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link href={`/work-items/${action.workItem.id}`} className="text-xs font-medium text-blue-600 hover:underline">
+                      Open work item →
+                    </Link>
+                    <CompleteActionButton workItemId={action.workItem.id} actionId={action.id} />
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </section>
