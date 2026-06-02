@@ -14,7 +14,7 @@ export default async function ActivityPage() {
     take: 100,
   })
 
-  const eventColors: Record<string, string> = {
+  const eventBadge: Record<string, string> = {
     Created: 'bg-blue-100 text-blue-700',
     NoteAdded: 'bg-slate-100 text-slate-700',
     StatusChanged: 'bg-yellow-100 text-yellow-800',
@@ -26,36 +26,49 @@ export default async function ActivityPage() {
     Archived: 'bg-slate-100 text-slate-600',
   }
 
+  const dotColor: Record<string, string> = {
+    Created: 'bg-blue-500',
+    NoteAdded: 'bg-slate-400',
+    StatusChanged: 'bg-yellow-500',
+    ActionCreated: 'bg-orange-400',
+    ActionCompleted: 'bg-green-500',
+    DecisionRequested: 'bg-purple-500',
+    DecisionMade: 'bg-purple-500',
+    FollowUpSet: 'bg-cyan-500',
+    Archived: 'bg-slate-400',
+  }
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-slate-900">Activity Log</h1>
-      <p className="text-xs text-slate-500">Append-only. Showing last 100 events.</p>
+      <p className="text-xs text-slate-500">Append-only · last 100 events</p>
 
-      <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
-        {logs.map((log) => (
-          <div key={log.id} className="px-4 py-3 flex gap-3">
-            <div className="shrink-0 text-right w-20">
-              <span className="text-xs text-slate-400">{formatUKDate(log.createdAt)}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
+      <div className="space-y-0">
+        {logs.map((log, i) => (
+          <div key={log.id} className="relative pl-7 pb-4">
+            {i < logs.length - 1 && (
+              <div className="absolute left-[9px] top-5 bottom-0 w-px bg-slate-200" />
+            )}
+            <div className={`absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm ${dotColor[log.eventType] ?? 'bg-slate-400'}`} />
+            <div className="space-y-0.5">
+              <div className="flex flex-wrap items-center gap-2">
                 <Link href={`/work-items/${log.workItem.id}`} className="text-xs font-medium text-blue-600 hover:underline truncate max-w-[200px]">
                   {log.workItem.title}
                 </Link>
-                <span className={`text-xs font-medium rounded px-2 py-0.5 ${eventColors[log.eventType] ?? 'bg-slate-100 text-slate-600'}`}>
+                <span className={`text-xs font-medium rounded px-1.5 py-0.5 ${eventBadge[log.eventType] ?? 'bg-slate-100 text-slate-600'}`}>
                   {log.eventType.replace(/([A-Z])/g, ' $1').trim()}
                 </span>
               </div>
               <p className="text-sm text-slate-800">{log.summary}</p>
               {log.oldStatus && log.newStatus && (
-                <p className="text-xs text-slate-400 mt-0.5">{log.oldStatus} → {log.newStatus}</p>
+                <p className="text-xs text-slate-500">{log.oldStatus} → {log.newStatus}</p>
               )}
-              <p className="text-xs text-slate-400 mt-0.5">by {log.person}</p>
+              <p className="text-xs text-slate-400">{log.person} · {formatUKDate(log.createdAt)}</p>
             </div>
           </div>
         ))}
         {logs.length === 0 && (
-          <div className="p-8 text-center text-slate-400">No activity yet</div>
+          <p className="text-sm text-slate-400 py-8 text-center">No activity yet</p>
         )}
       </div>
     </div>

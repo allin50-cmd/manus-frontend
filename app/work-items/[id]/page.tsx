@@ -46,6 +46,17 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
         </div>
       </div>
 
+      {/* Next action accent strip */}
+      {item.nextAction && (
+        <div className="flex items-start gap-3 border-l-4 border-blue-500 bg-blue-50 rounded-r-xl px-3 py-3">
+          <div className="flex-1">
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-wide">Next Action</span>
+            <p className="text-sm font-semibold text-blue-900 mt-0.5">{item.nextAction}</p>
+          </div>
+          <span className="text-blue-400 text-xl mt-0.5">→</span>
+        </div>
+      )}
+
       {/* Detail grid */}
       <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
         {[
@@ -54,14 +65,13 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
           { label: 'Owner', value: item.owner },
           { label: 'Status', value: statusLabel(item.status) },
           { label: 'Priority', value: item.priority },
-          { label: 'Next Action', value: item.nextAction },
           { label: 'Due Date', value: formatUKDate(item.dueDate) },
           { label: 'Created', value: formatUKDate(item.createdAt) },
           { label: 'Updated', value: formatUKDate(item.updatedAt) },
         ].map(({ label, value }) => value ? (
           <div key={label} className="flex gap-3 px-4 py-3">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-28 shrink-0 pt-0.5">{label}</span>
-            <span className="text-sm text-slate-900 flex-1">{value}</span>
+            <span className={`text-sm flex-1 ${label === 'Due Date' && item.dueDate && new Date(item.dueDate) < new Date() ? 'text-red-600 font-semibold' : 'text-slate-900'}`}>{value}</span>
           </div>
         ) : null)}
         {item.notes && (
