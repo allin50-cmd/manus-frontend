@@ -37,6 +37,7 @@ export default function WorkItemFilters({ current }: { current: FilterState }) {
     router.push(`${pathname}?${params.toString()}`)
   }
 
+  const hasActive = Object.values(current).some((v) => v && v !== 'all')
   const sel = 'text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500'
 
   return (
@@ -53,6 +54,14 @@ export default function WorkItemFilters({ current }: { current: FilterState }) {
       <select className={sel} value={current.priority || 'all'} onChange={(e) => update('priority', e.target.value)}>
         {PRIORITIES.map((p) => <option key={p} value={p}>{p === 'all' ? 'All Priorities' : p}</option>)}
       </select>
+      {hasActive && (
+        <button
+          onClick={() => router.push(pathname)}
+          className="text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg px-3 py-1.5 bg-white transition-colors"
+        >
+          Clear filters
+        </button>
+      )}
     </div>
   )
 }

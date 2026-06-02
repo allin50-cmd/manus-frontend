@@ -24,6 +24,8 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
   if (searchParams.owner && searchParams.owner !== 'all') where.owner = searchParams.owner
   if (searchParams.priority && searchParams.priority !== 'all') where.priority = searchParams.priority as Priority
 
+  const hasFilters = Object.values(searchParams).some((v) => v && v !== 'all')
+
   const items = await db.workItem.findMany({
     where,
     orderBy: [{ priority: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
@@ -85,7 +87,7 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
             ))}
           </tbody>
         </table>
-        {items.length === 0 && <EmptyState />}
+        {items.length === 0 && <EmptyState hasFilters={hasFilters} />}
       </div>
 
       {/* Mobile cards */}
@@ -118,13 +120,23 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
             </div>
           </Link>
         ))}
-        {items.length === 0 && <EmptyState />}
+        {items.length === 0 && <EmptyState hasFilters={hasFilters} />}
       </div>
     </div>
   )
 }
 
-function EmptyState() {
+function EmptyState({ hasFilters = false }: { hasFilters?: boolean }) {
+  if (hasFilters) {
+    return (
+      <div className="text-center py-14 space-y-3">
+        <p className="font-semibold text-slate-700">No items match your filters</p>
+        <a href="/work-items" className="text-sm text-blue-600 hover:underline">
+          Clear filters
+        </a>
+      </div>
+    )
+  }
   return (
     <div className="text-center py-14 space-y-4">
       <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl mx-auto">
