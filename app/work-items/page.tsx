@@ -85,9 +85,7 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
             ))}
           </tbody>
         </table>
-        {items.length === 0 && (
-          <div className="text-center py-12 text-slate-400">No work items found</div>
-        )}
+        {items.length === 0 && <EmptyState />}
       </div>
 
       {/* Mobile cards */}
@@ -104,7 +102,12 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
             <p className="font-semibold text-slate-900">{item.title}</p>
             {item.company && <p className="text-xs text-slate-500">{item.company}{item.contactName ? ` · ${item.contactName}` : ''}</p>}
             <p className="text-xs text-slate-600">Owner: <span className="font-medium">{item.owner}</span></p>
-            {item.nextAction && <p className="text-xs text-slate-700 bg-blue-50 rounded px-2 py-1">Next: {item.nextAction}</p>}
+            {item.nextAction && (
+              <div className="flex items-center gap-2 border-l-2 border-blue-400 bg-blue-50 rounded-r-lg pl-2 pr-3 py-1.5">
+                <span className="text-xs font-medium text-blue-800 flex-1">{item.nextAction}</span>
+                <span className="text-blue-400 text-sm">→</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               {item.dueDate ? (
                 <span className={`text-xs ${new Date(item.dueDate) < new Date() ? 'text-red-600 font-medium' : 'text-slate-500'}`}>
@@ -115,10 +118,27 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
             </div>
           </Link>
         ))}
-        {items.length === 0 && (
-          <div className="text-center py-12 text-slate-400">No work items found</div>
-        )}
+        {items.length === 0 && <EmptyState />}
       </div>
+    </div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="text-center py-14 space-y-4">
+      <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-2xl mx-auto">
+        <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <div>
+        <p className="font-semibold text-slate-700">No work items yet</p>
+        <p className="text-sm text-slate-400 mt-1">Add your first item to start tracking work</p>
+      </div>
+      <a href="/work-items/new" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-6 py-3 rounded-xl transition-colors">
+        + Add Work Item
+      </a>
     </div>
   )
 }
