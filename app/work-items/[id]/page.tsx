@@ -44,6 +44,12 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
           </div>
           <h1 className="text-xl font-bold text-slate-900 break-words">{item.title}</h1>
         </div>
+        <Link
+          href={`/work-items/${item.id}/edit`}
+          className="shrink-0 mt-0.5 text-xs font-semibold text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-1.5 transition-colors"
+        >
+          Edit
+        </Link>
       </div>
 
       {/* Next action accent strip */}

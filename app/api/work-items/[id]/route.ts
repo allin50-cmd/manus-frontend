@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { WorkItemStatus, Priority } from '@prisma/client'
+import { WorkItemStatus, Priority, WorkItemType } from '@prisma/client'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
@@ -30,6 +30,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json()
   const updates: Record<string, unknown> = {}
 
+  if (body.title) updates.title = body.title
+  if (body.type) updates.type = body.type as WorkItemType
+  if (body.company !== undefined) updates.company = body.company || null
+  if (body.contactName !== undefined) updates.contactName = body.contactName || null
   if (body.status) updates.status = body.status as WorkItemStatus
   if (body.priority) updates.priority = body.priority as Priority
   if (body.owner !== undefined) updates.owner = body.owner
