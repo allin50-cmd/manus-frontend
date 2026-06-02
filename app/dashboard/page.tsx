@@ -15,11 +15,17 @@ async function getStats() {
   startOfWeek.setDate(now.getDate() - now.getDay())
   startOfWeek.setHours(0, 0, 0, 0)
 
-  const [total, dueToday, decisionNeeded, openActions, completedThisWeek] = await Promise.all([
+  const [total, overdue, dueToday, decisionNeeded, openActions, completedThisWeek] = await Promise.all([
     db.workItem.count({ where: { status: { notIn: ['Archived'] } } }),
     db.workItem.count({
       where: {
-        dueDate: { lte: endOfToday },
+        dueDate: { lt: startOfToday },
+        status: { notIn: ['Completed', 'Archived', 'NotFit'] },
+      },
+    }),
+    db.workItem.count({
+      where: {
+        dueDate: { gte: startOfToday, lte: endOfToday },
         status: { notIn: ['Completed', 'Archived', 'NotFit'] },
       },
     }),
@@ -33,24 +39,50 @@ async function getStats() {
     }),
   ])
 
-  return { total, dueToday, decisionNeeded, openActions, completedThisWeek }
+  return { total, overdue, dueToday, decisionNeeded, openActions, completedThisWeek }
+}
+
+function formatDayDate(date: Date): string {
+  return date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
 }
 
 export default async function DashboardPage() {
   const session = await requireAuth()
   const stats = await getStats()
+  const today = formatDayDate(new Date())
+
+  const urgentCount = stats.overdue + stats.dueToday
+  const urgencyText = [
+    stats.overdue > 0 ? `${stats.overdue} overdue` : '',
+    stats.dueToday > 0 ? `${stats.dueToday} due today` : '',
+  ].filter(Boolean).join(' · ')
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-1">Welcome back, {session.person}</p>
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{today}</p>
+        <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Dashboard</h1>
+        <p className="text-slate-500 text-sm mt-0.5">Welcome back, {session.person}</p>
       </div>
+
+      {urgentCount > 0 && (
+        <Link
+          href="/today"
+          className="flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-3 transition-colors"
+        >
+          <span className="text-xl shrink-0">🔴</span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">{urgencyText}</p>
+            <p className="text-xs opacity-80">Tap to see Today&apos;s Actions</p>
+          </div>
+          <span className="opacity-70 text-lg shrink-0">→</span>
+        </Link>
+      )}
 
       {/* Stats grid — 2×2 + slim banner avoids an orphan card on mobile */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total Items" value={stats.total} color="blue" />
-        <StatCard label="Due / Overdue" value={stats.dueToday} color={stats.dueToday > 0 ? 'orange' : 'green'} />
+        <StatCard label="Due / Overdue" value={urgentCount} color={urgentCount > 0 ? 'orange' : 'green'} />
         <StatCard label="Decision Needed" value={stats.decisionNeeded} color={stats.decisionNeeded > 0 ? 'purple' : 'green'} />
         <StatCard label="Open Actions" value={stats.openActions} color={stats.openActions > 0 ? 'yellow' : 'green'} />
       </div>

@@ -65,22 +65,25 @@ export default function NavBar() {
       </nav>
 
       {/* Mobile bottom bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-50 flex items-center">
-        {NAV.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${
-              pathname.startsWith(n.href) ? 'text-white' : 'text-slate-400'
-            }`}
-          >
-            <span className="text-base leading-none mb-0.5">{n.icon}</span>
-            <span className="leading-none">{n.label}</span>
-          </Link>
-        ))}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-50 flex items-center px-1 py-1">
+        {NAV.map((n) => {
+          const active = pathname.startsWith(n.href)
+          return (
+            <Link
+              key={n.href}
+              href={n.href}
+              className={`flex-1 flex flex-col items-center py-1.5 text-xs transition-colors rounded-lg ${
+                active ? 'text-white bg-slate-700 font-semibold' : 'text-slate-400'
+              }`}
+            >
+              <span className="text-base leading-none mb-0.5">{n.icon}</span>
+              <span className="leading-none">{n.label}</span>
+            </Link>
+          )
+        })}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex-1 flex flex-col items-center py-2 text-xs text-slate-400"
+          className="flex-1 flex flex-col items-center py-1.5 text-xs text-slate-400 rounded-lg"
         >
           <span className="text-base leading-none mb-0.5">⋯</span>
           <span className="leading-none">More</span>
