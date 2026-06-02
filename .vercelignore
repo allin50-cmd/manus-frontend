@@ -1,0 +1,20 @@
+# Old Express/Vite API entrypoint — no longer used, packages removed from package.json.
+# Vercel auto-detects root api/ as serverless functions; excluding prevents build failure.
+api/
+
+# Old server source — imports tRPC, cors, drizzle which are no longer installed
+server/
+
+# Azure-specific config and functions — not used on Vercel
+azure-functions/
+staticwebapp.config.json
+
+# Old Vite/Drizzle config files
+vite.config.ts
+vitest.config.ts
+drizzle.config.ts
+drizzle.clerkos.config.ts
+Dockerfile
+
+# Old source preserved for reference only
+_vite_src/
