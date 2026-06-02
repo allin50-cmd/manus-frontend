@@ -55,6 +55,21 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+## Prototype
+
+An interactive click-through prototype lives at `preview/prototype.html`.
+
+Open it directly in any browser — no server needed:
+
+```bash
+open preview/prototype.html   # macOS
+xdg-open preview/prototype.html  # Linux
+```
+
+Or just double-click the file in Finder / Explorer.
+
+Login with passcode `demo`. All screens are navigable via the bottom tab bar.
+
 ## Scripts
 
 | Script | Purpose |
