@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { formatUKDate, statusLabel, typeLabel } from '@/lib/utils'
+import { formatUKDate, formatUKDateTime, statusLabel, typeLabel } from '@/lib/utils'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
@@ -118,6 +118,34 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
           </div>
         </section>
       )}
+
+      {/* Recently completed actions */}
+      {(() => {
+        const done = item.actions
+          .filter((a) => a.status === 'Done')
+          .sort((a, b) => new Date(b.completedAt ?? b.createdAt).getTime() - new Date(a.completedAt ?? a.createdAt).getTime())
+          .slice(0, 5)
+        return (
+          <section>
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Recently completed actions</h2>
+            {done.length === 0 ? (
+              <p className="text-xs text-slate-400">No completed actions yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {done.map((action) => (
+                  <div key={action.id} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                    <p className="text-xs font-medium text-slate-700">{action.label}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {action.actionType.replace(/([A-Z])/g, ' $1').trim()} · {formatUKDateTime(action.completedAt)}
+                    </p>
+                    {action.result && <p className="text-xs text-slate-500 mt-0.5 italic">{action.result}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )
+      })()}
 
       {/* Open decisions */}
       {item.decisions.filter((d) => d.status === 'Open').length > 0 && (

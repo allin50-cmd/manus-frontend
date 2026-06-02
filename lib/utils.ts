@@ -1,3 +1,14 @@
+export function formatUKDateTime(date: Date | string | null | undefined): string {
+  if (!date) return '—'
+  return new Date(date).toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function formatUKDate(date: Date | string | null | undefined): string {
   if (!date) return '—'
   return new Date(date).toLocaleDateString('en-GB', {
