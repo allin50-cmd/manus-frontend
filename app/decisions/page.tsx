@@ -72,7 +72,14 @@ export default async function DecisionsPage() {
               </div>
             )}
 
-            <p className="text-xs text-slate-500">Awaiting decision from: <span className="font-medium text-slate-700">{dec.decisionBy}</span></p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-slate-500">Awaiting decision from: <span className="font-medium text-slate-700">{dec.decisionBy}</span></p>
+              {dec.workItem && (
+                <Link href={`/work-items/${dec.workItem.id}`} className="text-xs font-medium text-blue-600 hover:underline shrink-0">
+                  Open work item →
+                </Link>
+              )}
+            </div>
 
             <DecisionActions decisionId={dec.id} workItemId={dec.workItem.id} person={session.person} />
           </div>
