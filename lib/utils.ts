@@ -49,6 +49,8 @@ export function typeLabel(t: string): string {
     DocumentRecord: 'Document Record',
     MediaBrief: 'Media Brief',
     InternalTask: 'Internal Task',
+    Operations: 'Operations',
+    TechTask: 'Tech Task',
     Other: 'Other',
   }
   return map[t] ?? t

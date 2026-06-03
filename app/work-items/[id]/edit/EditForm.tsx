@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
-const TYPES = ['Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert', 'DocumentRecord', 'MediaBrief', 'InternalTask', 'Other']
+const TYPES = ['Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert', 'DocumentRecord', 'MediaBrief', 'InternalTask', 'Operations', 'TechTask', 'Other']
 const TYPE_LABELS: Record<string, string> = {
   Partnership: 'Partnership',
   ConstructionLead: 'Construction Lead',
@@ -12,6 +12,8 @@ const TYPE_LABELS: Record<string, string> = {
   DocumentRecord: 'Document Record',
   MediaBrief: 'Media Brief',
   InternalTask: 'Internal Task',
+  Operations: 'Operations',
+  TechTask: 'Tech Task',
   Other: 'Other',
 }
 const STATUSES = ['Captured', 'Controlled', 'InProgress', 'Waiting', 'FollowUpDue', 'Escalated', 'DecisionNeeded', 'Completed', 'Paused', 'NotFit', 'Archived']
@@ -21,7 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
   Completed: 'Completed', Paused: 'Paused', NotFit: 'Not Fit', Archived: 'Archived',
 }
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
-const OWNERS = ['Dagon', 'George', 'Alissa']
+const OWNERS = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
 
 interface Item {
   id: string

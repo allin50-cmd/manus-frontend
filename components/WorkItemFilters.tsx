@@ -15,13 +15,14 @@ const STATUS_LABELS: Record<string, string> = {
   Waiting: 'Waiting', FollowUpDue: 'Follow-Up Due', Escalated: 'Escalated', DecisionNeeded: 'Decision Needed',
   Completed: 'Completed', Paused: 'Paused', NotFit: 'Not Fit', Archived: 'Archived',
 }
-const TYPES = ['all', 'Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert', 'DocumentRecord', 'MediaBrief', 'InternalTask', 'Other']
+const TYPES = ['all', 'Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert', 'DocumentRecord', 'MediaBrief', 'InternalTask', 'Operations', 'TechTask', 'Other']
 const TYPE_LABELS: Record<string, string> = {
   all: 'All Types', Partnership: 'Partnership', ConstructionLead: 'Construction Lead',
   PlanningLead: 'Planning Lead', ComplianceAlert: 'Compliance Alert', DocumentRecord: 'Document Record',
-  MediaBrief: 'Media Brief', InternalTask: 'Internal Task', Other: 'Other',
+  MediaBrief: 'Media Brief', InternalTask: 'Internal Task', Operations: 'Operations',
+  TechTask: 'Tech Task', Other: 'Other',
 }
-const OWNERS = ['all', 'Dagon', 'George', 'Alissa']
+const OWNERS = ['all', 'Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
 const PRIORITIES = ['all', 'Low', 'Medium', 'High', 'Urgent']
 
 export default function WorkItemFilters({ current }: { current: FilterState }) {
