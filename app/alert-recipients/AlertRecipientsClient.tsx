@@ -55,9 +55,11 @@ const blank = {
 export default function AlertRecipientsClient({
   byCompany,
   companies,
+  pendingCount,
 }: {
   byCompany: Record<string, Recipient[]>
   companies: string[]
+  pendingCount: number
 }) {
   const router = useRouter()
   const [showAdd, setShowAdd] = useState(false)
@@ -65,6 +67,8 @@ export default function AlertRecipientsClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [escalating, setEscalating] = useState(false)
+  const [escalationResult, setEscalationResult] = useState<string | null>(null)
 
   function toggleCategory(cat: string) {
     setForm((f) => ({
@@ -131,6 +135,25 @@ export default function AlertRecipientsClient({
     }
   }
 
+  async function runEscalationCheck() {
+    setEscalating(true)
+    setEscalationResult(null)
+    try {
+      const res = await fetch('/api/alert-escalation-check', { method: 'POST' })
+      const data = await res.json()
+      setEscalationResult(
+        data.escalated > 0
+          ? `${data.escalated} delivery${data.escalated !== 1 ? 's' : ''} escalated`
+          : 'No deliveries require escalation',
+      )
+      router.refresh()
+    } catch {
+      setEscalationResult('Escalation check failed')
+    } finally {
+      setEscalating(false)
+    }
+  }
+
   async function unsuppress(id: string) {
     setBusyId(id)
     try {
@@ -145,12 +168,30 @@ export default function AlertRecipientsClient({
 
   return (
     <div className="space-y-5">
-      <button
-        onClick={() => setShowAdd((v) => !v)}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-      >
-        {showAdd ? 'Cancel' : '+ Add Recipient'}
-      </button>
+      <div className="flex flex-wrap gap-2 items-center">
+        <button
+          onClick={() => setShowAdd((v) => !v)}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+        >
+          {showAdd ? 'Cancel' : '+ Add Recipient'}
+        </button>
+
+        {pendingCount > 0 && (
+          <button
+            onClick={runEscalationCheck}
+            disabled={escalating}
+            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          >
+            {escalating ? 'Checking…' : `Run Escalation Check (${pendingCount} pending)`}
+          </button>
+        )}
+
+        {escalationResult && (
+          <span className="text-sm text-slate-600 bg-slate-100 rounded-lg px-3 py-2">
+            {escalationResult}
+          </span>
+        )}
+      </div>
 
       {showAdd && (
         <form

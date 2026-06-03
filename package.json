@@ -11,6 +11,8 @@
     "test": "vitest run",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:import-fineguard": "tsx prisma/import-fineguard.ts",
+    "db:import-fineguard-recipients": "tsx prisma/import-fineguard-recipients.ts",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate"
   },

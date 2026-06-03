@@ -14,6 +14,7 @@ const NAV = [
 const MORE = [
   { href: '/teams', label: 'Teams' },
   { href: '/alert-recipients', label: 'Alert Recipients' },
+  { href: '/alert-events', label: 'Alert Audit Log' },
   { href: '/activity', label: 'Activity Log' },
   { href: '/templates', label: 'Templates' },
 ]

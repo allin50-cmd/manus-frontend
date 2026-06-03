@@ -8,11 +8,14 @@ export const dynamic = 'force-dynamic'
 export default async function AlertRecipientsPage() {
   await requireAuth()
 
-  const recipients = await db.alertRecipient.findMany({
-    orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
-  })
+  const [recipients, pendingCount, totalEvents] = await Promise.all([
+    db.alertRecipient.findMany({
+      orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
+    }),
+    db.alertDelivery.count({ where: { status: { in: ['Sent', 'Pending'] } } }),
+    db.alertEvent.count(),
+  ])
 
-  // Group by company
   const byCompany: Record<string, typeof recipients> = {}
   for (const r of recipients) {
     if (!byCompany[r.company]) byCompany[r.company] = []
@@ -23,7 +26,7 @@ export default async function AlertRecipientsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-600 text-sm">
             ← Dashboard
@@ -33,9 +36,31 @@ export default async function AlertRecipientsPage() {
             Who receives compliance alerts per company
           </p>
         </div>
+        <Link
+          href="/alert-events"
+          className="shrink-0 text-xs font-semibold text-purple-700 border border-purple-200 hover:bg-purple-50 rounded-lg px-3 py-1.5 transition-colors"
+        >
+          Audit Log ({totalEvents})
+        </Link>
       </div>
 
-      <AlertRecipientsClient byCompany={byCompany} companies={companies} />
+      {/* Status bar */}
+      <div className="flex gap-3 flex-wrap">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex-1 min-w-[120px]">
+          <div className="text-2xl font-bold text-slate-900">{recipients.length}</div>
+          <div className="text-xs text-slate-500 mt-0.5">Total recipients</div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex-1 min-w-[120px]">
+          <div className="text-2xl font-bold text-slate-900">{companies.length}</div>
+          <div className="text-xs text-slate-500 mt-0.5">Companies covered</div>
+        </div>
+        <div className={`border rounded-xl px-4 py-3 flex-1 min-w-[120px] ${pendingCount > 0 ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`text-2xl font-bold ${pendingCount > 0 ? 'text-orange-700' : 'text-slate-900'}`}>{pendingCount}</div>
+          <div className="text-xs text-slate-500 mt-0.5">Awaiting ack</div>
+        </div>
+      </div>
+
+      <AlertRecipientsClient byCompany={byCompany} companies={companies} pendingCount={pendingCount} />
     </div>
   )
 }
