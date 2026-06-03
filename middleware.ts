@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const PUBLIC = ['/login', '/api/auth/login']
+const PUBLIC = ['/login', '/api/auth/login', '/api/alert-deliveries/ack']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
