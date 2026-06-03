@@ -22,7 +22,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 export default async function AlertsPage() {
   await requireAuth()
 
-  const [items, deliverySummary] = await Promise.all([
+  const [items, deliverySummary, total, pending, allAcked] = await Promise.all([
     db.workItem.findMany({
       where: { type: 'ComplianceAlert' },
       orderBy: { createdAt: 'desc' },
@@ -30,7 +30,6 @@ export default async function AlertsPage() {
       include: {
         alertDeliveries: {
           orderBy: { createdAt: 'desc' },
-          take: 10,
           include: { recipient: { select: { name: true, role: true } } },
         },
       },
@@ -39,18 +38,23 @@ export default async function AlertsPage() {
       by: ['status'],
       _count: { id: true },
     }),
+    db.workItem.count({ where: { type: 'ComplianceAlert' } }),
+    db.workItem.count({
+      where: {
+        type: 'ComplianceAlert',
+        alertDeliveries: { some: { status: { in: ['Sent', 'Pending'] } } },
+      },
+    }),
+    db.workItem.count({
+      where: {
+        type: 'ComplianceAlert',
+        alertDeliveries: { some: { status: 'Acknowledged' } },
+        NOT: { alertDeliveries: { some: { status: { in: ['Sent', 'Pending'] } } } },
+      },
+    }),
   ])
 
   const byStatus = Object.fromEntries(deliverySummary.map((r) => [r.status, r._count.id]))
-
-  const total = items.length
-  const pending = items.filter((i) =>
-    i.alertDeliveries.some((d) => d.status === 'Sent' || d.status === 'Pending'),
-  ).length
-  const allAcked = items.filter((i) =>
-    i.alertDeliveries.length > 0 &&
-    i.alertDeliveries.every((d) => d.status === 'Acknowledged' || d.status === 'Escalated'),
-  ).length
 
   return (
     <div className="space-y-6 max-w-3xl">

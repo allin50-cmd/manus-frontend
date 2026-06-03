@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { sendAlertEmail } from '@/lib/alert-dispatch'
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
@@ -27,6 +29,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       channel: delivery.channel,
       escalationLevel: delivery.escalationLevel,
       status: 'Pending',
+      ackToken: randomUUID(),
     },
   })
 
@@ -42,7 +45,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     },
   })
 
-  // Attempt delivery
+  // Attempt delivery via the same path as initial dispatch
   if (delivery.channel === 'Dashboard') {
     await db.alertDelivery.update({
       where: { id: newDelivery.id },
@@ -59,29 +62,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       },
     })
   } else if (delivery.channel === 'Email') {
-    const email = delivery.recipient.email
-    if (!email) {
-      await db.alertDelivery.update({
-        where: { id: newDelivery.id },
-        data: { status: 'Failed', failedAt: new Date(), failureReason: 'No email address' },
-      })
-    } else {
-      console.log(`[AlertDispatch] RETRY EMAIL → ${email} | Alert: "${delivery.workItem.title}"`)
-      await db.alertDelivery.update({
-        where: { id: newDelivery.id },
-        data: { status: 'Sent', sentAt: new Date() },
-      })
-      await db.alertEvent.create({
-        data: {
-          workItemId: delivery.workItemId,
-          deliveryId: newDelivery.id,
-          recipientId: delivery.recipientId,
-          eventType: 'DeliverySent',
-          actorType: 'System',
-          payload: JSON.stringify({ channel: 'Email', to: email }),
-        },
-      })
-    }
+    await sendAlertEmail(newDelivery.id, delivery.workItem, delivery.recipient, newDelivery.ackToken ?? undefined)
   }
 
   return NextResponse.json(newDelivery, { status: 201 })

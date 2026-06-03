@@ -43,9 +43,11 @@ export default function AlertDeliveriesSection({
   const router = useRouter()
   const [deliveries, setDeliveries] = useState(initial)
   const [busy, setBusy] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   async function acknowledge(deliveryId: string) {
     setBusy(deliveryId)
+    setActionError(null)
     try {
       const res = await fetch(`/api/alert-deliveries/${deliveryId}/acknowledge`, {
         method: 'POST',
@@ -59,7 +61,12 @@ export default function AlertDeliveriesSection({
           ),
         )
         router.refresh()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setActionError(data.error ?? `Failed to acknowledge (${res.status})`)
       }
+    } catch {
+      setActionError('Network error — please try again')
     } finally {
       setBusy(null)
     }
@@ -67,9 +74,17 @@ export default function AlertDeliveriesSection({
 
   async function retry(deliveryId: string) {
     setBusy(deliveryId)
+    setActionError(null)
     try {
       const res = await fetch(`/api/alert-deliveries/${deliveryId}/retry`, { method: 'POST' })
-      if (res.ok) router.refresh()
+      if (res.ok) {
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setActionError(data.error ?? `Retry failed (${res.status})`)
+      }
+    } catch {
+      setActionError('Network error — please try again')
     } finally {
       setBusy(null)
     }
@@ -101,6 +116,11 @@ export default function AlertDeliveriesSection({
           Manage recipients →
         </a>
       </div>
+      {actionError && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 mb-2">
+          {actionError}
+        </p>
+      )}
       <div className="space-y-2">
         {deliveries.map((d) => (
           <div

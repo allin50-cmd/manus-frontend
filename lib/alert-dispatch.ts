@@ -13,6 +13,10 @@ function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://app.ultracoresheetops.com'
 }
 
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
+}
+
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
   return key ? new Resend(key) : null
@@ -77,7 +81,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
     if (recipient.preferredChannel === 'Dashboard') {
       await markDeliverySent(delivery.id, workItem.id, recipient.id)
     } else if (recipient.preferredChannel === 'Email') {
-      await sendEmail(delivery.id, workItem, recipient, delivery.ackToken ?? undefined)
+      await sendAlertEmail(delivery.id, workItem, recipient, delivery.ackToken ?? undefined)
     }
   }
 }
@@ -152,7 +156,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
       if (recipient.preferredChannel === 'Dashboard') {
         await markDeliverySent(newDelivery.id, delivery.workItemId, recipient.id)
       } else if (recipient.preferredChannel === 'Email') {
-        await sendEmail(newDelivery.id, delivery.workItem, recipient, newDelivery.ackToken ?? undefined)
+        await sendAlertEmail(newDelivery.id, delivery.workItem, recipient, newDelivery.ackToken ?? undefined)
       }
     }
 
@@ -183,7 +187,7 @@ async function markDeliverySent(
   })
 }
 
-async function sendEmail(
+export async function sendAlertEmail(
   deliveryId: string,
   workItem: { id: string; title: string; company: string | null; dueDate?: Date | null; notes?: string | null },
   recipient: { id: string; name: string; email: string | null },
@@ -318,11 +322,15 @@ function buildEmailHtml({
   deadline: string
   ackUrl?: string
 }): string {
+  const eTitle = esc(workItem.title)
+  const eCompany = esc(workItem.company ?? 'your company')
+  const eName = esc(recipient.name)
+  const eDeadline = esc(deadline)
   const notes = workItem.notes
-    ? `<p style="color:#475569;font-size:14px;white-space:pre-wrap">${workItem.notes}</p>`
+    ? `<p style="color:#475569;font-size:14px;white-space:pre-wrap">${esc(workItem.notes)}</p>`
     : ''
   const ackButton = ackUrl
-    ? `<a href="${ackUrl}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#16a34a;color:#fff;text-decoration:none;font-size:14px;font-weight:600;border-radius:8px">
+    ? `<a href="${esc(ackUrl)}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#16a34a;color:#fff;text-decoration:none;font-size:14px;font-weight:600;border-radius:8px">
         Acknowledge Alert
       </a>
       <p style="margin:8px 0 0;font-size:11px;color:#94a3b8">One-click — no login required. Link is single-use.</p>`
@@ -333,21 +341,21 @@ function buildEmailHtml({
 <body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1e293b">
   <div style="background:#1e293b;padding:16px 24px;border-radius:8px 8px 0 0">
     <p style="color:#94a3b8;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:.05em">FineGuard Compliance Alert</p>
-    <h1 style="color:#fff;font-size:20px;margin:4px 0 0">${workItem.title}</h1>
+    <h1 style="color:#fff;font-size:20px;margin:4px 0 0">${eTitle}</h1>
   </div>
   <div style="border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 8px 8px">
-    <p style="margin:0 0 16px">Dear <strong>${recipient.name}</strong>,</p>
+    <p style="margin:0 0 16px">Dear <strong>${eName}</strong>,</p>
     <p style="margin:0 0 16px;color:#475569">
-      A compliance alert has been raised for <strong>${workItem.company ?? 'your company'}</strong>.
+      A compliance alert has been raised for <strong>${eCompany}</strong>.
     </p>
     <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
       <tr>
         <td style="padding:8px 12px;background:#f8fafc;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;width:100px;border:1px solid #e2e8f0">Alert</td>
-        <td style="padding:8px 12px;font-size:14px;border:1px solid #e2e8f0">${workItem.title}</td>
+        <td style="padding:8px 12px;font-size:14px;border:1px solid #e2e8f0">${eTitle}</td>
       </tr>
       <tr>
         <td style="padding:8px 12px;background:#f8fafc;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;border:1px solid #e2e8f0">Deadline</td>
-        <td style="padding:8px 12px;font-size:14px;font-weight:600;color:#dc2626;border:1px solid #e2e8f0">${deadline}</td>
+        <td style="padding:8px 12px;font-size:14px;font-weight:600;color:#dc2626;border:1px solid #e2e8f0">${eDeadline}</td>
       </tr>
     </table>
     ${notes}
