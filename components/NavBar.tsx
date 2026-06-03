@@ -12,6 +12,7 @@ const NAV = [
 ]
 
 const MORE = [
+  { href: '/teams', label: 'Teams' },
   { href: '/activity', label: 'Activity Log' },
   { href: '/templates', label: 'Templates' },
 ]

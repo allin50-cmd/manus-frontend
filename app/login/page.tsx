@@ -3,9 +3,12 @@
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
+const PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
+
 export default function LoginPage() {
   const router = useRouter()
   const [passcode, setPasscode] = useState('')
+  const [person, setPerson] = useState('Dagon')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -17,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode }),
+        body: JSON.stringify({ passcode, person }),
       })
       if (res.ok) {
         router.push('/dashboard')
@@ -42,10 +45,30 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white">UltraCore SheetOps</h1>
-          <p className="text-slate-400 text-sm mt-1">Spreadsheets that do the work</p>
+          <p className="text-slate-400 text-sm mt-1">Business command hub</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Who are you?</label>
+            <div className="grid grid-cols-3 gap-2">
+              {PEOPLE.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPerson(p)}
+                  className={`py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    person === p
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Passcode</label>
             <input
@@ -68,7 +91,7 @@ export default function LoginPage() {
             disabled={loading || !passcode}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
           >
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? 'Signing in…' : `Sign in as ${person}`}
           </button>
         </form>
       </div>
