@@ -6,6 +6,7 @@ import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import WorkItemActions from '@/components/WorkItemActions'
 import CompleteActionButton from '@/components/CompleteActionButton'
+import AlertDeliveriesSection from '@/components/AlertDeliveriesSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,11 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
       actions: { orderBy: { createdAt: 'desc' }, take: 20 },
       activityLogs: { orderBy: { createdAt: 'desc' }, take: 30 },
       decisions: { orderBy: { createdAt: 'desc' }, take: 10 },
+      alertDeliveries: {
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: { recipient: true },
+      },
     },
   })
 
@@ -161,6 +167,14 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
             ))}
           </div>
         </section>
+      )}
+
+      {/* Alert deliveries — shown for ComplianceAlert work items */}
+      {item.type === 'ComplianceAlert' && (
+        <AlertDeliveriesSection
+          workItemId={item.id}
+          deliveries={item.alertDeliveries}
+        />
       )}
 
       {/* Activity log */}

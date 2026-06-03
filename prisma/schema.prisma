@@ -80,6 +80,47 @@ enum DecisionStatus {
   Paused
 }
 
+// ── Alert Recipient Workflow ─────────────────────────────────────────────────
+
+enum RecipientRole {
+  Director
+  Accountant
+  CompanySecretary
+  Admin
+  ComplianceManager
+  ExternalAdviser
+  Custom
+}
+
+enum DeliveryChannel {
+  Email
+  Dashboard
+  Sms
+  WhatsApp
+}
+
+enum DeliveryStatus {
+  Pending
+  Sent
+  Failed
+  Acknowledged
+  Escalated
+  Suppressed
+}
+
+enum AlertEventType {
+  RecipientSelected
+  RecipientSuppressed
+  DeliveryCreated
+  DeliverySent
+  DeliveryFailed
+  AlertAcknowledged
+  EscalationTriggered
+  EscalationDeliveryCreated
+}
+
+// ── Core models ──────────────────────────────────────────────────────────────
+
 model WorkItem {
   id             String         @id @default(cuid())
   type           WorkItemType
@@ -96,9 +137,11 @@ model WorkItem {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  actions      Action[]
-  activityLogs ActivityLog[]
-  decisions    Decision[]
+  actions         Action[]
+  activityLogs    ActivityLog[]
+  decisions       Decision[]
+  alertDeliveries AlertDelivery[]
+  alertEvents     AlertEvent[]
 }
 
 model Action {
@@ -157,4 +200,60 @@ model Template {
   approved  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ── Alert Recipient models ────────────────────────────────────────────────────
+
+model AlertRecipient {
+  id                String          @id @default(cuid())
+  company           String
+  name              String
+  email             String?
+  phone             String?
+  role              RecipientRole
+  preferredChannel  DeliveryChannel @default(Dashboard)
+  alertCategories   String[]
+  escalationLevel   Int             @default(1)
+  isActive          Boolean         @default(true)
+  isSuppressed      Boolean         @default(false)
+  suppressionReason String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  deliveries  AlertDelivery[]
+  alertEvents AlertEvent[]
+}
+
+model AlertDelivery {
+  id              String          @id @default(cuid())
+  workItemId      String
+  recipientId     String
+  channel         DeliveryChannel
+  status          DeliveryStatus  @default(Pending)
+  sentAt          DateTime?
+  acknowledgedAt  DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+  escalationLevel Int             @default(1)
+  createdAt       DateTime        @default(now())
+
+  workItem    WorkItem       @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  recipient   AlertRecipient @relation(fields: [recipientId], references: [id])
+  alertEvents AlertEvent[]
+}
+
+model AlertEvent {
+  id          String         @id @default(cuid())
+  workItemId  String?
+  deliveryId  String?
+  recipientId String?
+  eventType   AlertEventType
+  actorType   String
+  actorId     String?
+  payload     String?
+  createdAt   DateTime       @default(now())
+
+  workItem  WorkItem?       @relation(fields: [workItemId], references: [id], onDelete: SetNull)
+  delivery  AlertDelivery?  @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  recipient AlertRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull)
 }

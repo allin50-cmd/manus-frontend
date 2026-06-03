@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { WorkItemStatus, WorkItemType, Priority } from '@prisma/client'
+import { dispatchAlerts } from '@/lib/alert-dispatch'
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
@@ -62,6 +63,11 @@ export async function POST(req: NextRequest) {
       newStatus: item.status,
     },
   })
+
+  // Dispatch alert notifications for compliance alerts (fire-and-forget)
+  if (item.type === 'ComplianceAlert') {
+    dispatchAlerts(item).catch((err) => console.error('[AlertDispatch] error:', err))
+  }
 
   return NextResponse.json(item, { status: 201 })
 }
