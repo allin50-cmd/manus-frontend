@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { randomUUID } from 'crypto'
 import { db } from '@/lib/db'
 import {
   selectRecipientsForAlert,
@@ -7,6 +8,10 @@ import {
   type AlertInput,
 } from '@/lib/alert-recipient-selector'
 import type { WorkItem } from '@prisma/client'
+
+function appUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://app.ultracoresheetops.com'
+}
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -54,6 +59,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
         recipientId: recipient.id,
         channel: recipient.preferredChannel as 'Email' | 'Dashboard' | 'Sms' | 'WhatsApp',
         escalationLevel: recipient.escalationLevel,
+        ackToken: randomUUID(),
       },
     })
 
@@ -71,7 +77,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
     if (recipient.preferredChannel === 'Dashboard') {
       await markDeliverySent(delivery.id, workItem.id, recipient.id)
     } else if (recipient.preferredChannel === 'Email') {
-      await sendEmail(delivery.id, workItem, recipient)
+      await sendEmail(delivery.id, workItem, recipient, delivery.ackToken ?? undefined)
     }
   }
 }
@@ -128,6 +134,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
           recipientId: recipient.id,
           channel: recipient.preferredChannel as 'Email' | 'Dashboard' | 'Sms' | 'WhatsApp',
           escalationLevel: nextLevel,
+          ackToken: randomUUID(),
         },
       })
 
@@ -145,7 +152,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
       if (recipient.preferredChannel === 'Dashboard') {
         await markDeliverySent(newDelivery.id, delivery.workItemId, recipient.id)
       } else if (recipient.preferredChannel === 'Email') {
-        await sendEmail(newDelivery.id, delivery.workItem, recipient)
+        await sendEmail(newDelivery.id, delivery.workItem, recipient, newDelivery.ackToken ?? undefined)
       }
     }
 
@@ -180,6 +187,7 @@ async function sendEmail(
   deliveryId: string,
   workItem: { id: string; title: string; company: string | null; dueDate?: Date | null; notes?: string | null },
   recipient: { id: string; name: string; email: string | null },
+  ackToken?: string,
 ): Promise<void> {
   if (!recipient.email) {
     await db.alertDelivery.update({
@@ -227,12 +235,14 @@ async function sendEmail(
       ? new Date(workItem.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       : 'No deadline set'
 
+    const ackUrl = ackToken ? `${appUrl()}/api/alert-deliveries/ack?token=${ackToken}` : undefined
+
     await resend.emails.send({
       from: FROM_EMAIL,
       to: recipient.email,
       subject: `[FineGuard Alert] ${workItem.title}`,
-      text: buildEmailText({ workItem, recipient, deadline }),
-      html: buildEmailHtml({ workItem, recipient, deadline }),
+      text: buildEmailText({ workItem, recipient, deadline, ackUrl }),
+      html: buildEmailHtml({ workItem, recipient, deadline, ackUrl }),
     })
 
     await db.alertDelivery.update({
@@ -273,10 +283,12 @@ function buildEmailText({
   workItem,
   recipient,
   deadline,
+  ackUrl,
 }: {
   workItem: { id: string; title: string; company: string | null; notes?: string | null }
   recipient: { name: string }
   deadline: string
+  ackUrl?: string
 }): string {
   return [
     `Dear ${recipient.name},`,
@@ -287,7 +299,9 @@ function buildEmailText({
     `Deadline: ${deadline}`,
     workItem.notes ? `\nDetails:\n${workItem.notes}` : '',
     '',
-    'Please log in to UltraCore SheetOps to acknowledge this alert.',
+    ackUrl
+      ? `Acknowledge this alert with one click:\n${ackUrl}`
+      : 'Please log in to UltraCore SheetOps to acknowledge this alert.',
     '',
     '— FineGuard Compliance System',
   ].join('\n')
@@ -297,14 +311,22 @@ function buildEmailHtml({
   workItem,
   recipient,
   deadline,
+  ackUrl,
 }: {
   workItem: { id: string; title: string; company: string | null; notes?: string | null }
   recipient: { name: string }
   deadline: string
+  ackUrl?: string
 }): string {
   const notes = workItem.notes
     ? `<p style="color:#475569;font-size:14px;white-space:pre-wrap">${workItem.notes}</p>`
     : ''
+  const ackButton = ackUrl
+    ? `<a href="${ackUrl}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#16a34a;color:#fff;text-decoration:none;font-size:14px;font-weight:600;border-radius:8px">
+        Acknowledge Alert
+      </a>
+      <p style="margin:8px 0 0;font-size:11px;color:#94a3b8">One-click — no login required. Link is single-use.</p>`
+    : `<p style="margin:16px 0 0;font-size:13px;color:#64748b">Please log in to UltraCore SheetOps to acknowledge this alert and take any required action.</p>`
   return `
 <!DOCTYPE html>
 <html>
@@ -329,7 +351,7 @@ function buildEmailHtml({
       </tr>
     </table>
     ${notes}
-    <p style="margin:16px 0 0;font-size:13px;color:#64748b">Please log in to UltraCore SheetOps to acknowledge this alert and take any required action.</p>
+    ${ackButton}
     <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">— FineGuard Compliance System</p>
   </div>
 </body>

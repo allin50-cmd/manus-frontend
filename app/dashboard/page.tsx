@@ -72,6 +72,14 @@ async function getPipeline() {
   return map
 }
 
+async function getComplianceSummary() {
+  const [pending, totalAlerts] = await Promise.all([
+    db.alertDelivery.count({ where: { status: { in: ['Sent', 'Pending'] } } }),
+    db.workItem.count({ where: { type: 'ComplianceAlert', status: { notIn: ['Archived'] } } }),
+  ])
+  return { pending, totalAlerts }
+}
+
 async function getTeamPulse() {
   const owners = ['Dagon', 'Alissa', 'Michelle', 'Chris', 'Charlie', 'George']
   const counts = await Promise.all(
@@ -94,11 +102,12 @@ export default async function DashboardPage() {
   const session = await requireAuth()
   const isNamed = session.person !== 'user'
 
-  const [stats, pipeline, teamPulse, myStats] = await Promise.all([
+  const [stats, pipeline, teamPulse, myStats, compliance] = await Promise.all([
     getStats(),
     getPipeline(),
     getTeamPulse(),
     isNamed ? getMyStats(session.person) : Promise.resolve(null),
+    getComplianceSummary(),
   ])
 
   const today = formatDayDate(new Date())
@@ -206,6 +215,35 @@ export default async function DashboardPage() {
         <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Done this week</span>
         <span className="text-3xl font-bold text-green-700">{stats.completedThisWeek}</span>
       </div>
+
+      {/* Compliance alerts widget */}
+      {compliance.totalAlerts > 0 && (
+        <Link
+          href="/alerts"
+          className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors hover:opacity-90 ${
+            compliance.pending > 0
+              ? 'bg-orange-50 border-orange-200'
+              : 'bg-green-50 border-green-200'
+          }`}
+        >
+          <div>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${compliance.pending > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+              Compliance Alerts
+            </p>
+            <p className={`text-sm font-medium mt-0.5 ${compliance.pending > 0 ? 'text-orange-800' : 'text-green-800'}`}>
+              {compliance.pending > 0
+                ? `${compliance.pending} awaiting acknowledgement`
+                : 'All acknowledged'}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <div className={`text-2xl font-bold ${compliance.pending > 0 ? 'text-orange-700' : 'text-green-700'}`}>
+              {compliance.totalAlerts}
+            </div>
+            <div className="text-xs text-slate-500">active alerts</div>
+          </div>
+        </Link>
+      )}
 
       {/* Company pipeline */}
       <div className="space-y-2">

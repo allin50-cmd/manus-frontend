@@ -230,6 +230,7 @@ model AlertDelivery {
   recipientId     String
   channel         DeliveryChannel
   status          DeliveryStatus  @default(Pending)
+  ackToken        String?         @unique
   sentAt          DateTime?
   acknowledgedAt  DateTime?
   failedAt        DateTime?

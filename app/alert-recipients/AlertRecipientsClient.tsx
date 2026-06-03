@@ -69,6 +69,67 @@ export default function AlertRecipientsClient({
   const [busyId, setBusyId] = useState<string | null>(null)
   const [escalating, setEscalating] = useState(false)
   const [escalationResult, setEscalationResult] = useState<string | null>(null)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<Omit<typeof blank, 'company'> & { company: string }>(blank)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState('')
+
+  function openEdit(r: Recipient) {
+    setEditId(r.id)
+    setEditForm({
+      company: r.company,
+      name: r.name,
+      email: r.email ?? '',
+      phone: r.phone ?? '',
+      role: r.role,
+      preferredChannel: r.preferredChannel,
+      alertCategories: r.alertCategories,
+      escalationLevel: r.escalationLevel,
+    })
+    setEditError('')
+  }
+
+  function toggleEditCategory(cat: string) {
+    setEditForm((f) => ({
+      ...f,
+      alertCategories: f.alertCategories.includes(cat)
+        ? f.alertCategories.filter((c) => c !== cat)
+        : [...f.alertCategories, cat],
+    }))
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editId) return
+    setEditError('')
+    setEditLoading(true)
+    try {
+      const res = await fetch(`/api/alert-recipients/${editId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name,
+          email: editForm.email || null,
+          phone: editForm.phone || null,
+          role: editForm.role,
+          preferredChannel: editForm.preferredChannel,
+          alertCategories: editForm.alertCategories,
+          escalationLevel: Number(editForm.escalationLevel),
+        }),
+      })
+      if (res.ok) {
+        setEditId(null)
+        router.refresh()
+      } else {
+        const d = await res.json().catch(() => ({}))
+        setEditError(d.error ?? 'Failed to save')
+      }
+    } catch {
+      setEditError('Something went wrong')
+    } finally {
+      setEditLoading(false)
+    }
+  }
 
   function toggleCategory(cat: string) {
     setForm((f) => ({
@@ -391,6 +452,15 @@ export default function AlertRecipientsClient({
                   )}
                 </div>
                 <div className="flex gap-1.5 shrink-0">
+                  {r.isActive && (
+                    <button
+                      onClick={() => openEdit(r)}
+                      disabled={busyId === r.id}
+                      className="text-xs text-blue-600 border border-blue-200 hover:bg-blue-50 rounded px-2 py-1 transition-colors disabled:opacity-50"
+                    >
+                      Edit
+                    </button>
+                  )}
                   {r.isActive && !r.isSuppressed && (
                     <button
                       onClick={() => suppress(r.id)}
@@ -420,6 +490,72 @@ export default function AlertRecipientsClient({
                   )}
                 </div>
               </div>
+
+              {/* Inline edit form */}
+              {editId === r.id && (
+                <form
+                  onSubmit={handleEdit}
+                  className="mt-3 pt-3 border-t border-slate-100 space-y-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Name *</label>
+                      <input required value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Email</label>
+                      <input type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} className={inp} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Phone</label>
+                      <input value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} className={inp} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Role</label>
+                      <select value={editForm.role} onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))} className={inp}>
+                        {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Channel</label>
+                      <select value={editForm.preferredChannel} onChange={(e) => setEditForm((f) => ({ ...f, preferredChannel: e.target.value }))} className={inp}>
+                        {CHANNELS.map((c) => <option key={c}>{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 items-end">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Escalation Level</label>
+                      <select value={editForm.escalationLevel} onChange={(e) => setEditForm((f) => ({ ...f, escalationLevel: Number(e.target.value) }))} className={inp}>
+                        {[1, 2, 3, 4].map((l) => <option key={l} value={l}>Level {l}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Categories (empty = all)</label>
+                      <div className="flex flex-wrap gap-1">
+                        {ALERT_CATEGORIES.map((cat) => (
+                          <button key={cat} type="button" onClick={() => toggleEditCategory(cat)}
+                            className={`text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${editForm.alertCategories.includes(cat) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-300 hover:border-blue-400'}`}>
+                            {CATEGORY_LABELS[cat]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {editError && <p className="text-red-600 text-xs">{editError}</p>}
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setEditId(null)} className="flex-1 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-xs font-medium transition-colors">
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={editLoading} className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg text-xs transition-colors">
+                      {editLoading ? 'Saving…' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           ))}
         </div>
