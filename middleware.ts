@@ -11,9 +11,15 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get('session')?.value
   if (!token) return NextResponse.redirect(new URL('/login', req.url))
 
+  const jwtSecret = process.env.JWT_SECRET
+  if (!jwtSecret) {
+    const res = NextResponse.redirect(new URL('/login', req.url))
+    res.cookies.delete('session')
+    return res
+  }
+
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-dev-secret-change-in-prod')
-    await jwtVerify(token, secret)
+    await jwtVerify(token, new TextEncoder().encode(jwtSecret))
     return NextResponse.next()
   } catch {
     const res = NextResponse.redirect(new URL('/login', req.url))

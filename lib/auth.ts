@@ -5,7 +5,9 @@ import { redirect } from 'next/navigation'
 export const COOKIE_NAME = 'session'
 
 function secret() {
-  return new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-dev-secret-change-in-prod')
+  const s = process.env.JWT_SECRET
+  if (!s) throw new Error('JWT_SECRET env var is not set')
+  return new TextEncoder().encode(s)
 }
 
 export async function createSessionToken(person: string): Promise<string> {
