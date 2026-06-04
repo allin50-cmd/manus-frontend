@@ -6,17 +6,20 @@ const KNOWN_PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie
 export async function POST(req: NextRequest) {
   const { passcode, person } = await req.json()
 
-  const expected = process.env.APP_PASSCODE
+  if (!KNOWN_PEOPLE.includes(person)) {
+    return NextResponse.json({ error: 'Unknown person' }, { status: 401 })
+  }
+
+  const expected = process.env[`PASSCODE_${person.toUpperCase()}`]
   if (!expected) {
-    return NextResponse.json({ error: 'APP_PASSCODE not configured' }, { status: 500 })
+    return NextResponse.json({ error: `No password configured for ${person}` }, { status: 500 })
   }
 
   if (passcode !== expected) {
     return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
   }
 
-  const resolvedPerson = KNOWN_PEOPLE.includes(person) ? person : (person || 'user')
-  const token = await createSessionToken(resolvedPerson)
+  const token = await createSessionToken(person)
   const res = NextResponse.json({ ok: true })
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
