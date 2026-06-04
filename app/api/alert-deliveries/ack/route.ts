@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
-}
+import { escHtml } from '@/lib/utils'
 
 // Public endpoint — no auth required. Token is a UUID, cryptographically unguessable.
 export async function GET(req: NextRequest) {
@@ -57,13 +54,13 @@ export async function GET(req: NextRequest) {
 function successHtml(title: string, company: string | null, state: string) {
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alert ${esc(state)}</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alert ${escHtml(state)}</title></head>
 <body style="font-family:sans-serif;background:#f8fafc;min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0;padding:24px;box-sizing:border-box">
   <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:40px 32px;max-width:480px;width:100%;text-align:center">
     <div style="width:56px;height:56px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px">&#10003;</div>
     <h1 style="color:#15803d;font-size:22px;margin:0 0 8px">Alert acknowledged</h1>
-    <p style="color:#475569;font-size:15px;margin:0 0 4px"><strong>${esc(title)}</strong></p>
-    ${company ? `<p style="color:#94a3b8;font-size:13px;margin:0 0 24px">${esc(company)}</p>` : '<p style="margin:0 0 24px"></p>'}
+    <p style="color:#475569;font-size:15px;margin:0 0 4px"><strong>${escHtml(title)}</strong></p>
+    ${company ? `<p style="color:#94a3b8;font-size:13px;margin:0 0 24px">${escHtml(company)}</p>` : '<p style="margin:0 0 24px"></p>'}
     <p style="color:#64748b;font-size:13px;margin:0">Thank you. This has been recorded in the FineGuard compliance system.</p>
   </div>
 </body>

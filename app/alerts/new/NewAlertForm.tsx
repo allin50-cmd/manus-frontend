@@ -44,12 +44,22 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
     owner: 'Dagon',
   })
 
+  function isAutoTitle(title: string, category: string, company: string): boolean {
+    return (
+      title === CATEGORY_LABELS[category] ||
+      title === `${CATEGORY_LABELS[category]} — ${company}`
+    )
+  }
+
   function handleCategoryChange(cat: string) {
     setForm((f) => ({
       ...f,
       category: cat,
       notes: f.notes || CATEGORY_NOTE_HINTS[cat] || '',
-      title: f.title || (f.company ? `${CATEGORY_LABELS[cat]} — ${f.company}` : CATEGORY_LABELS[cat]),
+      // Only auto-update title if it is still the auto-generated value
+      title: isAutoTitle(f.title, f.category, f.company)
+        ? f.company ? `${CATEGORY_LABELS[cat]} — ${f.company}` : CATEGORY_LABELS[cat]
+        : f.title,
     }))
   }
 
@@ -57,7 +67,8 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
     setForm((f) => ({
       ...f,
       company,
-      title: f.title.includes('—')
+      // Only auto-update title if it is still the auto-generated value
+      title: isAutoTitle(f.title, f.category, f.company)
         ? `${CATEGORY_LABELS[f.category]} — ${company}`
         : f.title,
     }))

@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic'
 
 const EVENT_COLORS: Record<string, string> = {
   RecipientSelected:         'bg-blue-100 text-blue-700',
+  RecipientUpdated:          'bg-blue-100 text-blue-700',
+  RecipientDeactivated:      'bg-red-100 text-red-700',
   RecipientSuppressed:       'bg-orange-100 text-orange-700',
   DeliveryCreated:           'bg-slate-100 text-slate-600',
   DeliverySent:              'bg-blue-100 text-blue-700',
@@ -18,6 +20,8 @@ const EVENT_COLORS: Record<string, string> = {
 
 const EVENT_LABELS: Record<string, string> = {
   RecipientSelected:         'Recipient selected',
+  RecipientUpdated:          'Recipient updated',
+  RecipientDeactivated:      'Recipient deactivated',
   RecipientSuppressed:       'Recipient suppressed',
   DeliveryCreated:           'Delivery created',
   DeliverySent:              'Delivery sent',

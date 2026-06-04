@@ -15,6 +15,7 @@ export type AlertCategory = (typeof ALERT_CATEGORIES)[number]
 
 export const ESCALATION_THRESHOLDS = {
   noAckHours: 48,
+  noAckHoursHighSeverity: 24,
   deadlineDaysWarning: 7,
 }
 
@@ -103,16 +104,19 @@ export function selectRecipientsForAlert(
 
 export function shouldEscalate(
   alert: AlertInput,
-  delivery: { createdAt: Date; status: string; escalationLevel: number },
+  delivery: { createdAt: Date; sentAt: Date | null; status: string; escalationLevel: number },
 ): boolean {
-  const hoursSinceCreation =
-    (alert.now.getTime() - delivery.createdAt.getTime()) / 1_000 / 3_600
-
   if (delivery.status === 'Acknowledged') return false
 
-  if (hoursSinceCreation >= ESCALATION_THRESHOLDS.noAckHours) return true
+  const reference = delivery.sentAt ?? delivery.createdAt
+  const hoursSinceSent = (alert.now.getTime() - reference.getTime()) / 1_000 / 3_600
 
-  if (alert.severity === 'HIGH' || alert.severity === 'CRITICAL') return true
+  if (hoursSinceSent >= ESCALATION_THRESHOLDS.noAckHours) return true
+
+  if (
+    (alert.severity === 'HIGH' || alert.severity === 'CRITICAL') &&
+    hoursSinceSent >= ESCALATION_THRESHOLDS.noAckHoursHighSeverity
+  ) return true
 
   if (alert.deadlineAt) {
     const daysUntilDeadline =

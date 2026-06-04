@@ -146,6 +146,7 @@ describe('shouldEscalate', () => {
     const alert = makeAlert({ now: new Date('2025-01-17T13:00:00Z') })
     const delivery = {
       createdAt: new Date('2025-01-15T12:00:00Z'),
+      sentAt: new Date('2025-01-15T12:00:00Z'),
       status: 'Sent',
       escalationLevel: 1,
     }
@@ -156,6 +157,7 @@ describe('shouldEscalate', () => {
     const alert = makeAlert({ now: new Date('2025-01-17T13:00:00Z') })
     const delivery = {
       createdAt: new Date('2025-01-15T12:00:00Z'),
+      sentAt: new Date('2025-01-15T12:00:00Z'),
       status: 'Acknowledged',
       escalationLevel: 1,
     }
@@ -170,9 +172,53 @@ describe('shouldEscalate', () => {
     })
     const delivery = {
       createdAt: new Date('2025-01-25T00:00:00Z'),
+      sentAt: new Date('2025-01-25T00:00:00Z'),
       status: 'Sent',
       escalationLevel: 1,
     }
     expect(shouldEscalate(alert, delivery)).toBe(true)
+  })
+
+  it('does not escalate HIGH severity before the 24-hour window', () => {
+    const alert = makeAlert({
+      now: new Date('2025-01-15T20:00:00Z'),
+      severity: 'HIGH',
+    })
+    const delivery = {
+      createdAt: new Date('2025-01-15T12:00:00Z'),
+      sentAt: new Date('2025-01-15T12:00:00Z'),
+      status: 'Sent',
+      escalationLevel: 1,
+    }
+    // Only 8 hours since sent — should NOT escalate yet
+    expect(shouldEscalate(alert, delivery)).toBe(false)
+  })
+
+  it('escalates HIGH severity after the 24-hour window', () => {
+    const alert = makeAlert({
+      now: new Date('2025-01-16T13:00:00Z'),
+      severity: 'HIGH',
+    })
+    const delivery = {
+      createdAt: new Date('2025-01-15T12:00:00Z'),
+      sentAt: new Date('2025-01-15T12:00:00Z'),
+      status: 'Sent',
+      escalationLevel: 1,
+    }
+    // 25 hours since sent — should escalate
+    expect(shouldEscalate(alert, delivery)).toBe(true)
+  })
+
+  it('uses sentAt not createdAt when delivery was delayed before sending', () => {
+    const alert = makeAlert({ now: new Date('2025-01-17T00:00:00Z') })
+    const delivery = {
+      // Created 49h ago but only sent 1h ago
+      createdAt: new Date('2025-01-14T23:00:00Z'),
+      sentAt: new Date('2025-01-16T23:00:00Z'),
+      status: 'Sent',
+      escalationLevel: 1,
+    }
+    // Only 1h since sent — should NOT escalate despite 49h since creation
+    expect(shouldEscalate(alert, delivery)).toBe(false)
   })
 })

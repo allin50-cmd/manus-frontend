@@ -1,3 +1,7 @@
+export function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
+}
+
 export function formatUKDateTime(date: Date | string | null | undefined): string {
   if (!date) return '—'
   return new Date(date).toLocaleString('en-GB', {

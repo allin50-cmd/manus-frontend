@@ -110,6 +110,8 @@ enum DeliveryStatus {
 
 enum AlertEventType {
   RecipientSelected
+  RecipientUpdated
+  RecipientDeactivated
   RecipientSuppressed
   DeliveryCreated
   DeliverySent

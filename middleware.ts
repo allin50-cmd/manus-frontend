@@ -12,7 +12,7 @@ export async function middleware(req: NextRequest) {
   if (!token) return NextResponse.redirect(new URL('/login', req.url))
 
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret')
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-dev-secret-change-in-prod')
     await jwtVerify(token, secret)
     return NextResponse.next()
   } catch {

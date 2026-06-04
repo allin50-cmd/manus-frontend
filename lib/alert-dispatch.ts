@@ -7,14 +7,11 @@ import {
   type AlertCategory,
   type AlertInput,
 } from '@/lib/alert-recipient-selector'
+import { escHtml } from '@/lib/utils'
 import type { WorkItem } from '@prisma/client'
 
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://app.ultracoresheetops.com'
-}
-
-function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
 }
 
 function getResend(): Resend | null {
@@ -322,15 +319,15 @@ function buildEmailHtml({
   deadline: string
   ackUrl?: string
 }): string {
-  const eTitle = esc(workItem.title)
-  const eCompany = esc(workItem.company ?? 'your company')
-  const eName = esc(recipient.name)
-  const eDeadline = esc(deadline)
+  const eTitle = escHtml(workItem.title)
+  const eCompany = escHtml(workItem.company ?? 'your company')
+  const eName = escHtml(recipient.name)
+  const eDeadline = escHtml(deadline)
   const notes = workItem.notes
-    ? `<p style="color:#475569;font-size:14px;white-space:pre-wrap">${esc(workItem.notes)}</p>`
+    ? `<p style="color:#475569;font-size:14px;white-space:pre-wrap">${escHtml(workItem.notes)}</p>`
     : ''
   const ackButton = ackUrl
-    ? `<a href="${esc(ackUrl)}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#16a34a;color:#fff;text-decoration:none;font-size:14px;font-weight:600;border-radius:8px">
+    ? `<a href="${escHtml(ackUrl)}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#16a34a;color:#fff;text-decoration:none;font-size:14px;font-weight:600;border-radius:8px">
         Acknowledge Alert
       </a>
       <p style="margin:8px 0 0;font-size:11px;color:#94a3b8">One-click — no login required. Link is single-use.</p>`
@@ -369,11 +366,12 @@ function buildEmailHtml({
 export function inferCategory(notes: string): AlertCategory {
   const n = notes.toLowerCase()
   if (n.includes('confirmation statement') || n.includes('companies house confirm')) return 'CompaniesHouseConfirmation'
-  if (n.includes('accounts') || n.includes('companies house account')) return 'CompaniesHouseAccounts'
+  if (n.includes('corporation tax') || n.includes('ct600')) return 'CorporationTax'
+  if (n.includes('self assessment') || n.includes('sa100')) return 'SelfAssessment'
+  if (n.includes('companies house account') || n.includes('annual accounts')) return 'CompaniesHouseAccounts'
   if (n.includes('vat') || n.includes('mtd')) return 'VatMtd'
   if (n.includes('paye')) return 'Paye'
-  if (n.includes('self assessment') || n.includes('sa100')) return 'SelfAssessment'
-  if (n.includes('corporation tax') || n.includes('ct600')) return 'CorporationTax'
+  if (n.includes('accounts')) return 'CompaniesHouseAccounts'
   return 'GeneralCompliance'
 }
 

@@ -33,6 +33,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   } = body
 
   if (alertCategories !== undefined) {
+    if (!Array.isArray(alertCategories)) {
+      return NextResponse.json({ error: 'alertCategories must be an array' }, { status: 400 })
+    }
     const invalid = alertCategories.filter((c: string) => !ALERT_CATEGORIES.includes(c as never))
     if (invalid.length > 0) {
       return NextResponse.json({ error: `Unknown categories: ${invalid.join(', ')}` }, { status: 400 })
@@ -56,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   await db.alertEvent.create({
     data: {
       recipientId: params.id,
-      eventType: 'RecipientSelected',
+      eventType: 'RecipientUpdated',
       actorType: 'User',
       actorId: session.person,
       payload: JSON.stringify({ action: 'updated', changes: body }),
@@ -82,7 +85,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   await db.alertEvent.create({
     data: {
       recipientId: params.id,
-      eventType: 'RecipientSelected',
+      eventType: 'RecipientDeactivated',
       actorType: 'User',
       actorId: session.person,
       payload: JSON.stringify({ action: 'deactivated' }),
