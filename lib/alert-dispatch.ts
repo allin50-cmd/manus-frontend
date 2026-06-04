@@ -42,6 +42,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
   const { selected, excluded } = selectRecipientsForAlert(alert, recipients)
 
   for (const { recipient, reason } of excluded) {
+    if (reason !== 'SUPPRESSED') continue
     await db.alertEvent.create({
       data: {
         workItemId: workItem.id,
@@ -85,7 +86,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
 
 export async function runEscalationCheck(): Promise<{ escalated: number }> {
   const openDeliveries = await db.alertDelivery.findMany({
-    where: { status: { in: ['Sent', 'Pending'] } },
+    where: { status: 'Sent' },
     include: { workItem: true },
   })
 
@@ -104,7 +105,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
     if (!shouldEscalate(alert, delivery)) continue
 
     const nextLevel = delivery.escalationLevel + 1
-    const candidates = await db.alertRecipient.findMany({
+    const allNextLevelCandidates = await db.alertRecipient.findMany({
       where: {
         company: delivery.workItem.company ?? '',
         escalationLevel: nextLevel,
@@ -112,6 +113,9 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
         isSuppressed: false,
       },
     })
+    const candidates = allNextLevelCandidates.filter(
+      (r) => r.alertCategories.length === 0 || r.alertCategories.includes(alert.category),
+    )
 
     await db.alertDelivery.update({
       where: { id: delivery.id },

@@ -65,5 +65,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     await sendAlertEmail(newDelivery.id, delivery.workItem, delivery.recipient, newDelivery.ackToken ?? undefined)
   }
 
-  return NextResponse.json(newDelivery, { status: 201 })
+  // Re-fetch to return accurate status (sendAlertEmail may have updated it to Sent or Failed)
+  const finalDelivery = await db.alertDelivery.findUnique({ where: { id: newDelivery.id } })
+  return NextResponse.json(finalDelivery ?? newDelivery, { status: 201 })
 }

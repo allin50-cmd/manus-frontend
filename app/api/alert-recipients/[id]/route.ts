@@ -42,6 +42,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  if (escalationLevel !== undefined) {
+    const parsed = Number(escalationLevel)
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      return NextResponse.json({ error: 'escalationLevel must be a positive integer' }, { status: 400 })
+    }
+  }
+
   const updated = await db.alertRecipient.update({
     where: { id: params.id },
     data: {

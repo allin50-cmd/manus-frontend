@@ -164,9 +164,25 @@ describe('shouldEscalate', () => {
     expect(shouldEscalate(alert, delivery)).toBe(false)
   })
 
-  it('triggers escalation when deadline is within 7 days', () => {
+  it('triggers escalation when deadline is within 7 days and 24h have elapsed', () => {
     const alert = makeAlert({
       now: new Date('2025-01-25T00:00:00Z'),
+      deadlineAt: new Date('2025-01-30T00:00:00Z'),
+      severity: 'LOW',
+    })
+    const delivery = {
+      createdAt: new Date('2025-01-23T23:00:00Z'),
+      sentAt: new Date('2025-01-23T23:00:00Z'),
+      status: 'Sent',
+      escalationLevel: 1,
+    }
+    // 25h since sent, deadline in 5 days — should escalate
+    expect(shouldEscalate(alert, delivery)).toBe(true)
+  })
+
+  it('does not escalate based on deadline alone if sent less than 24h ago', () => {
+    const alert = makeAlert({
+      now: new Date('2025-01-25T01:00:00Z'),
       deadlineAt: new Date('2025-01-30T00:00:00Z'),
       severity: 'LOW',
     })
@@ -176,7 +192,8 @@ describe('shouldEscalate', () => {
       status: 'Sent',
       escalationLevel: 1,
     }
-    expect(shouldEscalate(alert, delivery)).toBe(true)
+    // Only 1h since sent, even though deadline is within 7 days — should NOT escalate
+    expect(shouldEscalate(alert, delivery)).toBe(false)
   })
 
   it('does not escalate HIGH severity before the 24-hour window', () => {

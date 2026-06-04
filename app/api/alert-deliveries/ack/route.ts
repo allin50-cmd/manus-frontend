@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
   await db.alertDelivery.update({
     where: { id: delivery.id },
-    data: { status: 'Acknowledged', acknowledgedAt: new Date(), ackToken: null },
+    data: { status: 'Acknowledged', acknowledgedAt: new Date() },
   })
 
   await db.alertEvent.create({
