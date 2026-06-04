@@ -260,3 +260,9 @@ model AlertEvent {
   delivery  AlertDelivery?  @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
   recipient AlertRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull)
 }
+
+model UserPassword {
+  person    String   @id
+  hash      String
+  updatedAt DateTime @updatedAt
+}

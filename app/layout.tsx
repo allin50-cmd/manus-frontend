@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import NavBar from '@/components/NavBar'
+import { getSession } from '@/lib/auth'
 
 export const metadata: Metadata = {
   title: 'UltraCore SheetOps',
@@ -25,11 +26,12 @@ export const viewport: Viewport = {
   themeColor: '#1e293b',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession()
   return (
     <html lang="en">
       <body>
-        <NavBar />
+        <NavBar person={session?.person ?? null} />
         <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
       </body>
     </html>

@@ -20,7 +20,7 @@ const MORE = [
   { href: '/templates', label: 'Templates' },
 ]
 
-export default function NavBar() {
+export default function NavBar({ person }: { person: string | null }) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -63,9 +63,16 @@ export default function NavBar() {
             </Link>
           ))}
         </div>
-        <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-white transition-colors">
-          Log out
-        </button>
+        <div className="flex items-center gap-4">
+          {person && (
+            <Link href="/settings" className="text-xs text-slate-400 hover:text-white transition-colors">
+              {person}
+            </Link>
+          )}
+          <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-white transition-colors">
+            Log out
+          </button>
+        </div>
       </nav>
 
       {/* Mobile bottom bar */}
@@ -114,6 +121,13 @@ export default function NavBar() {
                 {n.label}
               </Link>
             ))}
+            <Link
+              href="/settings"
+              onClick={() => setMenuOpen(false)}
+              className="block px-4 py-3 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+            >
+              {person ? `Settings (${person})` : 'Settings'}
+            </Link>
             <button
               onClick={handleLogout}
               className="block w-full text-left px-4 py-3 text-red-400 rounded-lg hover:bg-slate-700 transition-colors"
