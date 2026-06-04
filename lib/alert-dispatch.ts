@@ -80,6 +80,21 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
       await markDeliverySent(delivery.id, workItem.id, recipient.id)
     } else if (recipient.preferredChannel === 'Email') {
       await sendAlertEmail(delivery.id, workItem, recipient, delivery.ackToken ?? undefined)
+    } else {
+      await db.alertDelivery.update({
+        where: { id: delivery.id },
+        data: { status: 'Failed', failedAt: new Date(), failureReason: `Channel '${recipient.preferredChannel}' not yet implemented` },
+      })
+      await db.alertEvent.create({
+        data: {
+          workItemId: workItem.id,
+          deliveryId: delivery.id,
+          recipientId: recipient.id,
+          eventType: 'DeliveryFailed',
+          actorType: 'System',
+          payload: JSON.stringify({ reason: `Channel '${recipient.preferredChannel}' not yet implemented` }),
+        },
+      })
     }
   }
 }
@@ -158,6 +173,21 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
         await markDeliverySent(newDelivery.id, delivery.workItemId, recipient.id)
       } else if (recipient.preferredChannel === 'Email') {
         await sendAlertEmail(newDelivery.id, delivery.workItem, recipient, newDelivery.ackToken ?? undefined)
+      } else {
+        await db.alertDelivery.update({
+          where: { id: newDelivery.id },
+          data: { status: 'Failed', failedAt: new Date(), failureReason: `Channel '${recipient.preferredChannel}' not yet implemented` },
+        })
+        await db.alertEvent.create({
+          data: {
+            workItemId: delivery.workItemId,
+            deliveryId: newDelivery.id,
+            recipientId: recipient.id,
+            eventType: 'DeliveryFailed',
+            actorType: 'System',
+            payload: JSON.stringify({ reason: `Channel '${recipient.preferredChannel}' not yet implemented` }),
+          },
+        })
       }
     }
 

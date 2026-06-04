@@ -63,6 +63,21 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     })
   } else if (delivery.channel === 'Email') {
     await sendAlertEmail(newDelivery.id, delivery.workItem, delivery.recipient, newDelivery.ackToken ?? undefined)
+  } else {
+    await db.alertDelivery.update({
+      where: { id: newDelivery.id },
+      data: { status: 'Failed', failedAt: new Date(), failureReason: `Channel '${delivery.channel}' not yet implemented` },
+    })
+    await db.alertEvent.create({
+      data: {
+        workItemId: delivery.workItemId,
+        deliveryId: newDelivery.id,
+        recipientId: delivery.recipientId,
+        eventType: 'DeliveryFailed',
+        actorType: 'System',
+        payload: JSON.stringify({ reason: `Channel '${delivery.channel}' not yet implemented` }),
+      },
+    })
   }
 
   // Re-fetch to return accurate status (sendAlertEmail may have updated it to Sent or Failed)

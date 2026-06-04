@@ -42,9 +42,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  let parsedEscalationLevel: number | undefined
   if (escalationLevel !== undefined) {
-    const parsed = Number(escalationLevel)
-    if (!Number.isInteger(parsed) || parsed < 1) {
+    parsedEscalationLevel = Number(escalationLevel)
+    if (!Number.isInteger(parsedEscalationLevel) || parsedEscalationLevel < 1) {
       return NextResponse.json({ error: 'escalationLevel must be a positive integer' }, { status: 400 })
     }
   }
@@ -58,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       ...(role !== undefined && { role }),
       ...(preferredChannel !== undefined && { preferredChannel }),
       ...(alertCategories !== undefined && { alertCategories }),
-      ...(escalationLevel !== undefined && { escalationLevel: Number(escalationLevel) }),
+      ...(parsedEscalationLevel !== undefined && { escalationLevel: parsedEscalationLevel }),
       ...(isActive !== undefined && { isActive }),
     },
   })

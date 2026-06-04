@@ -17,6 +17,7 @@ export const ESCALATION_THRESHOLDS = {
   noAckHours: 48,
   noAckHoursHighSeverity: 24,
   deadlineDaysWarning: 7,
+  deadlineNoAckHours: 24,
 }
 
 export interface AlertInput {
@@ -118,7 +119,7 @@ export function shouldEscalate(
     hoursSinceSent >= ESCALATION_THRESHOLDS.noAckHoursHighSeverity
   ) return true
 
-  if (alert.deadlineAt && hoursSinceSent >= ESCALATION_THRESHOLDS.noAckHoursHighSeverity) {
+  if (alert.deadlineAt && hoursSinceSent >= ESCALATION_THRESHOLDS.deadlineNoAckHours) {
     const daysUntilDeadline =
       (alert.deadlineAt.getTime() - alert.now.getTime()) / 1_000 / 3_600 / 24
     if (daysUntilDeadline <= ESCALATION_THRESHOLDS.deadlineDaysWarning) return true

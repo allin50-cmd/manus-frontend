@@ -12,7 +12,7 @@ export default async function AlertRecipientsPage() {
     db.alertRecipient.findMany({
       orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
     }),
-    db.alertDelivery.count({ where: { status: { in: ['Sent', 'Pending'] } } }),
+    db.alertDelivery.count({ where: { status: 'Sent' } }),
     db.alertEvent.count(),
   ])
 
