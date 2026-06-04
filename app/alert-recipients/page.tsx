@@ -8,11 +8,12 @@ export const dynamic = 'force-dynamic'
 export default async function AlertRecipientsPage() {
   await requireAuth()
 
-  const [recipients, pendingCount, totalEvents] = await Promise.all([
+  const [recipients, pendingCount, failedCount, totalEvents] = await Promise.all([
     db.alertRecipient.findMany({
       orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
     }),
     db.alertDelivery.count({ where: { status: 'Sent' } }),
+    db.alertDelivery.count({ where: { status: 'Failed' } }),
     db.alertEvent.count(),
   ])
 
@@ -57,6 +58,10 @@ export default async function AlertRecipientsPage() {
         <div className={`border rounded-xl px-4 py-3 flex-1 min-w-[120px] ${pendingCount > 0 ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-200'}`}>
           <div className={`text-2xl font-bold ${pendingCount > 0 ? 'text-orange-700' : 'text-slate-900'}`}>{pendingCount}</div>
           <div className="text-xs text-slate-500 mt-0.5">Awaiting ack</div>
+        </div>
+        <div className={`border rounded-xl px-4 py-3 flex-1 min-w-[120px] ${failedCount > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`text-2xl font-bold ${failedCount > 0 ? 'text-red-700' : 'text-slate-900'}`}>{failedCount}</div>
+          <div className="text-xs text-slate-500 mt-0.5">Failed deliveries</div>
         </div>
       </div>
 

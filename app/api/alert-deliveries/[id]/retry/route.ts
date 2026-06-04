@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { sendAlertEmail } from '@/lib/alert-dispatch'
 
+const SUPPORTED_CHANNELS = ['Dashboard', 'Email'] as const
+
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
@@ -17,6 +19,13 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (delivery.status !== 'Failed') {
     return NextResponse.json(
       { error: `Cannot retry a delivery with status '${delivery.status}'` },
+      { status: 409 },
+    )
+  }
+
+  if (!SUPPORTED_CHANNELS.includes(delivery.channel as (typeof SUPPORTED_CHANNELS)[number])) {
+    return NextResponse.json(
+      { error: `Channel '${delivery.channel}' is not yet implemented` },
       { status: 409 },
     )
   }
@@ -63,21 +72,6 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     })
   } else if (delivery.channel === 'Email') {
     await sendAlertEmail(newDelivery.id, delivery.workItem, delivery.recipient, newDelivery.ackToken ?? undefined)
-  } else {
-    await db.alertDelivery.update({
-      where: { id: newDelivery.id },
-      data: { status: 'Failed', failedAt: new Date(), failureReason: `Channel '${delivery.channel}' not yet implemented` },
-    })
-    await db.alertEvent.create({
-      data: {
-        workItemId: delivery.workItemId,
-        deliveryId: newDelivery.id,
-        recipientId: delivery.recipientId,
-        eventType: 'DeliveryFailed',
-        actorType: 'System',
-        payload: JSON.stringify({ reason: `Channel '${delivery.channel}' not yet implemented` }),
-      },
-    })
   }
 
   // Re-fetch to return accurate status (sendAlertEmail may have updated it to Sent or Failed)

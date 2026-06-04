@@ -81,20 +81,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
     } else if (recipient.preferredChannel === 'Email') {
       await sendAlertEmail(delivery.id, workItem, recipient, delivery.ackToken ?? undefined)
     } else {
-      await db.alertDelivery.update({
-        where: { id: delivery.id },
-        data: { status: 'Failed', failedAt: new Date(), failureReason: `Channel '${recipient.preferredChannel}' not yet implemented` },
-      })
-      await db.alertEvent.create({
-        data: {
-          workItemId: workItem.id,
-          deliveryId: delivery.id,
-          recipientId: recipient.id,
-          eventType: 'DeliveryFailed',
-          actorType: 'System',
-          payload: JSON.stringify({ reason: `Channel '${recipient.preferredChannel}' not yet implemented` }),
-        },
-      })
+      await markDeliveryFailed(delivery.id, workItem.id, recipient.id, `Channel '${recipient.preferredChannel}' not yet implemented`)
     }
   }
 }
@@ -174,20 +161,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
       } else if (recipient.preferredChannel === 'Email') {
         await sendAlertEmail(newDelivery.id, delivery.workItem, recipient, newDelivery.ackToken ?? undefined)
       } else {
-        await db.alertDelivery.update({
-          where: { id: newDelivery.id },
-          data: { status: 'Failed', failedAt: new Date(), failureReason: `Channel '${recipient.preferredChannel}' not yet implemented` },
-        })
-        await db.alertEvent.create({
-          data: {
-            workItemId: delivery.workItemId,
-            deliveryId: newDelivery.id,
-            recipientId: recipient.id,
-            eventType: 'DeliveryFailed',
-            actorType: 'System',
-            payload: JSON.stringify({ reason: `Channel '${recipient.preferredChannel}' not yet implemented` }),
-          },
-        })
+        await markDeliveryFailed(newDelivery.id, delivery.workItemId, recipient.id, `Channel '${recipient.preferredChannel}' not yet implemented`)
       }
     }
 
@@ -195,6 +169,28 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
   }
 
   return { escalated }
+}
+
+async function markDeliveryFailed(
+  deliveryId: string,
+  workItemId: string,
+  recipientId: string,
+  reason: string,
+): Promise<void> {
+  await db.alertDelivery.update({
+    where: { id: deliveryId },
+    data: { status: 'Failed', failedAt: new Date(), failureReason: reason.slice(0, 500) },
+  })
+  await db.alertEvent.create({
+    data: {
+      workItemId,
+      deliveryId,
+      recipientId,
+      eventType: 'DeliveryFailed',
+      actorType: 'System',
+      payload: JSON.stringify({ reason }),
+    },
+  })
 }
 
 async function markDeliverySent(
@@ -225,20 +221,7 @@ export async function sendAlertEmail(
   ackToken?: string,
 ): Promise<void> {
   if (!recipient.email) {
-    await db.alertDelivery.update({
-      where: { id: deliveryId },
-      data: { status: 'Failed', failedAt: new Date(), failureReason: 'No email address' },
-    })
-    await db.alertEvent.create({
-      data: {
-        workItemId: workItem.id,
-        deliveryId,
-        recipientId: recipient.id,
-        eventType: 'DeliveryFailed',
-        actorType: 'System',
-        payload: JSON.stringify({ reason: 'No email address' }),
-      },
-    })
+    await markDeliveryFailed(deliveryId, workItem.id, recipient.id, 'No email address')
     return
   }
 
@@ -297,20 +280,7 @@ export async function sendAlertEmail(
   } catch (err) {
     const reason = err instanceof Error ? err.message : 'Unknown error'
     console.error(`[AlertDispatch] Email failed → ${recipient.email}:`, reason)
-    await db.alertDelivery.update({
-      where: { id: deliveryId },
-      data: { status: 'Failed', failedAt: new Date(), failureReason: reason.slice(0, 500) },
-    })
-    await db.alertEvent.create({
-      data: {
-        workItemId: workItem.id,
-        deliveryId,
-        recipientId: recipient.id,
-        eventType: 'DeliveryFailed',
-        actorType: 'System',
-        payload: JSON.stringify({ reason }),
-      },
-    })
+    await markDeliveryFailed(deliveryId, workItem.id, recipient.id, reason)
   }
 }
 
