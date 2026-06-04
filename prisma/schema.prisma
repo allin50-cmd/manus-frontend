@@ -266,3 +266,30 @@ model UserPassword {
   hash      String
   updatedAt DateTime @updatedAt
 }
+
+// ── Contacts & Companies ─────────────────────────────────────────────────────
+
+model Company {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  contacts Contact[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  role      String?
+  email     String?
+  phone     String?
+  isPrimary Boolean  @default(false)
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+}
