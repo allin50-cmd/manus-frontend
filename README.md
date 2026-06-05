@@ -6,46 +6,53 @@ Spreadsheets that do the work, not just store the work.
 
 ### 1. Create Neon database
 
-Go to [neon.tech](https://neon.tech), create a project, and copy the connection string.
+Go to [neon.tech](https://neon.tech), create a project, copy the **connection string** (pooled) from the dashboard.
 
-### 2. Add environment variables to Vercel
+### 2. Connect repo to Vercel
 
-In your Vercel project settings → Environment Variables, add:
+Import the GitHub repo at [vercel.com/new](https://vercel.com/new). Framework preset will be detected as **Next.js**.
 
-```
-DATABASE_URL=postgresql://...your neon connection string...
-APP_PASSCODE=your-secure-passcode
-JWT_SECRET=your-32-char-random-secret
-```
+### 3. Add environment variables
 
-Generate `JWT_SECRET` with: `openssl rand -hex 32`
+In **Vercel → Project → Settings → Environment Variables**, add:
 
-### 3. Push schema and seed data
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Your Neon pooled connection string |
+| `JWT_SECRET` | Output of `openssl rand -hex 32` |
+| `DEFAULT_PASSCODE` | Shared starting password for all staff |
+| `NEXT_PUBLIC_APP_URL` | Your Vercel domain e.g. `https://sheetops.vercel.app` |
+| `RESEND_API_KEY` | *(optional)* Resend key for email alerts |
+| `RESEND_FROM_EMAIL` | *(optional)* e.g. `alerts@yourdomain.com` |
+
+`DEFAULT_PASSCODE` is the password every person uses until they set their own via **Settings**.
+
+### 4. Deploy
+
+Click **Deploy**. Vercel runs `npm ci && prisma generate && npm run build` automatically.
+
+### 5. Push schema to Neon
+
+After the first deploy, run once from your local machine:
 
 ```bash
-npx prisma db push
-npm run db:seed
+DATABASE_URL="<your neon connection string>" npx prisma db push
+DATABASE_URL="<your neon connection string>" npm run db:seed
 ```
 
-### 4. Deploy to Vercel
+This creates all tables and seeds initial work items + templates.
 
-Connect your GitHub repo in the Vercel dashboard, or run `vercel deploy`.
+### 6. Open on iPhone
 
-### 5. Open on iPhone Safari
-
-Navigate to your Vercel URL in Safari on iPhone.
-
-### 6. Add to Home Screen
-
-Tap **Share → Add to Home Screen** to install as a PWA.
+Navigate to your Vercel URL in Safari → tap **Share → Add to Home Screen** to install as a PWA.
 
 ---
 
 ## Local development
 
 ```bash
-cp .env.example .env
-# Fill in DATABASE_URL, APP_PASSCODE, JWT_SECRET
+cp .env.example .env.local
+# Fill in DATABASE_URL, JWT_SECRET, DEFAULT_PASSCODE
 
 npm install
 npx prisma db push
@@ -55,28 +62,19 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-## Prototype
+Login password is whatever you set as `DEFAULT_PASSCODE`. Staff can change their own password at **Settings**.
 
-An interactive click-through prototype lives at `preview/prototype.html`.
-
-Open it directly in any browser — no server needed:
-
-```bash
-open preview/prototype.html   # macOS
-xdg-open preview/prototype.html  # Linux
-```
-
-Or just double-click the file in Finder / Explorer.
-
-Login with passcode `demo`. All screens are navigable via the bottom tab bar.
+---
 
 ## Scripts
 
 | Script | Purpose |
-|--------|---------|
-| `npm run dev` | Start Next.js dev server |
+|---|---|
+| `npm run dev` | Start dev server |
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
+| `npm run type-check` | TypeScript check |
+| `npm test` | Run unit tests |
 | `npm run db:push` | Push Prisma schema to database |
 | `npm run db:seed` | Seed work items and templates |
 | `npm run prisma:generate` | Regenerate Prisma client |
@@ -84,9 +82,8 @@ Login with passcode `demo`. All screens are navigable via the bottom tab bar.
 ## Stack
 
 - Next.js 14 App Router
-- TypeScript
-- Tailwind CSS
-- Prisma ORM
-- Neon Postgres
-- PWA (installable on iPhone)
-- Simple passcode login
+- TypeScript + Tailwind CSS
+- Prisma ORM + Neon Postgres
+- `jose` JWT auth — httpOnly cookie sessions
+- Scrypt password hashing (Node.js built-in, no extra deps)
+- PWA — installable on iPhone via Safari
