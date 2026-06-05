@@ -24,6 +24,8 @@ export default function LoginPage() {
       })
       if (res.ok) {
         router.push('/dashboard')
+      } else if (res.status >= 500) {
+        setError('Server unavailable. Please try again in a moment.')
       } else {
         setError('Incorrect passcode. Try again.')
         setPasscode('')
