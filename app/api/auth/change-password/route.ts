@@ -19,7 +19,10 @@ export async function POST(req: NextRequest) {
   if (stored) {
     currentOk = await verifyPassword(currentPassword, stored.hash)
   } else {
-    const defaultPass = process.env.DEFAULT_PASSCODE ?? ''
+    const defaultPass = process.env.DEFAULT_PASSCODE
+    if (!defaultPass) {
+      return NextResponse.json({ error: 'DEFAULT_PASSCODE not configured' }, { status: 500 })
+    }
     currentOk = currentPassword === defaultPass
   }
 

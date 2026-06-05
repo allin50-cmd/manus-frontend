@@ -6,9 +6,23 @@ const PUBLIC = ['/login', '/api/auth/login', '/api/alert-deliveries/ack']
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (PUBLIC.some((p) => pathname.startsWith(p))) return NextResponse.next()
-
   const token = req.cookies.get('session')?.value
+
+  if (PUBLIC.some((p) => pathname.startsWith(p))) {
+    if (pathname.startsWith('/login') && token) {
+      const jwtSecret = process.env.JWT_SECRET
+      if (jwtSecret) {
+        try {
+          await jwtVerify(token, new TextEncoder().encode(jwtSecret))
+          return NextResponse.redirect(new URL('/dashboard', req.url))
+        } catch {
+          // invalid token — let them see the login page
+        }
+      }
+    }
+    return NextResponse.next()
+  }
+
   if (!token) return NextResponse.redirect(new URL('/login', req.url))
 
   const jwtSecret = process.env.JWT_SECRET

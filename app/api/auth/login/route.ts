@@ -12,7 +12,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown person' }, { status: 401 })
   }
 
-  const stored = await db.userPassword.findUnique({ where: { person } })
+  if (typeof passcode !== 'string' || !passcode) {
+    return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
+  }
+
+  let stored
+  try {
+    stored = await db.userPassword.findUnique({ where: { person } })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   let ok: boolean
   if (stored) {
@@ -20,7 +29,7 @@ export async function POST(req: NextRequest) {
   } else {
     const defaultPass = process.env.DEFAULT_PASSCODE
     if (!defaultPass) {
-      return NextResponse.json({ error: 'DEFAULT_PASSCODE not configured' }, { status: 500 })
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
     }
     ok = passcode === defaultPass
   }
