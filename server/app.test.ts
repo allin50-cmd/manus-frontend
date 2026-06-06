@@ -100,7 +100,7 @@ describe('Voice agent API bridge', () => {
     const response = await fetch(`${baseUrl}/api/voice-reception/health`);
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await response.json() as Record<string, unknown>;
     expect(body.service).toBe('voice-reception');
     expect(body.mode).toBe('same-origin');
   });
@@ -117,7 +117,7 @@ describe('Voice agent API bridge', () => {
     });
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await response.json() as Record<string, unknown>;
     expect(body.intent).toBe('construction_lead');
     expect(body.risk_level).toBe('low');
     expect(body.policy_decision).toBe('ALLOW');
