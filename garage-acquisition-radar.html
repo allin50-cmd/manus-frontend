@@ -129,6 +129,10 @@ body{font-family:var(--font);background:var(--bg0);color:var(--txt);min-height:1
 .b-cold{background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid rgba(0,212,255,.2)}
 .b-dudrich{background:rgba(255,51,85,.1);color:#ff6680;border:1px solid rgba(255,51,85,.2)}
 .b-score{background:rgba(0,232,122,.08);color:var(--green);border:1px solid rgba(0,232,122,.2);font-family:var(--mono)}
+.b-develop{background:rgba(112,34,187,.12);color:var(--purple);border:1px solid rgba(112,34,187,.25)}
+.b-legal{background:rgba(255,140,0,.12);color:var(--orange);border:1px solid rgba(255,140,0,.25)}
+.b-acq{background:rgba(0,119,160,.12);color:var(--cyan);border:1px solid rgba(0,119,160,.25)}
+.b-assess{background:rgba(122,154,184,.1);color:var(--txt3);border:1px solid var(--border)}
 
 /* ─── STATUS PILLS ─── */
 .st-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
@@ -162,6 +166,11 @@ body{font-family:var(--font);background:var(--bg0);color:var(--txt);min-height:1
 .sc-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .sc-note{font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-left:2px solid var(--border2);border-radius:6px;padding:8px 10px;margin-top:10px;line-height:1.6}
 .status-sel{background:var(--bg0);border:1px solid var(--border2);border-radius:4px;color:var(--txt);font-size:11px;padding:3px 6px;cursor:pointer;font-family:var(--font)}
+
+/* ─── DEV CONTRACT PANEL ─── */
+.dev-panel{background:rgba(112,34,187,.04);border:1px solid rgba(112,34,187,.15);border-radius:8px;padding:14px;margin-top:10px}
+[data-theme="dark"] .dev-panel{background:rgba(112,34,187,.07);border-color:rgba(200,100,255,.18)}
+.dev-panel-title{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
 
 /* ─── OFFER PANEL ─── */
 .offer-panel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px}
@@ -343,6 +352,13 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
         <button class="btn btn-ghost btn-sm" onclick="showView('targets')">View All →</button>
       </div>
       <div id="dashTopTargets"></div>
+      <div class="section-hdr" style="margin-top:28px">
+        <div>
+          <div class="section-title">Development Contract Coverage</div>
+          <div class="section-sub">Sites assessed against development rights and planning potential</div>
+        </div>
+      </div>
+      <div class="stats-grid" id="devStatsGrid"></div>
     </div>
 
     <!-- ── TARGETS ── -->
@@ -387,6 +403,16 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
           <select id="fDudrich" onchange="renderTargets()">
             <option value="">All</option>
             <option>Unknown</option><option>Not Dudrich</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Recommended Action</label>
+          <select id="fRecAction" onchange="renderTargets()">
+            <option value="">All</option>
+            <option value="ACQUISITION_TARGET">Acquisition Target</option>
+            <option value="DEVELOP_UNDER_EXISTING_CONTRACT">Develop Under Contract</option>
+            <option value="LEGAL_REVIEW">Legal Review</option>
+            <option value="NEEDS_ASSESSMENT">Needs Assessment</option>
           </select>
         </div>
         <div class="fg">
@@ -533,6 +559,32 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
             </select>
           </div>
           <div class="fg full"><label>Notes</label><textarea id="fnotes" placeholder="Any additional notes…"></textarea></div>
+          <div class="fg full" style="margin-top:6px">
+            <div style="font-size:11px;font-weight:600;color:var(--purple);letter-spacing:.04em;padding:10px 0 4px;border-top:1px solid var(--border)">◈ Development Contract Coverage</div>
+          </div>
+          <div class="fg"><label>Covered by Development Contract</label>
+            <select id="fcoveredByContract">
+              <option>Unknown</option><option>Yes</option><option>No</option><option>Needs Review</option>
+            </select>
+          </div>
+          <div class="fg"><label>Contract Reference</label>
+            <input id="fcontractRef" placeholder="e.g. DC/2024/001">
+          </div>
+          <div class="fg"><label>Development Rights</label>
+            <select id="fdevRights">
+              <option>Unknown</option><option>Full</option><option>Partial</option>
+            </select>
+          </div>
+          <div class="fg"><label>Future Site Rights</label>
+            <select id="ffutureRights">
+              <option>Unknown</option><option>Yes</option><option>No</option>
+            </select>
+          </div>
+          <div class="fg"><label>Planning Potential</label>
+            <select id="fplanningPotential">
+              <option>Unknown</option><option>High</option><option>Medium</option><option>Low</option>
+            </select>
+          </div>
         </div>
         <input type="hidden" id="fid">
         <hr>
@@ -583,6 +635,12 @@ const VIEW_TITLES = {
   dashboard:'Dashboard', targets:'Acquisition Targets', excluded:'Excluded Sites',
   pipeline:'CRM Pipeline', outreach:'Owner Outreach', data:'Data Management'
 };
+const REC_ACTION_LABELS = {
+  DEVELOP_UNDER_EXISTING_CONTRACT: 'Develop Under Contract',
+  LEGAL_REVIEW: 'Legal Review',
+  ACQUISITION_TARGET: 'Acquisition Target',
+  NEEDS_ASSESSMENT: 'Needs Assessment',
+};
 
 // ── State ──
 let sites = [];
@@ -596,6 +654,23 @@ function load() {
 }
 function save() { localStorage.setItem('gar_sites', JSON.stringify(sites)); }
 function uid() { return 'site_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+// ── Recommended Action ──
+function recAction(s) {
+  if (s.dudrichStatus === 'Confirmed Dudrich') {
+    if (s.coveredByContract === 'Yes') return 'DEVELOP_UNDER_EXISTING_CONTRACT';
+    if (s.coveredByContract === 'Needs Review') return 'LEGAL_REVIEW';
+  }
+  if (s.dudrichStatus === 'Not Dudrich') return 'ACQUISITION_TARGET';
+  return 'NEEDS_ASSESSMENT';
+}
+
+function recActionClass(ra) {
+  if (ra === 'DEVELOP_UNDER_EXISTING_CONTRACT') return 'b-develop';
+  if (ra === 'LEGAL_REVIEW') return 'b-legal';
+  if (ra === 'ACQUISITION_TARGET') return 'b-acq';
+  return 'b-assess';
+}
 
 // ── Scoring Engine ──
 function score(s) {
@@ -635,6 +710,9 @@ function score(s) {
     if (yld >= 10) p += 10; else if (yld >= 7) p += 8;
     else if (yld >= 5) p += 6; else if (yld >= 3) p += 3; else p += 1;
   }
+
+  // Planning potential + full development rights bonus
+  if (s.planningPotential === 'High' && s.developmentRights === 'Full') p += 10;
 
   return Math.min(100, p);
 }
@@ -779,9 +857,43 @@ function renderDash() {
   const el = document.getElementById('dashTopTargets');
   if (!top.length) {
     el.innerHTML = `<div class="empty"><div class="ei">◎</div><p>No targets yet. Add sites or load sample data to get started.</p><br><button class="btn btn-primary" onclick="openAddModal()">+ Add First Site</button>&nbsp;<button class="btn btn-success" onclick="showView('data')">◈ Load Sample Data</button></div>`;
+    document.getElementById('devStatsGrid').innerHTML = '';
     return;
   }
   el.innerHTML = `<div class="sites-grid">${top.map(s=>siteCard(s,s._sc,false)).join('')}</div>`;
+
+  const contracted   = sites.filter(s => s.coveredByContract === 'Yes').length;
+  const futureRights = sites.filter(s => s.futureRights === 'Yes').length;
+  const legalReview  = sites.filter(s => recAction(s) === 'LEGAL_REVIEW').length;
+  const devOpps      = sites.filter(s => s.planningPotential === 'High').length;
+  const acqOnly      = sites.filter(s => recAction(s) === 'ACQUISITION_TARGET').length;
+
+  document.getElementById('devStatsGrid').innerHTML = `
+    <div class="stat-card sc-purple">
+      <div class="stat-label">Contracted Sites</div>
+      <div class="stat-value">${contracted}</div>
+      <div class="stat-sub">Covered by development contract</div>
+    </div>
+    <div class="stat-card sc-cyan">
+      <div class="stat-label">Future-Rights Sites</div>
+      <div class="stat-value">${futureRights}</div>
+      <div class="stat-sub">Future site rights confirmed</div>
+    </div>
+    <div class="stat-card sc-orange">
+      <div class="stat-label">Legal Review Needed</div>
+      <div class="stat-value">${legalReview}</div>
+      <div class="stat-sub">Dudrich + contract unconfirmed</div>
+    </div>
+    <div class="stat-card sc-green">
+      <div class="stat-label">Development Opps</div>
+      <div class="stat-value">${devOpps}</div>
+      <div class="stat-sub">High planning potential</div>
+    </div>
+    <div class="stat-card sc-blue" style="--blue:var(--cyan)">
+      <div class="stat-label">Acquisition-Only Targets</div>
+      <div class="stat-value" style="color:var(--cyan)">${acqOnly}</div>
+      <div class="stat-sub">Not Dudrich · no contract</div>
+    </div>`;
 }
 
 // ── Targets ──
@@ -794,7 +906,7 @@ function refreshCountyFilter() {
 
 function clearFilters() {
   ['fSearch','fMinScore'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  ['fCounty','fPriority','fOwnerType','fStatus','fDudrich'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['fCounty','fPriority','fOwnerType','fStatus','fDudrich','fRecAction'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   renderTargets();
 }
 
@@ -805,22 +917,24 @@ function renderTargets() {
   const owt      = document.getElementById('fOwnerType')?.value||'';
   const st       = document.getElementById('fStatus')?.value||'';
   const dud      = document.getElementById('fDudrich')?.value||'';
+  const recFil   = document.getElementById('fRecAction')?.value||'';
   const minSc    = parseInt(document.getElementById('fMinScore')?.value)||0;
 
   let list = sites
     .filter(s => s.dudrichStatus !== 'Confirmed Dudrich')
-    .map(s => ({...s, _sc: score(s)}));
+    .map(s => ({...s, _sc: score(s), _ra: recAction(s)}));
 
   if (search) list = list.filter(s =>
     (s.name||'').toLowerCase().includes(search) ||
     (s.address||'').toLowerCase().includes(search) ||
     (s.town||'').toLowerCase().includes(search));
-  if (county) list = list.filter(s => s.county === county);
-  if (pri)    list = list.filter(s => priority(s._sc) === pri);
-  if (owt)    list = list.filter(s => s.ownerType === owt);
-  if (st)     list = list.filter(s => s.status === st);
-  if (dud)    list = list.filter(s => s.dudrichStatus === dud);
-  if (minSc)  list = list.filter(s => s._sc >= minSc);
+  if (county)  list = list.filter(s => s.county === county);
+  if (pri)     list = list.filter(s => priority(s._sc) === pri);
+  if (owt)     list = list.filter(s => s.ownerType === owt);
+  if (st)      list = list.filter(s => s.status === st);
+  if (dud)     list = list.filter(s => s.dudrichStatus === dud);
+  if (recFil)  list = list.filter(s => s._ra === recFil);
+  if (minSc)   list = list.filter(s => s._sc >= minSc);
   list.sort((a,b) => b._sc - a._sc);
 
   const c = document.getElementById('targetsContainer');
@@ -944,6 +1058,10 @@ function siteCard(s, sc, isExcl) {
   const sfClass = pr==='HOT'?'sf-hot':pr==='WARM'?'sf-warm':'sf-cold';
   const o = offers(s);
   const a = addr(s);
+  const ra = recAction(s);
+  const raClass = recActionClass(ra);
+  const raLabel = REC_ACTION_LABELS[ra] || ra;
+  const hasDev = s.coveredByContract && s.coveredByContract !== 'Unknown';
 
   return `<div class="site-card" id="card-${s.id}">
     <div class="sc-header">
@@ -956,6 +1074,7 @@ function siteCard(s, sc, isExcl) {
           ? '<span class="badge b-dudrich">DUDRICH EXCL.</span>'
           : `<span class="badge ${prClass}">${pr}</span>`}
         ${!isExcl ? `<span class="badge b-score">${sc}/100</span>` : ''}
+        <span class="badge ${raClass}">${raLabel}</span>
         <span class="st-pill st-${s.status}">${s.status.replace('_',' ')}</span>
       </div>
     </div>
@@ -978,6 +1097,18 @@ function siteCard(s, sc, isExcl) {
       <div class="meta-item"><span class="meta-lbl">Ownership</span><span class="meta-val no-mono">${s.ownershipStatus}</span></div>
       <div class="meta-item"><span class="meta-lbl">Dudrich</span><span class="meta-val no-mono">${s.dudrichStatus}</span></div>
     </div>
+
+    ${hasDev ? `
+    <div class="dev-panel">
+      <div class="dev-panel-title">◈ Development Contract</div>
+      <div class="sc-meta" style="margin-bottom:0">
+        <div class="meta-item"><span class="meta-lbl">Contract Coverage</span><span class="meta-val no-mono">${s.coveredByContract||'—'}</span></div>
+        ${s.contractRef?`<div class="meta-item"><span class="meta-lbl">Reference</span><span class="meta-val">${s.contractRef}</span></div>`:''}
+        <div class="meta-item"><span class="meta-lbl">Dev Rights</span><span class="meta-val no-mono">${s.developmentRights||'Unknown'}</span></div>
+        <div class="meta-item"><span class="meta-lbl">Future Rights</span><span class="meta-val no-mono">${s.futureRights||'Unknown'}</span></div>
+        <div class="meta-item"><span class="meta-lbl">Planning Potential</span><span class="meta-val no-mono">${s.planningPotential||'Unknown'}</span></div>
+      </div>
+    </div>` : ''}
 
     ${!isExcl && o.mv > 0 ? `
     <div class="offer-panel">
@@ -1062,6 +1193,11 @@ function openEditModal(id) {
   document.getElementById('fvac').value = s.vacancyLevel||'Unknown';
   document.getElementById('fstatus').value = s.status||'FOUND';
   document.getElementById('fnotes').value = s.notes||'';
+  document.getElementById('fcoveredByContract').value = s.coveredByContract||'Unknown';
+  document.getElementById('fcontractRef').value = s.contractRef||'';
+  document.getElementById('fdevRights').value = s.developmentRights||'Unknown';
+  document.getElementById('ffutureRights').value = s.futureRights||'Unknown';
+  document.getElementById('fplanningPotential').value = s.planningPotential||'Unknown';
   document.getElementById('siteModal').classList.add('open');
   setTimeout(() => document.getElementById('fn')?.focus(), 50);
 }
@@ -1093,6 +1229,11 @@ function saveSite(e) {
     vacancyLevel: document.getElementById('fvac').value,
     status: document.getElementById('fstatus').value,
     notes: document.getElementById('fnotes').value.trim(),
+    coveredByContract: document.getElementById('fcoveredByContract').value,
+    contractRef: document.getElementById('fcontractRef').value.trim(),
+    developmentRights: document.getElementById('fdevRights').value,
+    futureRights: document.getElementById('ffutureRights').value,
+    planningPotential: document.getElementById('fplanningPotential').value,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
   };
@@ -1182,7 +1323,9 @@ function loadSeed() {
       ownerName:'Apex Property Holdings Ltd', ownerType:'Company',
       ownershipStatus:'Confirmed', dudrichStatus:'Confirmed Dudrich',
       condition:'Average', vacancyLevel:'Medium', status:'FOUND',
-      notes:'Confirmed LockUpGarages portfolio site. Do not pursue.',
+      coveredByContract:'Yes', contractRef:'DC/2019/CRY-001',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Confirmed LockUpGarages portfolio site. Covered by 2019 development contract with full rights. Development viable under existing contract.',
       createdAt:now, updatedAt:now
     },
     {
@@ -1192,7 +1335,9 @@ function loadSeed() {
       ownerName:'Dudrich Estates Ltd', ownerType:'Company',
       ownershipStatus:'Confirmed', dudrichStatus:'Confirmed Dudrich',
       condition:'Good', vacancyLevel:'Low', status:'FOUND',
-      notes:'Dudrich-owned. Confirmed via Land Registry. Exclude.',
+      coveredByContract:'Needs Review', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Dudrich-owned. Contract coverage unclear — legal review required before any development action.',
       createdAt:now, updatedAt:now
     },
     // ── 2 HOT TARGETS ──
@@ -1203,6 +1348,8 @@ function loadSeed() {
       ownerName:'Raymond Holloway', ownerType:'Individual',
       ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
       condition:'Poor', vacancyLevel:'High', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
       notes:'Elderly individual owner, motivated to sell. Block in poor condition with significant vacancy. Very strong acquisition candidate. Solicitor details obtained.',
       createdAt:now, updatedAt:now
     },
@@ -1213,7 +1360,9 @@ function loadSeed() {
       ownerName:'Moorgate Property Ltd', ownerType:'Company',
       ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
       condition:'Derelict', vacancyLevel:'High', status:'OFFER_SENT',
-      notes:'Company in creditor voluntary arrangement. Solicitors handling disposal. Derelict block — significant upside post-refurb. Offer submitted at £576,000.',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Company in creditor voluntary arrangement. Solicitors handling disposal. Derelict block — significant upside post-refurb. Full dev rights confirmed. Offer submitted at £576,000.',
       createdAt:now, updatedAt:now
     },
     // ── 1 WARM TARGET ──
@@ -1224,6 +1373,8 @@ function loadSeed() {
       ownerName:'Horsham District Council', ownerType:'Council',
       ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
       condition:'Good', vacancyLevel:'Low', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'Low',
       notes:'Council asset disposal review underway. Site in good condition but low vacancy makes it less urgent. Monitor for formal listing.',
       createdAt:now, updatedAt:now
     },
@@ -1235,6 +1386,8 @@ function loadSeed() {
       ownerName:'', ownerType:'Unknown',
       ownershipStatus:'Land Registry needed', dudrichStatus:'Unknown',
       condition:'Good', vacancyLevel:'Low', status:'FOUND',
+      coveredByContract:'Unknown', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Unknown',
       notes:'Spotted during drive. Ownership completely unknown — Land Registry search required. Low vacancy and good condition make this lower priority but worth tracking.',
       createdAt:now, updatedAt:now
     },
