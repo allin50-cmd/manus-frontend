@@ -260,6 +260,7 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
   .pipe-stages{grid-template-columns:repeat(4,1fr)}
   .content{padding:16px}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .hide-mobile{display:none}
 }
 @media(max-width:480px){
   .stats-grid{grid-template-columns:1fr}
@@ -323,7 +324,7 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
       <span class="topbar-title" id="topbarTitle">Dashboard</span>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost btn-sm" onclick="showView('data')">⬇ Export</button>
+      <button class="btn btn-ghost btn-sm hide-mobile" onclick="showView('data')">⬇ Export</button>
       <button class="btn btn-ghost btn-sm" id="themeToggle" onclick="toggleTheme()">◑ Dark</button>
       <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add Site</button>
     </div>
@@ -391,6 +392,9 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
         <div class="fg">
           <label>Min Score</label>
           <input type="number" id="fMinScore" placeholder="0" min="0" max="100" oninput="renderTargets()">
+        </div>
+        <div class="fg" style="display:flex;align-items:flex-end">
+          <button class="btn btn-ghost btn-sm" style="width:100%" onclick="clearFilters()">✕ Clear Filters</button>
         </div>
       </div>
       <div id="targetsContainer"></div>
@@ -788,6 +792,12 @@ function refreshCountyFilter() {
   sel.innerHTML = '<option value="">All Counties</option>' + counties.map(c=>`<option${c===cur?' selected':''}>${c}</option>`).join('');
 }
 
+function clearFilters() {
+  ['fSearch','fMinScore'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['fCounty','fPriority','fOwnerType','fStatus','fDudrich'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  renderTargets();
+}
+
 function renderTargets() {
   const search   = (document.getElementById('fSearch')?.value||'').toLowerCase();
   const county   = document.getElementById('fCounty')?.value||'';
@@ -1027,6 +1037,7 @@ function openAddModal() {
   document.getElementById('siteForm').reset();
   document.getElementById('fid').value = '';
   document.getElementById('siteModal').classList.add('open');
+  setTimeout(() => document.getElementById('fn')?.focus(), 50);
 }
 
 function openEditModal(id) {
@@ -1052,6 +1063,7 @@ function openEditModal(id) {
   document.getElementById('fstatus').value = s.status||'FOUND';
   document.getElementById('fnotes').value = s.notes||'';
   document.getElementById('siteModal').classList.add('open');
+  setTimeout(() => document.getElementById('fn')?.focus(), 50);
 }
 
 function closeModal() {
@@ -1090,9 +1102,10 @@ function saveSite(e) {
   } else {
     sites.push(s);
   }
+  const wasEditing = !!editingId;
   save();
   closeModal();
-  toast(editingId ? 'Site updated' : 'Site added','ok');
+  toast(wasEditing ? 'Site updated' : 'Site added','ok');
   renderView(curView);
 }
 
