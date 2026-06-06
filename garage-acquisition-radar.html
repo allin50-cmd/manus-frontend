@@ -7,6 +7,30 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
+  --bg0:#f0f4f8;
+  --bg1:#e4ecf4;
+  --bg2:#ffffff;
+  --bg3:#f5f8fc;
+  --border:#ccd6e4;
+  --border2:#a8bed4;
+  --cyan:#0077a0;
+  --green:#007a40;
+  --orange:#b84d00;
+  --red:#bb1133;
+  --yellow:#8a6800;
+  --purple:#7022bb;
+  --txt:#1a2535;
+  --txt2:#445f7a;
+  --txt3:#7a95b0;
+  --grid-line:rgba(0,100,150,.05);
+  --sidebar-bg:rgba(228,236,244,.97);
+  --topbar-bg:rgba(240,244,248,.96);
+  --logo-glow:rgba(0,119,160,.3);
+  --sw:220px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --mono:'SF Mono','Fira Code','Cascadia Code',monospace;
+}
+[data-theme="dark"]{
   --bg0:#070b12;
   --bg1:#0c1220;
   --bg2:#111827;
@@ -22,12 +46,13 @@
   --txt:#dce8f0;
   --txt2:#7a9ab8;
   --txt3:#3e5a78;
-  --sw:220px;
-  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-  --mono:'SF Mono','Fira Code','Cascadia Code',monospace;
+  --grid-line:rgba(0,212,255,.025);
+  --sidebar-bg:rgba(10,16,28,.97);
+  --topbar-bg:rgba(10,16,28,.95);
+  --logo-glow:rgba(0,212,255,.4);
 }
 body{font-family:var(--font);background:var(--bg0);color:var(--txt);min-height:100vh;display:flex;font-size:14px;line-height:1.5;
-  background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
   background-size:50px 50px;}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -35,13 +60,13 @@ body{font-family:var(--font);background:var(--bg0);color:var(--txt);min-height:1
 
 /* ─── SIDEBAR ─── */
 .sidebar{
-  width:var(--sw);background:rgba(10,16,28,.97);border-right:1px solid var(--border);
+  width:var(--sw);background:var(--sidebar-bg);border-right:1px solid var(--border);
   display:flex;flex-direction:column;position:fixed;height:100vh;z-index:100;overflow-y:auto;
   backdrop-filter:blur(10px);
 }
 .logo{padding:18px 16px;border-bottom:1px solid var(--border)}
 .logo h1{font-size:12px;font-weight:700;color:var(--cyan);letter-spacing:.08em;text-transform:uppercase;
-  text-shadow:0 0 12px rgba(0,212,255,.4)}
+  text-shadow:0 0 12px var(--logo-glow)}
 .logo p{font-size:10px;color:var(--txt3);margin-top:3px;letter-spacing:.12em}
 .nav-label{font-size:9px;color:var(--txt3);letter-spacing:.15em;text-transform:uppercase;padding:14px 16px 6px}
 .nav-item{
@@ -56,7 +81,7 @@ body{font-family:var(--font);background:var(--bg0);color:var(--txt);min-height:1
 /* ─── MAIN ─── */
 .main{margin-left:var(--sw);flex:1;min-height:100vh}
 .topbar{
-  background:rgba(10,16,28,.95);border-bottom:1px solid var(--border);padding:13px 24px;
+  background:var(--topbar-bg);border-bottom:1px solid var(--border);padding:13px 24px;
   display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;
   backdrop-filter:blur(10px);
 }
@@ -135,11 +160,11 @@ body{font-family:var(--font);background:var(--bg0);color:var(--txt);min-height:1
 .meta-val{font-size:12px;color:var(--txt);font-family:var(--mono)}
 .meta-val.no-mono{font-family:var(--font)}
 .sc-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
-.sc-note{font-size:11px;color:var(--txt2);background:rgba(255,255,255,.02);border:1px solid var(--border);border-left:2px solid var(--border2);border-radius:6px;padding:8px 10px;margin-top:10px;line-height:1.6}
+.sc-note{font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-left:2px solid var(--border2);border-radius:6px;padding:8px 10px;margin-top:10px;line-height:1.6}
 .status-sel{background:var(--bg0);border:1px solid var(--border2);border-radius:4px;color:var(--txt);font-size:11px;padding:3px 6px;cursor:pointer;font-family:var(--font)}
 
 /* ─── OFFER PANEL ─── */
-.offer-panel{background:rgba(0,212,255,.03);border:1px solid rgba(0,212,255,.12);border-radius:8px;padding:14px;margin-top:10px}
+.offer-panel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px}
 .offer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
 .offer-item{display:flex;flex-direction:column;gap:2px}
 .offer-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em}
@@ -299,6 +324,7 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-ghost btn-sm" onclick="showView('data')">⬇ Export</button>
+      <button class="btn btn-ghost btn-sm" id="themeToggle" onclick="toggleTheme()">◑ Dark</button>
       <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add Site</button>
     </div>
   </div>
@@ -1239,8 +1265,21 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) { closeModal(); closeLetterModal(); } });
 });
 
+// ── Theme ──
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('gar_theme', t);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = t === 'dark' ? '◑ Light' : '◑ Dark';
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  setTheme(cur === 'light' ? 'dark' : 'light');
+}
+
 // ── Init ──
 load();
+setTheme(localStorage.getItem('gar_theme') || 'light');
 showView('dashboard');
 </script>
 </body>
