@@ -493,7 +493,7 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
       </div>
       <div class="data-card">
         <h3>◈ Load Sample Data</h3>
-        <p>Populate the app with 6 realistic South East England garage sites (2 Dudrich excluded, 2 HOT, 1 WARM, 1 COLD) to explore all features.</p>
+        <p>Populate the app with 24 realistic South East England garage sites across Surrey, Kent, Greater London, East Sussex, West Sussex and Essex — including HOT targets, Dudrich-excluded, won/acquired, and sites under negotiation.</p>
         <button class="btn btn-success" onclick="loadSeed()">Load Sample Data</button>
       </div>
       <div class="data-card" style="border-color:rgba(255,51,85,.2)">
@@ -1393,6 +1393,233 @@ function loadSeed() {
     },
   ];
 
+  const expandedSeed = [
+    // ── SURREY ──
+    {
+      id:'seed_sur1', name:'Throwley Close Garages', address:'Throwley Close',
+      town:'Sutton', county:'Surrey', postcode:'SM1 4AA',
+      garages:'22', marketValue:'260000', monthlyRent:'75',
+      ownerName:'T. Bhatt', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Individual owner confirmed via Land Registry. Willing to discuss but not urgently selling. Worth a letter approach.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_sur2', name:'Goldsworth Park Garage Court', address:'Goldsworth Park Trading Estate',
+      town:'Woking', county:'Surrey', postcode:'GU21 3LQ',
+      garages:'38', marketValue:'440000', monthlyRent:'80',
+      ownerName:'Apex Garages Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Poor', vacancyLevel:'High', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Company-owned block in poor condition, high vacancy. Director has shown interest in disposal. Follow up with formal offer.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_sur3', name:'Ruxley Lane Lock-Ups', address:'Ruxley Lane',
+      town:'Epsom', county:'Surrey', postcode:'KT19 0JP',
+      garages:'14', marketValue:'162000', monthlyRent:'',
+      ownerName:'', ownerType:'Unknown',
+      ownershipStatus:'Land Registry needed', dudrichStatus:'Unknown',
+      condition:'Good', vacancyLevel:'Low', status:'FOUND',
+      coveredByContract:'Unknown', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Low',
+      notes:'Spotted on street. No ownership data yet. Low priority given good condition and low vacancy.',
+      createdAt:now, updatedAt:now
+    },
+    // ── KENT ──
+    {
+      id:'seed_ken1', name:'Luton Road Garage Block', address:'Luton Road Estate',
+      town:'Chatham', county:'Kent', postcode:'ME4 5LL',
+      garages:'31', marketValue:'320000', monthlyRent:'70',
+      ownerName:'Medway Housing Association', ownerType:'Housing Association',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'Medium',
+      notes:'Housing association undertaking portfolio review. May include garages in disposal. Worth monitoring and making informal approach.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ken2', name:'Dartford North Garages', address:'Bow Arrow Lane',
+      town:'Dartford', county:'Kent', postcode:'DA2 6PD',
+      garages:'44', marketValue:'510000', monthlyRent:'85',
+      ownerName:'P. Fairweather', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Derelict', vacancyLevel:'High', status:'OFFER_SENT',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Derelict block near Dartford Crossing retail corridor. Full development rights confirmed with planners. Offer submitted at £459,000. High-potential redevelopment site.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ken3', name:'Weald Road Garages', address:'Weald Road',
+      town:'Sevenoaks', county:'Kent', postcode:'TN13 1QB',
+      garages:'18', marketValue:'215000', monthlyRent:'72',
+      ownerName:'M. Hurst', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'FOLLOW_UP',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Owner initially said not selling but agreed to keep in touch. Follow up in 3 months.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ken4', name:'Coldharbour Road Lock-Ups', address:'Coldharbour Road',
+      town:'Gravesend', county:'Kent', postcode:'DA11 7LT',
+      garages:'27', marketValue:'295000', monthlyRent:'68',
+      ownerName:'Gravesham Borough Council', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'FOUND',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Low',
+      notes:'Council asset not yet listed for disposal. Monitor planning portal and council budget papers for signs of review.',
+      createdAt:now, updatedAt:now
+    },
+    // ── GREATER LONDON ──
+    {
+      id:'seed_glo1', name:'Eltham Green Garages', address:'Eltham Green Road',
+      town:'Eltham', county:'Greater London', postcode:'SE9 5LH',
+      garages:'36', marketValue:'420000', monthlyRent:'88',
+      ownerName:'Royal Borough of Greenwich', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'High',
+      notes:'Council asset in Eltham housing zone. High planning potential given TfL connectivity masterplan. Worth formal expression of interest.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_glo2', name:'Woolwich Arsenal Garage Court', address:'Plumstead Road',
+      town:'Woolwich', county:'Greater London', postcode:'SE18 1JH',
+      garages:'52', marketValue:'640000', monthlyRent:'92',
+      ownerName:'Berkley Estates Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Poor', vacancyLevel:'High', status:'NEGOTIATION',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Active negotiation underway. Company seeking quick disposal ahead of a refinancing event. Full rights confirmed. Lawyers engaged on both sides.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_glo3', name:'Catford Road Garages', address:'Catford Road',
+      town:'Catford', county:'Greater London', postcode:'SE6 2EA',
+      garages:'24', marketValue:'290000', monthlyRent:'82',
+      ownerName:'Catford Property Co Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Company director responded positively to initial letter. Request valuation meeting.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_glo4', name:'Lausanne Road Lock-Ups', address:'Lausanne Road',
+      town:'New Cross', county:'Greater London', postcode:'SE15 2JD',
+      garages:'16', marketValue:'200000', monthlyRent:'86',
+      ownerName:'K. Okoro', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Good', vacancyLevel:'Low', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Well-maintained block, low vacancy. Owner not actively selling. Keep as watch target — area regeneration may motivate future sale.',
+      createdAt:now, updatedAt:now
+    },
+    // ── EAST SUSSEX ──
+    {
+      id:'seed_essx1', name:'Hollingdean Garage Block', address:'Hollingdean Road',
+      town:'Brighton', county:'East Sussex', postcode:'BN1 7HB',
+      garages:'20', marketValue:'240000', monthlyRent:'75',
+      ownerName:'Brighton Garages Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'OFFER_SENT',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Offer sent at £216,000. Awaiting director response. Solicitor identified.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_essx2', name:'Moulsecoomb Lock-Ups', address:'Moulsecoomb Way',
+      town:'Brighton', county:'East Sussex', postcode:'BN2 4PA',
+      garages:'11', marketValue:'128000', monthlyRent:'',
+      ownerName:'', ownerType:'Unknown',
+      ownershipStatus:'Land Registry needed', dudrichStatus:'Unknown',
+      condition:'Derelict', vacancyLevel:'High', status:'FOUND',
+      coveredByContract:'Unknown', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Low',
+      notes:'Derelict, completely unoccupied. Unknown ownership. Land Registry search required before any approach.',
+      createdAt:now, updatedAt:now
+    },
+    // ── WEST SUSSEX ──
+    {
+      id:'seed_wssx1', name:'Manor Royal Garage Court', address:'Manor Royal Business District',
+      town:'Crawley', county:'West Sussex', postcode:'RH10 9PY',
+      garages:'28', marketValue:'315000', monthlyRent:'72',
+      ownerName:'Crawley Borough Council', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'FOUND',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'Medium',
+      notes:'Council site near Gatwick employment zone. No formal disposal signals yet but worth monitoring.',
+      createdAt:now, updatedAt:now
+    },
+    // ── ESSEX ──
+    {
+      id:'seed_ess1', name:'Mawney Road Garages', address:'Mawney Road',
+      town:'Romford', county:'Essex', postcode:'RM7 7HU',
+      garages:'33', marketValue:'370000', monthlyRent:'78',
+      ownerName:'Romford Property Holdings Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Poor', vacancyLevel:'High', status:'FOLLOW_UP',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Company director met informally at local property event. Interested but not ready to move. Follow up Q3.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ess2', name:'Vange Hill Garage Block', address:'Vange Hill Drive',
+      town:'Basildon', county:'Essex', postcode:'SS16 4JG',
+      garages:'40', marketValue:'430000', monthlyRent:'70',
+      ownerName:'Basildon Council', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'High', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'High',
+      notes:'Council listed this block in their asset review. High planning potential as it sits adjacent to residential zone marked for intensification.',
+      createdAt:now, updatedAt:now
+    },
+    // ── ADDITIONAL DUDRICH ──
+    {
+      id:'seed_d3', name:'Whitehorse Road Garage Court', address:'Whitehorse Road',
+      town:'Croydon', county:'Greater London', postcode:'CR0 2JH',
+      garages:'25', marketValue:'295000', monthlyRent:'78',
+      ownerName:'LockUpGarages Holdings Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Confirmed Dudrich',
+      condition:'Good', vacancyLevel:'Low', status:'FOUND',
+      coveredByContract:'Yes', contractRef:'DC/2021/CRY-007',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'LockUpGarages branded site. Covered by 2021 development contract. Full rights in place. Develop under existing agreement.',
+      createdAt:now, updatedAt:now
+    },
+    // ── WON / ACQUIRED ──
+    {
+      id:'seed_won1', name:'Sternhall Lane Garages', address:'Sternhall Lane',
+      town:'Peckham', county:'Greater London', postcode:'SE15 4AQ',
+      garages:'19', marketValue:'235000', monthlyRent:'88',
+      ownerName:'J. Mbeki', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'WON',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'ACQUIRED at £193,500. Solicitor completion 14 Mar 2024. Keys received. Refurb plan in progress.',
+      createdAt:now, updatedAt:now
+    },
+  ];
+  seed.push(...expandedSeed);
   const existing = new Set(sites.map(s=>s.id));
   let added = 0;
   seed.forEach(s => { if (!existing.has(s.id)) { sites.push(s); added++; } });
