@@ -634,7 +634,7 @@ function offers(s) {
 }
 
 // ── Formatting ──
-function £(n) {
+function fmtGBP(n) {
   if (!n && n !== 0) return '—';
   return '£' + Math.round(n).toLocaleString('en-GB');
 }
@@ -741,7 +741,7 @@ function renderDash() {
     </div>
     <div class="stat-card sc-purple">
       <div class="stat-label">Est. Portfolio Value</div>
-      <div class="stat-value" style="font-size:19px">${£(portVal)}</div>
+      <div class="stat-value" style="font-size:19px">${fmtGBP(portVal)}</div>
       <div class="stat-sub">Non-excluded sites combined</div>
     </div>`;
 
@@ -933,8 +933,8 @@ function siteCard(s, sc, isExcl) {
 
     <div class="sc-meta">
       <div class="meta-item"><span class="meta-lbl">Garages</span><span class="meta-val">${s.garages||'—'}</span></div>
-      <div class="meta-item"><span class="meta-lbl">Market Value</span><span class="meta-val">${£(parseFloat(s.marketValue))}</span></div>
-      <div class="meta-item"><span class="meta-lbl">Rent / Garage / Month</span><span class="meta-val">${s.monthlyRent?£(parseFloat(s.monthlyRent)):'—'}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Market Value</span><span class="meta-val">${fmtGBP(parseFloat(s.marketValue))}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Rent / Garage / Month</span><span class="meta-val">${s.monthlyRent?fmtGBP(parseFloat(s.monthlyRent)):'—'}</span></div>
       <div class="meta-item"><span class="meta-lbl">Owner</span><span class="meta-val no-mono">${s.ownerName||'—'}</span></div>
       <div class="meta-item"><span class="meta-lbl">Owner Type</span><span class="meta-val no-mono">${s.ownerType}</span></div>
       <div class="meta-item"><span class="meta-lbl">Condition</span><span class="meta-val no-mono">${s.condition}</span></div>
@@ -949,23 +949,23 @@ function siteCard(s, sc, isExcl) {
       <div class="offer-grid">
         <div class="offer-item">
           <span class="offer-lbl">Market Value</span>
-          <span class="offer-val">${£(o.mv)}</span>
+          <span class="offer-val">${fmtGBP(o.mv)}</span>
           ${o.ar>0?`<span class="offer-sub">${pct(o.yMV)} gross yield</span>`:''}
         </div>
         <div class="offer-item">
           <span class="offer-lbl">5% Below MV (fast-sale)</span>
-          <span class="offer-val">${£(o.o5)}</span>
+          <span class="offer-val">${fmtGBP(o.o5)}</span>
           ${o.ar>0?`<span class="offer-sub">${pct(o.y5)} yield</span>`:''}
         </div>
         <div class="offer-item">
           <span class="offer-lbl">10% Below MV (aggressive)</span>
-          <span class="offer-val">${£(o.o10)}</span>
+          <span class="offer-val">${fmtGBP(o.o10)}</span>
           ${o.ar>0?`<span class="offer-sub">${pct(o.y10)} yield</span>`:''}
         </div>
         ${o.ar>0?`<div class="offer-item">
           <span class="offer-lbl">Est. Annual Rent</span>
-          <span class="offer-val">${£(o.ar)}</span>
-          <span class="offer-sub">${s.garages} garages × ${£(parseFloat(s.monthlyRent))} × 12</span>
+          <span class="offer-val">${fmtGBP(o.ar)}</span>
+          <span class="offer-sub">${s.garages} garages × ${fmtGBP(parseFloat(s.monthlyRent))} × 12</span>
         </div>`:''}
       </div>
     </div>` : ''}
