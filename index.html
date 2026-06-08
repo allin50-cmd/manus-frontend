@@ -87,6 +87,11 @@ td.nc{color:var(--txt);font-weight:500}
 #toast.ok{border-color:rgba(16,185,129,.4);color:var(--green)}
 #toast.err{border-color:rgba(239,68,68,.4);color:var(--red)}
 .letter-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:Georgia,serif;color:var(--txt2)}
+.adv-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px;font-size:13px;line-height:1.8;color:var(--txt2);white-space:pre-wrap;min-height:100px}
+.adv-warn{background:rgba(255,196,0,.06);border:1px solid rgba(255,196,0,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:#ffc400;margin-bottom:16px}
+.adv-section{font-size:11px;font-weight:600;letter-spacing:.07em;color:var(--cyan);text-transform:uppercase;margin:14px 0 6px}
+.adv-loading{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .dev-note{background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:14px;font-size:13px;color:#c4b5fd;line-height:1.7;white-space:pre-wrap;font-family:Georgia,serif}
 .log-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
 .log-time{font-size:10px;color:var(--txt3);white-space:nowrap;font-family:monospace;padding-top:2px;flex-shrink:0}
@@ -137,6 +142,7 @@ td.nc{color:var(--txt);font-weight:500}
   <div class="nav-item" data-view="log" onclick="go('log')"><span class="ico">◎</span>Activity Log</div>
   <div class="nav-item" data-view="lessons" onclick="go('lessons')"><span class="ico">◐</span>Harness Lessons</div>
   <div class="nav-item" data-view="io" onclick="go('io')"><span class="ico">⇅</span>Import / Export</div>
+  <div class="nav-item" data-view="advisor" onclick="go('advisor')"><span class="ico">◑</span>AI Advisor</div>
 </nav>
 <div id="main">
   <div id="topbar">
@@ -480,7 +486,7 @@ function go(view){
   curView=view;
   if(view!=='add')editId=null;
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  const T={dashboard:'Dashboard',sites:'Site Tables',add:editId?'Edit Site':'Add Site',gate:'Harness Gates',letter:'Outreach Letters',log:'Activity Log',lessons:'Harness Lessons',io:'Import / Export'};
+  const T={dashboard:'Dashboard',sites:'Site Tables',add:editId?'Edit Site':'Add Site',gate:'Harness Gates',letter:'Outreach Letters',log:'Activity Log',lessons:'Harness Lessons',io:'Import / Export',advisor:'AI Advisor'};
   document.getElementById('tb-title').textContent=T[view]||view;
   document.getElementById('tb-sub').textContent=`Garage Acquisition Radar \xb7 ${sites.length} sites`;
   render();closeSb();
@@ -491,7 +497,7 @@ function closeSb(){document.getElementById('nav').classList.remove('open');docum
 
 function render(){
   const c=document.getElementById('content');c.innerHTML='';
-  ({dashboard:rDash,sites:rSites,add:rAddEdit,gate:rGate,letter:rLetter,log:rLog,lessons:rLessons,io:rIO,harness:rHarness}[curView]||rDash)(c);
+  ({dashboard:rDash,sites:rSites,add:rAddEdit,gate:rGate,letter:rLetter,log:rLog,lessons:rLessons,io:rIO,harness:rHarness,advisor:rAdvisor}[curView]||rDash)(c);
 }
 
 // ── TOAST ──────────────────────────────────────────────────────────────────
@@ -1153,6 +1159,128 @@ function hLoopPanel(){
 function openModal(){document.getElementById('modal-overlay').classList.add('open')}
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open')}
 function moClick(e){if(e.target===document.getElementById('modal-overlay'))closeModal()}
+
+// ── AI ADVISOR ────────────────────────────────────────────────────────────
+let advisorSel='',advisorCache={},advisorLoading=false;
+
+function rAdvisor(c){
+  const key=localStorage.getItem('gar_api_key')||'';
+  const siteOpts=sites.map(s=>`<option value="${escA(s.id)}"${advisorSel===s.id?' selected':''}>${escH(s.id)} — ${escH(s.name)}</option>`).join('');
+  const cached=advisorCache[advisorSel];
+  const resultHtml=advisorLoading
+    ?`<div class="adv-box"><span class="adv-loading">⟳</span> Analysing site — please wait…</div>`
+    :cached
+      ?`<div class="adv-box">${formatAdvisory(cached)}</div><button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="delete advisorCache['${escA(advisorSel)}'];advisorLoading=false;render()">Clear</button>`
+      :`<div class="adv-box" style="color:var(--txt3);font-style:italic">Select a site and click Analyse to generate an AI advisory.</div>`;
+  c.innerHTML=`<div class="card">
+    <div class="flex jb ic mb16">
+      <div class="card-title" style="margin:0">AI Advisor</div>
+      <span class="badge b-neutral" style="font-size:11px">Read-only · Advisory only</span>
+    </div>
+    <div class="adv-warn">⚠️ AI output is advisory only. It never modifies pipeline status, gate decisions, or recommended actions. All harness logic stays deterministic.</div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="fg"><label class="fl">Anthropic API Key</label>
+        <div class="flex gap8 ic">
+          <input class="fi" type="password" id="adv_key" value="${escA(key)}" placeholder="sk-ant-api03-…" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="saveAdvisorKey()">Save</button>
+        </div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:4px">Stored in localStorage only. Never sent anywhere except api.anthropic.com.</div>
+      </div>
+      <div class="fg"><label class="fl">Select Site</label>
+        <select class="fs" onchange="advisorSel=this.value;advisorLoading=false;render()">
+          <option value="">— Select a site —</option>${siteOpts}
+        </select>
+      </div>
+    </div>
+    ${advisorSel&&key?`<button class="btn btn-purple" style="margin-bottom:16px" onclick="runAdvisor('${escA(advisorSel)}')" ${advisorLoading?'disabled':''}>◑ Analyse Site</button>`:''}
+    ${advisorSel?`<div id="adv-result">${resultHtml}</div>`:''}
+  </div>`;
+}
+
+function formatAdvisory(text){
+  return escH(text)
+    .replace(/SITUATION:/g,'<span class="adv-section">Situation</span>')
+    .replace(/TOP RISKS:/g,'<span class="adv-section">Top Risks</span>')
+    .replace(/NEXT ACTION:/g,'<span class="adv-section">Next Action</span>')
+    .replace(/OUTREACH OPENER:/g,'<span class="adv-section">Outreach Opener</span>');
+}
+
+function saveAdvisorKey(){
+  const k=(document.getElementById('adv_key')||{}).value||'';
+  localStorage.setItem('gar_api_key',k);
+  toast('API key saved','ok');
+}
+
+async function runAdvisor(siteId){
+  const key=localStorage.getItem('gar_api_key')||'';
+  if(!key){toast('Enter your Anthropic API key first','err');return}
+  const s=sites.find(x=>x.id===siteId);if(!s)return;
+  advisorLoading=true;render();
+  const prompt=buildAdvisoryPrompt(s);
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'content-type':'application/json',
+        'anthropic-dangerous-allow-browser':'true',
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:700,
+        messages:[{role:'user',content:prompt}],
+      }),
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||`API ${resp.status}`);}
+    const data=await resp.json();
+    advisorCache[siteId]=data.content?.[0]?.text||'No response received.';
+  }catch(e){
+    advisorCache[siteId]='Error: '+e.message;
+    toast('AI analysis failed: '+e.message,'err');
+  }
+  advisorLoading=false;render();
+}
+
+function buildAdvisoryPrompt(s){
+  const mv=parseFloat(s.marketValue)||0;
+  return`You are a UK property acquisition advisor specialising in garage portfolio investments for a company called Dudrich.
+
+Analyse this garage site and return EXACTLY this structure, using these exact labels:
+
+SITUATION: (2 sentences — what is the current state of this site and its acquisition status)
+
+TOP RISKS: (3 bullet points starting with •, each one specific risk or blocker for this site)
+
+NEXT ACTION: (one specific action the team should take this week — be concrete)
+
+OUTREACH OPENER: (one paragraph suitable as the opening of a letter to the owner/agent, only if outreach is appropriate given the pipeline status; otherwise write "N/A — outreach not appropriate at this stage")
+
+---
+SITE DATA:
+ID: ${s.id}
+Name: ${s.name}
+Location: ${[s.address,s.town,s.county,s.postcode].filter(Boolean).join(', ')}
+Units: ${s.units||'Unknown'}
+Market Value: ${mv?'£'+mv.toLocaleString():'Unknown'}
+Annual Rent: ${s.annualRent?'£'+s.annualRent.toFixed(0):'Unknown'}
+Gross Yield: ${s.grossYield?(s.grossYield*100).toFixed(1)+'%':'Unknown'}
+Owner: ${s.ownerName||'Unknown'} (${s.ownerType||'Unknown'})
+Ownership Status: ${s.ownershipStatus}
+Dudrich Status: ${s.dudrichStatus}
+Contract Coverage: ${s.coveredByContract}
+Development Rights: ${s.developmentRights}
+Planning Potential: ${s.planningPotential}
+Condition: ${s.condition||'Unknown'}
+Vacancy: ${s.vacancyLevel||'Unknown'}
+Pipeline Status: ${s.pipelineStatus}
+Recommended Action: ${s.recommendedAction}
+Score: ${s.score}/100  Priority: ${s.priority}
+Next Action on Record: ${s.nextAction||'None'}
+Notes: ${s.notes||'None'}
+---
+Keep total response under 500 words. Be specific to this exact site.`;
+}
 
 // ── SEED DATA ─────────────────────────────────────────────────────────────
 function loadSeed(){
