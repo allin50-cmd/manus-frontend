@@ -40,3 +40,8 @@ DEPLOY-TO-AZURE-NOW.md
 deploy-azure.sh
 integrate-azure.sh
 check-azure-prereqs.sh
+
+# Old build outputs
+dist/
+tsconfig.tsbuildinfo
+preview/
