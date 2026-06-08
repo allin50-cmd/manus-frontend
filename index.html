@@ -178,7 +178,7 @@ const VACANCIES=['Unknown','Low','Medium','High'];
 const COUNTIES=['Greater London','Surrey','Kent','East Sussex','West Sussex','Essex','Hampshire','Berkshire','Hertfordshire','Other'];
 const LESSON_FAILS=['Wrong Owner','Wrong Dudrich Match','Wrong Valuation','Duplicate Site','Contract Coverage Error','Bad Offer Sent','Missing Follow Up','Other'];
 const LESSON_STATS=['Open','Rule Added','Implemented','Closed'];
-const CSV_HDR=['Site_ID','Site_Name','Address','Town','County','Postcode','Region','Estimated_Units','Market_Value','Monthly_Rent_Per_Unit','Annual_Rent','Gross_Yield','Offer_5','Offer_10','Owner_Name','Owner_Type','Ownership_Status','Dudrich_Status','Covered_By_Development_Contract','Contract_Reference','Development_Rights','Future_Site_Rights','Planning_Potential','Excluded','Condition','Vacancy_Level','Score','Priority','Pipeline_Status','Recommended_Action','Last_Contacted','Next_Action','Next_Action_Date','Notes','Harness_Classification','Harness_Route','Ownership_Risk','Contract_Confidence','Valuation_Confidence','Planning_Upside','Rubric_Score','Rubric_Decision','Loop_Next_Step','Loop_Blocking_Reason'];
+const CSV_HDR=['Site_ID','Site_Name','Address','Town','County','Postcode','Region','Estimated_Units','Market_Value','Monthly_Rent_Per_Unit','Annual_Rent','Gross_Yield','Offer_5','Offer_10','Owner_Name','Owner_Type','Ownership_Status','Dudrich_Status','Covered_By_Development_Contract','Contract_Reference','Development_Rights','Future_Site_Rights','Planning_Potential','Excluded','Condition','Vacancy_Level','Score','Priority','Pipeline_Status','Recommended_Action','Last_Contacted','Next_Action','Next_Action_Date','Notes','Harness_Classification','Harness_Route','Ownership_Risk','Contract_Confidence','Valuation_Confidence','Planning_Upside','Rubric_Score','Rubric_Decision','Loop_Next_Step','Loop_Blocking_Reason','Input_Quality_Score','Input_Quality_Tier'];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let sites=[],logs=[],lessons=[];
@@ -270,7 +270,39 @@ function derive(s){
   const fa=fanOut(s);s.ownershipRisk=fa.ownerRisk;s.contractConf=fa.contractConf;s.valuationConf=fa.valuationConf;s.planningUpside=fa.planningUpside;
   const rb=rubric(s);s.rubricScore=rb.score;s.rubricDecision=rb.decision;
   const lp=loopStep(s);s.loopNextStep=lp.next;s.loopBlockingReason=lp.reason;
+  const iq=calcInputQuality(s);s.inputQuality=iq.score;s.inputTier=iq.tier;
   return s;
+}
+
+// ── LAYER 1: INPUT QUALITY ─────────────────────────────────────────────────
+function calcInputQuality(s){
+  let p=0;
+  // Identity (25 pts)
+  if(s.name&&s.name.trim())p+=5;
+  if(s.address&&s.address.trim())p+=5;
+  if(s.town&&s.town.trim())p+=5;
+  if(s.county&&s.county.trim())p+=5;
+  if(s.postcode&&s.postcode.trim())p+=5;
+  // Financial (20 pts)
+  if(parseInt(s.units)>0)p+=10;
+  if(parseFloat(s.marketValue)>0)p+=10;
+  // Ownership (25 pts)
+  if(s.ownerName&&s.ownerName.trim())p+=10;
+  if(s.ownershipStatus==='Confirmed')p+=10;
+  else if(s.ownershipStatus==='Land Registry Needed')p+=5;
+  if(s.ownerType&&s.ownerType!=='Unknown')p+=5;
+  // Dudrich / contract (15 pts)
+  if(s.dudrichStatus&&s.dudrichStatus!=='Unknown')p+=10;
+  if(s.coveredByContract&&s.coveredByContract!=='Unknown')p+=5;
+  // Site characteristics (10 pts)
+  if(s.planningPotential&&s.planningPotential!=='Unknown')p+=5;
+  if(s.condition&&s.condition)p+=3;
+  if(s.vacancyLevel&&s.vacancyLevel!=='Unknown')p+=2;
+  // Pipeline discipline (5 pts)
+  if(s.nextAction&&s.nextAction.trim())p+=5;
+  const score=Math.min(100,p);
+  const tier=score>=80?'CLEAN':score>=60?'PARTIAL':'INCOMPLETE';
+  return{score,tier};
 }
 
 // ── HARNESS CLASSIFICATION ─────────────────────────────────────────────────
@@ -811,7 +843,7 @@ function rIO(c){
 
 // CSV
 function csvEsc(v){const s=String(v??'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}"`:`${s}`}
-function siteToCSV(s){return[s.id,s.name,s.address,s.town,s.county,s.postcode,s.region,s.units,s.marketValue,s.monthlyRentPerUnit,(s.annualRent||0).toFixed(2),(s.grossYield||0).toFixed(6),(s.offer5||0).toFixed(2),(s.offer10||0).toFixed(2),s.ownerName,s.ownerType,s.ownershipStatus,s.dudrichStatus,s.coveredByContract,s.contractRef,s.developmentRights,s.futureRights,s.planningPotential,s.excluded?'Yes':'No',s.condition,s.vacancyLevel,s.score||0,s.priority,s.pipelineStatus,s.recommendedAction,s.lastContacted,s.nextAction,s.nextActionDate,s.notes,s.harnessClass||'',s.harnessRoute||'',s.ownershipRisk||'',s.contractConf||'',s.valuationConf||'',s.planningUpside||'',s.rubricScore??'',s.rubricDecision||'',s.loopNextStep||'',s.loopBlockingReason||''].map(csvEsc).join(',')}
+function siteToCSV(s){return[s.id,s.name,s.address,s.town,s.county,s.postcode,s.region,s.units,s.marketValue,s.monthlyRentPerUnit,(s.annualRent||0).toFixed(2),(s.grossYield||0).toFixed(6),(s.offer5||0).toFixed(2),(s.offer10||0).toFixed(2),s.ownerName,s.ownerType,s.ownershipStatus,s.dudrichStatus,s.coveredByContract,s.contractRef,s.developmentRights,s.futureRights,s.planningPotential,s.excluded?'Yes':'No',s.condition,s.vacancyLevel,s.score||0,s.priority,s.pipelineStatus,s.recommendedAction,s.lastContacted,s.nextAction,s.nextActionDate,s.notes,s.harnessClass||'',s.harnessRoute||'',s.ownershipRisk||'',s.contractConf||'',s.valuationConf||'',s.planningUpside||'',s.rubricScore??'',s.rubricDecision||'',s.loopNextStep||'',s.loopBlockingReason||'',s.inputQuality??'',s.inputTier||''].map(csvEsc).join(',')}
 function expCSV(){dl('gar-sites.csv',[CSV_HDR.join(','),...sites.map(siteToCSV)].join('\n'))}
 
 function parseCSVLine(line){
@@ -851,22 +883,136 @@ function dl(filename,content){const a=document.createElement('a');a.href=URL.cre
 let hSelId=null,hTournSel=new Set();
 
 function rHarness(c){
-  const harnessTabs=[{id:'classify',l:'1 · Classify'},{id:'fanout',l:'2 · Fan-Out'},{id:'critic',l:'3 · Critic'},{id:'generate',l:'4 · Generate'},{id:'tournament',l:'5 · Tournament'},{id:'loop',l:'6 · Loop'}];
-  if(!window.hTab)window.hTab='classify';
+  const harnessTabs=[
+    {id:'layer1',l:'L1 · Input Guard'},
+    {id:'classify',l:'1 · Classify'},
+    {id:'fanout',l:'2 · Fan-Out'},
+    {id:'critic',l:'3 · Critic'},
+    {id:'generate',l:'4 · Generate'},
+    {id:'tournament',l:'5 · Tournament'},
+    {id:'loop',l:'6 · Loop'},
+    {id:'layer5',l:'L5 · Audit'},
+  ];
+  if(!window.hTab)window.hTab='layer1';
   const tabH=harnessTabs.map(t=>`<div class="tab${window.hTab===t.id?' active':''}" onclick="setHTab('${t.id}')">${t.l}</div>`).join('');
   const siteOpts=sites.map(s=>`<option value="${escA(s.id)}"${hSelId===s.id?' selected':''}>${escH(s.id)} — ${escH(s.name)}</option>`).join('');
-  const siteDropdown=`<div class="fg" style="max-width:480px;margin-bottom:16px"><label class="fl">Selected Site (powers panels 2, 3, 4, 6)</label><select class="fs" onchange="setHSel(this.value)"><option value="">— Select a site —</option>${siteOpts}</select></div>`;
+  const noSiteDropdown=['layer1','classify','tournament'];
+  const siteDropdown=`<div class="fg" style="max-width:480px;margin-bottom:16px"><label class="fl">Selected Site (powers panels 2, 3, 4, 6, L5)</label><select class="fs" onchange="setHSel(this.value)"><option value="">— Select a site —</option>${siteOpts}</select></div>`;
   let panel='';
-  if(window.hTab==='classify')panel=hClassifyPanel();
+  if(window.hTab==='layer1')panel=hLayer1Panel();
+  else if(window.hTab==='classify')panel=hClassifyPanel();
   else if(window.hTab==='fanout')panel=hFanOutPanel();
   else if(window.hTab==='critic')panel=hCriticPanel();
   else if(window.hTab==='generate')panel=hGeneratePanel();
   else if(window.hTab==='tournament')panel=hTournamentPanel();
   else if(window.hTab==='loop')panel=hLoopPanel();
-  c.innerHTML=`<div class="tabs">${tabH}</div>${window.hTab!=='classify'&&window.hTab!=='tournament'?siteDropdown:''}${panel}`;
+  else if(window.hTab==='layer5')panel=hLayer5Panel();
+  c.innerHTML=`<div class="tabs">${tabH}</div>${!noSiteDropdown.includes(window.hTab)?siteDropdown:''}${panel}`;
 }
 function setHTab(t){window.hTab=t;render()}
 function setHSel(id){hSelId=id;render()}
+
+// LAYER 1 — INPUT GUARD
+function hLayer1Panel(){
+  if(!sites.length)return'<div class="empty">No sites. Load seed data first.</div>';
+  const tierBadge={CLEAN:'b-pass',PARTIAL:'b-warn',INCOMPLETE:'b-fail'};
+  const counts={CLEAN:0,PARTIAL:0,INCOMPLETE:0};
+  sites.forEach(s=>counts[s.inputTier]=(counts[s.inputTier]||0)+1);
+  const avgQ=sites.length?Math.round(sites.reduce((a,s)=>a+(s.inputQuality||0),0)/sites.length):0;
+  const rows=sites.map(s=>{
+    // Show which specific checks failed
+    const missing=[];
+    if(!s.name||!s.name.trim())missing.push('Name');
+    if(!s.address||!s.address.trim())missing.push('Address');
+    if(!s.town||!s.town.trim())missing.push('Town');
+    if(!(parseInt(s.units)>0))missing.push('Units');
+    if(!(parseFloat(s.marketValue)>0))missing.push('Market Value');
+    if(!s.ownerName||!s.ownerName.trim())missing.push('Owner Name');
+    if(s.ownershipStatus!=='Confirmed')missing.push('Ownership');
+    if(s.dudrichStatus==='Unknown')missing.push('Dudrich');
+    if(s.coveredByContract==='Unknown')missing.push('Contract');
+    if(s.planningPotential==='Unknown')missing.push('Planning');
+    if(!s.nextAction||!s.nextAction.trim())missing.push('Next Action');
+    const bar=`<div style="background:var(--bg3);border-radius:3px;height:6px;width:80px;display:inline-block;vertical-align:middle;margin-right:6px"><div style="background:${s.inputTier==='CLEAN'?'var(--green)':s.inputTier==='PARTIAL'?'var(--amber)':'var(--red)'};border-radius:3px;height:100%;width:${s.inputQuality||0}%"></div></div>`;
+    return`<tr>
+      <td class="tc">${escH(s.id)}</td>
+      <td class="nc">${escH(s.name)}</td>
+      <td>${bar}${s.inputQuality||0}</td>
+      <td><span class="badge ${tierBadge[s.inputTier]||'b-neutral'}">${s.inputTier||'-'}</span></td>
+      <td class="txt-xs" style="color:var(--red)">${missing.length?missing.join(', '):'—'}</td>
+    </tr>`;
+  }).join('');
+  return`<div class="card">
+    <div class="card-title">Layer 1 — Input Guard Summary</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">
+      <div class="stat cyan"><div class="stat-val">${avgQ}</div><div class="stat-lbl">Avg Input Quality</div></div>
+      <div class="stat green"><div class="stat-val">${counts.CLEAN||0}</div><div class="stat-lbl">CLEAN (≥80)</div></div>
+      <div class="stat amber"><div class="stat-val">${counts.PARTIAL||0}</div><div class="stat-lbl">PARTIAL (60–79)</div></div>
+      <div class="stat red"><div class="stat-val">${counts.INCOMPLETE||0}</div><div class="stat-lbl">INCOMPLETE (&lt;60)</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Per-Site Input Quality — Missing Fields</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ID</th><th>Name</th><th>Quality Score</th><th>Tier</th><th>Missing / Failing Fields</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+// LAYER 5 — AUDIT (lessons feed + site activity)
+function hLayer5Panel(){
+  if(!hSelId)return'<div class="empty">Select a site above to view its audit trail and triggered lessons.</div>';
+  const s=sites.find(x=>x.id===hSelId);if(!s)return'<div class="empty">Site not found.</div>';
+
+  // Harness Lessons referencing this site
+  const siteLessons=lessons.filter(l=>l.siteId===hSelId);
+  const lessonRows=siteLessons.length
+    ?siteLessons.map(l=>`<div class="lesson-row">
+        <div class="flex gap8 ic mb8"><span class="tc">${escH(l.id)}</span><span class="badge b-warn">${escH(l.failureType)}</span><span class="badge ${l.status==='Closed'?'b-pass':l.status==='Open'?'b-fail':'b-neutral'}">${escH(l.status)}</span></div>
+        <div class="txt-sm fw7" style="margin-bottom:4px">${escH(l.whatHappened||'')}</div>
+        <div class="txt-xs">Root cause: ${escH(l.rootCause||'—')}</div>
+        ${l.ruleAdded?`<div class="txt-xs" style="color:var(--green);margin-top:4px">✓ Rule: ${escH(l.ruleAdded)}</div>`:''}
+      </div>`).join('')
+    :'<div class="txt-xs" style="color:var(--txt3);padding:10px 0">No lessons recorded for this site.</div>';
+
+  // Activity log entries for this site
+  const siteLogs=logs.filter(l=>l.siteId===hSelId).slice(0,30);
+  const clr={SITE_CREATED:'b-pass',SITE_DELETED:'b-fail',STATUS_CHANGED:'b-cyan',DUDRICH_CHANGED:'b-warn',CONTRACT_CHANGED:'b-purple',VALUE_CHANGED:'b-cyan',OWNER_CHANGED:'b-neutral',SITE_UPDATED:'b-neutral'};
+  const logRows=siteLogs.length
+    ?siteLogs.map(l=>`<div class="log-row"><div class="log-time">${tsd(l.ts)}</div><span class="badge ${clr[l.action]||'b-neutral'}">${l.action}</span><div><div class="log-detail">${escH(l.notes||(l.oldVal!==''?`${l.oldVal} → ${l.newVal}`:l.newVal))}</div></div></div>`)
+      .join('')
+    :'<div class="txt-xs" style="color:var(--txt3);padding:10px 0">No activity logged for this site.</div>';
+
+  // Rubric snapshot
+  const rb=rubric(s);
+  const decBadge={APPROVED:'b-pass',NEEDS_FIX:'b-warn',BLOCKED:'b-fail'};
+
+  // Add lesson shortcut
+  const addBtn=`<button class="btn btn-purple btn-sm" onclick="openLesson('');document.getElementById('lf_siteId').value='${escA(hSelId)}'">+ Record Lesson for ${escH(hSelId)}</button>`;
+
+  return`<div class="card">
+    <div class="flex jb ic mb16">
+      <div class="card-title" style="margin:0">Layer 5 — Audit: ${escH(s.id)} ${escH(s.name)}</div>
+      ${addBtn}
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr));margin-bottom:16px">
+      <div class="stat ${s.inputTier==='CLEAN'?'green':s.inputTier==='PARTIAL'?'amber':'red'}"><div class="stat-val">${s.inputQuality||0}</div><div class="stat-lbl">Input Quality (L1)</div></div>
+      <div class="stat"><div class="stat-val">${s.rubricScore||0}/8</div><div class="stat-lbl">Rubric Score (L4)</div></div>
+      <div class="stat"><div class="stat-lbl" style="margin-bottom:8px">Rubric Decision</div><span class="badge ${decBadge[rb.decision]||'b-neutral'}">${rb.decision}</span></div>
+      <div class="stat"><div class="stat-val">${siteLessons.length}</div><div class="stat-lbl">Lessons Triggered</div></div>
+      <div class="stat"><div class="stat-val">${siteLogs.length}</div><div class="stat-lbl">Activity Events</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Harness Lessons Triggered by ${escH(s.id)} (${siteLessons.length})</div>
+    ${lessonRows}
+  </div>
+  <div class="card">
+    <div class="card-title">Activity Log for ${escH(s.id)} (last ${siteLogs.length})</div>
+    ${logRows}
+  </div>`;
+}
 
 // PANEL 1 — CLASSIFY AND ACT
 function hClassifyPanel(){
@@ -875,10 +1021,11 @@ function hClassifyPanel(){
     counts[s.harnessClass]=(counts[s.harnessClass]||0)+1;
     const clsBadge={DUDRICH_CONTRACTED_DEVELOPMENT:'b-purple',DUDRICH_EXCLUDED:'b-fail',LEGAL_REVIEW_REQUIRED:'b-warn',NON_DUDRICH_ACQUISITION:'b-cyan',UNKNOWN_NEEDS_INVESTIGATION:'b-warn',INCOMPLETE_RECORD:'b-neutral'};
     const routeBadge={DEVELOPMENT:'b-purple',EXCLUDE:'b-fail',LEGAL_REVIEW:'b-warn',ACQUISITION:'b-cyan',INVESTIGATE:'b-warn'};
-    return`<tr><td class="tc">${escH(s.id)}</td><td class="nc">${escH(s.name)}</td><td>${escH(s.town)}</td><td><span class="badge ${clsBadge[s.harnessClass]||'b-neutral'}">${escH((s.harnessClass||'').replace(/_/g,' '))}</span></td><td><span class="badge ${routeBadge[s.harnessRoute]||'b-neutral'}">${escH(s.harnessRoute||'-')}</span></td><td class="txt-xs" style="color:var(--txt3)">${escH(HCLASS_ACTIONS[s.harnessClass]||'')}</td></tr>`;
+    const iqBadge={CLEAN:'b-pass',PARTIAL:'b-warn',INCOMPLETE:'b-fail'};
+    return`<tr><td class="tc">${escH(s.id)}</td><td class="nc">${escH(s.name)}</td><td>${escH(s.town)}</td><td><span class="badge ${iqBadge[s.inputTier]||'b-neutral'}">${s.inputQuality||0}</span></td><td><span class="badge ${clsBadge[s.harnessClass]||'b-neutral'}">${escH((s.harnessClass||'').replace(/_/g,' '))}</span></td><td><span class="badge ${routeBadge[s.harnessRoute]||'b-neutral'}">${escH(s.harnessRoute||'-')}</span></td><td class="txt-xs" style="color:var(--txt3)">${escH(HCLASS_ACTIONS[s.harnessClass]||'')}</td></tr>`;
   }).join('');
   const summary=Object.entries(counts).map(([k,v])=>`<div class="stat"><div class="stat-val">${v}</div><div class="stat-lbl">${k.replace(/_/g,' ')}</div></div>`).join('');
-  return`<div class="card"><div class="card-title">Classification Summary</div><div class="stat-grid">${summary||'<div class="empty">No sites</div>'}</div></div><div class="card"><div class="card-title">All Sites — Classification and Recommended Action</div>${sites.length?`<div class="tbl-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Town</th><th>Classification</th><th>Route</th><th>Recommended Action</th></tr></thead><tbody>${clsRows}</tbody></table></div>`:'<div class="empty">No sites. Load seed data first.</div>'}</div>`;
+  return`<div class="card"><div class="card-title">Classification Summary</div><div class="stat-grid">${summary||'<div class="empty">No sites</div>'}</div></div><div class="card"><div class="card-title">All Sites — Classification and Recommended Action</div>${sites.length?`<div class="tbl-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Town</th><th>L1 Quality</th><th>Classification</th><th>Route</th><th>Recommended Action</th></tr></thead><tbody>${clsRows}</tbody></table></div>`:'<div class="empty">No sites. Load seed data first.</div>'}</div>`;
 }
 
 // PANEL 2 — FAN-OUT AND SYNTHESIZE
