@@ -9,12 +9,20 @@ export async function POST(req: NextRequest) {
 
   const { currentPassword, newPassword } = await req.json()
 
+  if (typeof currentPassword !== 'string' || !currentPassword) {
+    return NextResponse.json({ error: 'Current password is required' }, { status: 400 })
+  }
   if (!newPassword || newPassword.length < 8) {
     return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 })
   }
 
-  // Verify current password (DB hash or default passcode)
-  const stored = await db.userPassword.findUnique({ where: { person: session.person } })
+  let stored
+  try {
+    stored = await db.userPassword.findUnique({ where: { person: session.person } })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
+
   let currentOk: boolean
   if (stored) {
     currentOk = await verifyPassword(currentPassword, stored.hash)
@@ -31,11 +39,15 @@ export async function POST(req: NextRequest) {
   }
 
   const hash = await hashPassword(newPassword)
-  await db.userPassword.upsert({
-    where: { person: session.person },
-    create: { person: session.person, hash },
-    update: { hash },
-  })
+  try {
+    await db.userPassword.upsert({
+      where: { person: session.person },
+      create: { person: session.person, hash },
+      update: { hash },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   return NextResponse.json({ ok: true })
 }

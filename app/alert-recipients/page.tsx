@@ -10,6 +10,7 @@ export default async function AlertRecipientsPage() {
 
   const [recipients, pendingCount, failedCount, totalEvents] = await Promise.all([
     db.alertRecipient.findMany({
+      where: { isActive: true },
       orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
     }),
     db.alertDelivery.count({ where: { status: 'Sent' } }),

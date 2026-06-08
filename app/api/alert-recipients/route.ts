@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const company = req.nextUrl.searchParams.get('company')
-  const where = company ? { company } : {}
+  const where = { isActive: true, ...(company ? { company } : {}) }
 
   const recipients = await db.alertRecipient.findMany({
     where,

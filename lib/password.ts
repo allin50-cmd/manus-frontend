@@ -10,9 +10,11 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  if (typeof password !== 'string' || !password) return false
   const [salt, hash] = stored.split(':')
   if (!salt || !hash) return false
   const hashBuffer = Buffer.from(hash, 'hex')
+  if (hashBuffer.length !== 64) return false
   const derived = (await scryptAsync(password, salt, 64)) as Buffer
   return timingSafeEqual(hashBuffer, derived)
 }

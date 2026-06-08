@@ -11,28 +11,41 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
 
-  const contact = await db.contact.update({
-    where: { id: params.id },
-    data: {
-      ...(name !== undefined && { name: name.trim() }),
-      ...(companyId !== undefined && { companyId }),
-      ...(role !== undefined && { role }),
-      ...(email !== undefined && { email }),
-      ...(phone !== undefined && { phone }),
-      ...(isPrimary !== undefined && { isPrimary }),
-      ...(notes !== undefined && { notes }),
-    },
-    include: { company: true },
-  })
+  let contact
+  try {
+    contact = await db.contact.update({
+      where: { id: params.id, isActive: true },
+      data: {
+        ...(name !== undefined && { name: name.trim() }),
+        ...(companyId !== undefined && { companyId }),
+        ...(role !== undefined && { role }),
+        ...(email !== undefined && { email }),
+        ...(phone !== undefined && { phone }),
+        ...(isPrimary !== undefined && { isPrimary }),
+        ...(notes !== undefined && { notes }),
+      },
+      include: { company: true },
+    })
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code
+    if (code === 'P2025') return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   return NextResponse.json(contact)
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   await requireAuth()
-  await db.contact.update({
-    where: { id: params.id },
-    data: { isActive: false },
-  })
+  try {
+    await db.contact.update({
+      where: { id: params.id, isActive: true },
+      data: { isActive: false },
+    })
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code
+    if (code === 'P2025') return NextResponse.json({ error: 'Contact not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
   return NextResponse.json({ ok: true })
 }

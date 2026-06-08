@@ -20,10 +20,17 @@ export async function POST(req: NextRequest) {
   if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   if (!companyId) return NextResponse.json({ error: 'Company is required' }, { status: 400 })
 
-  const contact = await db.contact.create({
-    data: { name: name.trim(), companyId, role, email, phone, isPrimary: !!isPrimary, notes },
-    include: { company: true },
-  })
+  let contact
+  try {
+    contact = await db.contact.create({
+      data: { name: name.trim(), companyId, role, email, phone, isPrimary: !!isPrimary, notes },
+      include: { company: true },
+    })
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code
+    if (code === 'P2003') return NextResponse.json({ error: 'Company not found' }, { status: 400 })
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   return NextResponse.json(contact, { status: 201 })
 }
