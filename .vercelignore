@@ -45,3 +45,9 @@ check-azure-prereqs.sh
 dist/
 tsconfig.tsbuildinfo
 preview/
+
+# Large local-only folders
+os/
+node_modules/
+.git/
+.next/
