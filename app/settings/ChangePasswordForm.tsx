@@ -44,10 +44,11 @@ export default function ChangePasswordForm({ person }: { person: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white border border-slate-200 rounded-xl p-5 max-w-sm">
       <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+        <label htmlFor="cp-current" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
           Current password
         </label>
         <input
+          id="cp-current"
           type="password"
           required
           value={current}
@@ -57,10 +58,11 @@ export default function ChangePasswordForm({ person }: { person: string }) {
         />
       </div>
       <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+        <label htmlFor="cp-new" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
           New password
         </label>
         <input
+          id="cp-new"
           type="password"
           required
           minLength={8}
@@ -71,10 +73,11 @@ export default function ChangePasswordForm({ person }: { person: string }) {
         />
       </div>
       <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+        <label htmlFor="cp-confirm" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
           Confirm new password
         </label>
         <input
+          id="cp-confirm"
           type="password"
           required
           value={confirm}
