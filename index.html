@@ -127,6 +127,7 @@ td.nc{color:var(--txt);font-weight:500}
   <div class="nav-logo">GAR<span>Garage Acquisition Radar</span></div>
   <div class="nav-sec">Overview</div>
   <div class="nav-item active" data-view="dashboard" onclick="go('dashboard')"><span class="ico">◈</span>Dashboard</div>
+  <div class="nav-item" data-view="harness" onclick="go('harness')"><span class="ico">⚙</span>Harness Console</div>
   <div class="nav-sec">Sites</div>
   <div class="nav-item" data-view="sites" onclick="go('sites')"><span class="ico">⬡</span>Site Tables</div>
   <div class="nav-item" data-view="add" onclick="startAdd()"><span class="ico">+</span>Add Site</div>
@@ -177,7 +178,7 @@ const VACANCIES=['Unknown','Low','Medium','High'];
 const COUNTIES=['Greater London','Surrey','Kent','East Sussex','West Sussex','Essex','Hampshire','Berkshire','Hertfordshire','Other'];
 const LESSON_FAILS=['Wrong Owner','Wrong Dudrich Match','Wrong Valuation','Duplicate Site','Contract Coverage Error','Bad Offer Sent','Missing Follow Up','Other'];
 const LESSON_STATS=['Open','Rule Added','Implemented','Closed'];
-const CSV_HDR=['Site_ID','Site_Name','Address','Town','County','Postcode','Region','Estimated_Units','Market_Value','Monthly_Rent_Per_Unit','Annual_Rent','Gross_Yield','Offer_5','Offer_10','Owner_Name','Owner_Type','Ownership_Status','Dudrich_Status','Covered_By_Development_Contract','Contract_Reference','Development_Rights','Future_Site_Rights','Planning_Potential','Excluded','Condition','Vacancy_Level','Score','Priority','Pipeline_Status','Recommended_Action','Last_Contacted','Next_Action','Next_Action_Date','Notes'];
+const CSV_HDR=['Site_ID','Site_Name','Address','Town','County','Postcode','Region','Estimated_Units','Market_Value','Monthly_Rent_Per_Unit','Annual_Rent','Gross_Yield','Offer_5','Offer_10','Owner_Name','Owner_Type','Ownership_Status','Dudrich_Status','Covered_By_Development_Contract','Contract_Reference','Development_Rights','Future_Site_Rights','Planning_Potential','Excluded','Condition','Vacancy_Level','Score','Priority','Pipeline_Status','Recommended_Action','Last_Contacted','Next_Action','Next_Action_Date','Notes','Harness_Classification','Harness_Route','Ownership_Risk','Contract_Confidence','Valuation_Confidence','Planning_Upside','Rubric_Score','Rubric_Decision','Loop_Next_Step','Loop_Blocking_Reason'];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let sites=[],logs=[],lessons=[];
@@ -264,7 +265,137 @@ function derive(s){
   const o=calcOffers(s);
   s.annualRent=o.annualRent;s.offer5=o.offer5;s.offer10=o.offer10;s.grossYield=o.grossYield;
   s.score=calcScore(s);s.priority=calcPrio(s.score,s.excluded);
+  // Harness fields
+  const hc=harnessClassify(s);s.harnessClass=hc.cls;s.harnessRoute=hc.route;
+  const fa=fanOut(s);s.ownershipRisk=fa.ownerRisk;s.contractConf=fa.contractConf;s.valuationConf=fa.valuationConf;s.planningUpside=fa.planningUpside;
+  const rb=rubric(s);s.rubricScore=rb.score;s.rubricDecision=rb.decision;
+  const lp=loopStep(s);s.loopNextStep=lp.next;s.loopBlockingReason=lp.reason;
   return s;
+}
+
+// ── HARNESS CLASSIFICATION ─────────────────────────────────────────────────
+const HCLASS_ACTIONS={
+  DUDRICH_CONTRACTED_DEVELOPMENT:'Review development rights and planning potential',
+  DUDRICH_EXCLUDED:'Exclude from acquisition pipeline',
+  LEGAL_REVIEW_REQUIRED:'Send to legal review before action',
+  NON_DUDRICH_ACQUISITION:'Prepare valuation and offer pack',
+  UNKNOWN_NEEDS_INVESTIGATION:'Complete Dudrich and Land Registry checks',
+  INCOMPLETE_RECORD:'Complete missing required fields',
+};
+function harnessClassify(s){
+  const d=s.dudrichStatus,c=s.coveredByContract,o=s.ownershipStatus,mv=parseFloat(s.marketValue)||0;
+  let cls,route;
+  if(d==='Confirmed Dudrich'&&c==='Yes'){cls='DUDRICH_CONTRACTED_DEVELOPMENT';route='DEVELOPMENT'}
+  else if(d==='Confirmed Dudrich'&&c==='No'){cls='DUDRICH_EXCLUDED';route='EXCLUDE'}
+  else if(d==='Confirmed Dudrich'&&c==='Needs Review'){cls='LEGAL_REVIEW_REQUIRED';route='LEGAL_REVIEW'}
+  else if(d==='Not Dudrich'&&o==='Confirmed'&&mv>0){cls='NON_DUDRICH_ACQUISITION';route='ACQUISITION'}
+  else if(d==='Unknown'||o==='Unknown'){cls='UNKNOWN_NEEDS_INVESTIGATION';route='INVESTIGATE'}
+  else{cls='INCOMPLETE_RECORD';route='INVESTIGATE'}
+  return{cls,route};
+}
+
+// ── FAN-OUT ANALYSIS ───────────────────────────────────────────────────────
+function riskLevel(val,low,med){return val<=low?'LOW':val<=med?'MEDIUM':'HIGH'}
+function fanOut(s){
+  // Ownership Risk
+  let ownerRisk,ownerNote;
+  if(s.ownershipStatus==='Confirmed'&&s.ownerName&&s.ownerName.trim()){ownerRisk='LOW';ownerNote='Ownership confirmed with named owner.'}
+  else if(s.ownershipStatus==='Unknown'){ownerRisk='HIGH';ownerNote='Ownership status unknown — Land Registry search required.'}
+  else{ownerRisk='MEDIUM';ownerNote='Partially known — ownership confirmation needed.'}
+  // Contract Confidence
+  let contractConf,contractNote;
+  if(s.coveredByContract==='Yes'&&s.contractRef&&s.contractRef.trim()){contractConf='HIGH';contractNote='Contract confirmed with reference number.'}
+  else if(s.coveredByContract==='Unknown'||s.coveredByContract==='Needs Review'){contractConf='LOW';contractNote='Contract status unclear — legal review required.'}
+  else if(s.coveredByContract==='No'){contractConf='HIGH';contractNote='No contract — site is free to pursue as acquisition target.'}
+  else{contractConf='MEDIUM';contractNote='Contract data partially available.'}
+  // Valuation Confidence
+  let valuationConf,valuationNote;
+  const mv=parseFloat(s.marketValue)||0,u=parseInt(s.units)||0,r=parseFloat(s.monthlyRentPerUnit)||0;
+  if(mv>0&&u>0&&r>0){valuationConf='HIGH';valuationNote=`Market value ${gbp(mv)}, ${u} units @ ${gbp(r)}/mo. Yield: ${pct(s.grossYield)}.`}
+  else if(mv>0&&u>0){valuationConf='MEDIUM';valuationNote=`Market value and units known but rent missing. Offer range: ${gbp(s.offer5)}–${gbp(s.offer10)}.`}
+  else{valuationConf='LOW';valuationNote='Valuation data missing — site cannot be offered.'}
+  // Planning Upside
+  let planningUpside,planningNote;
+  if(s.planningPotential==='High'){planningUpside='HIGH';planningNote='High planning potential — strong development / redevelopment upside.'}
+  else if(s.planningPotential==='Medium'){planningUpside='MEDIUM';planningNote='Medium planning potential — some upside with planning effort.'}
+  else if(s.planningPotential==='Low'){planningUpside='LOW';planningNote='Low planning potential — limited development value.'}
+  else{planningUpside='LOW';planningNote='Planning potential not assessed.'}
+  return{ownerRisk,ownerNote,contractConf,contractNote,valuationConf,valuationNote,planningUpside,planningNote};
+}
+
+// ── RUBRIC ────────────────────────────────────────────────────────────────
+function rubric(s){
+  const mv=parseFloat(s.marketValue)||0,u=parseInt(s.units)||0;
+  const devReady=s.pipelineStatus==='DEVELOPMENT_READY';
+  const offerSent=s.pipelineStatus==='OFFER_SENT';
+  const devSafe=!(devReady&&!(s.dudrichStatus==='Confirmed Dudrich'&&s.coveredByContract==='Yes'&&(s.developmentRights==='Full'||s.developmentRights==='Partial')&&s.contractRef&&s.contractRef.trim()));
+  const offerSafe=!(offerSent&&!(s.dudrichStatus==='Not Dudrich'&&s.ownershipStatus==='Confirmed'&&mv>0&&s.ownerName&&s.ownerName.trim()));
+  const items=[
+    {label:'Ownership Evidence',pass:s.ownershipStatus==='Confirmed'&&!!(s.ownerName&&s.ownerName.trim())},
+    {label:'Dudrich Check',pass:s.dudrichStatus!=='Unknown'},
+    {label:'Contract Check',pass:s.coveredByContract!=='Needs Review'},
+    {label:'Valuation',pass:mv>0&&u>0},
+    {label:'Action Safety',pass:!!(s.recommendedAction&&s.recommendedAction!=='NO_ACTION')},
+    {label:'Follow-Up Discipline',pass:!!(s.nextAction&&s.nextAction.trim())},
+    {label:'Development Safety',pass:devSafe},
+    {label:'Offer Safety',pass:offerSafe},
+  ];
+  const score=items.filter(x=>x.pass).length;
+  let decision;
+  if(!offerSafe||!devSafe)decision='BLOCKED';
+  else if(score===8)decision='APPROVED';
+  else if(score>=5)decision='NEEDS_FIX';
+  else decision='BLOCKED';
+  return{items,score,decision};
+}
+
+// ── LOOP UNTIL DONE ────────────────────────────────────────────────────────
+const LOOP_DONE_STATUSES=['WON','LOST','DEVELOPMENT_READY','DUDRICH_EXCLUDED'];
+function loopStep(s){
+  if(LOOP_DONE_STATUSES.includes(s.pipelineStatus)||s.recommendedAction==='DUDRICH_EXCLUDED'){
+    return{done:true,next:'Workflow complete',reason:'',suggestedStatus:s.pipelineStatus};
+  }
+  const mv=parseFloat(s.marketValue)||0;
+  if(s.dudrichStatus==='Unknown')return{done:false,next:'Complete Dudrich check',reason:'Dudrich status unknown',suggestedStatus:'DUDRICH_CHECK'};
+  if(s.ownershipStatus!=='Confirmed')return{done:false,next:'Complete Land Registry ownership check',reason:'Ownership not confirmed',suggestedStatus:'LAND_REGISTRY_CHECK'};
+  if(s.dudrichStatus==='Confirmed Dudrich'&&s.coveredByContract==='Needs Review')return{done:false,next:'Legal review of contract coverage',reason:'Contract coverage needs review',suggestedStatus:'LEGAL_REVIEW'};
+  if(s.dudrichStatus==='Confirmed Dudrich'&&s.coveredByContract==='Yes'&&s.developmentRights==='Unknown')return{done:false,next:'Confirm development rights',reason:'Development rights unknown',suggestedStatus:'CONTRACT_REVIEW'};
+  if(!mv)return{done:false,next:'Complete valuation',reason:'Market value missing',suggestedStatus:'VALUED'};
+  if(!s.nextAction||!s.nextAction.trim())return{done:false,next:'Set next action',reason:'No next action defined',suggestedStatus:s.pipelineStatus};
+  if(s.pipelineStatus==='OFFER_SENT'&&!s.nextActionDate)return{done:false,next:'Set follow-up date for offer',reason:'Offer sent but no follow-up date',suggestedStatus:'FOLLOW_UP'};
+  return{done:false,next:'Continue current pipeline action: '+s.pipelineStatus,reason:'',suggestedStatus:s.pipelineStatus};
+}
+
+// ── GENERATE AND FILTER ────────────────────────────────────────────────────
+function generateActions(s){
+  const all=[
+    {action:'Complete Land Registry ownership check',check:()=>true},
+    {action:'Check against Dudrich/LockUpGarages portfolio',check:()=>true},
+    {action:'Review development contract coverage',check:()=>true},
+    {action:'Confirm planning potential',check:()=>true},
+    {action:'Create offer pack',check:()=>parseFloat(s.marketValue)>0,blockReason:'Valuation required before offer pack'},
+    {action:'Send owner letter',check:()=>canStatus(s,'OFFER_SENT'),blockReason:'Offer Safety check must pass (Not Dudrich, Confirmed owner, MV > 0, owner name)'},
+    {action:'Schedule follow-up',check:()=>true},
+    {action:'Exclude from acquisition',check:()=>s.coveredByContract!=='Yes',blockReason:'Cannot exclude — site is covered by development contract'},
+    {action:'Escalate to legal review',check:()=>true},
+    {action:'Prepare development feasibility review',check:()=>s.coveredByContract==='Yes',blockReason:'Development feasibility requires confirmed contract coverage'},
+    {action:'Negotiate',check:()=>s.pipelineStatus==='OFFER_SENT',blockReason:'Cannot negotiate before offer is sent'},
+  ];
+  const approved=[],blocked=[];
+  all.forEach(a=>{if(a.check())approved.push(a.action);else blocked.push({action:a.action,reason:a.blockReason})});
+  return{approved,blocked};
+}
+
+// ── TOURNAMENT ────────────────────────────────────────────────────────────
+const RISK_ORDER={LOW:0,MEDIUM:1,HIGH:2,undefined:3};
+const PLAN_ORDER={High:3,Medium:2,Low:1,Unknown:0};
+function tournamentCompare(a,b){
+  if(a.score!==b.score)return b.score-a.score;
+  if((a.grossYield||0)!==(b.grossYield||0))return (b.grossYield||0)-(a.grossYield||0);
+  if((parseInt(a.units)||0)!==(parseInt(b.units)||0))return (parseInt(b.units)||0)-(parseInt(a.units)||0);
+  const ra=RISK_ORDER[a.ownershipRisk],rb=RISK_ORDER[b.ownershipRisk];
+  if(ra!==rb)return ra-rb;
+  return (PLAN_ORDER[b.planningPotential]||0)-(PLAN_ORDER[a.planningPotential]||0);
 }
 
 // ── STATUS GATE ENFORCEMENT ────────────────────────────────────────────────
@@ -328,7 +459,7 @@ function closeSb(){document.getElementById('nav').classList.remove('open');docum
 
 function render(){
   const c=document.getElementById('content');c.innerHTML='';
-  ({dashboard:rDash,sites:rSites,add:rAddEdit,gate:rGate,letter:rLetter,log:rLog,lessons:rLessons,io:rIO}[curView]||rDash)(c);
+  ({dashboard:rDash,sites:rSites,add:rAddEdit,gate:rGate,letter:rLetter,log:rLog,lessons:rLessons,io:rIO,harness:rHarness}[curView]||rDash)(c);
 }
 
 // ── TOAST ──────────────────────────────────────────────────────────────────
@@ -680,7 +811,7 @@ function rIO(c){
 
 // CSV
 function csvEsc(v){const s=String(v??'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}"`:`${s}`}
-function siteToCSV(s){return[s.id,s.name,s.address,s.town,s.county,s.postcode,s.region,s.units,s.marketValue,s.monthlyRentPerUnit,(s.annualRent||0).toFixed(2),(s.grossYield||0).toFixed(6),(s.offer5||0).toFixed(2),(s.offer10||0).toFixed(2),s.ownerName,s.ownerType,s.ownershipStatus,s.dudrichStatus,s.coveredByContract,s.contractRef,s.developmentRights,s.futureRights,s.planningPotential,s.excluded?'Yes':'No',s.condition,s.vacancyLevel,s.score||0,s.priority,s.pipelineStatus,s.recommendedAction,s.lastContacted,s.nextAction,s.nextActionDate,s.notes].map(csvEsc).join(',')}
+function siteToCSV(s){return[s.id,s.name,s.address,s.town,s.county,s.postcode,s.region,s.units,s.marketValue,s.monthlyRentPerUnit,(s.annualRent||0).toFixed(2),(s.grossYield||0).toFixed(6),(s.offer5||0).toFixed(2),(s.offer10||0).toFixed(2),s.ownerName,s.ownerType,s.ownershipStatus,s.dudrichStatus,s.coveredByContract,s.contractRef,s.developmentRights,s.futureRights,s.planningPotential,s.excluded?'Yes':'No',s.condition,s.vacancyLevel,s.score||0,s.priority,s.pipelineStatus,s.recommendedAction,s.lastContacted,s.nextAction,s.nextActionDate,s.notes,s.harnessClass||'',s.harnessRoute||'',s.ownershipRisk||'',s.contractConf||'',s.valuationConf||'',s.planningUpside||'',s.rubricScore??'',s.rubricDecision||'',s.loopNextStep||'',s.loopBlockingReason||''].map(csvEsc).join(',')}
 function expCSV(){dl('gar-sites.csv',[CSV_HDR.join(','),...sites.map(siteToCSV)].join('\n'))}
 
 function parseCSVLine(line){
@@ -715,6 +846,161 @@ function impJSONFile(input){const file=input.files[0];if(!file)return;const fr=n
 function impJSONPaste(){try{const t=document.getElementById('jsonPaste').value;if(!t.trim()){toast('No JSON pasted','err');return}const p=JSON.parse(t);impJSONRows(Array.isArray(p)?p:[p])}catch(err){toast('JSON error: '+err.message,'err')}}
 
 function dl(filename,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/plain'}));a.download=filename;a.click()}
+
+// ── HARNESS CONSOLE ───────────────────────────────────────────────────────
+let hSelId=null,hTournSel=new Set();
+
+function rHarness(c){
+  const harnessTabs=[{id:'classify',l:'1 · Classify'},{id:'fanout',l:'2 · Fan-Out'},{id:'critic',l:'3 · Critic'},{id:'generate',l:'4 · Generate'},{id:'tournament',l:'5 · Tournament'},{id:'loop',l:'6 · Loop'}];
+  if(!window.hTab)window.hTab='classify';
+  const tabH=harnessTabs.map(t=>`<div class="tab${window.hTab===t.id?' active':''}" onclick="setHTab('${t.id}')">${t.l}</div>`).join('');
+  const siteOpts=sites.map(s=>`<option value="${escA(s.id)}"${hSelId===s.id?' selected':''}>${escH(s.id)} — ${escH(s.name)}</option>`).join('');
+  const siteDropdown=`<div class="fg" style="max-width:480px;margin-bottom:16px"><label class="fl">Selected Site (powers panels 2, 3, 4, 6)</label><select class="fs" onchange="setHSel(this.value)"><option value="">— Select a site —</option>${siteOpts}</select></div>`;
+  let panel='';
+  if(window.hTab==='classify')panel=hClassifyPanel();
+  else if(window.hTab==='fanout')panel=hFanOutPanel();
+  else if(window.hTab==='critic')panel=hCriticPanel();
+  else if(window.hTab==='generate')panel=hGeneratePanel();
+  else if(window.hTab==='tournament')panel=hTournamentPanel();
+  else if(window.hTab==='loop')panel=hLoopPanel();
+  c.innerHTML=`<div class="tabs">${tabH}</div>${window.hTab!=='classify'&&window.hTab!=='tournament'?siteDropdown:''}${panel}`;
+}
+function setHTab(t){window.hTab=t;render()}
+function setHSel(id){hSelId=id;render()}
+
+// PANEL 1 — CLASSIFY AND ACT
+function hClassifyPanel(){
+  const counts={};
+  const clsRows=sites.map(s=>{
+    counts[s.harnessClass]=(counts[s.harnessClass]||0)+1;
+    const clsBadge={DUDRICH_CONTRACTED_DEVELOPMENT:'b-purple',DUDRICH_EXCLUDED:'b-fail',LEGAL_REVIEW_REQUIRED:'b-warn',NON_DUDRICH_ACQUISITION:'b-cyan',UNKNOWN_NEEDS_INVESTIGATION:'b-warn',INCOMPLETE_RECORD:'b-neutral'};
+    const routeBadge={DEVELOPMENT:'b-purple',EXCLUDE:'b-fail',LEGAL_REVIEW:'b-warn',ACQUISITION:'b-cyan',INVESTIGATE:'b-warn'};
+    return`<tr><td class="tc">${escH(s.id)}</td><td class="nc">${escH(s.name)}</td><td>${escH(s.town)}</td><td><span class="badge ${clsBadge[s.harnessClass]||'b-neutral'}">${escH((s.harnessClass||'').replace(/_/g,' '))}</span></td><td><span class="badge ${routeBadge[s.harnessRoute]||'b-neutral'}">${escH(s.harnessRoute||'-')}</span></td><td class="txt-xs" style="color:var(--txt3)">${escH(HCLASS_ACTIONS[s.harnessClass]||'')}</td></tr>`;
+  }).join('');
+  const summary=Object.entries(counts).map(([k,v])=>`<div class="stat"><div class="stat-val">${v}</div><div class="stat-lbl">${k.replace(/_/g,' ')}</div></div>`).join('');
+  return`<div class="card"><div class="card-title">Classification Summary</div><div class="stat-grid">${summary||'<div class="empty">No sites</div>'}</div></div><div class="card"><div class="card-title">All Sites — Classification and Recommended Action</div>${sites.length?`<div class="tbl-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Town</th><th>Classification</th><th>Route</th><th>Recommended Action</th></tr></thead><tbody>${clsRows}</tbody></table></div>`:'<div class="empty">No sites. Load seed data first.</div>'}</div>`;
+}
+
+// PANEL 2 — FAN-OUT AND SYNTHESIZE
+function hFanOutPanel(){
+  if(!hSelId)return'<div class="empty">Select a site above to run fan-out analysis.</div>';
+  const s=sites.find(x=>x.id===hSelId);if(!s)return'<div class="empty">Site not found.</div>';
+  const fa=fanOut(s);
+  const riskBadge={LOW:'b-pass',MEDIUM:'b-warn',HIGH:'b-fail'};
+  const planBadge={HIGH:'b-cyan',MEDIUM:'b-warn',LOW:'b-neutral'};
+  const routeBadge={DEVELOPMENT:'b-purple',ACQUISITION:'b-cyan',LEGAL_REVIEW:'b-warn',INVESTIGATE:'b-warn',EXCLUDE:'b-fail'};
+  function block(title,conf,note,badgeClass){
+    return`<div class="stat" style="min-height:90px"><div class="stat-lbl">${title}</div><div style="margin:8px 0"><span class="badge ${badgeClass[conf]||'b-neutral'}">${conf}</span></div><div class="txt-xs" style="color:var(--txt3);line-height:1.5">${escH(note)}</div></div>`;
+  }
+  // Synthesize
+  const hc=harnessClassify(s);
+  const oppScore=s.score;
+  return`<div class="card">
+    <div class="flex jb ic mb16"><div class="card-title" style="margin:0">Fan-Out Analysis — ${escH(s.id)} ${escH(s.name)}</div>${raBadge(s.recommendedAction)}</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">
+      ${block('A. Ownership Risk',fa.ownerRisk,fa.ownerNote,riskBadge)}
+      ${block('B. Contract Confidence',fa.contractConf,fa.contractNote,riskBadge)}
+      ${block('C. Valuation Confidence',fa.valuationConf,fa.valuationNote,{LOW:'b-fail',MEDIUM:'b-warn',HIGH:'b-pass'})}
+      ${block('D. Planning Upside',fa.planningUpside,fa.planningNote,planBadge)}
+    </div>
+    <hr class="sep">
+    <div class="card-title">Synthesized Result</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+      <div class="stat cyan"><div class="stat-val">${oppScore}</div><div class="stat-lbl">Opportunity Score</div></div>
+      <div class="stat"><div class="stat-lbl">Classification</div><div style="margin-top:8px"><span class="badge b-neutral">${(hc.cls||'').replace(/_/g,' ')}</span></div></div>
+      <div class="stat"><div class="stat-lbl">Recommended Route</div><div style="margin-top:8px"><span class="badge ${routeBadge[hc.route]||'b-neutral'}">${hc.route||'-'}</span></div></div>
+    </div>
+  </div>`;
+}
+
+// PANEL 3 — CRITIC AND RUBRIC
+function hCriticPanel(){
+  if(!hSelId)return'<div class="empty">Select a site above to run the rubric.</div>';
+  const s=sites.find(x=>x.id===hSelId);if(!s)return'<div class="empty">Site not found.</div>';
+  const rb=rubric(s);
+  const decBadge={APPROVED:'b-pass',NEEDS_FIX:'b-warn',BLOCKED:'b-fail'};
+  const items=rb.items.map(i=>`<div class="gate-item ${i.pass?'pass':'fail'}"><span class="badge ${i.pass?'b-pass':'b-fail'}">${i.pass?'PASS':'FAIL'}</span><span class="gate-lbl">${escH(i.label)}</span></div>`).join('');
+  return`<div class="card">
+    <div class="flex jb ic mb16"><div class="card-title" style="margin:0">Rubric Check — ${escH(s.id)} ${escH(s.name)}</div><span class="badge ${decBadge[rb.decision]||'b-neutral'}">${rb.decision}</span></div>
+    ${items}
+    <div style="margin-top:14px" class="flex gap8 ic">
+      <span class="badge ${decBadge[rb.decision]||'b-neutral'}">${rb.decision}</span>
+      <span class="txt-sm" style="color:var(--txt3)">${rb.score}/8 rubric items pass</span>
+    </div>
+  </div>`;
+}
+
+// PANEL 4 — GENERATE AND FILTER
+function hGeneratePanel(){
+  if(!hSelId)return'<div class="empty">Select a site above to generate candidate actions.</div>';
+  const s=sites.find(x=>x.id===hSelId);if(!s)return'<div class="empty">Site not found.</div>';
+  const{approved,blocked}=generateActions(s);
+  const aRows=approved.map(a=>`<div class="gate-item pass"><span class="badge b-pass">APPROVED</span><span class="gate-lbl">${escH(a)}</span></div>`).join('');
+  const bRows=blocked.map(b=>`<div class="gate-item fail"><span class="badge b-fail">BLOCKED</span><span class="gate-lbl">${escH(b.action)}</span><span class="txt-xs" style="margin-left:auto;color:var(--txt3)">${escH(b.reason)}</span></div>`).join('');
+  return`<div class="card">
+    <div class="card-title">Generated &amp; Filtered Actions — ${escH(s.id)} ${escH(s.name)}</div>
+    <div class="card-title" style="color:var(--green)">✓ Approved Actions (${approved.length})</div>
+    ${aRows||'<div class="txt-xs" style="color:var(--txt3);padding:8px">None</div>'}
+    <hr class="sep">
+    <div class="card-title" style="color:var(--red)">✕ Blocked Actions (${blocked.length})</div>
+    ${bRows||'<div class="txt-xs" style="color:var(--txt3);padding:8px">None blocked</div>'}
+  </div>`;
+}
+
+// PANEL 5 — TOURNAMENT
+function hTournamentPanel(){
+  if(!sites.length)return'<div class="empty">No sites available for tournament.</div>';
+  const chks=sites.map(s=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer"><input type="checkbox" ${hTournSel.has(s.id)?'checked':''} onchange="toggleTourn('${escA(s.id)}')"><span class="tc">${escH(s.id)}</span> ${escH(s.name)} <span class="txt-xs" style="margin-left:auto">${prioBadge(s.priority)} Score: ${s.score||0}</span></label>`).join('');
+  let resultHtml='';
+  if(hTournSel.size>=2){
+    const contestants=sites.filter(s=>hTournSel.has(s.id));
+    const ranked=[...contestants].sort(tournamentCompare);
+    const pairLog=[];
+    for(let i=0;i<ranked.length-1;i++){
+      const a=ranked[i],b=ranked[i+1];
+      let reason='Higher score';
+      if(a.score===b.score){
+        if((a.grossYield||0)!==(b.grossYield||0))reason='Higher gross yield';
+        else if((parseInt(a.units)||0)!==(parseInt(b.units)||0))reason='More units';
+        else reason='Lower ownership risk / higher planning potential';
+      }
+      pairLog.push(`${escH(a.id)} beats ${escH(b.id)} — ${reason}`);
+    }
+    const rankRows=ranked.map((s,i)=>`<tr><td style="color:var(--cyan);font-weight:700">#${i+1}</td><td class="tc">${escH(s.id)}</td><td class="nc">${escH(s.name)}</td><td class="tr">${s.score||0}</td><td class="tr">${pct(s.grossYield)}</td><td>${prioBadge(s.priority)}</td><td>${s.ownershipRisk||'?'}</td></tr>`).join('');
+    resultHtml=`<hr class="sep"><div class="card-title">Tournament Result — Winner: ${escH(ranked[0].name)}</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Rank</th><th>ID</th><th>Name</th><th class="tr">Score</th><th class="tr">Yield</th><th>Priority</th><th>Owner Risk</th></tr></thead><tbody>${rankRows}</tbody></table></div>
+      <hr class="sep"><div class="card-title">Pairwise Log</div>
+      ${pairLog.map(l=>`<div class="txt-xs" style="padding:4px 0;border-bottom:1px solid var(--border)">${l}</div>`).join('')}`;
+  }else if(hTournSel.size===1){resultHtml='<div class="txt-xs" style="color:var(--txt3);padding:10px 0">Select at least 2 sites to run the tournament.</div>'}
+  return`<div class="card"><div class="flex jb ic mb16"><div class="card-title" style="margin:0">Tournament — Select Sites to Rank</div><button class="btn btn-ghost btn-sm" onclick="clrTourn()">Clear</button></div>${chks}${resultHtml}</div>`;
+}
+function toggleTourn(id){if(hTournSel.has(id))hTournSel.delete(id);else hTournSel.add(id);render()}
+function clrTourn(){hTournSel.clear();render()}
+
+// PANEL 6 — LOOP UNTIL DONE
+function hLoopPanel(){
+  if(!hSelId)return'<div class="empty">Select a site above to view the workflow loop.</div>';
+  const s=sites.find(x=>x.id===hSelId);if(!s)return'<div class="empty">Site not found.</div>';
+  const lp=loopStep(s);
+  const compStates=['WON','LOST','DEVELOPMENT_READY','DUDRICH_EXCLUDED'];
+  const isDone=lp.done;
+  return`<div class="card">
+    <div class="flex jb ic mb16"><div class="card-title" style="margin:0">Workflow Loop — ${escH(s.id)} ${escH(s.name)}</div>${isDone?'<span class="badge b-pass">COMPLETE</span>':'<span class="badge b-warn">IN PROGRESS</span>'}</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-bottom:16px">
+      <div class="stat ${isDone?'green':'amber'}"><div class="stat-val">${isDone?'✓ Done':'⟳ Active'}</div><div class="stat-lbl">Completion State</div></div>
+      <div class="stat"><div class="stat-val" style="font-size:13px">${escH(s.pipelineStatus||'-')}</div><div class="stat-lbl">Current Status</div></div>
+      ${lp.suggestedStatus&&!isDone?`<div class="stat cyan"><div class="stat-val" style="font-size:13px">${escH(lp.suggestedStatus)}</div><div class="stat-lbl">Suggested Status</div></div>`:''}
+    </div>
+    <div class="gate-item ${isDone?'pass':'fail'}" style="margin-bottom:12px">
+      <span class="badge ${isDone?'b-pass':'b-warn'}">${isDone?'DONE':'NEXT'}</span>
+      <span class="gate-lbl">${escH(lp.next)}</span>
+    </div>
+    ${lp.reason?`<div class="warn-item">⚠ Blocking reason: ${escH(lp.reason)}</div>`:''}
+    <hr class="sep">
+    <div class="card-title">Completion States</div>
+    ${compStates.map(st=>`<div class="gate-item ${s.pipelineStatus===st||s.recommendedAction==='DUDRICH_EXCLUDED'&&st==='DUDRICH_EXCLUDED'?'pass':''}"><span class="badge ${s.pipelineStatus===st?'b-pass':'b-neutral'}">${s.pipelineStatus===st?'REACHED':'NOT YET'}</span><span class="gate-lbl">${st}</span></div>`).join('')}
+  </div>`;
+}
 
 // ── MODAL ──────────────────────────────────────────────────────────────────
 function openModal(){document.getElementById('modal-overlay').classList.add('open')}
