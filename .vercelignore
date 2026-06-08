@@ -21,3 +21,9 @@ _vite_src/
 
 # Static prototype and screenshot artefacts — not part of Next.js build
 preview/
+
+# Local build/dependency artefacts
+node_modules/
+.next/
+.vercel/
+npm-debug.log*
