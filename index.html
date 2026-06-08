@@ -1,12 +1,748 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FineGuard Compliance Cloud</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garage Acquisition Radar</title>
+<style>
+:root {
+  --bg:#08090e;--bg2:#0e1018;--bg3:#141622;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+  --cyan:#00d4ff;--purple:#7c3aed;--green:#10b981;--amber:#f59e0b;--red:#ef4444;
+  --txt:#e2e8f0;--txt2:#94a3b8;--txt3:#64748b;
+  --hot:#ef4444;--warm:#f59e0b;--cold:#3b82f6;
+  --nav-w:220px;--r:8px;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh;display:flex}
+#nav{width:var(--nav-w);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.nav-logo{padding:20px 18px 12px;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);border-bottom:1px solid var(--border);margin-bottom:8px}
+.nav-logo span{display:block;font-size:9px;color:var(--txt3);letter-spacing:.08em;margin-top:2px;font-weight:400}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:13px;color:var(--txt2);cursor:pointer;transition:all .15s;user-select:none;position:relative}
+.nav-item:hover{color:var(--txt);background:rgba(255,255,255,.04)}
+.nav-item.active{color:var(--cyan);background:rgba(0,212,255,.06)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan)}
+.nav-item .ico{font-size:14px;width:18px;text-align:center}
+.nav-sec{padding:16px 18px 4px;font-size:9px;color:var(--txt3);letter-spacing:.12em;text-transform:uppercase}
+#main{margin-left:var(--nav-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+#topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50}
+.tb-title{font-size:14px;font-weight:600}
+.tb-sub{font-size:11px;color:var(--txt3);margin-top:1px}
+#content{padding:24px;max-width:1400px;width:100%}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);margin-bottom:14px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
+.stat{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.stat-val{font-size:22px;font-weight:700;line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:10px;color:var(--txt3)}
+.stat.cyan .stat-val{color:var(--cyan)}.stat.green .stat-val{color:var(--green)}.stat.amber .stat-val{color:var(--amber)}.stat.red .stat-val{color:var(--red)}.stat.purple .stat-val{color:#a78bfa}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--font)}
+.btn-primary{background:var(--cyan);color:#000}.btn-primary:hover{background:#00bbdd}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}.btn-danger:hover{background:rgba(239,68,68,.25)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--txt2);border:1px solid var(--border2)}.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--txt)}
+.btn-purple{background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3)}.btn-purple:hover{background:rgba(124,58,237,.3)}
+.btn-green{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)}.btn-green:hover{background:rgba(16,185,129,.25)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.b-hot{background:rgba(239,68,68,.15);color:var(--hot);border:1px solid rgba(239,68,68,.3)}
+.b-warm{background:rgba(245,158,11,.15);color:var(--warm);border:1px solid rgba(245,158,11,.3)}
+.b-cold{background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid rgba(59,130,246,.3)}
+.b-pass{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.b-fail{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.b-warn{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.b-cyan{background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid rgba(0,212,255,.2)}
+.b-purple{background:rgba(124,58,237,.15);color:#a78bfa;border:1px solid rgba(124,58,237,.3)}
+.b-neutral{background:rgba(255,255,255,.06);color:var(--txt3);border:1px solid var(--border2)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:10px;font-weight:600;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase}
+.fi,.fs,.fta{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;color:var(--txt);font-size:13px;font-family:var(--font);width:100%;outline:none;transition:border-color .15s}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--cyan)}
+.fta{min-height:80px;resize:vertical}
+.fsec{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);padding:16px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px;grid-column:1/-1}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--txt2);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+td.nc{color:var(--txt);font-weight:500}
+.tbl-acts{display:flex;gap:4px}
+.gate-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;margin-bottom:4px;background:var(--bg3);border:1px solid var(--border)}
+.gate-item.pass{border-color:rgba(16,185,129,.25)}.gate-item.fail{border-color:rgba(239,68,68,.25)}
+.gate-lbl{font-size:12px;color:var(--txt2);flex:1}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:8px 14px;font-size:11px;font-weight:600;color:var(--txt3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--txt2)}.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.filter-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px}
+.filter-bar input,.filter-bar select{background:var(--bg2);border:1px solid var(--border2);border-radius:5px;padding:5px 8px;color:var(--txt);font-size:12px;font-family:var(--font);outline:none}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--cyan)}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+#modal-overlay.open{display:flex}
+#modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;width:100%;max-width:880px;padding:24px}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:700}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--txt);z-index:300;transform:translateY(60px);opacity:0;transition:all .25s;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.ok{border-color:rgba(16,185,129,.4);color:var(--green)}
+#toast.err{border-color:rgba(239,68,68,.4);color:var(--red)}
+.letter-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:Georgia,serif;color:var(--txt2)}
+.dev-note{background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:14px;font-size:13px;color:#c4b5fd;line-height:1.7;white-space:pre-wrap;font-family:Georgia,serif}
+.log-row{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.log-time{font-size:10px;color:var(--txt3);white-space:nowrap;font-family:monospace;padding-top:2px;flex-shrink:0}
+.log-detail{font-size:12px;color:var(--txt2)}
+.log-site{font-size:11px;color:var(--txt3)}
+.warn-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:5px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);font-size:11px;color:var(--amber);margin-bottom:4px}
+.lesson-row{padding:12px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);margin-bottom:8px}
+.gate-block{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--red)}
+.tc{font-family:monospace;font-size:11px;color:var(--txt3)}
+.tr{text-align:right}
+.sep{border:none;border-top:1px solid var(--border);margin:20px 0}
+.empty{padding:40px;text-align:center;color:var(--txt3);font-size:13px}
+.flex{display:flex}.gap8{gap:8px}.gap12{gap:12px}.ic{align-items:center}.jb{justify-content:space-between}.fw{flex-wrap:wrap}
+.mb8{margin-bottom:8px}.mb16{margin-bottom:16px}
+.txt-xs{font-size:11px;color:var(--txt3)}.txt-sm{font-size:12px}.fw7{font-weight:700}
+.ssel{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:3px 6px;color:var(--txt2);font-size:11px;cursor:pointer;outline:none;font-family:var(--font)}
+.ssel:focus{border-color:var(--cyan)}
+.tcode{width:100%;min-height:140px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:10px;color:var(--txt);font-family:monospace;font-size:11px;resize:vertical;outline:none}
+.tcode:focus{border-color:var(--cyan)}
+@media(max-width:768px){
+  #nav{transform:translateX(-100%);transition:transform .25s}
+  #nav.open{transform:translateX(0)}
+  #main{margin-left:0}
+  #topbar{padding:12px 16px}
+  #content{padding:14px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  #mob-btn{display:flex!important}
+}
+#mob-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--txt2);cursor:pointer;font-size:16px;flex-shrink:0}
+#sb-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+#sb-ov.open{display:block}
+</style>
+</head>
+<body>
+<div id="sb-ov" onclick="closeSb()"></div>
+<nav id="nav">
+  <div class="nav-logo">GAR<span>Garage Acquisition Radar</span></div>
+  <div class="nav-sec">Overview</div>
+  <div class="nav-item active" data-view="dashboard" onclick="go('dashboard')"><span class="ico">◈</span>Dashboard</div>
+  <div class="nav-sec">Sites</div>
+  <div class="nav-item" data-view="sites" onclick="go('sites')"><span class="ico">⬡</span>Site Tables</div>
+  <div class="nav-item" data-view="add" onclick="startAdd()"><span class="ico">+</span>Add Site</div>
+  <div class="nav-item" data-view="gate" onclick="go('gate')"><span class="ico">⬢</span>Harness Gates</div>
+  <div class="nav-item" data-view="letter" onclick="go('letter')"><span class="ico">✉</span>Outreach Letters</div>
+  <div class="nav-sec">Data</div>
+  <div class="nav-item" data-view="log" onclick="go('log')"><span class="ico">◎</span>Activity Log</div>
+  <div class="nav-item" data-view="lessons" onclick="go('lessons')"><span class="ico">◐</span>Harness Lessons</div>
+  <div class="nav-item" data-view="io" onclick="go('io')"><span class="ico">⇅</span>Import / Export</div>
+</nav>
+<div id="main">
+  <div id="topbar">
+    <div id="mob-btn" onclick="toggleSb()">☰</div>
+    <div>
+      <div class="tb-title" id="tb-title">Dashboard</div>
+      <div class="tb-sub" id="tb-sub">Garage Acquisition Radar</div>
+    </div>
+    <div class="flex gap8">
+      <button class="btn btn-ghost btn-sm" onclick="loadSeed()">Load Seed</button>
+      <button class="btn btn-primary btn-sm" onclick="startAdd()">+ Add Site</button>
+    </div>
+  </div>
+  <div id="content"></div>
+</div>
+<div id="modal-overlay" onclick="moClick(event)">
+  <div id="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-title">Add Site</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕ Close</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+// ── CONSTANTS ──────────────────────────────────────────────────────────────
+const PIPELINES=['DISCOVERED','DUDRICH_CHECK','LAND_REGISTRY_CHECK','CONTRACT_REVIEW','VALUED','OFFER_READY','OFFER_SENT','FOLLOW_UP','NEGOTIATION','WON','LOST','DEVELOPMENT_READY','LEGAL_REVIEW'];
+const REC_ACTS=['NO_ACTION','DUDRICH_EXCLUDED','DEVELOP_UNDER_EXISTING_CONTRACT','LEGAL_REVIEW_REQUIRED','ACQUISITION_TARGET','SEND_OFFER','FOLLOW_UP','NEGOTIATE','WON','LOST'];
+const OWNER_TYPES=['Individual','Company','Council','Housing Association','Charity','Unknown'];
+const OWN_STATS=['Unknown','Land Registry Needed','Confirmed'];
+const DUD_STATS=['Unknown','Confirmed Dudrich','Not Dudrich'];
+const CONTRACT_VALS=['Unknown','Yes','No','Needs Review'];
+const DEV_RIGHTS=['Unknown','Full','Partial'];
+const FUTURE_RIGHTS=['Unknown','Yes','No'];
+const PLANNING=['Unknown','High','Medium','Low'];
+const CONDITIONS=['Average','Good','Poor','Derelict'];
+const VACANCIES=['Unknown','Low','Medium','High'];
+const COUNTIES=['Greater London','Surrey','Kent','East Sussex','West Sussex','Essex','Hampshire','Berkshire','Hertfordshire','Other'];
+const LESSON_FAILS=['Wrong Owner','Wrong Dudrich Match','Wrong Valuation','Duplicate Site','Contract Coverage Error','Bad Offer Sent','Missing Follow Up','Other'];
+const LESSON_STATS=['Open','Rule Added','Implemented','Closed'];
+const CSV_HDR=['Site_ID','Site_Name','Address','Town','County','Postcode','Region','Estimated_Units','Market_Value','Monthly_Rent_Per_Unit','Annual_Rent','Gross_Yield','Offer_5','Offer_10','Owner_Name','Owner_Type','Ownership_Status','Dudrich_Status','Covered_By_Development_Contract','Contract_Reference','Development_Rights','Future_Site_Rights','Planning_Potential','Excluded','Condition','Vacancy_Level','Score','Priority','Pipeline_Status','Recommended_Action','Last_Contacted','Next_Action','Next_Action_Date','Notes'];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let sites=[],logs=[],lessons=[];
+let curView='dashboard',editId=null,gateSelId=null,letterSelId=null,siteTab='all';
+let F={search:'',county:'',priority:'',pipeline:'',recAction:'',dudrich:'',contract:'',minScore:''};
+
+// ── STORAGE ────────────────────────────────────────────────────────────────
+function loadData(){
+  try{sites=JSON.parse(localStorage.getItem('gar_sites')||'[]')}catch{sites=[]}
+  try{logs=JSON.parse(localStorage.getItem('gar_logs')||'[]')}catch{logs=[]}
+  try{lessons=JSON.parse(localStorage.getItem('gar_lessons')||'[]')}catch{lessons=[]}
+}
+function saveData(){
+  localStorage.setItem('gar_sites',JSON.stringify(sites));
+  localStorage.setItem('gar_logs',JSON.stringify(logs));
+  localStorage.setItem('gar_lessons',JSON.stringify(lessons));
+}
+
+// ── ID GENERATORS ──────────────────────────────────────────────────────────
+function nextSiteId(){
+  let max=0;
+  sites.forEach(s=>{const m=s.id&&s.id.match(/GAR-(\d+)/);if(m)max=Math.max(max,+m[1])});
+  return 'GAR-'+String(max+1).padStart(4,'0');
+}
+function nextLessonId(){
+  let max=0;
+  lessons.forEach(l=>{const m=l.id&&l.id.match(/LES-(\d+)/);if(m)max=Math.max(max,+m[1])});
+  return 'LES-'+String(max+1).padStart(4,'0');
+}
+
+// ── ACTIVITY LOG ───────────────────────────────────────────────────────────
+function logAct(siteId,action,oldVal,newVal,notes){
+  logs.unshift({ts:new Date().toISOString(),siteId,action,oldVal:oldVal??'',newVal:newVal??'',notes:notes||''});
+  if(logs.length>500)logs=logs.slice(0,500);
+}
+
+// ── SCORING ────────────────────────────────────────────────────────────────
+function calcScore(s){
+  if(s.excluded===true)return 0;
+  let p=0;
+  const u=parseInt(s.units)||0;
+  if(u>=31)p+=20;else if(u>=16)p+=15;else if(u>=6)p+=10;else if(u>=1)p+=5;
+  if(s.dudrichStatus==='Not Dudrich')p+=15;
+  else if(s.dudrichStatus==='Confirmed Dudrich'&&s.coveredByContract==='Yes')p+=20;
+  if(s.ownershipStatus==='Confirmed')p+=15;
+  if(s.ownerType==='Individual'||s.ownerType==='Company')p+=10;
+  if(s.vacancyLevel==='High')p+=10;else if(s.vacancyLevel==='Medium')p+=5;
+  if(s.condition==='Poor'||s.condition==='Derelict')p+=10;
+  if(s.planningPotential==='High')p+=15;else if(s.planningPotential==='Medium')p+=8;
+  if(s.developmentRights==='Full')p+=15;else if(s.developmentRights==='Partial')p+=8;
+  return Math.min(100,p);
+}
+function calcPrio(sc,excl){
+  if(excl)return'COLD';
+  if(sc>=75)return'HOT';if(sc>=50)return'WARM';return'COLD';
+}
+
+// ── GATE RULES (source of truth) ──────────────────────────────────────────
+function applyGates(s){
+  let excl=false,ra='NO_ACTION';
+  if(s.dudrichStatus==='Confirmed Dudrich'){
+    if(s.coveredByContract==='Yes'){ra='DEVELOP_UNDER_EXISTING_CONTRACT';excl=false}
+    else if(s.coveredByContract==='Needs Review'){ra='LEGAL_REVIEW_REQUIRED';excl=false}
+    else if(s.coveredByContract==='No'){ra='DUDRICH_EXCLUDED';excl=true}
+    else{ra='NO_ACTION';excl=false}
+  }else if(s.dudrichStatus==='Not Dudrich'){
+    excl=false;
+    ra=(s.ownershipStatus==='Confirmed'&&parseFloat(s.marketValue)>0)?'ACQUISITION_TARGET':'NO_ACTION';
+  }else{ra='NO_ACTION';excl=false}
+  return{excluded:excl,recommendedAction:ra};
+}
+
+// ── OFFER CALCULATOR ───────────────────────────────────────────────────────
+function calcOffers(s){
+  const u=parseInt(s.units)||0,r=parseFloat(s.monthlyRentPerUnit)||0,mv=parseFloat(s.marketValue)||0;
+  const ar=u*r*12;
+  return{annualRent:ar,offer5:mv?mv*1.05:0,offer10:mv?mv*1.10:0,grossYield:(mv&&ar)?ar/mv:0};
+}
+
+// ── COMPUTE ALL DERIVED FIELDS ─────────────────────────────────────────────
+function derive(s){
+  const g=applyGates(s);
+  s.excluded=g.excluded;s.recommendedAction=g.recommendedAction;
+  const o=calcOffers(s);
+  s.annualRent=o.annualRent;s.offer5=o.offer5;s.offer10=o.offer10;s.grossYield=o.grossYield;
+  s.score=calcScore(s);s.priority=calcPrio(s.score,s.excluded);
+  return s;
+}
+
+// ── STATUS GATE ENFORCEMENT ────────────────────────────────────────────────
+function canStatus(s,st){
+  if(st==='OFFER_SENT')return s.dudrichStatus==='Not Dudrich'&&s.ownershipStatus==='Confirmed'&&parseFloat(s.marketValue)>0&&!!(s.ownerName&&s.ownerName.trim());
+  if(st==='DEVELOPMENT_READY')return s.dudrichStatus==='Confirmed Dudrich'&&s.coveredByContract==='Yes'&&(s.developmentRights==='Full'||s.developmentRights==='Partial')&&!!(s.contractRef&&s.contractRef.trim());
+  return true;
+}
+
+function gateChecks(s){return[
+  {label:'Dudrich status checked',pass:s.dudrichStatus!=='Unknown'},
+  {label:'Ownership confirmed',pass:s.ownershipStatus==='Confirmed'},
+  {label:'Contract coverage checked',pass:s.coveredByContract!=='Unknown'},
+  {label:'Valuation complete',pass:parseFloat(s.marketValue)>0},
+  {label:'Owner name present',pass:!!(s.ownerName&&s.ownerName.trim())},
+  {label:'Planning potential assessed',pass:s.planningPotential!=='Unknown'},
+  {label:'Next action set',pass:!!(s.nextAction&&s.nextAction.trim())},
+];}
+
+function siteWarnings(s){
+  const w=[];
+  if(!parseFloat(s.marketValue))w.push('Market value missing');
+  if(!parseInt(s.units))w.push('Estimated units missing');
+  if(s.dudrichStatus==='Unknown')w.push('Dudrich status unknown');
+  if(s.ownershipStatus!=='Confirmed')w.push('Ownership not confirmed');
+  if(!s.ownerName||!s.ownerName.trim())w.push('Owner name missing');
+  if(s.coveredByContract==='Needs Review')w.push('Contract coverage needs review');
+  if(s.nextActionDate&&new Date(s.nextActionDate)<new Date()&&s.nextAction)w.push('Next action overdue');
+  if(s.developmentRights==='Unknown')w.push('Development rights unknown');
+  return w;
+}
+
+// ── FORMAT HELPERS ─────────────────────────────────────────────────────────
+function gbp(v){return'£'+(parseFloat(v)||0).toLocaleString('en-GB',{maximumFractionDigits:0})}
+function pct(v){return((parseFloat(v)||0)*100).toFixed(2)+'%'}
+function tsd(iso){if(!iso)return'';return new Date(iso).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+function escH(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function escA(s){return String(s??'').replace(/"/g,'&quot;')}
+
+// ── BADGE BUILDERS ─────────────────────────────────────────────────────────
+function prioBadge(p){const m={HOT:'b-hot',WARM:'b-warm',COLD:'b-cold'};return`<span class="badge ${m[p]||'b-neutral'}">${p||'-'}</span>`}
+function raBadge(ra){
+  const m={DEVELOP_UNDER_EXISTING_CONTRACT:'b-purple',LEGAL_REVIEW_REQUIRED:'b-warn',ACQUISITION_TARGET:'b-cyan',DUDRICH_EXCLUDED:'b-fail',NO_ACTION:'b-neutral',SEND_OFFER:'b-cyan',FOLLOW_UP:'b-warn',NEGOTIATE:'b-cyan',WON:'b-pass',LOST:'b-fail'};
+  const sh={DEVELOP_UNDER_EXISTING_CONTRACT:'DEVELOP',LEGAL_REVIEW_REQUIRED:'LEGAL REVIEW',ACQUISITION_TARGET:'ACQUIRE',DUDRICH_EXCLUDED:'EXCLUDED',NO_ACTION:'NO ACTION',SEND_OFFER:'SEND OFFER',FOLLOW_UP:'FOLLOW UP',NEGOTIATE:'NEGOTIATE',WON:'WON',LOST:'LOST'};
+  return`<span class="badge ${m[ra]||'b-neutral'}">${sh[ra]||ra||'-'}</span>`
+}
+
+// ── ROUTING ────────────────────────────────────────────────────────────────
+function go(view){
+  curView=view;
+  if(view!=='add')editId=null;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
+  const T={dashboard:'Dashboard',sites:'Site Tables',add:editId?'Edit Site':'Add Site',gate:'Harness Gates',letter:'Outreach Letters',log:'Activity Log',lessons:'Harness Lessons',io:'Import / Export'};
+  document.getElementById('tb-title').textContent=T[view]||view;
+  document.getElementById('tb-sub').textContent=`Garage Acquisition Radar \xb7 ${sites.length} sites`;
+  render();closeSb();
+}
+function startAdd(){editId=null;go('add')}
+function toggleSb(){document.getElementById('nav').classList.toggle('open');document.getElementById('sb-ov').classList.toggle('open')}
+function closeSb(){document.getElementById('nav').classList.remove('open');document.getElementById('sb-ov').classList.remove('open')}
+
+function render(){
+  const c=document.getElementById('content');c.innerHTML='';
+  ({dashboard:rDash,sites:rSites,add:rAddEdit,gate:rGate,letter:rLetter,log:rLog,lessons:rLessons,io:rIO}[curView]||rDash)(c);
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+let tT;
+function toast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+(type||'');clearTimeout(tT);tT=setTimeout(()=>{el.className=''},3200)}
+
+// ── 1. DASHBOARD ───────────────────────────────────────────────────────────
+function rDash(c){
+  const total=sites.length,dudrich=sites.filter(s=>s.dudrichStatus==='Confirmed Dudrich').length,
+    contracted=sites.filter(s=>s.coveredByContract==='Yes').length,
+    acquire=sites.filter(s=>s.recommendedAction==='ACQUISITION_TARGET').length,
+    legal=sites.filter(s=>s.recommendedAction==='LEGAL_REVIEW_REQUIRED').length,
+    hot=sites.filter(s=>s.priority==='HOT').length,
+    offered=sites.filter(s=>s.pipelineStatus==='OFFER_SENT').length,
+    fu=sites.filter(s=>s.pipelineStatus==='FOLLOW_UP').length,
+    excl=sites.filter(s=>s.excluded===true).length,
+    devr=sites.filter(s=>s.pipelineStatus==='DEVELOPMENT_READY').length,
+    tmv=sites.filter(s=>!s.excluded).reduce((a,s)=>a+(parseFloat(s.marketValue)||0),0),
+    tar=sites.reduce((a,s)=>a+(parseFloat(s.annualRent)||0),0),
+    warn=sites.map(s=>({s,w:siteWarnings(s)})).filter(x=>x.w.length);
+  c.innerHTML=`
+<div class="card">
+  <div class="card-title">Portfolio Overview</div>
+  <div class="stat-grid">
+    <div class="stat cyan"><div class="stat-val">${total}</div><div class="stat-lbl">Total Sites</div></div>
+    <div class="stat amber"><div class="stat-val">${hot}</div><div class="stat-lbl">HOT Targets</div></div>
+    <div class="stat purple"><div class="stat-val">${contracted}</div><div class="stat-lbl">Contract-Covered</div></div>
+    <div class="stat"><div class="stat-val">${dudrich}</div><div class="stat-lbl">Dudrich Sites</div></div>
+    <div class="stat cyan"><div class="stat-val">${acquire}</div><div class="stat-lbl">Acquisition Targets</div></div>
+    <div class="stat amber"><div class="stat-val">${legal}</div><div class="stat-lbl">Legal Review</div></div>
+    <div class="stat red"><div class="stat-val">${excl}</div><div class="stat-lbl">Dudrich Excluded</div></div>
+    <div class="stat"><div class="stat-val">${offered}</div><div class="stat-lbl">Offers Sent</div></div>
+    <div class="stat"><div class="stat-val">${fu}</div><div class="stat-lbl">Follow-ups Due</div></div>
+    <div class="stat green"><div class="stat-val">${devr}</div><div class="stat-lbl">Development Ready</div></div>
+    <div class="stat green"><div class="stat-val">${gbp(tmv)}</div><div class="stat-lbl">Est. Total Market Value</div></div>
+    <div class="stat"><div class="stat-val">${gbp(tar)}</div><div class="stat-lbl">Est. Annual Rent</div></div>
+  </div>
+</div>
+${warn.length?`<div class="card"><div class="card-title">Validation Warnings (${warn.length})</div>${warn.slice(0,12).map(({s,w})=>`<div class="warn-item">⚠ <strong>${escH(s.id)}</strong> ${escH(s.name)} — ${w.join(' \xb7 ')}</div>`).join('')}${warn.length>12?`<div class="txt-xs" style="padding:6px 0">…and ${warn.length-12} more</div>`:''}</div>`:''}`;
+}
+
+// ── 2. SITE TABLES ─────────────────────────────────────────────────────────
+function rSites(c){
+  const tabs=[{id:'all',l:'All Sites'},{id:'dev',l:'Dev Contract'},{id:'acquire',l:'Acquisition Targets'},{id:'legal',l:'Legal Review'},{id:'excl',l:'Dudrich Excluded'}];
+  c.innerHTML=`<div class="tabs">${tabs.map(t=>`<div class="tab${siteTab===t.id?' active':''}" onclick="setSiteTab('${t.id}')">${t.l}</div>`).join('')}</div>${filterBar()}${buildTable(filteredSites())}`;
+}
+function setSiteTab(t){siteTab=t;render()}
+function filteredSites(){
+  let r=sites;
+  if(siteTab==='dev')r=r.filter(s=>s.recommendedAction==='DEVELOP_UNDER_EXISTING_CONTRACT');
+  else if(siteTab==='acquire')r=r.filter(s=>s.recommendedAction==='ACQUISITION_TARGET');
+  else if(siteTab==='legal')r=r.filter(s=>s.recommendedAction==='LEGAL_REVIEW_REQUIRED');
+  else if(siteTab==='excl')r=r.filter(s=>s.excluded===true);
+  if(F.search){const q=F.search.toLowerCase();r=r.filter(s=>(s.id+s.name+s.town+s.county).toLowerCase().includes(q))}
+  if(F.county)r=r.filter(s=>s.county===F.county);
+  if(F.priority)r=r.filter(s=>s.priority===F.priority);
+  if(F.pipeline)r=r.filter(s=>s.pipelineStatus===F.pipeline);
+  if(F.recAction)r=r.filter(s=>s.recommendedAction===F.recAction);
+  if(F.dudrich)r=r.filter(s=>s.dudrichStatus===F.dudrich);
+  if(F.contract)r=r.filter(s=>s.coveredByContract===F.contract);
+  if(F.minScore)r=r.filter(s=>(s.score||0)>=+F.minScore);
+  return r;
+}
+function filterBar(){
+  const opt=(arr,cur)=>arr.map(v=>`<option${cur===v?' selected':''} value="${escA(v)}">${escH(v)}</option>`).join('');
+  return`<div class="filter-bar">
+    <input type="text" placeholder="Search…" value="${escA(F.search)}" oninput="setF('search',this.value)" style="min-width:130px">
+    <select onchange="setF('county',this.value)"><option value="">All Counties</option>${opt(COUNTIES,F.county)}</select>
+    <select onchange="setF('priority',this.value)"><option value="">All Priority</option>${opt(['HOT','WARM','COLD'],F.priority)}</select>
+    <select onchange="setF('pipeline',this.value)"><option value="">All Pipeline</option>${opt(PIPELINES,F.pipeline)}</select>
+    <select onchange="setF('recAction',this.value)"><option value="">All Actions</option>${opt(REC_ACTS,F.recAction)}</select>
+    <select onchange="setF('dudrich',this.value)"><option value="">All Dudrich</option>${opt(DUD_STATS,F.dudrich)}</select>
+    <select onchange="setF('contract',this.value)"><option value="">All Contract</option>${opt(CONTRACT_VALS,F.contract)}</select>
+    <input type="number" placeholder="Min Score" value="${escA(F.minScore)}" oninput="setF('minScore',this.value)" style="width:80px">
+    <button class="btn btn-ghost btn-sm" onclick="clrF()">Clear</button>
+  </div>`;
+}
+function setF(k,v){F[k]=v;render()}
+function clrF(){F={search:'',county:'',priority:'',pipeline:'',recAction:'',dudrich:'',contract:'',minScore:''};render()}
+
+function buildTable(rows){
+  if(!rows.length)return'<div class="empty">No sites match the current filters.</div>';
+  const tb=rows.map(s=>{
+    const w=siteWarnings(s);
+    const pOpts=PIPELINES.map(st=>`<option${s.pipelineStatus===st?' selected':''}>${st}</option>`).join('');
+    return`<tr>
+      <td class="tc">${escH(s.id)}</td>
+      <td class="nc">${escH(s.name)}${w.length?` <span class="badge b-warn" title="${escA(w.join(', '))}">&#9888; ${w.length}</span>`:''}</td>
+      <td>${escH(s.town||'')}</td><td>${escH(s.county||'')}</td>
+      <td class="tr">${s.units||'-'}</td>
+      <td class="tr">${s.marketValue?gbp(s.marketValue):'-'}</td>
+      <td class="tr">${s.score||0}</td>
+      <td>${prioBadge(s.priority)}</td>
+      <td><select class="ssel" onchange="chgStatus('${escA(s.id)}',this.value)">${pOpts}</select></td>
+      <td>${raBadge(s.recommendedAction)}</td>
+      <td class="tbl-acts">
+        <button class="btn btn-ghost btn-sm" onclick="editSite('${escA(s.id)}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="delSite('${escA(s.id)}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+  return`<div class="tbl-wrap"><table><thead><tr>
+    <th>ID</th><th>Site Name</th><th>Town</th><th>County</th>
+    <th class="tr">Units</th><th class="tr">Market Value</th>
+    <th class="tr">Score</th><th>Priority</th><th>Pipeline Status</th>
+    <th>Rec. Action</th><th>Actions</th>
+  </tr></thead><tbody>${tb}</tbody></table></div>`;
+}
+
+function chgStatus(id,newSt){
+  const s=sites.find(x=>x.id===id);if(!s)return;
+  if(!canStatus(s,newSt)){
+    const msg=newSt==='OFFER_SENT'?'OFFER_SENT blocked — requires: Not Dudrich, Confirmed ownership, Market Value > 0, Owner Name set.':newSt==='DEVELOPMENT_READY'?'DEVELOPMENT_READY blocked — requires: Confirmed Dudrich, Contract = Yes, Full/Partial rights, Contract Reference set.':'Gate blocked: conditions not met.';
+    toast(msg,'err');render();return;
+  }
+  const old=s.pipelineStatus;s.pipelineStatus=newSt;s.updatedAt=new Date().toISOString();
+  logAct(s.id,'STATUS_CHANGED',old,newSt);saveData();toast('Status updated','ok');
+}
+
+// ── 3. ADD / EDIT FORM ─────────────────────────────────────────────────────
+function rAddEdit(c){
+  const s=editId?sites.find(x=>x.id===editId):null;
+  const v=f=>s?(s[f]??''):'';
+  const inp=(f,lbl,type,ph)=>`<div class="fg"><label class="fl">${lbl}</label><input type="${type||'text'}" class="fi" id="f_${f}" value="${escA(String(v(f)))}" placeholder="${ph||''}"></div>`;
+  const sel=(f,lbl,opts)=>`<div class="fg"><label class="fl">${lbl}</label><select class="fs" id="f_${f}">${opts.map(o=>`<option${escA(String(v(f)))===o?' selected':''}>${escH(o)}</option>`).join('')}</select></div>`;
+  const ta=(f,lbl)=>`<div class="fg" style="grid-column:1/-1"><label class="fl">${lbl}</label><textarea class="fta" id="f_${f}">${escH(String(v(f)))}</textarea></div>`;
+  const sec=l=>`<div class="fsec">${l}</div>`;
+  c.innerHTML=`<div class="card">
+    <div class="flex jb ic mb16">
+      <div class="card-title" style="margin:0">${editId?'Edit Site: '+escH(editId):'Add New Site'}</div>
+      ${editId?`<button class="btn btn-ghost btn-sm" onclick="cancelEdit()">Cancel</button>`:''}
+    </div>
+    <div class="form-grid">
+      ${sec('Location')}
+      ${inp('name','Site Name','text','e.g. Blythe Hill Garage Block')}
+      ${inp('address','Address')}
+      ${inp('town','Town')}
+      ${sel('county','County',COUNTIES)}
+      ${inp('postcode','Postcode')}
+      ${inp('region','Region')}
+      ${sec('Financial')}
+      ${inp('units','Estimated Units','number','e.g. 24')}
+      ${inp('marketValue','Market Value (\xa3)','number','e.g. 350000')}
+      ${inp('monthlyRentPerUnit','Monthly Rent / Unit (\xa3)','number','e.g. 80')}
+      ${sec('Ownership')}
+      ${inp('ownerName','Owner Name')}
+      ${sel('ownerType','Owner Type',OWNER_TYPES)}
+      ${sel('ownershipStatus','Ownership Status',OWN_STATS)}
+      ${inp('lastContacted','Last Contacted','date')}
+      ${sec('Dudrich / Contract')}
+      ${sel('dudrichStatus','Dudrich Status',DUD_STATS)}
+      ${sel('coveredByContract','Covered By Dev Contract',CONTRACT_VALS)}
+      ${inp('contractRef','Contract Reference')}
+      ${sel('developmentRights','Development Rights',DEV_RIGHTS)}
+      ${sel('futureRights','Future Site Rights',FUTURE_RIGHTS)}
+      ${sec('Site Characteristics')}
+      ${sel('condition','Condition',CONDITIONS)}
+      ${sel('vacancyLevel','Vacancy Level',VACANCIES)}
+      ${sel('planningPotential','Planning Potential',PLANNING)}
+      ${sec('Pipeline')}
+      ${sel('pipelineStatus','Pipeline Status',PIPELINES)}
+      ${inp('nextAction','Next Action')}
+      ${inp('nextActionDate','Next Action Date','date')}
+      ${sec('Notes')}
+      ${ta('notes','Notes')}
+    </div>
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="saveSite()">💾 ${editId?'Save Changes':'Add Site'}</button>
+      ${editId?`<button class="btn btn-ghost" onclick="cancelEdit()">Cancel</button>`:''}
+    </div>
+  </div>`;
+  setTimeout(()=>{const el=document.getElementById('f_name');if(el)el.focus()},50);
+}
+
+function cancelEdit(){editId=null;go('sites')}
+function editSite(id){editId=id;go('add')}
+function fv(id){return(document.getElementById(id)||{}).value||''}
+function getFormVals(){return{name:fv('f_name'),address:fv('f_address'),town:fv('f_town'),county:fv('f_county'),postcode:fv('f_postcode'),region:fv('f_region'),units:fv('f_units'),marketValue:fv('f_marketValue'),monthlyRentPerUnit:fv('f_monthlyRentPerUnit'),ownerName:fv('f_ownerName'),ownerType:fv('f_ownerType'),ownershipStatus:fv('f_ownershipStatus'),dudrichStatus:fv('f_dudrichStatus'),coveredByContract:fv('f_coveredByContract'),contractRef:fv('f_contractRef'),developmentRights:fv('f_developmentRights'),futureRights:fv('f_futureRights'),planningPotential:fv('f_planningPotential'),condition:fv('f_condition'),vacancyLevel:fv('f_vacancyLevel'),pipelineStatus:fv('f_pipelineStatus'),nextAction:fv('f_nextAction'),nextActionDate:fv('f_nextActionDate'),lastContacted:fv('f_lastContacted'),notes:fv('f_notes')}}
+
+function saveSite(){
+  const vals=getFormVals();
+  if(!vals.name.trim()){toast('Site Name is required','err');return}
+  if(editId){
+    const idx=sites.findIndex(x=>x.id===editId);if(idx<0)return;
+    const old={...sites[idx]};
+    const upd={...sites[idx],...vals,updatedAt:new Date().toISOString()};
+    derive(upd);
+    const watched={pipelineStatus:'STATUS_CHANGED',dudrichStatus:'DUDRICH_CHANGED',coveredByContract:'CONTRACT_CHANGED',marketValue:'VALUE_CHANGED',ownerName:'OWNER_CHANGED'};
+    Object.entries(watched).forEach(([f,a])=>{if(old[f]!==upd[f])logAct(upd.id,a,old[f],upd[f])});
+    logAct(upd.id,'SITE_UPDATED','','','Updated by user');
+    sites[idx]=upd;editId=null;saveData();toast('Site updated','ok');go('sites');
+  }else{
+    const id=nextSiteId();
+    const ns={id,...vals,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    derive(ns);sites.push(ns);logAct(id,'SITE_CREATED','','','Site created');
+    saveData();toast('Site added: '+id,'ok');go('sites');
+  }
+}
+
+function delSite(id){
+  const s=sites.find(x=>x.id===id);if(!s)return;
+  if(!confirm(`Delete "${s.name}" (${s.id})? This cannot be undone.`))return;
+  sites=sites.filter(x=>x.id!==id);
+  logAct(id,'SITE_DELETED',s.name,'','Deleted by user');
+  saveData();toast('Site deleted','ok');render();
+}
+
+// ── 4. HARNESS GATE PANEL ──────────────────────────────────────────────────
+function rGate(c){
+  if(!sites.length){c.innerHTML='<div class="empty">No sites. Add sites first.</div>';return}
+  const opts=sites.map(s=>`<option value="${escA(s.id)}"${gateSelId===s.id?' selected':''}>${escH(s.id)} — ${escH(s.name)}</option>`).join('');
+  let panel='';
+  if(gateSelId){const s=sites.find(x=>x.id===gateSelId);if(s)panel=buildGatePanel(s)}
+  c.innerHTML=`<div class="card"><div class="card-title">Select Site for Gate Check</div><div class="fg" style="max-width:500px"><select class="fs" onchange="selGate(this.value)"><option value="">&#8212; Select a site &#8212;</option>${opts}</select></div></div>${panel}`;
+}
+function selGate(id){gateSelId=id;render()}
+
+function buildGatePanel(s){
+  const checks=gateChecks(s);
+  const allPass=checks.every(c=>c.pass);
+  return`<div class="card">
+    <div class="flex jb ic mb16">
+      <div><span class="tc">${escH(s.id)}</span> <strong>${escH(s.name)}</strong></div>
+      <div>${raBadge(s.recommendedAction)}</div>
+    </div>
+    ${!canStatus(s,'OFFER_SENT')?'<div class="gate-block">⛔ OFFER_SENT blocked — requires: Not Dudrich, Confirmed ownership, Market Value &gt; 0, Owner Name set</div>':''}
+    ${!canStatus(s,'DEVELOPMENT_READY')?'<div class="gate-block">⛔ DEVELOPMENT_READY blocked — requires: Confirmed Dudrich, Contract = Yes, Full/Partial rights, Contract Reference set</div>':''}
+    <div class="card-title">Gate Checks</div>
+    ${checks.map(ch=>`<div class="gate-item ${ch.pass?'pass':'fail'}"><span class="badge ${ch.pass?'b-pass':'b-fail'}">${ch.pass?'PASS':'FAIL'}</span><span class="gate-lbl">${escH(ch.label)}</span></div>`).join('')}
+    <div style="margin-top:12px">${allPass?'<span class="badge b-pass">✓ ALL GATES PASS</span>':`<span class="badge b-fail">✕ ${checks.filter(c=>!c.pass).length} GATE(S) FAILING</span>`}</div>
+    <hr class="sep">
+    <div class="card-title">Offer Calculator</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+      <div class="stat"><div class="stat-val">${gbp(s.marketValue)}</div><div class="stat-lbl">Market Value</div></div>
+      <div class="stat"><div class="stat-val">${gbp(s.offer5)}</div><div class="stat-lbl">Offer +5%</div></div>
+      <div class="stat"><div class="stat-val">${gbp(s.offer10)}</div><div class="stat-lbl">Offer +10%</div></div>
+      <div class="stat"><div class="stat-val">${gbp(s.annualRent)}</div><div class="stat-lbl">Annual Rent</div></div>
+      <div class="stat"><div class="stat-val">${pct(s.grossYield)}</div><div class="stat-lbl">Gross Yield</div></div>
+      <div class="stat"><div class="stat-val">${s.score||0}</div><div class="stat-lbl">Score</div></div>
+      <div class="stat"><div class="stat-val">${prioBadge(s.priority)}</div><div class="stat-lbl">Priority</div></div>
+    </div>
+    ${siteWarnings(s).length?`<hr class="sep"><div class="card-title">Validation Warnings</div>${siteWarnings(s).map(x=>`<div class="warn-item">⚠ ${escH(x)}</div>`).join('')}`:''}
+  </div>`;
+}
+
+// ── 5. OUTREACH LETTERS ────────────────────────────────────────────────────
+function rLetter(c){
+  const eligible=sites.filter(s=>s.recommendedAction==='ACQUISITION_TARGET'||s.recommendedAction==='DEVELOP_UNDER_EXISTING_CONTRACT');
+  const opts=eligible.map(s=>`<option value="${escA(s.id)}"${letterSelId===s.id?' selected':''}>${escH(s.id)} — ${escH(s.name)} (${s.recommendedAction})</option>`).join('');
+  let body='';
+  if(letterSelId){const s=sites.find(x=>x.id===letterSelId);if(s)body=buildLetter(s)}
+  c.innerHTML=`<div class="card"><div class="card-title">Generate Outreach Letter</div><p class="txt-xs mb16">Available for Acquisition Targets and Development Contract sites only. Dudrich Excluded sites are not shown.</p><div class="fg" style="max-width:500px;margin-bottom:16px"><select class="fs" onchange="selLetter(this.value)"><option value="">&#8212; Select a site &#8212;</option>${opts}</select></div>${body}</div>`;
+}
+function selLetter(id){letterSelId=id;render()}
+
+function buildLetter(s){
+  if(s.recommendedAction==='DEVELOP_UNDER_EXISTING_CONTRACT'){
+    const note=`DEVELOPMENT REVIEW NOTE\n${'─'.repeat(30)}\nSite: ${s.name}\nSite ID: ${s.id}\nAddress: ${[s.address,s.town,s.county,s.postcode].filter(Boolean).join(', ')}\nContract Reference: ${s.contractRef||'[CONTRACT REF]'}\nDevelopment Rights: ${s.developmentRights}\nPlanning Potential: ${s.planningPotential}\n\nSTATUS: Covered under existing development contract.\nThis is a Confirmed Dudrich site with active contract coverage (Ref: ${s.contractRef||'[CONTRACT REF]'}).\n\nAction: Proceed under the terms of the existing development agreement.\nLegal team to confirm scope of works. No acquisition letter required.\n\nReviewed: ${new Date().toLocaleDateString('en-GB')}\nReviewed by: [Name]`;
+    return`<div class="card-title">Development Review Note</div><div class="dev-note" id="lc">${escH(note)}</div><button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="copyLetter()">Copy Note</button>`;
+  }
+  const now=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const letter=`[Buyer Name]\n[Company Name]\n[Address]\n\n${now}\n\nDear ${s.ownerName||'Sir / Madam'},\n\nRe: Lock-Up Garage Site — ${s.address?s.address+', ':''}${s.town||''}\n\nI am writing to you as a property investor with a specific interest in acquiring lock-up garage portfolios across South East England. I understand that you may be the owner of the above-referenced site, which comprises approximately ${s.units||'[NUMBER]'} garage units.\n\nWe are actively seeking to acquire garage sites in your area and are in a position to offer a straightforward, professional transaction with rapid completion. Our offer would be in the region of ${gbp(s.offer5)} to ${gbp(s.offer10)} — 5–10% above current market value — subject to title checks and a short survey period. We are experienced buyers who can move quickly and with minimal disruption to any existing tenants.\n\nIf you have any interest in discussing this further, or if you simply wish to understand what your site could be worth, I would be delighted to have an initial conversation at your convenience. There is absolutely no obligation.\n\nPlease contact me:\nPhone: [Phone Number]\nEmail: [Email Address]\n\nYours sincerely,\n\n[Buyer Name]\n[Company / Trading Name]\n[Phone Number]\n[Email Address]`;
+  return`<div class="card-title">Acquisition Letter — ${escH(s.id)}</div><div class="letter-box" id="lc">${escH(letter)}</div><button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="copyLetter()">Copy Letter</button>`;
+}
+function copyLetter(){
+  const el=document.getElementById('lc');if(!el)return;
+  navigator.clipboard.writeText(el.textContent).then(()=>toast('Copied','ok')).catch(()=>toast('Copy failed','err'));
+}
+
+// ── 6. ACTIVITY LOG ────────────────────────────────────────────────────────
+function rLog(c){
+  if(!logs.length){c.innerHTML='<div class="empty">No activity logged yet.</div>';return}
+  const clr={SITE_CREATED:'b-pass',SITE_DELETED:'b-fail',STATUS_CHANGED:'b-cyan',DUDRICH_CHANGED:'b-warn',CONTRACT_CHANGED:'b-purple',VALUE_CHANGED:'b-cyan',OWNER_CHANGED:'b-neutral',SITE_UPDATED:'b-neutral'};
+  const rows=logs.slice(0,200).map(l=>`<div class="log-row"><div class="log-time">${tsd(l.ts)}</div><span class="badge ${clr[l.action]||'b-neutral'}">${l.action}</span><div><div class="log-detail">${escH(l.notes||(l.oldVal!==''?`${l.oldVal} → ${l.newVal}`:l.newVal))}</div><div class="log-site">${escH(l.siteId)}</div></div></div>`).join('');
+  c.innerHTML=`<div class="card"><div class="flex jb ic mb16"><div class="card-title" style="margin:0">Activity Log (${logs.length})</div><button class="btn btn-danger btn-sm" onclick="clrLog()">Clear Log</button></div>${rows}</div>`;
+}
+function clrLog(){if(!confirm('Clear all log entries?'))return;logs=[];saveData();render()}
+
+// ── 7. HARNESS LESSONS ─────────────────────────────────────────────────────
+function rLessons(c){
+  const rows=lessons.map(l=>`<div class="lesson-row">
+    <div class="flex jb ic mb8">
+      <div class="flex gap8 ic"><span class="tc">${escH(l.id)}</span><span class="badge b-warn">${escH(l.failureType)}</span><span class="badge ${l.status==='Closed'?'b-pass':l.status==='Open'?'b-fail':'b-neutral'}">${escH(l.status)}</span></div>
+      <div class="flex gap8"><button class="btn btn-ghost btn-sm" onclick="openLesson('${escA(l.id)}')">Edit</button><button class="btn btn-danger btn-sm" onclick="delLesson('${escA(l.id)}')">Del</button></div>
+    </div>
+    <div class="txt-sm fw7" style="margin-bottom:4px">${escH(l.whatHappened||'')}</div>
+    <div class="txt-xs" style="margin-bottom:4px">Site: ${escH(l.siteId||'—')} \xb7 ${escH(l.date||'—')} \xb7 Root cause: ${escH(l.rootCause||'—')}</div>
+    ${l.ruleAdded?`<div class="txt-xs" style="color:var(--green)">✓ Rule: ${escH(l.ruleAdded)}</div>`:''}
+  </div>`).join('');
+  c.innerHTML=`<div class="card"><div class="flex jb ic mb16"><div class="card-title" style="margin:0">Harness Lessons (${lessons.length})</div><div class="flex gap8"><button class="btn btn-purple btn-sm" onclick="expLessons()">Export JSON</button><button class="btn btn-ghost btn-sm" onclick="document.getElementById('ljf').click()">Import JSON</button><input type="file" id="ljf" accept=".json" style="display:none" onchange="impLessonsFile(this)"><button class="btn btn-primary btn-sm" onclick="openLesson('')">+ Add Lesson</button></div></div>${lessons.length?rows:'<div class="empty">No lessons recorded yet. Add one when something goes wrong.</div>'}</div>`;
+}
+function openLesson(id){
+  const l=id?lessons.find(x=>x.id===id):null;
+  const v=f=>l?(l[f]||''):'';
+  const sel=(f,opts)=>`<select class="fs" id="lf_${f}">${opts.map(o=>`<option${v(f)===o?' selected':''}>${escH(o)}</option>`).join('')}</select>`;
+  document.getElementById('modal-title').textContent=id?'Edit Lesson':'Add Harness Lesson';
+  document.getElementById('modal-body').innerHTML=`<div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+    <div class="fg"><label class="fl">Date</label><input type="date" class="fi" id="lf_date" value="${escA(v('date'))}"></div>
+    <div class="fg"><label class="fl">Site ID</label><input class="fi" id="lf_siteId" value="${escA(v('siteId'))}" placeholder="GAR-0001"></div>
+    <div class="fg"><label class="fl">Failure Type</label>${sel('failureType',LESSON_FAILS)}</div>
+    <div class="fg"><label class="fl">Status</label>${sel('status',LESSON_STATS)}</div>
+    <div class="fg" style="grid-column:1/-1"><label class="fl">What Happened</label><textarea class="fta" id="lf_what">${escH(v('whatHappened'))}</textarea></div>
+    <div class="fg" style="grid-column:1/-1"><label class="fl">Root Cause</label><textarea class="fta" id="lf_root">${escH(v('rootCause'))}</textarea></div>
+    <div class="fg" style="grid-column:1/-1"><label class="fl">Rule Added</label><input class="fi" id="lf_rule" value="${escA(v('ruleAdded'))}" placeholder="Describe the new rule…"></div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="saveLesson('${escA(id||'')}')">Save</button>
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+  </div>`;
+  openModal();
+}
+function saveLesson(existId){
+  const g=i=>(document.getElementById(i)||{}).value||'';
+  const d={date:g('lf_date'),siteId:g('lf_siteId'),failureType:g('lf_failureType'),status:g('lf_status'),whatHappened:g('lf_what'),rootCause:g('lf_root'),ruleAdded:g('lf_rule')};
+  if(existId){const i=lessons.findIndex(x=>x.id===existId);if(i>=0)lessons[i]={...lessons[i],...d}}
+  else lessons.push({id:nextLessonId(),...d,createdAt:new Date().toISOString()});
+  saveData();closeModal();toast('Lesson saved','ok');render();
+}
+function delLesson(id){if(!confirm('Delete this lesson?'))return;lessons=lessons.filter(x=>x.id!==id);saveData();toast('Lesson deleted','ok');render()}
+function expLessons(){dl('gar-lessons.json',JSON.stringify(lessons,null,2))}
+function impLessonsFile(input){
+  const file=input.files[0];if(!file)return;
+  const fr=new FileReader();fr.onload=e=>{try{const p=JSON.parse(e.target.result);if(Array.isArray(p)){p.forEach(l=>{if(!lessons.find(x=>x.id===l.id))lessons.push(l)});saveData();toast('Lessons imported','ok');render()}}catch{toast('JSON parse error','err')}};fr.readAsText(file);
+}
+
+// ── 8. IMPORT / EXPORT ─────────────────────────────────────────────────────
+function rIO(c){
+  c.innerHTML=`<div class="card">
+    <div class="card-title">CSV Export / Import</div>
+    <div class="flex gap8 mb16 fw">
+      <button class="btn btn-green btn-sm" onclick="expCSV()">⬇ Export CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('csvf').click()">⬆ Import CSV File</button>
+      <input type="file" id="csvf" accept=".csv" style="display:none" onchange="impCSVFile(this)">
+    </div>
+    <div class="fg"><label class="fl">Or paste CSV here</label><textarea class="tcode" id="csvPaste" placeholder="Paste CSV…"></textarea></div>
+    <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="impCSVPaste()">Import Pasted CSV</button>
+  </div>
+  <div class="card">
+    <div class="card-title">JSON Export / Import</div>
+    <div class="flex gap8 mb16 fw">
+      <button class="btn btn-green btn-sm" onclick="expJSON()">⬇ Export JSON</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('jsonf').click()">⬆ Import JSON File</button>
+      <input type="file" id="jsonf" accept=".json" style="display:none" onchange="impJSONFile(this)">
+    </div>
+    <div class="fg"><label class="fl">Or paste JSON here</label><textarea class="tcode" id="jsonPaste" placeholder="Paste JSON…"></textarea></div>
+    <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="impJSONPaste()">Import Pasted JSON</button>
+  </div>`;
+}
+
+// CSV
+function csvEsc(v){const s=String(v??'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}"`:`${s}`}
+function siteToCSV(s){return[s.id,s.name,s.address,s.town,s.county,s.postcode,s.region,s.units,s.marketValue,s.monthlyRentPerUnit,(s.annualRent||0).toFixed(2),(s.grossYield||0).toFixed(6),(s.offer5||0).toFixed(2),(s.offer10||0).toFixed(2),s.ownerName,s.ownerType,s.ownershipStatus,s.dudrichStatus,s.coveredByContract,s.contractRef,s.developmentRights,s.futureRights,s.planningPotential,s.excluded?'Yes':'No',s.condition,s.vacancyLevel,s.score||0,s.priority,s.pipelineStatus,s.recommendedAction,s.lastContacted,s.nextAction,s.nextActionDate,s.notes].map(csvEsc).join(',')}
+function expCSV(){dl('gar-sites.csv',[CSV_HDR.join(','),...sites.map(siteToCSV)].join('\n'))}
+
+function parseCSVLine(line){
+  const r=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'&&!inQ){inQ=true;continue}
+    if(ch==='"'&&inQ){if(line[i+1]==='"'){cur+='"';i++}else inQ=false;continue}
+    if(ch===','&&!inQ){r.push(cur);cur='';continue}
+    cur+=ch;
+  }
+  r.push(cur);return r;
+}
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/);if(lines.length<2)return[];
+  const hdrs=parseCSVLine(lines[0]).map(h=>h.trim());
+  return lines.slice(1).filter(l=>l.trim()).map(l=>{const v=parseCSVLine(l);const o={};hdrs.forEach((h,i)=>{o[h]=v[i]??''});return o;});
+}
+function csvRowToSite(r){return{id:r['Site_ID']||'',name:r['Site_Name']||'',address:r['Address']||'',town:r['Town']||'',county:r['County']||'',postcode:r['Postcode']||'',region:r['Region']||'',units:r['Estimated_Units']||'',marketValue:r['Market_Value']||'',monthlyRentPerUnit:r['Monthly_Rent_Per_Unit']||'',ownerName:r['Owner_Name']||'',ownerType:r['Owner_Type']||'',ownershipStatus:r['Ownership_Status']||'',dudrichStatus:r['Dudrich_Status']||'',coveredByContract:r['Covered_By_Development_Contract']||'',contractRef:r['Contract_Reference']||'',developmentRights:r['Development_Rights']||'',futureRights:r['Future_Site_Rights']||'',planningPotential:r['Planning_Potential']||'',condition:r['Condition']||'',vacancyLevel:r['Vacancy_Level']||'',pipelineStatus:r['Pipeline_Status']||'',nextAction:r['Next_Action']||'',nextActionDate:r['Next_Action_Date']||'',lastContacted:r['Last_Contacted']||'',notes:r['Notes']||'',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}}
+function impCSVRows(rows){
+  let a=0,u=0;
+  rows.forEach(r=>{const s=csvRowToSite(r);derive(s);const ei=sites.findIndex(x=>x.id===s.id&&/^GAR-\d+$/.test(s.id));if(ei>=0){sites[ei]=s;u++}else{if(!/^GAR-\d+$/.test(s.id))s.id=nextSiteId();sites.push(s);a++}});
+  saveData();toast(`Imported: ${a} added, ${u} updated`,'ok');render();
+}
+function impCSVFile(input){const file=input.files[0];if(!file)return;const fr=new FileReader();fr.onload=e=>{try{impCSVRows(parseCSV(e.target.result))}catch(err){toast('CSV error: '+err.message,'err')}};fr.readAsText(file)}
+function impCSVPaste(){try{const t=document.getElementById('csvPaste').value;if(!t.trim()){toast('No CSV pasted','err');return}impCSVRows(parseCSV(t))}catch(err){toast('CSV error: '+err.message,'err')}}
+
+// JSON
+function expJSON(){dl('gar-sites.json',JSON.stringify(sites,null,2))}
+function impJSONRows(arr){let a=0,u=0;arr.forEach(s=>{derive(s);const ei=sites.findIndex(x=>x.id===s.id);if(ei>=0){sites[ei]=s;u++}else{sites.push(s);a++}});saveData();toast(`Imported: ${a} added, ${u} updated`,'ok');render()}
+function impJSONFile(input){const file=input.files[0];if(!file)return;const fr=new FileReader();fr.onload=e=>{try{const p=JSON.parse(e.target.result);impJSONRows(Array.isArray(p)?p:[p])}catch(err){toast('JSON error: '+err.message,'err')}};fr.readAsText(file)}
+function impJSONPaste(){try{const t=document.getElementById('jsonPaste').value;if(!t.trim()){toast('No JSON pasted','err');return}const p=JSON.parse(t);impJSONRows(Array.isArray(p)?p:[p])}catch(err){toast('JSON error: '+err.message,'err')}}
+
+function dl(filename,content){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/plain'}));a.download=filename;a.click()}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openModal(){document.getElementById('modal-overlay').classList.add('open')}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open')}
+function moClick(e){if(e.target===document.getElementById('modal-overlay'))closeModal()}
+
+// ── SEED DATA ─────────────────────────────────────────────────────────────
+function loadSeed(){
+  if(sites.length&&!confirm('Load seed data alongside existing records?'))return;
+  const now=new Date().toISOString();
+  const seed=[
+    {id:'GAR-0001',name:'Whitehorse Road Garage Court',address:'Whitehorse Road',town:'Croydon',county:'Greater London',postcode:'CR0 2JH',region:'South London',units:'25',marketValue:'295000',monthlyRentPerUnit:'78',ownerName:'LockUpGarages Holdings Ltd',ownerType:'Company',ownershipStatus:'Confirmed',dudrichStatus:'Confirmed Dudrich',coveredByContract:'Yes',contractRef:'DC/2021/CRY-007',developmentRights:'Full',futureRights:'Yes',planningPotential:'High',condition:'Good',vacancyLevel:'Low',pipelineStatus:'DEVELOPMENT_READY',nextAction:'Instruct architect for feasibility study',nextActionDate:'2026-07-01',notes:'LockUpGarages branded site. Covered by 2021 development contract. Full rights confirmed.',createdAt:now,updatedAt:now},
+    {id:'GAR-0002',name:'Elmfield Park Lock-Ups',address:'Elmfield Park Estate',town:'Bromley',county:'Greater London',postcode:'BR1 2TP',region:'South East London',units:'18',marketValue:'210000',monthlyRentPerUnit:'70',ownerName:'Dudrich Estates Ltd',ownerType:'Company',ownershipStatus:'Confirmed',dudrichStatus:'Confirmed Dudrich',coveredByContract:'Yes',contractRef:'DC/2019/BRM-003',developmentRights:'Partial',futureRights:'Yes',planningPotential:'Medium',condition:'Good',vacancyLevel:'Low',pipelineStatus:'CONTRACT_REVIEW',nextAction:'Confirm partial rights scope with legal',nextActionDate:'2026-06-20',notes:'Confirmed Dudrich site with active contract coverage.',createdAt:now,updatedAt:now},
+    {id:'GAR-0003',name:'Lockwood Road Garages',address:'14-22 Lockwood Road',town:'Croydon',county:'Greater London',postcode:'CR0 3BT',region:'South London',units:'32',marketValue:'380000',monthlyRentPerUnit:'80',ownerName:'Apex Property Holdings Ltd',ownerType:'Company',ownershipStatus:'Confirmed',dudrichStatus:'Confirmed Dudrich',coveredByContract:'No',contractRef:'',developmentRights:'Unknown',futureRights:'Unknown',planningPotential:'Medium',condition:'Average',vacancyLevel:'Medium',pipelineStatus:'DUDRICH_CHECK',nextAction:'Verify no contract coverage with legal',nextActionDate:'2026-06-15',notes:'Confirmed Dudrich but no contract coverage found. Excluded from acquisition.',createdAt:now,updatedAt:now},
+    {id:'GAR-0004',name:'Blythe Hill Garage Block',address:'Off Blythe Hill Lane',town:'Lewisham',county:'Greater London',postcode:'SE6 4UB',region:'South East London',units:'48',marketValue:'520000',monthlyRentPerUnit:'90',ownerName:'Raymond Holloway',ownerType:'Individual',ownershipStatus:'Confirmed',dudrichStatus:'Not Dudrich',coveredByContract:'No',contractRef:'',developmentRights:'Unknown',futureRights:'Unknown',planningPotential:'High',condition:'Derelict',vacancyLevel:'High',pipelineStatus:'VALUED',nextAction:'Submit formal offer',nextActionDate:'2026-06-12',notes:'Elderly individual owner, motivated to sell. Solicitor details obtained. Strong HOT candidate.',createdAt:now,updatedAt:now},
+    {id:'GAR-0005',name:'Station Approach Garages',address:'Station Approach',town:'Sevenoaks',county:'Kent',postcode:'TN13 1QB',region:'West Kent',units:'55',marketValue:'640000',monthlyRentPerUnit:'85',ownerName:'Moorgate Property Ltd',ownerType:'Company',ownershipStatus:'Confirmed',dudrichStatus:'Not Dudrich',coveredByContract:'No',contractRef:'',developmentRights:'Full',futureRights:'Yes',planningPotential:'High',condition:'Poor',vacancyLevel:'High',pipelineStatus:'OFFER_SENT',nextAction:'Chase solicitor for counter-offer',nextActionDate:'2026-06-14',notes:'Company in CVA. Solicitors handling disposal. Offer at \xa3576,000 submitted.',createdAt:now,updatedAt:now},
+    {id:'GAR-0006',name:'Church Lane Lock-Ups',address:'Church Lane Estate',town:'Maidstone',county:'Kent',postcode:'ME15 6AA',region:'Mid Kent',units:'15',marketValue:'175000',monthlyRentPerUnit:'60',ownerName:'Maidstone Borough Council',ownerType:'Council',ownershipStatus:'Confirmed',dudrichStatus:'Not Dudrich',coveredByContract:'No',contractRef:'',developmentRights:'Unknown',futureRights:'No',planningPotential:'Medium',condition:'Good',vacancyLevel:'Low',pipelineStatus:'LAND_REGISTRY_CHECK',nextAction:'Write opening letter to council estates team',nextActionDate:'2026-06-30',notes:'Council asset disposal review underway. WARM target.',createdAt:now,updatedAt:now},
+    {id:'GAR-0007',name:'Orpington Central Garages',address:'High Street Industrial',town:'Orpington',county:'Greater London',postcode:'BR6 0JB',region:'South East London',units:'22',marketValue:'258000',monthlyRentPerUnit:'72',ownerName:'Dudrich Group plc',ownerType:'Company',ownershipStatus:'Confirmed',dudrichStatus:'Confirmed Dudrich',coveredByContract:'Needs Review',contractRef:'',developmentRights:'Partial',futureRights:'Unknown',planningPotential:'Medium',condition:'Average',vacancyLevel:'Medium',pipelineStatus:'LEGAL_REVIEW',nextAction:'Brief solicitor on contract ambiguity',nextActionDate:'2026-06-18',notes:'Dudrich-owned. Contract coverage unclear — legal review required.',createdAt:now,updatedAt:now},
+    {id:'GAR-0008',name:'Guildford Road Lock-Ups',address:'Guildford Road',town:'Brighton',county:'East Sussex',postcode:'BN1 4EJ',region:'Sussex Coast',units:'',marketValue:'',monthlyRentPerUnit:'',ownerName:'',ownerType:'Unknown',ownershipStatus:'Unknown',dudrichStatus:'Unknown',coveredByContract:'Unknown',contractRef:'',developmentRights:'Unknown',futureRights:'Unknown',planningPotential:'Unknown',condition:'Average',vacancyLevel:'Unknown',pipelineStatus:'DISCOVERED',nextAction:'',nextActionDate:'',notes:'Spotted during drive. All data unknown — research required.',createdAt:now,updatedAt:now},
+  ];
+  const ex=new Set(sites.map(s=>s.id));
+  let added=0;
+  seed.forEach(s=>{derive(s);if(!ex.has(s.id)){sites.push(s);added++}});
+  saveData();toast(`Loaded ${added} seed site${added!==1?'s':''}`,'ok');render();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+loadData();go('dashboard');
+</script>
+</body>
 </html>
