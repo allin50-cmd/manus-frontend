@@ -659,7 +659,7 @@ function rAddEdit(c){
       ${ta('notes','Notes')}
     </div>
     <div style="margin-top:20px;display:flex;gap:10px">
-      <button class="btn btn-primary" onclick="saveSite()">💾 ${editId?'Save Changes':'Add Site'}</button>
+      <button id="save-site-btn" class="btn btn-primary" onclick="saveSite()">💾 ${editId?'Save Changes':'Add Site'}</button>
       ${editId?`<button class="btn btn-ghost" onclick="cancelEdit()">Cancel</button>`:''}
     </div>
   </div>`;
