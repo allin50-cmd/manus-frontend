@@ -27,3 +27,16 @@ node_modules/
 .next/
 .vercel/
 npm-debug.log*
+
+# Local / old bulky folders
+os/
+node_modules/
+.git/
+deploy/
+
+# Legacy Azure docs/scripts
+AZURE-DEPLOYMENT-GUIDE.md
+DEPLOY-TO-AZURE-NOW.md
+deploy-azure.sh
+integrate-azure.sh
+check-azure-prereqs.sh
