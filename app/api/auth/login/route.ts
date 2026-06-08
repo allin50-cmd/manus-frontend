@@ -4,9 +4,12 @@ import { createSessionToken, COOKIE_NAME } from '@/lib/auth'
 export async function POST(req: NextRequest) {
   const { passcode } = await req.json()
 
-  const expected = process.env.APP_PASSCODE
+  const expected = process.env.APP_PASSCODE || process.env.DEFAULT_PASSCODE
   if (!expected) {
-    return NextResponse.json({ error: 'APP_PASSCODE not configured' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'APP_PASSCODE or DEFAULT_PASSCODE not configured' },
+      { status: 500 },
+    )
   }
 
   if (passcode !== expected) {
