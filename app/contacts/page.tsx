@@ -1,5 +1,5 @@
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { requireAuth } from '../../lib/auth'
+import { db } from '../../lib/db'
 import ContactsClient from './ContactsClient'
 
 export default async function ContactsPage() {

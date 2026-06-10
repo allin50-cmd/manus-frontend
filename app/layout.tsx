@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import NavBar from '@/components/NavBar'
-import { getSession } from '@/lib/auth'
+import { getSession } from '../lib/auth'
 
 export const metadata: Metadata = {
   title: 'UltraCore SheetOps',

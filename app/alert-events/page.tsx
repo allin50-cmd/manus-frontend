@@ -1,7 +1,7 @@
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { requireAuth } from '../../lib/auth'
+import { db } from '../../lib/db'
 import Link from 'next/link'
-import { formatUKDateTime } from '@/lib/utils'
+import { formatUKDateTime } from '../../lib/utils'
 
 export const dynamic = 'force-dynamic'
 

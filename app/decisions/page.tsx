@@ -1,6 +1,6 @@
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { formatUKDate } from '@/lib/utils'
+import { requireAuth } from '../../lib/auth'
+import { db } from '../../lib/db'
+import { formatUKDate } from '../../lib/utils'
 import Link from 'next/link'
 import DecisionActions from '@/components/DecisionActions'
 

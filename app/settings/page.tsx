@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '../../lib/auth'
 import Link from 'next/link'
 import ChangePasswordForm from './ChangePasswordForm'
 

@@ -1,5 +1,5 @@
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { requireAuth } from '../../lib/auth'
+import { db } from '../../lib/db'
 import CopyButton from '@/components/CopyButton'
 import Link from 'next/link'
 
