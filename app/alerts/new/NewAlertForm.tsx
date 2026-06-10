@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ALERT_CATEGORIES } from '@/lib/alert-recipient-selector'
+import { ALERT_CATEGORIES } from '../../../lib/alert-recipient-selector'
 
 const CATEGORY_LABELS: Record<string, string> = {
   CompaniesHouseConfirmation: 'CH Confirmation',

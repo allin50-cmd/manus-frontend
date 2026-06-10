@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ALERT_CATEGORIES } from '@/lib/alert-recipient-selector'
+import { ALERT_CATEGORIES } from '../../lib/alert-recipient-selector'
 
 const ROLES = ['Director', 'Accountant', 'CompanySecretary', 'Admin', 'ComplianceManager', 'ExternalAdviser', 'Custom']
 const CHANNELS = ['Dashboard', 'Email', 'Sms', 'WhatsApp']
