@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import OpenAI from 'openai'
+import { toFile } from 'openai/uploads'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { draftNeedsReview, parseTranscriptToDraft } from '@/lib/voice/parser'
@@ -6,9 +8,29 @@ import { draftNeedsReview, parseTranscriptToDraft } from '@/lib/voice/parser'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-type Payload = {
+type JsonPayload = {
   transcript?: string
   audioUrl?: string | null
+}
+
+async function transcribeAudio(audio: File): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not configured')
+  }
+
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const buffer = Buffer.from(await audio.arrayBuffer())
+  const file = await toFile(buffer, 'recording.webm', { type: audio.type || 'audio/webm' })
+
+  const transcription = await openai.audio.transcriptions.create({
+    model: 'whisper-1',
+    file,
+    language: 'en',
+  })
+
+  const transcript = transcription.text?.trim()
+  if (!transcript) throw new Error('Transcription returned no text')
+  return transcript
 }
 
 export async function POST(req: NextRequest) {
@@ -16,12 +38,33 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const body = (await req.json()) as Payload
-    const transcript = body.transcript?.trim() ?? ''
-    const audioUrl = body.audioUrl ?? null
+    let transcript = ''
+    let audioUrl: string | null = null
+
+    const contentType = req.headers.get('content-type') ?? ''
+    if (contentType.includes('multipart/form-data')) {
+      const form = await req.formData()
+      const audio = form.get('audio')
+      const manualTranscript = form.get('transcript')
+      const suppliedAudioUrl = form.get('audioUrl')
+
+      if (typeof suppliedAudioUrl === 'string' && suppliedAudioUrl.trim()) {
+        audioUrl = suppliedAudioUrl.trim()
+      }
+
+      if (typeof manualTranscript === 'string' && manualTranscript.trim()) {
+        transcript = manualTranscript.trim()
+      } else if (audio instanceof File && audio.size > 0) {
+        transcript = await transcribeAudio(audio)
+      }
+    } else {
+      const body = (await req.json()) as JsonPayload
+      transcript = body.transcript?.trim() ?? ''
+      audioUrl = body.audioUrl ?? null
+    }
 
     if (!transcript) {
-      return NextResponse.json({ error: 'Transcript is required for Voice Intake v0.1' }, { status: 400 })
+      return NextResponse.json({ error: 'Provide a transcript or an audio file.' }, { status: 400 })
     }
 
     const draft = parseTranscriptToDraft(transcript)
@@ -38,7 +81,7 @@ export async function POST(req: NextRequest) {
       status,
     )
 
-    return NextResponse.json({ voice_id: rows[0]?.voice_id, transcript, draft, status }, { status: 201 })
+    return NextResponse.json({ voice_id: rows[0]?.voice_id, voiceId: rows[0]?.voice_id, transcript, draft, status }, { status: 201 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Voice intake failed'
     return NextResponse.json({ error: message }, { status: 500 })
