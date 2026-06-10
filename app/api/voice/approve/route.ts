@@ -45,94 +45,106 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json()) as ApprovePayload
   const voiceId = body.voice_id
-  const action = body.action ?? 'approve'
+  const decision = body.action ?? 'approve'
 
   if (!voiceId) return NextResponse.json({ error: 'voice_id is required' }, { status: 400 })
 
-  const rows = await db.$queryRawUnsafe<VoiceRow[]>(
-    `SELECT voice_id, transcript, parsed_json, status
-     FROM voice_intake
-     WHERE voice_id = $1
-     LIMIT 1`,
-    voiceId,
-  )
+  try {
+    const result = await db.$transaction(async (tx) => {
+      const rows = await tx.$queryRawUnsafe<VoiceRow[]>(
+        `SELECT voice_id, transcript, parsed_json, status
+         FROM voice_intake
+         WHERE voice_id = $1
+         FOR UPDATE`,
+        voiceId,
+      )
 
-  const record = rows[0]
-  if (!record) return NextResponse.json({ error: 'Voice intake record not found' }, { status: 404 })
-  if (record.status === 'APPROVED') return NextResponse.json({ error: 'Voice intake already approved' }, { status: 409 })
+      const record = rows[0]
+      if (!record) throw new Error('Voice intake record not found')
+      if (record.status === 'APPROVED' || record.status === 'REJECTED') {
+        throw new Error(`Voice intake already ${record.status.toLowerCase()}`)
+      }
 
-  if (action === 'reject') {
-    await db.$executeRawUnsafe(
-      `UPDATE voice_intake
-       SET status = 'REJECTED', review_notes = $2, approved_at = now(), approved_by = $3
-       WHERE voice_id = $1`,
-      voiceId,
-      body.review_notes ?? null,
-      session.person,
-    )
+      if (decision === 'reject') {
+        await tx.$executeRawUnsafe(
+          `UPDATE voice_intake
+           SET status = 'REJECTED', review_notes = $2, approved_at = now(), approved_by = $3
+           WHERE voice_id = $1`,
+          voiceId,
+          body.review_notes ?? null,
+          session.person,
+        )
 
-    return NextResponse.json({ ok: true, status: 'REJECTED' })
+        return { ok: true, status: 'REJECTED' as const }
+      }
+
+      const draft = body.draft ?? record.parsed_json ?? {}
+      const dueDate = draft.follow_up_date ? new Date(`${draft.follow_up_date}T12:00:00.000Z`) : null
+      const priority = draft.urgency === 'Urgent' ? 'Urgent' : 'Medium'
+      const title = buildTitle(draft)
+
+      const item = await tx.workItem.create({
+        data: {
+          type: 'ConstructionLead',
+          title,
+          company: draft.company || draft.location || null,
+          contactName: draft.contact_name || null,
+          owner: session.person,
+          status: 'Captured',
+          priority,
+          nextAction: draft.next_action || 'Review lead',
+          dueDate,
+          notes: buildNotes(draft, record.transcript),
+        },
+      })
+
+      const followUp = await tx.action.create({
+        data: {
+          workItemId: item.id,
+          actionType: 'CreateFollowUp',
+          label: draft.next_action || 'Follow up voice lead',
+          assignedTo: session.person,
+          dueDate,
+        },
+      })
+
+      await tx.activityLog.create({
+        data: {
+          workItemId: item.id,
+          actionId: followUp.id,
+          person: session.person,
+          eventType: 'Created',
+          summary: `Voice Intake approved and created work item "${item.title}"`,
+          evidenceLink: voiceId,
+          newStatus: item.status,
+        },
+      })
+
+      await tx.$executeRawUnsafe(
+        `UPDATE voice_intake
+         SET parsed_json = $2::jsonb,
+             status = 'APPROVED',
+             linked_task_id = $3,
+             linked_lead_id = $4,
+             review_notes = $5,
+             approved_at = now(),
+             approved_by = $6
+         WHERE voice_id = $1`,
+        voiceId,
+        JSON.stringify(draft),
+        followUp.id,
+        item.id,
+        body.review_notes ?? null,
+        session.person,
+      )
+
+      return { ok: true, status: 'APPROVED' as const, workItemId: item.id, actionId: followUp.id }
+    })
+
+    return NextResponse.json(result)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Voice approval failed'
+    const status = message.includes('not found') ? 404 : message.includes('already') ? 409 : 500
+    return NextResponse.json({ error: message }, { status })
   }
-
-  const draft = body.draft ?? record.parsed_json ?? {}
-  const dueDate = draft.follow_up_date ? new Date(`${draft.follow_up_date}T12:00:00.000Z`) : null
-  const priority = draft.urgency === 'Urgent' ? 'Urgent' : 'Medium'
-  const title = buildTitle(draft)
-
-  const item = await db.workItem.create({
-    data: {
-      type: 'ConstructionLead',
-      title,
-      company: draft.company || draft.location || null,
-      contactName: draft.contact_name || null,
-      owner: session.person,
-      status: 'Captured',
-      priority,
-      nextAction: draft.next_action || 'Review lead',
-      dueDate,
-      notes: buildNotes(draft, record.transcript),
-    },
-  })
-
-  const followUp = await db.action.create({
-    data: {
-      workItemId: item.id,
-      actionType: 'CreateFollowUp',
-      label: draft.next_action || 'Follow up voice lead',
-      assignedTo: session.person,
-      dueDate,
-    },
-  })
-
-  await db.activityLog.create({
-    data: {
-      workItemId: item.id,
-      actionId: followUp.id,
-      person: session.person,
-      eventType: 'Created',
-      summary: `Voice Intake approved and created work item "${item.title}"`,
-      evidenceLink: voiceId,
-      newStatus: item.status,
-    },
-  })
-
-  await db.$executeRawUnsafe(
-    `UPDATE voice_intake
-     SET parsed_json = $2::jsonb,
-         status = 'APPROVED',
-         linked_task_id = $3,
-         linked_lead_id = $4,
-         review_notes = $5,
-         approved_at = now(),
-         approved_by = $6
-     WHERE voice_id = $1`,
-    voiceId,
-    JSON.stringify(draft),
-    followUp.id,
-    item.id,
-    body.review_notes ?? null,
-    session.person,
-  )
-
-  return NextResponse.json({ ok: true, status: 'APPROVED', workItemId: item.id, actionId: followUp.id })
 }
