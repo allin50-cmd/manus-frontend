@@ -5,6 +5,7 @@ import type { VoiceDraft } from '@/lib/voice/types'
 
 type ApprovePayload = {
   voice_id?: string
+  voiceId?: string
   draft?: VoiceDraft
   action?: 'approve' | 'reject'
   review_notes?: string
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = (await req.json()) as ApprovePayload
-  const voiceId = body.voice_id
+  const voiceId = body.voice_id || body.voiceId
   const decision = body.action ?? 'approve'
 
   if (!voiceId) return NextResponse.json({ error: 'voice_id is required' }, { status: 400 })
