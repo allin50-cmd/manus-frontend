@@ -144,6 +144,7 @@ model WorkItem {
   decisions       Decision[]
   alertDeliveries AlertDelivery[]
   alertEvents     AlertEvent[]
+  voiceIntakes    VoiceIntake[]
 }
 
 model Action {
@@ -265,6 +266,33 @@ model UserPassword {
   person    String   @id
   hash      String
   updatedAt DateTime @updatedAt
+}
+
+// ── Voice Intake ──────────────────────────────────────────────────────────────
+
+enum VoiceIntakeStatus {
+  UPLOADED
+  TRANSCRIBED
+  NEEDS_REVIEW
+  APPROVED
+  REJECTED
+  FAILED
+}
+
+model VoiceIntake {
+  id               String            @id @default(cuid())
+  createdAt        DateTime          @default(now())
+  createdBy        String
+  audioData        Bytes?
+  mimeType         String            @default("audio/webm")
+  transcript       String?
+  parsedJson       Json?
+  status           VoiceIntakeStatus @default(UPLOADED)
+  reviewNotes      String?
+  approvedAt       DateTime?
+  approvedBy       String?
+  linkedWorkItemId String?
+  linkedWorkItem   WorkItem?         @relation(fields: [linkedWorkItemId], references: [id], onDelete: SetNull)
 }
 
 // ── Contacts & Companies ─────────────────────────────────────────────────────

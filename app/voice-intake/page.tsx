@@ -1,0 +1,290 @@
+'use client'
+
+import { useState, useRef } from 'react'
+import type { DraftRecord } from '@/lib/voice/types'
+
+type Stage = 'idle' | 'recording' | 'uploading' | 'transcribing' | 'review' | 'done' | 'error'
+
+const WORK_ITEM_TYPES = [
+  'Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert',
+  'DocumentRecord', 'MediaBrief', 'InternalTask', 'Operations', 'TechTask', 'Other',
+]
+const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
+
+export default function VoiceIntakePage() {
+  const [stage, setStage] = useState<Stage>('idle')
+  const [intakeId, setIntakeId] = useState<string | null>(null)
+  const [transcript, setTranscript] = useState('')
+  const [draft, setDraft] = useState<DraftRecord>({ title: '', type: 'InternalTask', owner: 'George' })
+  const [errorMsg, setErrorMsg] = useState('')
+  const [workItemId, setWorkItemId] = useState<string | null>(null)
+  const mediaRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+
+  async function startRecording() {
+    setErrorMsg('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg'
+      const recorder = new MediaRecorder(stream, { mimeType })
+      chunksRef.current = []
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      recorder.start(200)
+      mediaRef.current = recorder
+      setStage('recording')
+    } catch {
+      setErrorMsg('Microphone access denied')
+      setStage('error')
+    }
+  }
+
+  async function stopRecording() {
+    const recorder = mediaRef.current
+    if (!recorder) return
+    setStage('uploading')
+
+    await new Promise<void>((resolve) => {
+      recorder.onstop = () => resolve()
+      recorder.stop()
+      recorder.stream.getTracks().forEach((t) => t.stop())
+    })
+
+    const blob = new Blob(chunksRef.current, { type: recorder.mimeType })
+    const uploadRes = await fetch('/api/voice/upload', {
+      method: 'POST',
+      headers: { 'content-type': recorder.mimeType },
+      body: blob,
+    })
+
+    if (!uploadRes.ok) {
+      setErrorMsg('Upload failed')
+      setStage('error')
+      return
+    }
+
+    const { id } = await uploadRes.json()
+    setIntakeId(id)
+    setStage('transcribing')
+
+    const txRes = await fetch('/api/voice/transcribe', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+
+    if (!txRes.ok) {
+      const err = await txRes.json().catch(() => ({}))
+      setErrorMsg(err.error ?? 'Transcription failed')
+      setStage('error')
+      return
+    }
+
+    const { transcript: tx, parsedJson } = await txRes.json()
+    setTranscript(tx)
+    setDraft(parsedJson ?? { title: tx.slice(0, 120), type: 'InternalTask', owner: 'George' })
+    setStage('review')
+  }
+
+  async function approve() {
+    if (!intakeId) return
+    const res = await fetch('/api/voice/approve', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: intakeId, draft }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      setErrorMsg(err.error ?? 'Approval failed')
+      return
+    }
+    const { workItemId: wid } = await res.json()
+    setWorkItemId(wid)
+    setStage('done')
+  }
+
+  async function reject() {
+    if (!intakeId) return
+    await fetch('/api/voice/reject', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: intakeId }),
+    })
+    reset()
+  }
+
+  function reset() {
+    setStage('idle')
+    setIntakeId(null)
+    setTranscript('')
+    setDraft({ title: '', type: 'InternalTask', owner: 'George' })
+    setErrorMsg('')
+    setWorkItemId(null)
+  }
+
+  function field(label: string, node: React.ReactNode) {
+    return (
+      <div className="space-y-1">
+        <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide">{label}</label>
+        {node}
+      </div>
+    )
+  }
+
+  const inputCls = 'w-full rounded-lg border border-slate-600 bg-slate-700 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white px-4 py-8 pb-24 sm:pb-8">
+      <div className="max-w-xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold">Voice Intake</h1>
+        <p className="text-slate-400 text-sm">Record a voice note to quickly capture a work item.</p>
+
+        {stage === 'idle' && (
+          <button
+            onClick={startRecording}
+            className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-lg transition-colors"
+          >
+            Start Recording
+          </button>
+        )}
+
+        {stage === 'recording' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-red-900/40 rounded-xl border border-red-600">
+              <span className="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-red-300 font-medium">Recording…</span>
+            </div>
+            <button
+              onClick={stopRecording}
+              className="w-full py-4 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-lg transition-colors"
+            >
+              Stop & Transcribe
+            </button>
+          </div>
+        )}
+
+        {(stage === 'uploading' || stage === 'transcribing') && (
+          <div className="p-6 bg-slate-800 rounded-xl text-center space-y-2">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-slate-300 text-sm">
+              {stage === 'uploading' ? 'Uploading audio…' : 'Transcribing with Whisper…'}
+            </p>
+          </div>
+        )}
+
+        {stage === 'error' && (
+          <div className="p-4 bg-red-900/40 border border-red-600 rounded-xl space-y-3">
+            <p className="text-red-300 text-sm">{errorMsg || 'Something went wrong.'}</p>
+            <button onClick={reset} className="text-sm text-slate-300 hover:text-white underline">
+              Try again
+            </button>
+          </div>
+        )}
+
+        {stage === 'review' && (
+          <div className="space-y-5">
+            <div className="p-4 bg-slate-800 rounded-xl">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Transcript</p>
+              <p className="text-sm text-slate-200 whitespace-pre-wrap">{transcript}</p>
+            </div>
+
+            <div className="space-y-4">
+              {field('Title *', (
+                <input
+                  className={inputCls}
+                  value={draft.title}
+                  onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                />
+              ))}
+              {field('Type', (
+                <select
+                  className={inputCls}
+                  value={draft.type}
+                  onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value }))}
+                >
+                  {WORK_ITEM_TYPES.map((t) => <option key={t}>{t}</option>)}
+                </select>
+              ))}
+              {field('Owner', (
+                <input
+                  className={inputCls}
+                  value={draft.owner ?? ''}
+                  onChange={(e) => setDraft((d) => ({ ...d, owner: e.target.value }))}
+                />
+              ))}
+              {field('Company', (
+                <input
+                  className={inputCls}
+                  value={draft.company ?? ''}
+                  onChange={(e) => setDraft((d) => ({ ...d, company: e.target.value }))}
+                />
+              ))}
+              {field('Priority', (
+                <select
+                  className={inputCls}
+                  value={draft.priority ?? 'Medium'}
+                  onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value }))}
+                >
+                  {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
+                </select>
+              ))}
+              {field('Due Date', (
+                <input
+                  type="date"
+                  className={inputCls}
+                  value={draft.dueDate ?? ''}
+                  onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))}
+                />
+              ))}
+              {field('Notes', (
+                <textarea
+                  rows={3}
+                  className={inputCls}
+                  value={draft.notes ?? ''}
+                  onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                />
+              ))}
+            </div>
+
+            {errorMsg && (
+              <p className="text-red-400 text-sm">{errorMsg}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={approve}
+                className="flex-1 py-3 rounded-xl bg-green-700 hover:bg-green-600 text-white font-semibold transition-colors"
+              >
+                Approve & Create
+              </button>
+              <button
+                onClick={reject}
+                className="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition-colors"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
+
+        {stage === 'done' && (
+          <div className="p-6 bg-green-900/40 border border-green-600 rounded-xl space-y-4 text-center">
+            <p className="text-green-300 font-semibold">Work item created!</p>
+            {workItemId && (
+              <a
+                href={`/work-items/${workItemId}`}
+                className="inline-block px-4 py-2 bg-green-700 hover:bg-green-600 rounded-lg text-white text-sm font-medium transition-colors"
+              >
+                View Work Item
+              </a>
+            )}
+            <div>
+              <button onClick={reset} className="text-sm text-slate-400 hover:text-white underline block mx-auto">
+                Record another
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -9,6 +9,7 @@ const NAV = [
   { href: '/work-items', label: 'Work Items', icon: '≡' },
   { href: '/today', label: 'Today', icon: '◎' },
   { href: '/decisions', label: 'Decisions', icon: '✓' },
+  { href: '/voice-intake', label: 'Voice', icon: '🎙' },
 ]
 
 const MORE = [
