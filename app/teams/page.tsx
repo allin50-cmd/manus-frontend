@@ -1,7 +1,7 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
 import Link from 'next/link'
-import StatusBadge from '@/components/StatusBadge'
+import StatusBadge from '../../components/StatusBadge'
 
 export const dynamic = 'force-dynamic'
 

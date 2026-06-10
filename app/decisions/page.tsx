@@ -2,7 +2,7 @@ import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
 import { formatUKDate } from '../../lib/utils'
 import Link from 'next/link'
-import DecisionActions from '@/components/DecisionActions'
+import DecisionActions from '../../components/DecisionActions'
 
 export const dynamic = 'force-dynamic'
 

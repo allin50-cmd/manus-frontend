@@ -2,8 +2,8 @@ import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
 import { formatUKDate } from '../../lib/utils'
 import Link from 'next/link'
-import StatusBadge from '@/components/StatusBadge'
-import CompleteActionButton from '@/components/CompleteActionButton'
+import StatusBadge from '../../components/StatusBadge'
+import CompleteActionButton from '../../components/CompleteActionButton'
 
 export const dynamic = 'force-dynamic'
 

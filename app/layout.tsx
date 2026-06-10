@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import NavBar from '@/components/NavBar'
+import NavBar from '../components/NavBar'
 import { getSession } from '../lib/auth'
 
 export const metadata: Metadata = {
