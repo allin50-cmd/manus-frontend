@@ -59,6 +59,7 @@ export default async function DashboardPage() {
       {/* Big action buttons */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <BigButton href="/work-items/new" label="+ Add Work Item" color="blue" />
+        <BigButton href="/voice-intake" label="Voice Intake" color="green" />
         <BigButton href="/today" label="Today's Actions" color="orange" />
         <BigButton href="/decisions" label="Decision Queue" color="purple" />
         <BigButton href="/activity" label="Activity Log" color="slate" />
@@ -94,6 +95,7 @@ function BigButton({ href, label, color }: { href: string; label: string; color:
     blue: 'bg-blue-600 hover:bg-blue-700 text-white',
     orange: 'bg-orange-500 hover:bg-orange-600 text-white',
     purple: 'bg-purple-600 hover:bg-purple-700 text-white',
+    green: 'bg-green-600 hover:bg-green-700 text-white',
     slate: 'bg-slate-200 hover:bg-slate-300 text-slate-800',
   }
   return (
