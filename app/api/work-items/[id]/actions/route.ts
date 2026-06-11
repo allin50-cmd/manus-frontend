@@ -3,6 +3,11 @@ import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { ActionType } from '@prisma/client'
 
+const VALID_ACTION_TYPES: ActionType[] = [
+  'LogNote', 'CreateFollowUp', 'ChangeStatus', 'DraftMessage',
+  'EscalateToGeorge', 'GenerateDocument', 'MarkComplete', 'Archive', 'Other',
+]
+
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -10,43 +15,59 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const item = await db.workItem.findUnique({ where: { id: params.id } })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body = await req.json()
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
   if (!body.label) return NextResponse.json({ error: 'label required' }, { status: 400 })
 
-  const action = await db.action.create({
-    data: {
-      workItemId: item.id,
-      actionType: (body.actionType as ActionType) || 'CreateFollowUp',
-      label: body.label,
-      assignedTo: body.assignedTo || session.person,
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
-    },
-  })
+  const actionType: ActionType = VALID_ACTION_TYPES.includes(body.actionType as ActionType)
+    ? (body.actionType as ActionType)
+    : 'CreateFollowUp'
 
-  await db.activityLog.create({
-    data: {
-      workItemId: item.id,
-      actionId: action.id,
-      person: session.person,
-      eventType: 'ActionCreated',
-      summary: `Follow-up created: ${body.label}`,
-    },
-  })
+  const dueDate = body.dueDate ? new Date(body.dueDate as string) : null
 
-  if (body.dueDate) {
-    await db.workItem.update({
-      where: { id: item.id },
-      data: { nextAction: body.label, dueDate: new Date(body.dueDate) },
+  try {
+    const action = await db.action.create({
+      data: {
+        workItemId: item.id,
+        actionType,
+        label: body.label as string,
+        assignedTo: (body.assignedTo as string) || session.person,
+        dueDate,
+      },
     })
+
     await db.activityLog.create({
       data: {
         workItemId: item.id,
+        actionId: action.id,
         person: session.person,
-        eventType: 'FollowUpSet',
-        summary: `Follow-up set: ${body.label} due ${body.dueDate}`,
+        eventType: 'ActionCreated',
+        summary: `Follow-up created: ${body.label}`,
       },
     })
-  }
 
-  return NextResponse.json(action, { status: 201 })
+    if (dueDate) {
+      await db.workItem.update({
+        where: { id: item.id },
+        data: { nextAction: body.label as string, dueDate },
+      })
+      await db.activityLog.create({
+        data: {
+          workItemId: item.id,
+          person: session.person,
+          eventType: 'FollowUpSet',
+          summary: `Follow-up set: ${body.label} due ${body.dueDate}`,
+        },
+      })
+    }
+
+    return NextResponse.json(action, { status: 201 })
+  } catch {
+    return NextResponse.json({ error: 'Could not create action' }, { status: 503 })
+  }
 }

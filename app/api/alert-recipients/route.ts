@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ALERT_CATEGORIES } from '@/lib/alert-recipient-selector'
+import { RecipientRole, DeliveryChannel } from '@prisma/client'
+
+const VALID_ROLES: RecipientRole[] = ['Director', 'Accountant', 'CompanySecretary', 'Admin', 'ComplianceManager', 'ExternalAdviser', 'Custom']
+const VALID_CHANNELS: DeliveryChannel[] = ['Email', 'Dashboard', 'Sms', 'WhatsApp']
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
@@ -36,6 +40,12 @@ export async function POST(req: NextRequest) {
 
   if (!company || !name || !role) {
     return NextResponse.json({ error: 'company, name, and role are required' }, { status: 400 })
+  }
+  if (!VALID_ROLES.includes(role as RecipientRole)) {
+    return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+  }
+  if (preferredChannel && !VALID_CHANNELS.includes(preferredChannel as DeliveryChannel)) {
+    return NextResponse.json({ error: 'Invalid preferredChannel' }, { status: 400 })
   }
 
   const invalidCats = alertCategories.filter((c: string) => !ALERT_CATEGORIES.includes(c as never))

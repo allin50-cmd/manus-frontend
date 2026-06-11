@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { WorkItemStatus, Priority, WorkItemType } from '@prisma/client'
+import { isValidType, isValidStatus, isValidPriority } from '@/lib/work-item-enums'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
@@ -27,10 +28,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const item = await db.workItem.findUnique({ where: { id: params.id } })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body = await req.json()
-  const updates: Record<string, unknown> = {}
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
 
-  if (body.title) updates.title = body.title
+  if (body.type !== undefined && !isValidType(body.type)) {
+    return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+  }
+  if (body.status !== undefined && !isValidStatus(body.status)) {
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+  }
+  if (body.priority !== undefined && !isValidPriority(body.priority)) {
+    return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
+  }
+
+  const updates: Record<string, unknown> = {}
+  if (body.title) updates.title = (body.title as string).trim()
   if (body.type) updates.type = body.type as WorkItemType
   if (body.company !== undefined) updates.company = body.company || null
   if (body.contactName !== undefined) updates.contactName = body.contactName || null
@@ -38,11 +54,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.priority) updates.priority = body.priority as Priority
   if (body.owner !== undefined) updates.owner = body.owner
   if (body.nextAction !== undefined) updates.nextAction = body.nextAction
-  if (body.dueDate !== undefined) updates.dueDate = body.dueDate ? new Date(body.dueDate) : null
+  if (body.dueDate !== undefined) updates.dueDate = body.dueDate ? new Date(body.dueDate as string) : null
   if (body.decisionNeeded !== undefined) updates.decisionNeeded = body.decisionNeeded
   if (body.notes !== undefined) updates.notes = body.notes
 
-  const updated = await db.workItem.update({ where: { id: params.id }, data: updates })
+  let updated
+  try {
+    updated = await db.workItem.update({ where: { id: params.id }, data: updates })
+  } catch {
+    return NextResponse.json({ error: 'Could not update work item' }, { status: 503 })
+  }
 
   if (body.status && body.status !== item.status) {
     await db.activityLog.create({
@@ -52,9 +73,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         eventType: 'StatusChanged',
         summary: `Status changed to ${body.status}`,
         oldStatus: item.status,
-        newStatus: body.status,
+        newStatus: body.status as string,
       },
-    })
+    }).catch(() => {})
   }
 
   return NextResponse.json(updated)

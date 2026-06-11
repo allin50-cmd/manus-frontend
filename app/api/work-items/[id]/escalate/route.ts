@@ -9,8 +9,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const item = await db.workItem.findUnique({ where: { id: params.id } })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body = await req.json()
-  if (!body.question) return NextResponse.json({ error: 'question required' }, { status: 400 })
+  const body = await req.json().catch(() => null)
+  if (!body || !body.question) return NextResponse.json({ error: 'question required' }, { status: 400 })
 
   const [decision] = await Promise.all([
     db.decision.create({

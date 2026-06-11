@@ -29,10 +29,20 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  await db.alertDelivery.update({
-    where: { id: delivery.id },
+  // Use updateMany with a status condition so that concurrent ack requests for
+  // the same token are idempotent: only the first update wins (count === 1).
+  const { count } = await db.alertDelivery.updateMany({
+    where: { id: delivery.id, status: { not: 'Acknowledged' } },
     data: { status: 'Acknowledged', acknowledgedAt: new Date() },
   })
+
+  if (count === 0) {
+    // A concurrent request already acknowledged it.
+    return new NextResponse(
+      successHtml(delivery.workItem.title, delivery.workItem.company, 'already acknowledged'),
+      { headers: { 'Content-Type': 'text/html' } },
+    )
+  }
 
   await db.alertEvent.create({
     data: {
@@ -43,7 +53,7 @@ export async function GET(req: NextRequest) {
       actorType: 'Recipient',
       payload: JSON.stringify({ via: 'email_link' }),
     },
-  })
+  }).catch(() => {})
 
   return new NextResponse(
     successHtml(delivery.workItem.title, delivery.workItem.company, 'acknowledged'),

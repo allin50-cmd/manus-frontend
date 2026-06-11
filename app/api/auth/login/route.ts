@@ -2,13 +2,36 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSessionToken, COOKIE_NAME } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
+import { timingSafeEqual } from 'crypto'
 
 const KNOWN_PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
 
-export async function POST(req: NextRequest) {
-  const { passcode, person } = await req.json()
+// Constant-time string comparison to prevent timing attacks on the default passcode.
+function safeEqual(a: string, b: string): boolean {
+  try {
+    const aBuf = Buffer.from(a, 'utf8')
+    const bBuf = Buffer.from(b, 'utf8')
+    if (aBuf.length !== bBuf.length) {
+      timingSafeEqual(aBuf, aBuf) // dummy run to keep timing consistent
+      return false
+    }
+    return timingSafeEqual(aBuf, bBuf)
+  } catch {
+    return false
+  }
+}
 
-  if (!KNOWN_PEOPLE.includes(person)) {
+export async function POST(req: NextRequest) {
+  let body: { passcode?: unknown; person?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+
+  const { passcode, person } = body
+
+  if (!KNOWN_PEOPLE.includes(person as string)) {
     return NextResponse.json({ error: 'Unknown person' }, { status: 401 })
   }
 
@@ -18,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   let stored
   try {
-    stored = await db.userPassword.findUnique({ where: { person } })
+    stored = await db.userPassword.findUnique({ where: { person: person as string } })
   } catch {
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
   }
@@ -31,14 +54,14 @@ export async function POST(req: NextRequest) {
     if (!defaultPass) {
       return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
     }
-    ok = passcode === defaultPass
+    ok = safeEqual(passcode, defaultPass)
   }
 
   if (!ok) {
     return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
   }
 
-  const token = await createSessionToken(person)
+  const token = await createSessionToken(person as string)
   const res = NextResponse.json({ ok: true })
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
