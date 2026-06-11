@@ -1,6 +1,14 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
+import {
+  WORK_ITEM_TYPES,
+  TYPE_LABELS as BASE_TYPE_LABELS,
+  WORK_ITEM_STATUSES,
+  STATUS_LABELS as BASE_STATUS_LABELS,
+  PRIORITIES as BASE_PRIORITIES,
+  OWNERS as BASE_OWNERS,
+} from '@/lib/work-item-enums'
 
 interface FilterState {
   status?: string
@@ -9,21 +17,12 @@ interface FilterState {
   priority?: string
 }
 
-const STATUSES = ['all', 'Captured', 'Controlled', 'InProgress', 'Waiting', 'FollowUpDue', 'Escalated', 'DecisionNeeded', 'Completed', 'Paused', 'NotFit', 'Archived']
-const STATUS_LABELS: Record<string, string> = {
-  all: 'All Statuses', Captured: 'Captured', Controlled: 'Controlled', InProgress: 'In Progress',
-  Waiting: 'Waiting', FollowUpDue: 'Follow-Up Due', Escalated: 'Escalated', DecisionNeeded: 'Decision Needed',
-  Completed: 'Completed', Paused: 'Paused', NotFit: 'Not Fit', Archived: 'Archived',
-}
-const TYPES = ['all', 'Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert', 'DocumentRecord', 'MediaBrief', 'InternalTask', 'Operations', 'TechTask', 'Other']
-const TYPE_LABELS: Record<string, string> = {
-  all: 'All Types', Partnership: 'Partnership', ConstructionLead: 'Construction Lead',
-  PlanningLead: 'Planning Lead', ComplianceAlert: 'Compliance Alert', DocumentRecord: 'Document Record',
-  MediaBrief: 'Media Brief', InternalTask: 'Internal Task', Operations: 'Operations',
-  TechTask: 'Tech Task', Other: 'Other',
-}
-const OWNERS = ['all', 'Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
-const PRIORITIES = ['all', 'Low', 'Medium', 'High', 'Urgent']
+const STATUSES = ['all', ...WORK_ITEM_STATUSES]
+const STATUS_LABELS: Record<string, string> = { all: 'All Statuses', ...BASE_STATUS_LABELS }
+const TYPES = ['all', ...WORK_ITEM_TYPES]
+const TYPE_LABELS: Record<string, string> = { all: 'All Types', ...BASE_TYPE_LABELS }
+const OWNERS = ['all', ...BASE_OWNERS]
+const PRIORITIES = ['all', ...BASE_PRIORITIES]
 
 export default function WorkItemFilters({ current }: { current: FilterState }) {
   const router = useRouter()

@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { transcribeAudio } from '@/lib/voice/transcription'
+import { transcribeAudio, TranscriptionConfigError } from '@/lib/voice/transcription'
 import { parseTranscript } from '@/lib/voice/parser'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60 // Whisper round-trips can exceed the default timeout.
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id } = await req.json()
-  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+  const { id } = await req.json().catch(() => ({}))
+  if (!id || typeof id !== 'string') {
+    return NextResponse.json({ error: 'id required' }, { status: 400 })
+  }
 
-  const intake = await db.voiceIntake.findUnique({ where: { id } })
+  // Scope to the creator: an intake can only be transcribed by its owner.
+  const intake = await db.voiceIntake.findFirst({ where: { id, createdBy: session.person } })
   if (!intake) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!intake.audioData) return NextResponse.json({ error: 'No audio data' }, { status: 400 })
 
@@ -26,8 +32,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ transcript, parsedJson, id: updated.id })
   } catch (err) {
-    await db.voiceIntake.update({ where: { id }, data: { status: 'FAILED' } })
-    const msg = err instanceof Error ? err.message : 'Transcription failed'
-    return NextResponse.json({ error: msg }, { status: 500 })
+    await db.voiceIntake.update({ where: { id }, data: { status: 'FAILED' } }).catch(() => {})
+    // Never leak server configuration details to the client.
+    if (err instanceof TranscriptionConfigError) {
+      return NextResponse.json(
+        { error: 'Transcription is not available right now. Please contact your administrator.' },
+        { status: 503 },
+      )
+    }
+    return NextResponse.json({ error: 'Could not transcribe audio. Please try again.' }, { status: 502 })
   }
 }

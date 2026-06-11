@@ -2,28 +2,14 @@
 
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-
-const TYPES = ['Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert', 'DocumentRecord', 'MediaBrief', 'InternalTask', 'Operations', 'TechTask', 'Other']
-const TYPE_LABELS: Record<string, string> = {
-  Partnership: 'Partnership',
-  ConstructionLead: 'Construction Lead',
-  PlanningLead: 'Planning Lead',
-  ComplianceAlert: 'Compliance Alert',
-  DocumentRecord: 'Document Record',
-  MediaBrief: 'Media Brief',
-  InternalTask: 'Internal Task',
-  Operations: 'Operations',
-  TechTask: 'Tech Task',
-  Other: 'Other',
-}
-const STATUSES = ['Captured', 'Controlled', 'InProgress', 'Waiting', 'FollowUpDue', 'Escalated', 'DecisionNeeded', 'Completed', 'Paused', 'NotFit', 'Archived']
-const STATUS_LABELS: Record<string, string> = {
-  Captured: 'Captured', Controlled: 'Controlled', InProgress: 'In Progress', Waiting: 'Waiting',
-  FollowUpDue: 'Follow-Up Due', Escalated: 'Escalated', DecisionNeeded: 'Decision Needed',
-  Completed: 'Completed', Paused: 'Paused', NotFit: 'Not Fit', Archived: 'Archived',
-}
-const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
-const OWNERS = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
+import {
+  WORK_ITEM_TYPES as TYPES,
+  TYPE_LABELS,
+  WORK_ITEM_STATUSES as STATUSES,
+  STATUS_LABELS,
+  PRIORITIES,
+  OWNERS,
+} from '@/lib/work-item-enums'
 
 interface Item {
   id: string

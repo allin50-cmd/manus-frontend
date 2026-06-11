@@ -1,15 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { DraftRecord } from '@/lib/voice/types'
+import { WORK_ITEM_TYPES, TYPE_LABELS, PRIORITIES } from '@/lib/work-item-enums'
 
 type Stage = 'idle' | 'recording' | 'uploading' | 'transcribing' | 'review' | 'done' | 'error'
 
-const WORK_ITEM_TYPES = [
-  'Partnership', 'ConstructionLead', 'PlanningLead', 'ComplianceAlert',
-  'DocumentRecord', 'MediaBrief', 'InternalTask', 'Operations', 'TechTask', 'Other',
-]
-const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
+const SUPPORTED_MIME = ['audio/webm', 'audio/ogg', 'audio/mp4']
 
 export default function VoiceIntakePage() {
   const [stage, setStage] = useState<Stage>('idle')
@@ -17,15 +14,45 @@ export default function VoiceIntakePage() {
   const [transcript, setTranscript] = useState('')
   const [draft, setDraft] = useState<DraftRecord>({ title: '', type: 'InternalTask', owner: 'George' })
   const [errorMsg, setErrorMsg] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [workItemId, setWorkItemId] = useState<string | null>(null)
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
+  // Ensure the mic is released if the user navigates away mid-recording.
+  useEffect(() => {
+    return () => {
+      const recorder = mediaRef.current
+      if (recorder && recorder.state !== 'inactive') recorder.stop()
+      recorder?.stream.getTracks().forEach((t) => t.stop())
+    }
+  }, [])
+
+  function pickMimeType(): string | null {
+    if (typeof MediaRecorder === 'undefined') return null
+    return SUPPORTED_MIME.find((m) => MediaRecorder.isTypeSupported(m)) ?? null
+  }
+
   async function startRecording() {
     setErrorMsg('')
+
+    const mimeType = pickMimeType()
+    if (!mimeType) {
+      setErrorMsg('Audio recording is not supported in this browser. Try Chrome or Firefox.')
+      setStage('error')
+      return
+    }
+
+    let stream: MediaStream
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg'
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      setErrorMsg('Microphone access was denied. Please allow microphone access and try again.')
+      setStage('error')
+      return
+    }
+
+    try {
       const recorder = new MediaRecorder(stream, { mimeType })
       chunksRef.current = []
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
@@ -33,7 +60,8 @@ export default function VoiceIntakePage() {
       mediaRef.current = recorder
       setStage('recording')
     } catch {
-      setErrorMsg('Microphone access denied')
+      stream.getTracks().forEach((t) => t.stop())
+      setErrorMsg('Could not start recording in this browser.')
       setStage('error')
     }
   }
@@ -48,68 +76,92 @@ export default function VoiceIntakePage() {
       recorder.stop()
       recorder.stream.getTracks().forEach((t) => t.stop())
     })
+    mediaRef.current = null
 
     const blob = new Blob(chunksRef.current, { type: recorder.mimeType })
-    const uploadRes = await fetch('/api/voice/upload', {
-      method: 'POST',
-      headers: { 'content-type': recorder.mimeType },
-      body: blob,
-    })
-
-    if (!uploadRes.ok) {
-      setErrorMsg('Upload failed')
+    if (!blob.size) {
+      setErrorMsg('No audio was captured. Please try again.')
       setStage('error')
       return
     }
 
-    const { id } = await uploadRes.json()
-    setIntakeId(id)
-    setStage('transcribing')
+    try {
+      const uploadRes = await fetch('/api/voice/upload', {
+        method: 'POST',
+        headers: { 'content-type': recorder.mimeType },
+        body: blob,
+      })
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}))
+        setErrorMsg(err.error ?? 'Upload failed')
+        setStage('error')
+        return
+      }
 
-    const txRes = await fetch('/api/voice/transcribe', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
+      const { id } = await uploadRes.json()
+      setIntakeId(id)
+      setStage('transcribing')
 
-    if (!txRes.ok) {
-      const err = await txRes.json().catch(() => ({}))
-      setErrorMsg(err.error ?? 'Transcription failed')
+      const txRes = await fetch('/api/voice/transcribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (!txRes.ok) {
+        const err = await txRes.json().catch(() => ({}))
+        setErrorMsg(err.error ?? 'Transcription failed')
+        setStage('error')
+        return
+      }
+
+      const { transcript: tx, parsedJson } = await txRes.json()
+      setTranscript(tx ?? '')
+      setDraft(parsedJson ?? { title: (tx ?? '').slice(0, 120), type: 'InternalTask', owner: 'George' })
+      setStage('review')
+    } catch {
+      setErrorMsg('Network error. Please check your connection and try again.')
       setStage('error')
-      return
     }
-
-    const { transcript: tx, parsedJson } = await txRes.json()
-    setTranscript(tx)
-    setDraft(parsedJson ?? { title: tx.slice(0, 120), type: 'InternalTask', owner: 'George' })
-    setStage('review')
   }
 
   async function approve() {
-    if (!intakeId) return
-    const res = await fetch('/api/voice/approve', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ id: intakeId, draft }),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      setErrorMsg(err.error ?? 'Approval failed')
-      return
+    if (!intakeId || submitting) return
+    setSubmitting(true)
+    setErrorMsg('')
+    try {
+      const res = await fetch('/api/voice/approve', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: intakeId, draft }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setErrorMsg(err.error ?? 'Approval failed')
+        return
+      }
+      const { workItemId: wid } = await res.json()
+      setWorkItemId(wid)
+      setStage('done')
+    } catch {
+      setErrorMsg('Network error. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
-    const { workItemId: wid } = await res.json()
-    setWorkItemId(wid)
-    setStage('done')
   }
 
   async function reject() {
-    if (!intakeId) return
-    await fetch('/api/voice/reject', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ id: intakeId }),
-    })
-    reset()
+    if (!intakeId || submitting) return
+    setSubmitting(true)
+    try {
+      await fetch('/api/voice/reject', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: intakeId }),
+      }).catch(() => {})
+    } finally {
+      setSubmitting(false)
+      reset()
+    }
   }
 
   function reset() {
@@ -157,7 +209,7 @@ export default function VoiceIntakePage() {
               onClick={stopRecording}
               className="w-full py-4 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-lg transition-colors"
             >
-              Stop & Transcribe
+              Stop &amp; Transcribe
             </button>
           </div>
         )}
@@ -184,7 +236,9 @@ export default function VoiceIntakePage() {
           <div className="space-y-5">
             <div className="p-4 bg-slate-800 rounded-xl">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Transcript</p>
-              <p className="text-sm text-slate-200 whitespace-pre-wrap">{transcript}</p>
+              <p className="text-sm text-slate-200 whitespace-pre-wrap">
+                {transcript || <span className="text-slate-500 italic">No speech detected — edit the fields below.</span>}
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -201,7 +255,7 @@ export default function VoiceIntakePage() {
                   value={draft.type}
                   onChange={(e) => setDraft((d) => ({ ...d, type: e.target.value }))}
                 >
-                  {WORK_ITEM_TYPES.map((t) => <option key={t}>{t}</option>)}
+                  {WORK_ITEM_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
                 </select>
               ))}
               {field('Owner', (
@@ -224,7 +278,7 @@ export default function VoiceIntakePage() {
                   value={draft.priority ?? 'Medium'}
                   onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value }))}
                 >
-                  {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
+                  {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               ))}
               {field('Due Date', (
@@ -245,20 +299,20 @@ export default function VoiceIntakePage() {
               ))}
             </div>
 
-            {errorMsg && (
-              <p className="text-red-400 text-sm">{errorMsg}</p>
-            )}
+            {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
 
             <div className="flex gap-3">
               <button
                 onClick={approve}
-                className="flex-1 py-3 rounded-xl bg-green-700 hover:bg-green-600 text-white font-semibold transition-colors"
+                disabled={submitting || !draft.title.trim()}
+                className="flex-1 py-3 rounded-xl bg-green-700 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors"
               >
-                Approve & Create
+                {submitting ? 'Creating…' : 'Approve & Create'}
               </button>
               <button
                 onClick={reject}
-                className="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition-colors"
+                disabled={submitting}
+                className="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-semibold transition-colors"
               >
                 Discard
               </button>
