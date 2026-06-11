@@ -39,11 +39,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
   }
 
-  let stored
+  let stored = null
   try {
     stored = await db.userPassword.findUnique({ where: { person: person as string } })
   } catch {
-    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+    stored = null
   }
 
   let ok: boolean
