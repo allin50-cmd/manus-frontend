@@ -107,7 +107,19 @@ async function fetchTeamData(owners: string[]) {
 export default async function TeamsPage() {
   await requireAuth()
 
-  const teamData = await Promise.all(TEAMS.map((t) => fetchTeamData(t.owners)))
+  let teamData: Awaited<ReturnType<typeof fetchTeamData>>[]
+  try {
+    teamData = await Promise.all(TEAMS.map((t) => fetchTeamData(t.owners)))
+  } catch {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-900">Teams</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
+          Could not load team data. Please refresh the page.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

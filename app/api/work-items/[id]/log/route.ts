@@ -6,7 +6,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const item = await db.workItem.findUnique({ where: { id: params.id } })
+  let item
+  try {
+    item = await db.workItem.findUnique({ where: { id: params.id } })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   let body: { text?: unknown }

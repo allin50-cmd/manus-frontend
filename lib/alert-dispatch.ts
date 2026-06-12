@@ -26,6 +26,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
 
   const recipients = await db.alertRecipient.findMany({
     where: { company: workItem.company, isActive: true },
+    take: 200,
   })
 
   if (recipients.length === 0) return

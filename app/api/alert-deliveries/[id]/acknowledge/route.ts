@@ -6,7 +6,12 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  const delivery = await db.alertDelivery.findUnique({ where: { id: params.id } })
+  let delivery
+  try {
+    delivery = await db.alertDelivery.findUnique({ where: { id: params.id } })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
   if (!delivery) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (delivery.status === 'Acknowledged') {

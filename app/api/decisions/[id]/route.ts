@@ -12,7 +12,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const dec = await db.decision.findUnique({ where: { id: params.id } })
+  let dec
+  try {
+    dec = await db.decision.findUnique({ where: { id: params.id } })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
   if (!dec) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   let body: Record<string, unknown>

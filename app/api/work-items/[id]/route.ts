@@ -8,14 +8,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const item = await db.workItem.findUnique({
-    where: { id: params.id },
-    include: {
-      actions: { orderBy: { createdAt: 'desc' } },
-      activityLogs: { orderBy: { createdAt: 'desc' }, take: 50 },
-      decisions: { orderBy: { createdAt: 'desc' } },
-    },
-  })
+  let item
+  try {
+    item = await db.workItem.findUnique({
+      where: { id: params.id },
+      include: {
+        actions: { orderBy: { createdAt: 'desc' } },
+        activityLogs: { orderBy: { createdAt: 'desc' }, take: 50 },
+        decisions: { orderBy: { createdAt: 'desc' } },
+      },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(item)
@@ -25,7 +30,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const item = await db.workItem.findUnique({ where: { id: params.id } })
+  let item
+  try {
+    item = await db.workItem.findUnique({ where: { id: params.id } })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   let body: Record<string, unknown>
@@ -51,14 +61,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  if (body.owner !== undefined) {
+    if (typeof body.owner !== 'string' || !body.owner.trim()) {
+      return NextResponse.json({ error: 'owner must be a non-empty string' }, { status: 400 })
+    }
+  }
+
   const updates: Record<string, unknown> = {}
   if (body.title !== undefined) updates.title = (body.title as string).trim()
-  if (body.type) updates.type = body.type as WorkItemType
+  if (body.type !== undefined && isValidType(body.type)) updates.type = body.type as WorkItemType
   if (body.company !== undefined) updates.company = body.company || null
   if (body.contactName !== undefined) updates.contactName = body.contactName || null
-  if (body.status) updates.status = body.status as WorkItemStatus
-  if (body.priority) updates.priority = body.priority as Priority
-  if (body.owner !== undefined) updates.owner = body.owner
+  if (body.status !== undefined && isValidStatus(body.status)) updates.status = body.status as WorkItemStatus
+  if (body.priority !== undefined && isValidPriority(body.priority)) updates.priority = body.priority as Priority
+  if (body.owner !== undefined) updates.owner = (body.owner as string).trim()
   if (body.nextAction !== undefined) updates.nextAction = body.nextAction
   if (body.dueDate !== undefined) updates.dueDate = body.dueDate ? new Date(body.dueDate as string) : null
   if (body.decisionNeeded !== undefined) updates.decisionNeeded = body.decisionNeeded

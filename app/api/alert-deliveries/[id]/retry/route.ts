@@ -17,11 +17,15 @@ export async function POST(
 
   const { id } = params
 
-  const delivery = await db.alertDelivery.findUnique({
-    where: { id },
-    include: { workItem: true, recipient: true },
-  })
-
+  let delivery
+  try {
+    delivery = await db.alertDelivery.findUnique({
+      where: { id },
+      include: { workItem: true, recipient: true },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
   if (!delivery) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }

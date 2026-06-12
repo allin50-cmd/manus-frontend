@@ -8,15 +8,31 @@ export const dynamic = 'force-dynamic'
 export default async function AlertRecipientsPage() {
   await requireAuth()
 
-  const [recipients, pendingCount, failedCount, totalEvents] = await Promise.all([
-    db.alertRecipient.findMany({
-      where: { isActive: true },
-      orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
-    }),
-    db.alertDelivery.count({ where: { status: 'Sent' } }),
-    db.alertDelivery.count({ where: { status: 'Failed' } }),
-    db.alertEvent.count(),
-  ])
+  let recipients: Awaited<ReturnType<typeof db.alertRecipient.findMany>> = []
+  let pendingCount = 0
+  let failedCount = 0
+  let totalEvents = 0
+  try {
+    ;[recipients, pendingCount, failedCount, totalEvents] = await Promise.all([
+      db.alertRecipient.findMany({
+        where: { isActive: true },
+        orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
+        take: 500,
+      }),
+      db.alertDelivery.count({ where: { status: 'Sent' } }),
+      db.alertDelivery.count({ where: { status: 'Failed' } }),
+      db.alertEvent.count(),
+    ])
+  } catch {
+    return (
+      <div className="space-y-6 max-w-2xl">
+        <h1 className="text-2xl font-bold text-slate-900">Alert Recipients</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
+          Could not load recipients. Please refresh the page.
+        </div>
+      </div>
+    )
+  }
 
   const byCompany: Record<string, typeof recipients> = {}
   for (const r of recipients) {

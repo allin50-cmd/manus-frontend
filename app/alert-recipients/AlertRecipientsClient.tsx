@@ -189,7 +189,8 @@ export default function AlertRecipientsClient({
   }
 
   async function suppress(id: string) {
-    const reason = prompt('Suppression reason (optional):') ?? ''
+    const reason = prompt('Suppression reason (optional):')
+    if (reason === null) return // user clicked Cancel
     setBusyId(id)
     try {
       const res = await fetch(`/api/alert-recipients/${id}/suppress`, {
@@ -215,6 +216,11 @@ export default function AlertRecipientsClient({
     setEscalationResult(null)
     try {
       const res = await fetch('/api/alert-escalation-check', { method: 'POST' })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        setEscalationResult(d.error ?? 'Escalation check failed')
+        return
+      }
       const data = await res.json()
       setEscalationResult(
         data.escalated > 0

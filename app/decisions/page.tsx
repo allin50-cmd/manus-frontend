@@ -9,11 +9,24 @@ export const dynamic = 'force-dynamic'
 export default async function DecisionsPage() {
   const session = await requireAuth()
 
-  const decisions = await db.decision.findMany({
-    where: { status: 'Open' },
-    include: { workItem: { select: { id: true, title: true, company: true } } },
-    orderBy: [{ dueDate: 'asc' }, { createdAt: 'asc' }],
-  })
+  let decisions: Awaited<ReturnType<typeof db.decision.findMany<{ include: { workItem: { select: { id: true; title: true; company: true } } } }>>> = []
+  try {
+    decisions = await db.decision.findMany({
+      where: { status: 'Open' },
+      include: { workItem: { select: { id: true, title: true, company: true } } },
+      orderBy: [{ dueDate: 'asc' }, { createdAt: 'asc' }],
+      take: 200,
+    })
+  } catch {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-900">Decision Queue</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
+          Could not load decisions. Please refresh the page.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

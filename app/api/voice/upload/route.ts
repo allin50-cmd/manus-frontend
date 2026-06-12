@@ -12,7 +12,11 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const contentType = (req.headers.get('content-type') ?? 'audio/webm').split(';')[0].trim()
+  const rawContentType = req.headers.get('content-type')
+  if (!rawContentType) {
+    return NextResponse.json({ error: 'Content-Type header required' }, { status: 415 })
+  }
+  const contentType = rawContentType.split(';')[0].trim()
   if (!ALLOWED_MIME.includes(contentType)) {
     return NextResponse.json({ error: 'Unsupported audio type' }, { status: 415 })
   }
