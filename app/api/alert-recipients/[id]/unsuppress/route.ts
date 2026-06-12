@@ -9,10 +9,15 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const recipient = await db.alertRecipient.findUnique({ where: { id: params.id } })
   if (!recipient) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const updated = await db.alertRecipient.update({
-    where: { id: params.id },
-    data: { isSuppressed: false, suppressionReason: null },
-  })
+  let updated
+  try {
+    updated = await db.alertRecipient.update({
+      where: { id: params.id },
+      data: { isSuppressed: false, suppressionReason: null },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   db.alertEvent.create({
     data: {

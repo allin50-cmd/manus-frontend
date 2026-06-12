@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     recipients = await db.alertRecipient.findMany({
       where,
       orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
+      take: 500,
     })
   } catch {
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })

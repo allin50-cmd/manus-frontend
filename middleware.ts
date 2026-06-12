@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const PUBLIC = ['/login', '/api/auth/login', '/api/alert-deliveries/ack']
+// Paths that bypass auth by exact match (no sub-paths allowed).
+const PUBLIC_EXACT = new Set(['/api/alert-deliveries/ack'])
+// Paths that bypass auth by prefix match (and all their sub-paths).
+const PUBLIC_PREFIX = ['/login', '/api/auth/login']
 
 async function verifyToken(token: string): Promise<boolean> {
   const jwtSecret = process.env.JWT_SECRET
@@ -19,7 +22,7 @@ export async function middleware(req: NextRequest) {
 
   const token = req.cookies.get('session')?.value
 
-  if (PUBLIC.some((p) => (p === '/api/alert-deliveries/ack' ? pathname === p : pathname.startsWith(p)))) {
+  if (PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIX.some((p) => pathname.startsWith(p))) {
     if (pathname.startsWith('/login') && token && (await verifyToken(token))) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }

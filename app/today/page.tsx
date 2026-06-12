@@ -16,38 +16,56 @@ export default async function TodayPage() {
   const endOfToday = new Date(now)
   endOfToday.setHours(23, 59, 59, 999)
 
-  const [overdueItems, dueTodayItems, overdueActions, dueTodayActions] = await Promise.all([
-    db.workItem.findMany({
-      where: {
-        dueDate: { lt: startOfToday },
-        status: { notIn: ['Completed', 'Archived', 'NotFit'] },
-      },
-      orderBy: { dueDate: 'asc' },
-    }),
-    db.workItem.findMany({
-      where: {
-        dueDate: { gte: startOfToday, lte: endOfToday },
-        status: { notIn: ['Completed', 'Archived', 'NotFit'] },
-      },
-      orderBy: { dueDate: 'asc' },
-    }),
-    db.action.findMany({
-      where: {
-        dueDate: { lt: startOfToday },
-        status: 'Open',
-      },
-      include: { workItem: { select: { id: true, title: true } } },
-      orderBy: { dueDate: 'asc' },
-    }),
-    db.action.findMany({
-      where: {
-        dueDate: { gte: startOfToday, lte: endOfToday },
-        status: 'Open',
-      },
-      include: { workItem: { select: { id: true, title: true } } },
-      orderBy: { dueDate: 'asc' },
-    }),
-  ])
+  let rows
+  try {
+    rows = await Promise.all([
+      db.workItem.findMany({
+        where: {
+          dueDate: { lt: startOfToday },
+          status: { notIn: ['Completed', 'Archived', 'NotFit'] },
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 100,
+      }),
+      db.workItem.findMany({
+        where: {
+          dueDate: { gte: startOfToday, lte: endOfToday },
+          status: { notIn: ['Completed', 'Archived', 'NotFit'] },
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 100,
+      }),
+      db.action.findMany({
+        where: {
+          dueDate: { lt: startOfToday },
+          status: 'Open',
+        },
+        include: { workItem: { select: { id: true, title: true } } },
+        orderBy: { dueDate: 'asc' },
+        take: 100,
+      }),
+      db.action.findMany({
+        where: {
+          dueDate: { gte: startOfToday, lte: endOfToday },
+          status: 'Open',
+        },
+        include: { workItem: { select: { id: true, title: true } } },
+        orderBy: { dueDate: 'asc' },
+        take: 100,
+      }),
+    ])
+  } catch {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-900">Today&apos;s Actions</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
+          Could not load today&apos;s data. Please refresh the page.
+        </div>
+      </div>
+    )
+  }
+
+  const [overdueItems, dueTodayItems, overdueActions, dueTodayActions] = rows
 
   const allClear = overdueItems.length === 0 && dueTodayItems.length === 0 && overdueActions.length === 0 && dueTodayActions.length === 0
 

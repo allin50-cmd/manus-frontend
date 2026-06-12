@@ -102,13 +102,27 @@ export default async function DashboardPage() {
   const session = await requireAuth()
   const isNamed = session.person !== 'user'
 
-  const [stats, pipeline, teamPulse, myStats, compliance] = await Promise.all([
-    getStats(),
-    getPipeline(),
-    getTeamPulse(),
-    isNamed ? getMyStats(session.person) : Promise.resolve(null),
-    getComplianceSummary(),
-  ])
+  let dashData
+  try {
+    dashData = await Promise.all([
+      getStats(),
+      getPipeline(),
+      getTeamPulse(),
+      isNamed ? getMyStats(session.person) : Promise.resolve(null),
+      getComplianceSummary(),
+    ])
+  } catch {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
+          Could not load dashboard. Please refresh the page.
+        </div>
+      </div>
+    )
+  }
+
+  const [stats, pipeline, teamPulse, myStats, compliance] = dashData
 
   const today = formatDayDate(new Date())
   const urgentCount = stats.overdue + stats.dueToday

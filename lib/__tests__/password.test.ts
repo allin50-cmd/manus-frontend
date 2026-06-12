@@ -64,7 +64,6 @@ describe('verifyPassword', () => {
 
   it('returns false for a non-string password', async () => {
     const hash = await hashPassword('somepass')
-    // @ts-expect-error — deliberate type violation to test runtime guard
-    expect(await verifyPassword(null, hash)).toBe(false)
+    expect(await verifyPassword(null as unknown as string, hash)).toBe(false)
   })
 })
