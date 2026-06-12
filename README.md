@@ -1,41 +1,80 @@
 # UltraCore SheetOps
 
-Spreadsheets that do the work, not just store the work.
+Simple operator UI for work items, actions, decisions, templates and activity logs.
 
-## Deploy to Vercel + Neon
+## Current architecture
 
-### 1. Create Neon database
+```text
+UltraCore SheetOps app = operator interface
+Supabase Postgres = database and source of truth
+Prisma = existing database client
+Vercel = app hosting
+```
 
-Go to [neon.tech](https://neon.tech), create a project, and copy the connection string.
+No Google Sheets. No Neon. No AI. No agents. No unnecessary infrastructure.
+
+## Deploy to Vercel + Supabase
+
+### 1. Create Supabase project
+
+Go to Supabase, create a project, then copy the Postgres connection string.
+
+Use the pooled or direct database connection string provided by Supabase. The app expects it in `DATABASE_URL`.
 
 ### 2. Add environment variables to Vercel
 
 In your Vercel project settings → Environment Variables, add:
 
-```
-DATABASE_URL=postgresql://...your neon connection string...
+```env
+DATABASE_URL=postgresql://...your supabase postgres connection string...
 APP_PASSCODE=your-secure-passcode
 JWT_SECRET=your-32-char-random-secret
 ```
 
-Generate `JWT_SECRET` with: `openssl rand -hex 32`
+Generate `JWT_SECRET` with:
+
+```bash
+openssl rand -hex 32
+```
 
 ### 3. Push schema and seed data
 
 ```bash
+npx prisma validate
+npx prisma generate
 npx prisma db push
 npm run db:seed
 ```
 
 ### 4. Deploy to Vercel
 
-Connect your GitHub repo in the Vercel dashboard, or run `vercel deploy`.
+Connect the GitHub repo in Vercel, or run:
 
-### 5. Open on iPhone Safari
+```bash
+vercel deploy
+```
+
+### 5. Check database health
+
+After deployment, open:
+
+```text
+/api/health/db
+```
+
+Expected response:
+
+```json
+{ "ok": true }
+```
+
+If `DATABASE_URL` is missing or Supabase is unreachable, the endpoint returns a clear error.
+
+### 6. Open on iPhone Safari
 
 Navigate to your Vercel URL in Safari on iPhone.
 
-### 6. Add to Home Screen
+### 7. Add to Home Screen
 
 Tap **Share → Add to Home Screen** to install as a PWA.
 
@@ -48,12 +87,20 @@ cp .env.example .env
 # Fill in DATABASE_URL, APP_PASSCODE, JWT_SECRET
 
 npm install
+npx prisma validate
+npx prisma generate
 npx prisma db push
 npm run db:seed
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+Check the database connection locally:
+
+```text
+http://localhost:3000/api/health/db
+```
 
 ## Scripts
 
@@ -72,6 +119,7 @@ Open [http://localhost:3000](http://localhost:3000)
 - TypeScript
 - Tailwind CSS
 - Prisma ORM
-- Neon Postgres
-- PWA (installable on iPhone)
+- Supabase Postgres
+- Vercel hosting
+- PWA installable on iPhone
 - Simple passcode login
