@@ -4,7 +4,13 @@ import { db } from '@/lib/db'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   await requireAuth()
-  const body = await req.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   const { name, companyId, role, email, phone, isPrimary, notes } = body
 
   if (name !== undefined && !name?.trim()) {

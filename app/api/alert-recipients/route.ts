@@ -14,10 +14,15 @@ export async function GET(req: NextRequest) {
   const company = req.nextUrl.searchParams.get('company')
   const where = { isActive: true, ...(company ? { company } : {}) }
 
-  const recipients = await db.alertRecipient.findMany({
-    where,
-    orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
-  })
+  let recipients
+  try {
+    recipients = await db.alertRecipient.findMany({
+      where,
+      orderBy: [{ company: 'asc' }, { escalationLevel: 'asc' }, { name: 'asc' }],
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   return NextResponse.json(recipients)
 }
@@ -26,7 +31,13 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  const body = await req.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   const {
     company,
     name,
@@ -56,20 +67,25 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const recipient = await db.alertRecipient.create({
-    data: {
-      company,
-      name,
-      email: email || null,
-      phone: phone || null,
-      role,
-      preferredChannel,
-      alertCategories,
-      escalationLevel: Number(escalationLevel),
-    },
-  })
+  let recipient
+  try {
+    recipient = await db.alertRecipient.create({
+      data: {
+        company,
+        name,
+        email: email || null,
+        phone: phone || null,
+        role,
+        preferredChannel,
+        alertCategories,
+        escalationLevel: Number(escalationLevel),
+      },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
-  await db.alertEvent.create({
+  db.alertEvent.create({
     data: {
       recipientId: recipient.id,
       eventType: 'RecipientSelected',
@@ -77,7 +93,7 @@ export async function POST(req: NextRequest) {
       actorId: session.person,
       payload: JSON.stringify({ action: 'created', company, name }),
     },
-  })
+  }).catch(() => {})
 
   return NextResponse.json(recipient, { status: 201 })
 }

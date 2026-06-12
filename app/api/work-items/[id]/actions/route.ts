@@ -31,40 +31,44 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const dueDate = body.dueDate ? new Date(body.dueDate as string) : null
 
   try {
-    const action = await db.action.create({
-      data: {
-        workItemId: item.id,
-        actionType,
-        label: body.label as string,
-        assignedTo: (body.assignedTo as string) || session.person,
-        dueDate,
-      },
-    })
-
-    await db.activityLog.create({
-      data: {
-        workItemId: item.id,
-        actionId: action.id,
-        person: session.person,
-        eventType: 'ActionCreated',
-        summary: `Follow-up created: ${body.label}`,
-      },
-    })
-
-    if (dueDate) {
-      await db.workItem.update({
-        where: { id: item.id },
-        data: { nextAction: body.label as string, dueDate },
-      })
-      await db.activityLog.create({
+    const action = await db.$transaction(async (tx) => {
+      const created = await tx.action.create({
         data: {
           workItemId: item.id,
-          person: session.person,
-          eventType: 'FollowUpSet',
-          summary: `Follow-up set: ${body.label} due ${body.dueDate}`,
+          actionType,
+          label: body.label as string,
+          assignedTo: (body.assignedTo as string) || session.person,
+          dueDate,
         },
       })
-    }
+
+      await tx.activityLog.create({
+        data: {
+          workItemId: item.id,
+          actionId: created.id,
+          person: session.person,
+          eventType: 'ActionCreated',
+          summary: `Follow-up created: ${body.label}`,
+        },
+      })
+
+      if (dueDate) {
+        await tx.workItem.update({
+          where: { id: item.id },
+          data: { nextAction: body.label as string, dueDate },
+        })
+        await tx.activityLog.create({
+          data: {
+            workItemId: item.id,
+            person: session.person,
+            eventType: 'FollowUpSet',
+            summary: `Follow-up set: ${body.label} due ${body.dueDate}`,
+          },
+        })
+      }
+
+      return created
+    })
 
     return NextResponse.json(action, { status: 201 })
   } catch {

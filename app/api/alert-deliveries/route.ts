@@ -9,11 +9,17 @@ export async function GET(req: NextRequest) {
   const workItemId = req.nextUrl.searchParams.get('workItemId')
   const where = workItemId ? { workItemId } : {}
 
-  const deliveries = await db.alertDelivery.findMany({
-    where,
-    include: { recipient: true },
-    orderBy: { createdAt: 'desc' },
-  })
+  let deliveries
+  try {
+    deliveries = await db.alertDelivery.findMany({
+      where,
+      include: { recipient: true },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   return NextResponse.json(deliveries)
 }

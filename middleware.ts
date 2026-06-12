@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
 
   const token = req.cookies.get('session')?.value
 
-  if (PUBLIC.some((p) => pathname.startsWith(p))) {
+  if (PUBLIC.some((p) => (p === '/api/alert-deliveries/ack' ? pathname === p : pathname.startsWith(p)))) {
     if (pathname.startsWith('/login') && token && (await verifyToken(token))) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }

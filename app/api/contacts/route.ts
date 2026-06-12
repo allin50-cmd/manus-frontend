@@ -14,7 +14,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   await requireAuth()
-  const body = await req.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   const { name, companyId, role, email, phone, isPrimary, notes } = body
 
   if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
