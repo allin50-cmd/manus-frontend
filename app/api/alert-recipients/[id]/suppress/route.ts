@@ -14,12 +14,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
   if (!recipient) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const { reason } = await req.json().catch(() => ({}))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { reason } = await req.json().catch(() => ({}) as any)
+  const safeReason = typeof reason === 'string' ? reason : null
 
   try {
     const updated = await db.alertRecipient.update({
       where: { id: params.id },
-      data: { isSuppressed: true, suppressionReason: reason || null },
+      data: { isSuppressed: true, suppressionReason: safeReason || null },
     })
 
     await db.alertEvent.create({
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         eventType: 'RecipientSuppressed',
         actorType: 'User',
         actorId: session.person,
-        payload: JSON.stringify({ reason }),
+        payload: JSON.stringify({ reason: safeReason }),
       },
     }).catch(() => {})
 

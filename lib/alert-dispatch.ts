@@ -90,6 +90,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
   const openDeliveries = await db.alertDelivery.findMany({
     where: { status: 'Sent' },
     include: { workItem: true },
+    orderBy: { createdAt: 'asc' },
     take: 200,
   })
 
@@ -117,7 +118,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
       },
     })
     const candidates = allNextLevelCandidates.filter(
-      (r) => r.alertCategories.length === 0 || r.alertCategories.includes(alert.category),
+      (r) => !Array.isArray(r.alertCategories) || r.alertCategories.length === 0 || r.alertCategories.includes(alert.category),
     )
 
     // Atomic conditional update: only escalate if this delivery is still 'Sent'.

@@ -64,6 +64,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'alertCategories must be an array' }, { status: 400 })
   }
   const invalidCats = alertCategories.filter((c: string) => !ALERT_CATEGORIES.includes(c as never))
+
+  const parsedLevel = Number(escalationLevel)
+  if (!Number.isInteger(parsedLevel) || parsedLevel < 1) {
+    return NextResponse.json({ error: 'escalationLevel must be a positive integer' }, { status: 400 })
+  }
   if (invalidCats.length > 0) {
     return NextResponse.json(
       { error: `Unknown alert categories: ${invalidCats.join(', ')}` },
@@ -82,7 +87,7 @@ export async function POST(req: NextRequest) {
         role,
         preferredChannel,
         alertCategories,
-        escalationLevel: Number(escalationLevel),
+        escalationLevel: parsedLevel,
       },
     })
   } catch {

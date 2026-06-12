@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 })
   }
 
-  const hash = await hashPassword(newPassword)
+  const hash = await hashPassword(newPassword.trim())
   try {
     await db.userPassword.upsert({
       where: { person: session.person },

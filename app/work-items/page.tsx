@@ -5,6 +5,7 @@ import Link from 'next/link'
 import StatusBadge from '../../components/StatusBadge'
 import WorkItemFilters from '../../components/WorkItemFilters'
 import { WorkItemStatus, WorkItemType, Priority } from '@prisma/client'
+import { isValidType, isValidStatus, isValidPriority } from '../../lib/work-item-enums'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,17 +20,33 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
   await requireAuth()
 
   const where: Record<string, unknown> = {}
-  if (searchParams.status && searchParams.status !== 'all') where.status = searchParams.status as WorkItemStatus
-  if (searchParams.type && searchParams.type !== 'all') where.type = searchParams.type as WorkItemType
+  if (searchParams.status && searchParams.status !== 'all' && isValidStatus(searchParams.status))
+    where.status = searchParams.status as WorkItemStatus
+  if (searchParams.type && searchParams.type !== 'all' && isValidType(searchParams.type))
+    where.type = searchParams.type as WorkItemType
   if (searchParams.owner && searchParams.owner !== 'all') where.owner = searchParams.owner
-  if (searchParams.priority && searchParams.priority !== 'all') where.priority = searchParams.priority as Priority
+  if (searchParams.priority && searchParams.priority !== 'all' && isValidPriority(searchParams.priority))
+    where.priority = searchParams.priority as Priority
 
   const hasFilters = Object.values(searchParams).some((v) => v && v !== 'all')
 
-  const items = await db.workItem.findMany({
-    where,
-    orderBy: [{ priority: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
-  })
+  let items: Awaited<ReturnType<typeof db.workItem.findMany>> = []
+  try {
+    items = await db.workItem.findMany({
+      where,
+      orderBy: [{ priority: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+      take: 500,
+    })
+  } catch {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-slate-900">Work Items</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
+          Could not load work items. Please refresh the page.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
