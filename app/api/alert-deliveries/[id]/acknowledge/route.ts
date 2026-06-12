@@ -13,10 +13,17 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Already acknowledged' }, { status: 409 })
   }
 
-  const updated = await db.alertDelivery.update({
-    where: { id: params.id },
+  // Atomic conditional update — if a concurrent request already acknowledged
+  // this delivery, count will be 0 and we return a 409 rather than
+  // double-writing the event.
+  const { count } = await db.alertDelivery.updateMany({
+    where: { id: params.id, status: { not: 'Acknowledged' } },
     data: { status: 'Acknowledged', acknowledgedAt: new Date() },
   })
+
+  if (count === 0) {
+    return NextResponse.json({ error: 'Already acknowledged' }, { status: 409 })
+  }
 
   await db.alertEvent.create({
     data: {
@@ -28,7 +35,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       actorId: session.person,
       payload: JSON.stringify({ acknowledgedBy: session.person }),
     },
-  })
+  }).catch(() => {})
 
+  const updated = await db.alertDelivery.findUnique({ where: { id: params.id } })
   return NextResponse.json(updated)
 }

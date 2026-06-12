@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-async function sendAlertEmail(
-  _deliveryId: string,
-  _workItem: unknown,
-  _recipient: unknown,
-  _ackToken?: string
-) {
-  // TODO: wire to real email sender once path is confirmed.
-  return
-}
+import { sendAlertEmail } from '@/lib/alert-dispatch'
+import { randomUUID } from 'crypto'
+
+const RETRYABLE_STATUSES = new Set(['Failed', 'Pending'])
 
 export async function POST(
   _req: NextRequest,
@@ -31,14 +26,29 @@ export async function POST(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const newDelivery = await db.alertDelivery.create({
-    data: {
-      workItemId: delivery.workItemId,
-      recipientId: delivery.recipientId,
-      channel: delivery.channel,
-      status: 'Pending',
-    },
-  })
+  // Prevent retrying a delivery that already succeeded or was acknowledged.
+  if (!RETRYABLE_STATUSES.has(delivery.status)) {
+    return NextResponse.json(
+      { error: `Cannot retry a delivery with status '${delivery.status}'` },
+      { status: 409 },
+    )
+  }
+
+  let newDelivery
+  try {
+    newDelivery = await db.alertDelivery.create({
+      data: {
+        workItemId: delivery.workItemId,
+        recipientId: delivery.recipientId,
+        channel: delivery.channel,
+        status: 'Pending',
+        escalationLevel: delivery.escalationLevel,
+        ackToken: randomUUID(),
+      },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Could not create retry delivery' }, { status: 503 })
+  }
 
   if (delivery.channel === 'Dashboard') {
     await db.activityLog.create({
@@ -48,19 +58,17 @@ export async function POST(
         eventType: 'ActionCreated',
         summary: `Retried dashboard alert delivery ${newDelivery.id}`,
       },
-    })
+    }).catch(() => {})
   } else if (delivery.channel === 'Email') {
+    // Use the real sendAlertEmail — it handles the Resend API key stub gracefully.
     await sendAlertEmail(
       newDelivery.id,
       delivery.workItem,
       delivery.recipient,
-      newDelivery.ackToken ?? undefined
+      newDelivery.ackToken ?? undefined,
     )
   }
 
-  const finalDelivery = await db.alertDelivery.findUnique({
-    where: { id: newDelivery.id },
-  })
-
+  const finalDelivery = await db.alertDelivery.findUnique({ where: { id: newDelivery.id } })
   return NextResponse.json(finalDelivery ?? newDelivery, { status: 201 })
 }

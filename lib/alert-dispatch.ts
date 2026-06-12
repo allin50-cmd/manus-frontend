@@ -119,10 +119,14 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
       (r) => r.alertCategories.length === 0 || r.alertCategories.includes(alert.category),
     )
 
-    await db.alertDelivery.update({
-      where: { id: delivery.id },
+    // Atomic conditional update: only escalate if this delivery is still 'Sent'.
+    // Under concurrent runs the second caller finds count=0 and skips, preventing
+    // duplicate escalation emails.
+    const { count } = await db.alertDelivery.updateMany({
+      where: { id: delivery.id, status: 'Sent' },
       data: { status: 'Escalated' },
     })
+    if (count === 0) continue
 
     await db.alertEvent.create({
       data: {

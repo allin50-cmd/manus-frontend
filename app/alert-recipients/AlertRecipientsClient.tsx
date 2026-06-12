@@ -174,8 +174,15 @@ export default function AlertRecipientsClient({
     if (!confirm('Deactivate this recipient? They will no longer receive alerts.')) return
     setBusyId(id)
     try {
-      await fetch(`/api/alert-recipients/${id}`, { method: 'DELETE' })
-      router.refresh()
+      const res = await fetch(`/api/alert-recipients/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        router.refresh()
+      } else {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error ?? 'Could not deactivate recipient')
+      }
+    } catch {
+      alert('Network error')
     } finally {
       setBusyId(null)
     }
@@ -185,12 +192,19 @@ export default function AlertRecipientsClient({
     const reason = prompt('Suppression reason (optional):') ?? ''
     setBusyId(id)
     try {
-      await fetch(`/api/alert-recipients/${id}/suppress`, {
+      const res = await fetch(`/api/alert-recipients/${id}/suppress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason }),
       })
-      router.refresh()
+      if (res.ok) {
+        router.refresh()
+      } else {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error ?? 'Could not suppress recipient')
+      }
+    } catch {
+      alert('Network error')
     } finally {
       setBusyId(null)
     }
@@ -218,8 +232,15 @@ export default function AlertRecipientsClient({
   async function unsuppress(id: string) {
     setBusyId(id)
     try {
-      await fetch(`/api/alert-recipients/${id}/unsuppress`, { method: 'POST' })
-      router.refresh()
+      const res = await fetch(`/api/alert-recipients/${id}/unsuppress`, { method: 'POST' })
+      if (res.ok) {
+        router.refresh()
+      } else {
+        const d = await res.json().catch(() => ({}))
+        alert(d.error ?? 'Could not unsuppress recipient')
+      }
+    } catch {
+      alert('Network error')
     } finally {
       setBusyId(null)
     }

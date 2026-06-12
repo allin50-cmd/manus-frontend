@@ -9,29 +9,39 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const item = await db.workItem.findUnique({ where: { id: params.id } })
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const { text } = await req.json()
-  if (!text?.trim()) return NextResponse.json({ error: 'Note text required' }, { status: 400 })
+  let body: { text?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
 
-  const [log, action] = await Promise.all([
-    db.activityLog.create({
-      data: {
-        workItemId: item.id,
-        person: session.person,
-        eventType: 'NoteAdded',
-        summary: text.trim(),
-      },
-    }),
-    db.action.create({
-      data: {
-        workItemId: item.id,
-        actionType: 'LogNote',
-        label: `Note: ${text.trim().slice(0, 80)}`,
-        status: 'Done',
-        assignedTo: session.person,
-        completedAt: new Date(),
-      },
-    }),
-  ])
+  const text = typeof body.text === 'string' ? body.text.trim() : ''
+  if (!text) return NextResponse.json({ error: 'Note text required' }, { status: 400 })
 
-  return NextResponse.json({ log, action }, { status: 201 })
+  try {
+    const [log, action] = await Promise.all([
+      db.activityLog.create({
+        data: {
+          workItemId: item.id,
+          person: session.person,
+          eventType: 'NoteAdded',
+          summary: text,
+        },
+      }),
+      db.action.create({
+        data: {
+          workItemId: item.id,
+          actionType: 'LogNote',
+          label: `Note: ${text.slice(0, 80)}`,
+          status: 'Done',
+          assignedTo: session.person,
+          completedAt: new Date(),
+        },
+      }),
+    ])
+    return NextResponse.json({ log, action }, { status: 201 })
+  } catch {
+    return NextResponse.json({ error: 'Could not save note' }, { status: 503 })
+  }
 }
