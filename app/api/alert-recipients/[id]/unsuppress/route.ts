@@ -14,7 +14,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     data: { isSuppressed: false, suppressionReason: null },
   })
 
-  await db.alertEvent.create({
+  db.alertEvent.create({
     data: {
       recipientId: params.id,
       eventType: 'RecipientSelected',
@@ -22,7 +22,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       actorId: session.person,
       payload: JSON.stringify({ action: 'unsuppressed' }),
     },
-  })
+  }).catch(() => {})
 
   return NextResponse.json(updated)
 }

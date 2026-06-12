@@ -60,13 +60,16 @@ export async function POST(
       },
     }).catch(() => {})
   } else if (delivery.channel === 'Email') {
-    // Use the real sendAlertEmail — it handles the Resend API key stub gracefully.
-    await sendAlertEmail(
-      newDelivery.id,
-      delivery.workItem,
-      delivery.recipient,
-      newDelivery.ackToken ?? undefined,
-    )
+    try {
+      await sendAlertEmail(
+        newDelivery.id,
+        delivery.workItem,
+        delivery.recipient,
+        newDelivery.ackToken ?? undefined,
+      )
+    } catch {
+      // delivery stays Pending; caller can retry again
+    }
   }
 
   const finalDelivery = await db.alertDelivery.findUnique({ where: { id: newDelivery.id } })

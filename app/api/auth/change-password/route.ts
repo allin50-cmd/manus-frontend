@@ -2,21 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { hashPassword, verifyPassword } from '@/lib/password'
-import { timingSafeEqual } from 'crypto'
-
-function safeEqual(a: string, b: string): boolean {
-  try {
-    const aBuf = Buffer.from(a, 'utf8')
-    const bBuf = Buffer.from(b, 'utf8')
-    if (aBuf.length !== bBuf.length) {
-      timingSafeEqual(aBuf, aBuf)
-      return false
-    }
-    return timingSafeEqual(aBuf, bBuf)
-  } catch {
-    return false
-  }
-}
+import { safeEqual } from '@/lib/safe-equal'
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -34,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (typeof currentPassword !== 'string' || !currentPassword) {
     return NextResponse.json({ error: 'Current password is required' }, { status: 400 })
   }
-  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+  if (typeof newPassword !== 'string' || newPassword.trim().length < 8) {
     return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 })
   }
 

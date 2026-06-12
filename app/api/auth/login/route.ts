@@ -2,24 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSessionToken, COOKIE_NAME } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { verifyPassword } from '@/lib/password'
-import { timingSafeEqual } from 'crypto'
+import { safeEqual } from '@/lib/safe-equal'
 
 const KNOWN_PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
-
-// Constant-time string comparison to prevent timing attacks on the default passcode.
-function safeEqual(a: string, b: string): boolean {
-  try {
-    const aBuf = Buffer.from(a, 'utf8')
-    const bBuf = Buffer.from(b, 'utf8')
-    if (aBuf.length !== bBuf.length) {
-      timingSafeEqual(aBuf, aBuf) // dummy run to keep timing consistent
-      return false
-    }
-    return timingSafeEqual(aBuf, bBuf)
-  } catch {
-    return false
-  }
-}
 
 export async function POST(req: NextRequest) {
   let body: { passcode?: unknown; person?: unknown }
