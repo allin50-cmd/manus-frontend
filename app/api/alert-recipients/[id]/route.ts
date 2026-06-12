@@ -97,11 +97,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const recipient = await db.alertRecipient.findUnique({ where: { id: params.id } })
   if (!recipient) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Soft-delete: mark inactive rather than delete (preserves audit history)
-  const updated = await db.alertRecipient.update({
-    where: { id: params.id },
-    data: { isActive: false },
-  })
+  let updated
+  try {
+    updated = await db.alertRecipient.update({
+      where: { id: params.id },
+      data: { isActive: false },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
 
   await db.alertEvent.create({
     data: {

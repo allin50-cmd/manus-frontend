@@ -43,7 +43,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
 
   for (const { recipient, reason } of excluded) {
     if (reason !== 'SUPPRESSED') continue
-    await db.alertEvent.create({
+    db.alertEvent.create({
       data: {
         workItemId: workItem.id,
         recipientId: recipient.id,
@@ -51,7 +51,7 @@ export async function dispatchAlerts(workItem: WorkItem): Promise<void> {
         actorType: 'System',
         payload: JSON.stringify({ reason }),
       },
-    })
+    }).catch(() => {})
   }
 
   for (const recipient of selected) {
@@ -90,6 +90,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
   const openDeliveries = await db.alertDelivery.findMany({
     where: { status: 'Sent' },
     include: { workItem: true },
+    take: 200,
   })
 
   let escalated = 0
@@ -128,7 +129,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
     })
     if (count === 0) continue
 
-    await db.alertEvent.create({
+    db.alertEvent.create({
       data: {
         workItemId: delivery.workItemId,
         deliveryId: delivery.id,
@@ -136,7 +137,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
         actorType: 'System',
         payload: JSON.stringify({ nextLevel, candidateCount: candidates.length }),
       },
-    })
+    }).catch(() => {})
 
     for (const recipient of candidates) {
       const newDelivery = await db.alertDelivery.create({
@@ -149,7 +150,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
         },
       })
 
-      await db.alertEvent.create({
+      db.alertEvent.create({
         data: {
           workItemId: delivery.workItemId,
           deliveryId: newDelivery.id,
@@ -158,7 +159,7 @@ export async function runEscalationCheck(): Promise<{ escalated: number }> {
           actorType: 'System',
           payload: JSON.stringify({ escalationLevel: nextLevel }),
         },
-      })
+      }).catch(() => {})
 
       if (recipient.preferredChannel === 'Dashboard') {
         await markDeliverySent(newDelivery.id, delivery.workItemId, recipient.id)

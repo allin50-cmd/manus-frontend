@@ -60,6 +60,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid preferredChannel' }, { status: 400 })
   }
 
+  if (!Array.isArray(alertCategories)) {
+    return NextResponse.json({ error: 'alertCategories must be an array' }, { status: 400 })
+  }
   const invalidCats = alertCategories.filter((c: string) => !ALERT_CATEGORIES.includes(c as never))
   if (invalidCats.length > 0) {
     return NextResponse.json(

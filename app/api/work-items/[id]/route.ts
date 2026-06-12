@@ -45,8 +45,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
   }
 
+  if (body.title !== undefined) {
+    if (typeof body.title !== 'string' || !body.title.trim()) {
+      return NextResponse.json({ error: 'title must be a non-empty string' }, { status: 400 })
+    }
+  }
+
   const updates: Record<string, unknown> = {}
-  if (body.title) updates.title = (body.title as string).trim()
+  if (body.title !== undefined) updates.title = (body.title as string).trim()
   if (body.type) updates.type = body.type as WorkItemType
   if (body.company !== undefined) updates.company = body.company || null
   if (body.contactName !== undefined) updates.contactName = body.contactName || null
