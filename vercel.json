@@ -2,10 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npx prisma generate && npm run build",
   "installCommand": "npm ci",
-  "crons": [
-    {
-      "path": "/api/alert-escalation-check",
-      "schedule": "0 * * * *"
-    }
-  ]
+  "nodeVersion": "20.x"
 }
