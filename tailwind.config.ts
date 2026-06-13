@@ -10,6 +10,17 @@ const config: Config = {
       fontFamily: {
         sans: ['system-ui', '-apple-system', 'sans-serif'],
       },
+      colors: {
+        navy: {
+          DEFAULT: '#0c2340',
+          light: '#112d4e',
+          mid: '#1a3a6c',
+        },
+        fineguard: {
+          bg: '#eff6ff',
+          border: '#e2e8f0',
+        },
+      },
     },
   },
   plugins: [],

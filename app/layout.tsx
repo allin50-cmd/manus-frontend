@@ -4,13 +4,13 @@ import NavBar from '../components/NavBar'
 import { getSession } from '../lib/auth'
 
 export const metadata: Metadata = {
-  title: 'UltraCore SheetOps',
-  description: 'Spreadsheets that do the work, not just store the work.',
+  title: 'FineGuard – Compliance Dashboard',
+  description: 'Centralise. Prioritise. Comply.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'SheetOps',
+    title: 'FineGuard',
   },
   icons: {
     apple: '/icons/icon-192.svg',
@@ -23,7 +23,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#1e293b',
+  themeColor: '#0c2340',
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <body>
         <NavBar person={session?.person ?? null} />
-        <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
+        <main className="max-w-4xl mx-auto px-4 py-6">{children}</main>
       </body>
     </html>
   )

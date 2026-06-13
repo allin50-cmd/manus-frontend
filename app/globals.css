@@ -7,10 +7,10 @@ html {
 }
 
 body {
-  @apply bg-slate-50 text-slate-900;
+  @apply bg-fineguard-bg text-slate-900;
 }
 
-/* Ensure bottom nav doesn't cover content on mobile */
+/* Bottom nav clearance on mobile */
 @media (max-width: 640px) {
   main {
     padding-bottom: 5rem;

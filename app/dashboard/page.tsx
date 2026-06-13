@@ -1,302 +1,259 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
 import Link from 'next/link'
+import type { WorkItemStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
-async function getStats() {
+async function getDashboardData() {
   const now = new Date()
-  const startOfToday = new Date(now)
-  startOfToday.setHours(0, 0, 0, 0)
-  const endOfToday = new Date(now)
-  endOfToday.setHours(23, 59, 59, 999)
+  const today = new Date(now); today.setHours(0, 0, 0, 0)
+  const endOfToday = new Date(now); endOfToday.setHours(23, 59, 59, 999)
+  const in7Days  = new Date(today.getTime() + 7  * 86_400_000)
+  const in30Days = new Date(today.getTime() + 30 * 86_400_000)
+  const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay())
 
-  const startOfWeek = new Date(now)
-  startOfWeek.setDate(now.getDate() - now.getDay())
-  startOfWeek.setHours(0, 0, 0, 0)
+  const nonFinal = { notIn: ['Completed', 'Archived', 'NotFit'] as WorkItemStatus[] }
 
-  const [total, overdue, dueToday, decisionNeeded, openActions, completedThisWeek] = await Promise.all([
-    db.workItem.count({ where: { status: { notIn: ['Archived'] } } }),
-    db.workItem.count({
-      where: { dueDate: { lt: startOfToday }, status: { notIn: ['Completed', 'Archived', 'NotFit'] } },
-    }),
-    db.workItem.count({
-      where: { dueDate: { gte: startOfToday, lte: endOfToday }, status: { notIn: ['Completed', 'Archived', 'NotFit'] } },
-    }),
-    db.workItem.count({ where: { decisionNeeded: true, status: { notIn: ['Completed', 'Archived'] } } }),
-    db.action.count({ where: { status: 'Open' } }),
+  const [
+    overdue,
+    dueToday,
+    in7DaysDue,
+    in30DaysDue,
+    escalated,
+    completedThisWeek,
+    total,
+    openActions,
+    decisionNeeded,
+    complianceAlerts,
+    teamPulse,
+    recentItems,
+  ] = await Promise.all([
+    db.workItem.count({ where: { dueDate: { lt: today }, status: nonFinal } }),
+    db.workItem.count({ where: { dueDate: { gte: today, lte: endOfToday }, status: nonFinal } }),
+    db.workItem.count({ where: { dueDate: { gte: today, lt: in7Days }, status: nonFinal } }),
+    db.workItem.count({ where: { dueDate: { gte: in7Days, lt: in30Days }, status: nonFinal } }),
+    db.workItem.count({ where: { status: { in: ['Escalated', 'DecisionNeeded', 'FollowUpDue'] } } }),
     db.workItem.count({ where: { status: 'Completed', updatedAt: { gte: startOfWeek } } }),
-  ])
-
-  return { total, overdue, dueToday, decisionNeeded, openActions, completedThisWeek }
-}
-
-async function getMyStats(person: string) {
-  const now = new Date()
-  const startOfToday = new Date(now)
-  startOfToday.setHours(0, 0, 0, 0)
-  const endOfToday = new Date(now)
-  endOfToday.setHours(23, 59, 59, 999)
-
-  const [open, dueToday, overdue] = await Promise.all([
-    db.workItem.count({
-      where: { owner: person, status: { notIn: ['Completed', 'Archived', 'NotFit', 'Paused'] } },
-    }),
-    db.workItem.count({
-      where: {
-        owner: person,
-        dueDate: { gte: startOfToday, lte: endOfToday },
-        status: { notIn: ['Completed', 'Archived', 'NotFit'] },
-      },
-    }),
-    db.workItem.count({
-      where: {
-        owner: person,
-        dueDate: { lt: startOfToday },
-        status: { notIn: ['Completed', 'Archived', 'NotFit'] },
-      },
-    }),
-  ])
-
-  return { open, dueToday, overdue }
-}
-
-async function getPipeline() {
-  const groups = await db.workItem.groupBy({
-    by: ['status'],
-    where: { status: { notIn: ['Archived', 'NotFit'] } },
-    _count: { status: true },
-  })
-  const map: Record<string, number> = {}
-  for (const g of groups) map[g.status] = g._count.status
-  return map
-}
-
-async function getComplianceSummary() {
-  const [pending, totalAlerts] = await Promise.all([
+    db.workItem.count({ where: { status: nonFinal } }),
+    db.action.count({ where: { status: 'Open' } }),
+    db.workItem.count({ where: { decisionNeeded: true, status: nonFinal } }),
     db.alertDelivery.count({ where: { status: { in: ['Sent', 'Pending'] } } }),
-    db.workItem.count({ where: { type: 'ComplianceAlert', status: { notIn: ['Archived'] } } }),
+    Promise.all(
+      ['Dagon', 'Alissa', 'Michelle', 'Chris', 'Charlie', 'George'].map((o) =>
+        db.workItem.count({ where: { owner: o, status: nonFinal } }).then((c) => ({ owner: o, count: c }))
+      )
+    ),
+    db.workItem.findMany({
+      where: { status: nonFinal },
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
+      select: { id: true, title: true, company: true, status: true, priority: true, dueDate: true, type: true },
+      take: 5,
+    }),
   ])
-  return { pending, totalAlerts }
+
+  // Compliance status bar buckets
+  const actionRequired = Math.max(escalated, dueToday + overdue > 0 ? dueToday : 0)
+  const compliantCount = Math.max(0, total - overdue - actionRequired - in30DaysDue)
+
+  return {
+    overdue, dueToday, in7DaysDue, in30DaysDue, escalated,
+    completedThisWeek, total, openActions, decisionNeeded,
+    complianceAlerts, compliantCount, teamPulse, recentItems,
+  }
 }
 
-async function getTeamPulse() {
-  const owners = ['Dagon', 'Alissa', 'Michelle', 'Chris', 'Charlie', 'George']
-  const counts = await Promise.all(
-    owners.map((o) =>
-      db.workItem.count({
-        where: { owner: o, status: { notIn: ['Archived', 'Completed', 'NotFit'] } },
-      })
-    )
-  )
-  return owners.map((owner, i) => ({ owner, count: counts[i] }))
+function fmt(d: Date | null | undefined) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
 }
 
-function formatDayDate(date: Date): string {
-  return date
-    .toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
-    .toUpperCase()
+const PRIORITY_DOT: Record<string, string> = {
+  Urgent: 'bg-red-500', High: 'bg-orange-500', Medium: 'bg-amber-400', Low: 'bg-slate-300',
 }
 
 export default async function DashboardPage() {
   const session = await requireAuth()
-  const isNamed = session.person !== 'user'
 
-  let dashData
+  let data: Awaited<ReturnType<typeof getDashboardData>>
   try {
-    dashData = await Promise.all([
-      getStats(),
-      getPipeline(),
-      getTeamPulse(),
-      isNamed ? getMyStats(session.person) : Promise.resolve(null),
-      getComplianceSummary(),
-    ])
+    data = await getDashboardData()
   } catch {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
-          Could not load dashboard. Please refresh the page.
+          Could not load dashboard. Please refresh.
         </div>
       </div>
     )
   }
 
-  const [stats, pipeline, teamPulse, myStats, compliance] = dashData
+  const {
+    overdue, dueToday, in7DaysDue, in30DaysDue, escalated,
+    completedThisWeek, total, openActions, decisionNeeded,
+    complianceAlerts, compliantCount, teamPulse, recentItems,
+  } = data
 
-  const today = formatDayDate(new Date())
-  const urgentCount = stats.overdue + stats.dueToday
-  const urgencyText = [
-    stats.overdue > 0 ? `${stats.overdue} overdue` : '',
-    stats.dueToday > 0 ? `${stats.dueToday} due today` : '',
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  const actionRequired = escalated + dueToday
+  const atRisk = in7DaysDue + in30DaysDue
+  const grandTotal = compliantCount + atRisk + actionRequired + overdue || 1
 
-  const pipelineSteps = [
-    { key: 'Captured', label: 'Captured', bg: 'bg-slate-50 border-slate-200 text-slate-700' },
-    { key: 'InProgress', label: 'In Progress', bg: 'bg-blue-50 border-blue-200 text-blue-700' },
-    { key: 'Waiting', label: 'Waiting', bg: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
-    { key: 'Escalated', label: 'Escalated', bg: 'bg-purple-50 border-purple-200 text-purple-700' },
-    { key: 'Completed', label: 'Completed', bg: 'bg-green-50 border-green-200 text-green-700' },
-  ]
+  const pct = (n: number) => Math.round((n / grandTotal) * 100)
+
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+  }).toUpperCase()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Page header */}
       <div>
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{today}</p>
-        <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Compliance Dashboard</h1>
         <p className="text-slate-500 text-sm mt-0.5">
-          {isNamed ? `Welcome back, ${session.person}` : 'Welcome back'}
+          Welcome back, <span className="font-medium text-slate-700">{session.person}</span>
         </p>
       </div>
 
-      {urgentCount > 0 && (
+      {/* ── Compliance status bar ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-5 pt-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+              Overall Compliance Status
+            </span>
+            <Link href="/filings" className="text-xs font-semibold text-blue-600 hover:underline">
+              View filings →
+            </Link>
+          </div>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <Link href="/filings?status=compliant"
+              className="rounded-xl bg-green-50 border border-green-200 p-3 text-center hover:bg-green-100 transition-colors">
+              <div className="text-xl font-extrabold text-green-700">{compliantCount}</div>
+              <div className="text-[11px] font-semibold text-green-600 mt-0.5">✓ Compliant</div>
+              <div className="text-[10px] text-green-500">{pct(compliantCount)}%</div>
+            </Link>
+            <Link href="/filings?status=risk"
+              className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-center hover:bg-amber-100 transition-colors">
+              <div className="text-xl font-extrabold text-amber-700">{atRisk}</div>
+              <div className="text-[11px] font-semibold text-amber-600 mt-0.5">⚡ At Risk</div>
+              <div className="text-[10px] text-amber-500">{pct(atRisk)}%</div>
+            </Link>
+            <Link href="/today"
+              className="rounded-xl bg-orange-50 border border-orange-200 p-3 text-center hover:bg-orange-100 transition-colors">
+              <div className="text-xl font-extrabold text-orange-700">{actionRequired}</div>
+              <div className="text-[11px] font-semibold text-orange-600 mt-0.5">⚠ Action Req.</div>
+              <div className="text-[10px] text-orange-500">{pct(actionRequired)}%</div>
+            </Link>
+            <Link href="/today"
+              className="rounded-xl bg-red-50 border border-red-200 p-3 text-center hover:bg-red-100 transition-colors">
+              <div className="text-xl font-extrabold text-red-700">{overdue}</div>
+              <div className="text-[11px] font-semibold text-red-600 mt-0.5">🔴 Overdue</div>
+              <div className="text-[10px] text-red-500">{pct(overdue)}%</div>
+            </Link>
+          </div>
+          {/* Progress strip */}
+          <div className="flex gap-0.5 h-2 rounded-full overflow-hidden">
+            <div className="bg-green-500 rounded-l-full" style={{ flex: compliantCount || 0 }} />
+            <div className="bg-amber-400" style={{ flex: atRisk || 0 }} />
+            <div className="bg-orange-500" style={{ flex: actionRequired || 0 }} />
+            <div className="bg-red-500 rounded-r-full" style={{ flex: overdue || 0 }} />
+          </div>
+        </div>
+        <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>{total} active obligations</span>
+          <span>{completedThisWeek} completed this week ✓</span>
+        </div>
+      </div>
+
+      {/* ── Urgent banner ── */}
+      {(overdue > 0 || dueToday > 0) && (
         <Link
           href="/today"
-          className="flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-3 transition-colors"
+          className="flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-3 transition-colors shadow-sm"
         >
           <span className="text-xl shrink-0">🔴</span>
           <div className="flex-1">
-            <p className="text-sm font-semibold">{urgencyText}</p>
+            <p className="text-sm font-bold">
+              {[overdue > 0 && `${overdue} overdue`, dueToday > 0 && `${dueToday} due today`]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
             <p className="text-xs opacity-80">Tap to see Today&apos;s Actions</p>
           </div>
           <span className="opacity-70 text-lg shrink-0">→</span>
         </Link>
       )}
 
-      {/* Your Work — personalised */}
-      {isNamed && myStats && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Your Work — {session.person}
-            </h2>
-            <Link href={`/work-items?owner=${session.person}`} className="text-xs text-blue-600 hover:underline">
+      {/* ── Key metrics ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Active Items"    value={total}           color="blue" />
+        <StatCard label="Open Actions"    value={openActions}     color={openActions > 0 ? 'orange' : 'green'} />
+        <StatCard label="Decisions"       value={decisionNeeded}  color={decisionNeeded > 0 ? 'purple' : 'green'} />
+        <StatCard label="Alert Deliveries" value={complianceAlerts} color={complianceAlerts > 0 ? 'orange' : 'green'} />
+      </div>
+
+      {/* ── Recent priority items ── */}
+      {recentItems.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Priority Items</span>
+            <Link href="/filings" className="text-xs font-semibold text-blue-600 hover:underline">
               View all →
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <Link
-              href={`/work-items?owner=${session.person}`}
-              className="rounded-xl border border-blue-200 bg-blue-50 p-4 block"
-            >
-              <div className="text-2xl font-bold text-blue-700">{myStats.open}</div>
-              <div className="text-xs font-medium text-blue-700/80 mt-1">Active</div>
-            </Link>
-            <Link
-              href="/today"
-              className={`rounded-xl border p-4 block ${
-                myStats.dueToday > 0
-                  ? 'border-orange-200 bg-orange-50'
-                  : 'border-slate-200 bg-slate-50'
-              }`}
-            >
-              <div className={`text-2xl font-bold ${myStats.dueToday > 0 ? 'text-orange-700' : 'text-slate-500'}`}>
-                {myStats.dueToday}
-              </div>
-              <div className={`text-xs font-medium mt-1 ${myStats.dueToday > 0 ? 'text-orange-700/80' : 'text-slate-500'}`}>
-                Due today
-              </div>
-            </Link>
-            <Link
-              href="/today"
-              className={`rounded-xl border p-4 block ${
-                myStats.overdue > 0
-                  ? 'border-red-200 bg-red-50'
-                  : 'border-slate-200 bg-slate-50'
-              }`}
-            >
-              <div className={`text-2xl font-bold ${myStats.overdue > 0 ? 'text-red-700' : 'text-slate-500'}`}>
-                {myStats.overdue}
-              </div>
-              <div className={`text-xs font-medium mt-1 ${myStats.overdue > 0 ? 'text-red-700/80' : 'text-slate-500'}`}>
-                Overdue
-              </div>
-            </Link>
+          <div className="divide-y divide-slate-100">
+            {recentItems.map((item) => {
+              const isPast = item.dueDate && new Date(item.dueDate) < new Date()
+              return (
+                <Link
+                  key={item.id}
+                  href={`/work-items/${item.id}`}
+                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors"
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_DOT[item.priority] ?? 'bg-slate-300'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-slate-900 truncate">{item.title}</div>
+                    {item.company && (
+                      <div className="text-xs text-slate-500 truncate">{item.company}</div>
+                    )}
+                  </div>
+                  {item.dueDate && (
+                    <span className={`text-xs font-semibold shrink-0 ${isPast ? 'text-red-600' : 'text-slate-500'}`}>
+                      {fmt(item.dueDate)}
+                    </span>
+                  )}
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}
 
-      {/* Company stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Total Items" value={stats.total} color="blue" />
-        <StatCard label="Due / Overdue" value={urgentCount} color={urgentCount > 0 ? 'orange' : 'green'} />
-        <StatCard label="Decision Needed" value={stats.decisionNeeded} color={stats.decisionNeeded > 0 ? 'purple' : 'green'} />
-        <StatCard label="Open Actions" value={stats.openActions} color={stats.openActions > 0 ? 'yellow' : 'green'} />
-      </div>
-      <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-        <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Done this week</span>
-        <span className="text-3xl font-bold text-green-700">{stats.completedThisWeek}</span>
-      </div>
-
-      {/* Compliance alerts widget */}
-      {compliance.totalAlerts > 0 && (
-        <Link
-          href="/alerts"
-          className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors hover:opacity-90 ${
-            compliance.pending > 0
-              ? 'bg-orange-50 border-orange-200'
-              : 'bg-green-50 border-green-200'
-          }`}
-        >
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-wide ${compliance.pending > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-              Compliance Alerts
-            </p>
-            <p className={`text-sm font-medium mt-0.5 ${compliance.pending > 0 ? 'text-orange-800' : 'text-green-800'}`}>
-              {compliance.pending > 0
-                ? `${compliance.pending} awaiting acknowledgement`
-                : 'All acknowledged'}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <div className={`text-2xl font-bold ${compliance.pending > 0 ? 'text-orange-700' : 'text-green-700'}`}>
-              {compliance.totalAlerts}
-            </div>
-            <div className="text-xs text-slate-500">active alerts</div>
-          </div>
-        </Link>
-      )}
-
-      {/* Company pipeline */}
-      <div className="space-y-2">
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Company Pipeline</h2>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {pipelineSteps.map(({ key, label, bg }) => (
-            <Link
-              key={key}
-              href={`/work-items?status=${key}`}
-              className={`flex-shrink-0 rounded-xl border px-3 py-3 text-center min-w-[76px] transition-opacity hover:opacity-80 ${bg}`}
-            >
-              <div className="text-xl font-bold">{pipeline[key] ?? 0}</div>
-              <div className="text-xs mt-0.5 font-medium">{label}</div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Team pulse */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Team Pulse</h2>
-          <Link href="/teams" className="text-xs text-blue-600 hover:underline">
-            Full team view →
+      {/* ── Team pulse ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Team Pulse</span>
+          <Link href="/teams" className="text-xs font-semibold text-blue-600 hover:underline">
+            Full view →
           </Link>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="px-5 py-4 flex flex-wrap gap-2">
           {teamPulse.map(({ owner, count }) => (
             <Link
               key={owner}
               href={`/work-items?owner=${owner}`}
-              className="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2.5 transition-colors"
+              className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 transition-colors"
             >
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                   style={{ background: '#1d4ed8' }}>
+                {owner[0]}
+              </div>
               <span className="text-sm font-semibold text-slate-800">{owner}</span>
-              <span
-                className={`text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center ${
-                  count > 0 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
-                }`}
-              >
+              <span className={`text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ${
+                count > 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'
+              }`}>
                 {count}
               </span>
             </Link>
@@ -304,50 +261,47 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Big action buttons */}
+      {/* ── Quick actions ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <BigButton href="/work-items/new" label="+ Add Work Item" color="blue" />
-        <BigButton href="/today" label="Today's Actions" color="orange" />
-        <BigButton href="/decisions" label="Decision Queue" color="purple" />
-        <BigButton href="/teams" label="Teams" color="slate" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <BigButton href="/work-items" label="All Work Items" color="slate" />
-        <BigButton href="/activity" label="Activity Log" color="slate" />
+        <QuickLink href="/work-items/new"  label="+ New Item"      color="blue" />
+        <QuickLink href="/today"           label="Today's Actions" color="orange" />
+        <QuickLink href="/decisions"       label="Decisions"       color="purple" />
+        <QuickLink href="/portfolio"       label="Portfolio"       color="navy" />
       </div>
     </div>
   )
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
+  const styles: Record<string, string> = {
+    blue:   'bg-blue-50   border-blue-200   text-blue-700',
     orange: 'bg-orange-50 border-orange-200 text-orange-700',
     purple: 'bg-purple-50 border-purple-200 text-purple-700',
-    yellow: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-    green: 'bg-green-50 border-green-200 text-green-700',
-    slate: 'bg-slate-100 border-slate-200 text-slate-700',
+    green:  'bg-green-50  border-green-200  text-green-700',
+    slate:  'bg-slate-100 border-slate-200  text-slate-700',
   }
   return (
-    <div className={`rounded-xl border p-4 ${colors[color] ?? colors.slate}`}>
-      <div className="text-3xl font-bold">{value}</div>
+    <div className={`rounded-xl border p-4 ${styles[color] ?? styles.slate}`}>
+      <div className="text-3xl font-extrabold">{value}</div>
       <div className="text-xs font-medium mt-1 opacity-80">{label}</div>
     </div>
   )
 }
 
-function BigButton({ href, label, color }: { href: string; label: string; color: string }) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-600 hover:bg-blue-700 text-white',
+function QuickLink({ href, label, color }: { href: string; label: string; color: string }) {
+  const styles: Record<string, string> = {
+    blue:   'bg-blue-600   hover:bg-blue-700   text-white',
     orange: 'bg-orange-500 hover:bg-orange-600 text-white',
     purple: 'bg-purple-600 hover:bg-purple-700 text-white',
-    slate: 'bg-slate-200 hover:bg-slate-300 text-slate-800',
+    navy:   'text-white hover:opacity-90',
+    slate:  'bg-slate-200  hover:bg-slate-300  text-slate-800',
   }
+  const inlineStyle = color === 'navy' ? { background: '#0c2340' } : undefined
   return (
     <Link
       href={href}
-      className={`block rounded-xl px-4 py-4 text-center font-semibold text-sm transition-colors ${colors[color] ?? colors.slate}`}
+      style={inlineStyle}
+      className={`block rounded-xl px-4 py-4 text-center font-semibold text-sm transition-colors ${styles[color] ?? styles.slate}`}
     >
       {label}
     </Link>
