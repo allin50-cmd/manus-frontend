@@ -4,7 +4,9 @@ import { getSession } from '@/lib/auth'
 import { sendAlertEmail } from '@/lib/alert-dispatch'
 import { randomUUID } from 'crypto'
 
-const RETRYABLE_STATUSES = new Set(['Failed', 'Pending'])
+// Only a delivery that actually failed may be retried. Pending deliveries are still
+// in flight and Sent/Acknowledged ones already succeeded.
+const RETRYABLE_STATUSES = new Set(['Failed'])
 
 export async function POST(
   _req: NextRequest,
@@ -53,6 +55,24 @@ export async function POST(
   } catch {
     return NextResponse.json({ error: 'Could not create retry delivery' }, { status: 503 })
   }
+
+  // Audit every retry, regardless of channel.
+  await db.alertEvent.create({
+    data: {
+      workItemId: delivery.workItemId,
+      deliveryId: newDelivery.id,
+      recipientId: delivery.recipientId,
+      eventType: 'DeliveryCreated',
+      actorType: 'User',
+      actorId: session.person,
+      payload: JSON.stringify({
+        action: 'retry',
+        retryOf: delivery.id,
+        channel: delivery.channel,
+        escalationLevel: newDelivery.escalationLevel,
+      }),
+    },
+  }).catch(() => {})
 
   if (delivery.channel === 'Dashboard') {
     await db.activityLog.create({

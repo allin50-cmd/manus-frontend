@@ -51,6 +51,14 @@ describe('isValidStatus', () => {
     }
   })
 
+  it('accepts Waiting (schema value)', () => {
+    expect(isValidStatus('Waiting')).toBe(true)
+  })
+
+  it('rejects Awaiting (not a schema value)', () => {
+    expect(isValidStatus('Awaiting')).toBe(false)
+  })
+
   it('rejects label form (with space)', () => {
     expect(isValidStatus('In Progress')).toBe(false)
   })
@@ -95,7 +103,15 @@ describe('isValidPriority', () => {
     expect(isValidPriority(1)).toBe(false)
   })
 
-  it('rejects an unknown string', () => {
+  it('accepts Urgent (schema value)', () => {
+    expect(isValidPriority('Urgent')).toBe(true)
+  })
+
+  it('rejects Critical (not a schema value)', () => {
     expect(isValidPriority('Critical')).toBe(false)
+  })
+
+  it('rejects an unknown string', () => {
+    expect(isValidPriority('Bogus')).toBe(false)
   })
 })

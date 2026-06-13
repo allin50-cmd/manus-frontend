@@ -67,6 +67,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  // Validate dueDate up front so an unparseable value is a 400, not a Prisma 503.
+  let parsedDueDate: Date | null | undefined
+  if (body.dueDate !== undefined) {
+    if (body.dueDate === null || body.dueDate === '') {
+      parsedDueDate = null
+    } else {
+      const d = new Date(body.dueDate as string)
+      if (isNaN(d.getTime())) {
+        return NextResponse.json({ error: 'Invalid dueDate' }, { status: 400 })
+      }
+      parsedDueDate = d
+    }
+  }
+
   const updates: Record<string, unknown> = {}
   if (body.title !== undefined) updates.title = (body.title as string).trim()
   if (body.type !== undefined && isValidType(body.type)) updates.type = body.type as WorkItemType
@@ -76,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.priority !== undefined && isValidPriority(body.priority)) updates.priority = body.priority as Priority
   if (body.owner !== undefined) updates.owner = (body.owner as string).trim()
   if (body.nextAction !== undefined) updates.nextAction = body.nextAction
-  if (body.dueDate !== undefined) updates.dueDate = body.dueDate ? new Date(body.dueDate as string) : null
+  if (body.dueDate !== undefined) updates.dueDate = parsedDueDate
   if (body.decisionNeeded !== undefined) updates.decisionNeeded = body.decisionNeeded
   if (body.notes !== undefined) updates.notes = body.notes
 

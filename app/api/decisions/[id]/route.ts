@@ -5,6 +5,10 @@ import { DecisionStatus } from '@prisma/client'
 
 const VALID_DECISION_STATUSES: DecisionStatus[] = ['Open', 'Approved', 'Rejected', 'MoreInfoNeeded', 'Paused']
 
+// Decision statuses that resolve the decision (no longer Open). MoreInfoNeeded is
+// terminal for cleanup purposes: it stamps decidedAt and clears the work item flag.
+const RESOLVED_DECISION_STATUSES = new Set<DecisionStatus>(['Approved', 'Rejected', 'MoreInfoNeeded'])
+
 // Statuses that mean the work item is finished — don't auto-reset them to InProgress.
 const TERMINAL_STATUSES = new Set(['Completed', 'Archived', 'NotFit'])
 
@@ -34,6 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const newStatus = body.status as DecisionStatus
   const now = new Date()
+  const resolved = RESOLVED_DECISION_STATUSES.has(newStatus)
 
   let updated
   try {
@@ -43,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         status: newStatus,
         // Only update decision text when explicitly supplied (don't clear it on status-only updates).
         ...(body.decision !== undefined && { decision: (body.decision as string) || null }),
-        decidedAt: ['Approved', 'Rejected', 'MoreInfoNeeded'].includes(newStatus) ? now : null,
+        decidedAt: resolved ? now : null,
       },
     })
   } catch {
@@ -58,8 +63,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       summary: `Decision: ${newStatus}${body.decision ? ` — ${body.decision}` : ''}`,
     },
   }).catch(() => {})
-
-  const resolved = newStatus === 'Approved' || newStatus === 'Rejected'
 
   if (resolved) {
     const openDecisions = await db.decision.count({
