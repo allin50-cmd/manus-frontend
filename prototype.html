@@ -161,6 +161,18 @@ a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 </head>
 <body>
 
+<!-- Shown if JS is not running; hidden by first line of script -->
+<div id="nojs-warn" style="position:fixed;inset:0;background:#0c2340;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;z-index:9999;gap:16px">
+  <div style="font-size:48px">⚠️</div>
+  <div style="font-size:20px;font-weight:800">JavaScript is not running</div>
+  <div style="font-size:14px;opacity:.7;max-width:320px;line-height:1.6">This app requires JavaScript. You must open this file directly in <strong>Safari</strong> or <strong>Chrome</strong> — not inside another app's preview.</div>
+  <div style="background:#fff;color:#0c2340;border-radius:12px;padding:16px 24px;font-size:13px;font-weight:600;max-width:320px;line-height:1.8">
+    <strong>iPhone:</strong> Tap Share → Open in Safari<br>
+    <strong>Android:</strong> Long-press → Open with Chrome<br>
+    <strong>Computer:</strong> Double-click the file
+  </div>
+</div>
+
 <div id="topbar">
   <div class="tb-logo">🛡️</div>
   <div style="flex:1">
@@ -201,6 +213,8 @@ a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 <div id="toast"></div>
 
 <script>
+// Hide the "no JS" warning — if we get here, JS is running fine
+document.getElementById('nojs-warn').style.display='none'
 // ── Default data ──────────────────────────────────────────────────────────────
 var DEFAULT = {
   companies: [
