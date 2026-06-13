@@ -7,15 +7,20 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const workItemId = req.nextUrl.searchParams.get('workItemId')
+  const limitParam = req.nextUrl.searchParams.get('limit')
+  const take = limitParam ? Math.min(parseInt(limitParam, 10) || 200, 500) : 200
   const where = workItemId ? { workItemId } : {}
 
   let deliveries
   try {
     deliveries = await db.alertDelivery.findMany({
       where,
-      include: { recipient: true },
+      include: {
+        recipient: { select: { name: true, role: true } },
+        workItem: { select: { id: true, title: true, company: true, priority: true } },
+      },
       orderBy: { createdAt: 'desc' },
-      take: 200,
+      take,
     })
   } catch {
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
