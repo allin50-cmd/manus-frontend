@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>FineGuard – Compliance</title>
+<title>FineGuard – Compliance Dashboard</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -11,105 +11,174 @@
   --bg:#eff6ff;--white:#fff;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;
   --green:#16a34a;--green-lt:#dcfce7;--green-dot:#22c55e;
   --amber:#d97706;--amber-lt:#fef3c7;--orange:#ea580c;--orange-lt:#ffedd5;
-  --red:#dc2626;--red-lt:#fee2e2;
+  --red:#dc2626;--red-lt:#fee2e2;--purple:#7c3aed;--purple-lt:#f5f3ff;
   --shadow:0 1px 4px rgba(15,23,42,.08),0 4px 16px rgba(15,23,42,.04);
-  --nav-h:60px;--bottom-h:62px;
+  --shadow-md:0 4px 12px rgba(15,23,42,.1);
+  --nav-h:56px;--bottom-h:62px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-a,button{cursor:pointer}
+a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 /* ── TOP BAR ── */
-#topbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--navy);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:50}
-.tb-logo{width:34px;height:34px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.tb-brand{color:#fff;font-size:18px;font-weight:800;flex:1}
-.tb-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
-.tb-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+#topbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:50}
+.tb-logo{width:32px;height:32px;background:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tb-brand{color:#fff;font-size:17px;font-weight:800;letter-spacing:-.3px;flex:1}
+.tb-tagline{font-size:10px;color:rgba(255,255,255,.45);font-weight:400;letter-spacing:0}
+.tb-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
 
 /* ── BOTTOM NAV ── */
 #bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--bottom-h);background:var(--white);border-top:1px solid var(--border);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
-.bn-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:var(--muted);font-weight:500;padding:8px 0;border:none;background:none;position:relative}
-.bn-tab .bn-icon{font-size:20px;line-height:1}
+.bn-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--muted);font-weight:500;padding:8px 4px 6px;border:none;background:none;position:relative;transition:color .15s}
+.bn-icon{font-size:19px;line-height:1;transition:transform .15s}
 .bn-tab.active{color:var(--blue)}
-.bn-tab.active .bn-icon{transform:scale(1.1)}
-.bn-dot{position:absolute;top:6px;right:calc(50% - 14px);width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--white)}
+.bn-tab.active .bn-icon{transform:scale(1.12)}
+.bn-dot{position:absolute;top:7px;right:calc(50% - 16px);width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--white)}
 
 /* ── MAIN ── */
-#main{margin-top:var(--nav-h);padding:14px 12px calc(var(--bottom-h) + 14px);max-width:520px;margin-left:auto;margin-right:auto}
+#main{margin-top:var(--nav-h);padding:14px 12px calc(var(--bottom-h) + 16px);max-width:540px;margin-left:auto;margin-right:auto}
 
 /* ── SECTIONS ── */
 .section{display:none}
 .section.active{display:block}
 
 /* ── CARDS ── */
-.card{background:var(--white);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+.card{background:var(--white);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px;border:1px solid var(--border)}
 .card-pad{padding:16px}
-.card-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.card-title a{font-size:12px;font-weight:600;color:var(--blue);text-transform:none;letter-spacing:0}
+.card-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-hd-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.card-hd-link{font-size:12px;font-weight:600;color:var(--blue)}
 
-/* ── STATUS BAR ── */
-.status-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
-.status-seg{border-radius:10px;padding:10px 12px;cursor:pointer}
-.ss-num{font-size:22px;font-weight:800}
-.ss-label{font-size:11px;font-weight:500;margin-top:1px}
-.ss-pct{font-size:11px;opacity:.7}
+/* ── PAGE HEADER ── */
+.page-hd{margin-bottom:16px}
+.page-hd .date{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.page-hd h1{font-size:22px;font-weight:800;line-height:1.2}
+.page-hd p{font-size:13px;color:var(--muted);margin-top:3px}
+
+/* ── COMPLIANCE STATUS CARD ── */
+.cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.cs-tile{border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:opacity .15s;border:1px solid}
+.cs-tile:active{opacity:.8}
+.cs-num{font-size:22px;font-weight:800;line-height:1}
+.cs-label{font-size:11px;font-weight:600;margin-top:3px}
+.cs-pct{font-size:10px;opacity:.65;margin-top:1px}
+.cs-prog{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;margin-bottom:8px}
+.cs-prog-seg{height:100%}
+.cs-footer{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-top:10px;border-top:1px solid var(--border);margin-top:4px}
 
 /* ── STAT ROW ── */
 .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.stat-box{background:var(--bg);border-radius:10px;padding:12px;text-align:center}
-.stat-n{font-size:24px;font-weight:800}
-.stat-l{font-size:11px;color:var(--muted);margin-top:2px}
+.stat-box{border-radius:12px;padding:14px;border:1px solid}
+.stat-n{font-size:26px;font-weight:800}
+.stat-l{font-size:11px;font-weight:500;margin-top:3px;opacity:.8}
 
-/* ── PROG BAR ── */
-.prog{height:8px;border-radius:4px;background:var(--bg);overflow:hidden;display:flex;gap:2px;margin:8px 0}
-.prog-seg{height:100%;border-radius:3px}
+/* ── URGENT BANNER ── */
+.urgent-banner{display:flex;align-items:center;gap:12px;background:var(--red);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;cursor:pointer}
+.urgent-banner:active{opacity:.9}
+.ub-body{flex:1}
+.ub-title{font-size:14px;font-weight:700}
+.ub-sub{font-size:11px;opacity:.8;margin-top:2px}
+
+/* ── ROW ITEMS ── */
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.row-body{flex:1;min-width:0}
+.row-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.row-right{text-align:right;flex-shrink:0}
+.row-date{font-size:13px;font-weight:700}
+.overdue{color:var(--red)}
+
+/* ── TEAM PULSE ── */
+.team-grid{display:flex;flex-wrap:wrap;gap:8px}
+.team-chip{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer}
+.team-chip:active{background:var(--border)}
+.team-avatar{width:28px;height:28px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+.team-name{font-size:13px;font-weight:600}
+.team-count{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.team-count.zero{background:var(--border);color:var(--muted)}
+
+/* ── ALERT ITEMS ── */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:14px;border-bottom:1px solid var(--border)}
+.alert-item:last-child{border-bottom:none}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:6px}
+.ai-dot.read{background:transparent}
+.ai-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ai-body{flex:1;min-width:0}
+.ai-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.ai-desc{font-size:12px;color:var(--muted);margin-bottom:6px}
+
+/* ── GLANCE ROWS ── */
+.glance-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.glance-row:last-child{border-bottom:none}
+.glance-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.glance-n{font-size:20px;font-weight:800}
+.glance-l{font-size:12px;color:var(--muted);margin-top:1px}
+
+/* ── FILING ITEMS (left-bordered cards) ── */
+.filing-card{background:var(--white);border-radius:12px;border:1px solid var(--border);border-left-width:4px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;transition:box-shadow .15s}
+.filing-card:active{box-shadow:var(--shadow-md)}
+.filing-card.f-overdue{border-left-color:var(--red)}
+.filing-card.f-action{border-left-color:var(--orange)}
+.filing-card.f-risk{border-left-color:var(--amber)}
+.filing-card.f-compliant{border-left-color:var(--green-dot)}
+.fc-body{flex:1;min-width:0}
+.fc-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.fc-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
+.fc-date{text-align:right;flex-shrink:0}
+.fc-date-val{font-size:13px;font-weight:700}
+.fc-overdue-lbl{font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase}
+
+/* ── PORTFOLIO ── */
+.portfolio-banner{border-radius:16px;padding:20px;margin-bottom:14px;color:#fff}
+.po-overview{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+.po-stat{text-align:center}
+.po-n{font-size:26px;font-weight:800}
+.po-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.5;margin-top:2px}
+.company-card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s}
+.company-card:active{box-shadow:var(--shadow-md)}
+.co-hd{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.co-avatar{width:48px;height:48px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.co-name{font-size:15px;font-weight:800}
+.co-type{font-size:12px;color:var(--muted);margin-top:1px}
+.co-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.co-stat{border-radius:10px;padding:10px;text-align:center;background:var(--bg)}
+.co-stat-n{font-size:18px;font-weight:800}
+.co-stat-l{font-size:10px;color:var(--muted);margin-top:2px}
+.co-actions{display:flex;gap:8px}
+
+/* ── DECISION CARD ── */
+.decision-card{background:var(--white);border-radius:16px;border:1px solid var(--border);border-left:4px solid var(--amber);padding:16px;margin-bottom:10px}
+.dc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.dc-company{font-size:12px;color:var(--muted);margin-bottom:8px}
+.dc-q{font-size:15px;font-weight:700;line-height:1.4;margin-bottom:10px}
+.dc-box{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:8px}
+.dc-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.dc-rec{background:var(--blue-xlt);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+.dc-rec .dc-lbl{color:var(--blue)}
+.dc-actions{display:flex;gap:8px;flex-wrap:wrap}
 
 /* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .b-green{background:var(--green-lt);color:var(--green)}
 .b-amber{background:var(--amber-lt);color:var(--amber)}
 .b-orange{background:var(--orange-lt);color:var(--orange)}
 .b-red{background:var(--red-lt);color:var(--red)}
 .b-blue{background:var(--blue-xlt);color:var(--blue)}
+.b-purple{background:var(--purple-lt);color:var(--purple)}
 .b-gray{background:#f1f5f9;color:var(--muted)}
 
-/* ── ROWS / ITEMS ── */
-.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
-.row:last-child{border-bottom:none}
-.row-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.row-body{flex:1;min-width:0}
-.row-title{font-size:14px;font-weight:600;margin-bottom:2px}
-.row-sub{font-size:12px;color:var(--muted)}
-.row-right{text-align:right;flex-shrink:0}
-.row-date{font-size:12px;font-weight:600}
-.overdue{color:var(--red)}
-
-/* ── ALERT ITEMS ── */
-.alert-item{display:flex;align-items:flex-start;gap:10px;padding:14px;border-bottom:1px solid var(--border)}
-.alert-item:last-child{border-bottom:none}
-.ai-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.ai-body{flex:1;min-width:0}
-.ai-title{font-size:14px;font-weight:600;margin-bottom:3px}
-.ai-desc{font-size:12px;color:var(--muted);margin-bottom:6px}
-.ai-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:6px}
-
-/* ── COMPANY CARDS ── */
-.company-card{background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:16px;margin-bottom:12px;cursor:pointer;border:1px solid var(--border)}
-.cc-avatar{width:52px;height:52px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
-.cc-checklist{list-style:none;margin:10px 0 0}
-.cc-checklist li{display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)}
-.cc-checklist li:last-child{border-bottom:none}
-
-/* ── DECISION CARD ── */
-.decision-card{background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:16px;margin-bottom:12px;border-left:4px solid var(--amber)}
-.dc-q{font-size:15px;font-weight:700;margin:8px 0 12px}
-.dc-box{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:8px}
-.dc-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
-.dc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* ── PILLS ── */
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.pill{padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;background:var(--white);color:var(--muted);cursor:pointer}
+.pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 
 /* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;border:none;transition:opacity .15s}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s}
 .btn:active{opacity:.8}
 .btn-primary{background:var(--blue);color:#fff}
+.btn-navy{color:#fff}
 .btn-green{background:var(--green);color:#fff}
 .btn-danger{background:var(--red);color:#fff}
 .btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
@@ -118,50 +187,20 @@ a,button{cursor:pointer}
 
 /* ── FORMS ── */
 .form-group{margin-bottom:14px}
-.form-group label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--white);color:var(--text)}
+.form-group label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--white);color:var(--text);-webkit-appearance:none}
 .form-group textarea{resize:vertical;min-height:80px}
 
-/* ── GLANCE PANEL ── */
-.glance-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-.glance-row:last-child{border-bottom:none}
-.glance-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.glance-n{font-size:20px;font-weight:800}
-.glance-l{font-size:12px;color:var(--muted)}
-
-/* ── SECTION HEADERS ── */
-.page-hd{margin-bottom:16px}
-.page-hd h1{font-size:22px;font-weight:800}
-.page-hd p{font-size:13px;color:var(--muted);margin-top:3px}
-
 /* ── TOAST ── */
-#toast{position:fixed;bottom:calc(var(--bottom-h) + 12px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:200}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast{position:fixed;bottom:calc(var(--bottom-h) + 12px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:200}
+#toast.show{opacity:1}
 
 /* ── MODAL ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;padding:0}
-.modal{background:var(--white);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end}
+.modal{background:var(--white);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:88vh;overflow-y:auto}
 .modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .modal-hd h3{font-size:17px;font-weight:700}
-.modal-hd button{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:18px;display:flex;align-items:center;justify-content:center}
-.modal-hd button:active{background:var(--border)}
-
-/* ── PILL FILTERS ── */
-.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.pill{padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;background:var(--white);color:var(--muted)}
-.pill.active,.pill:active{background:var(--blue);color:#fff;border-color:var(--blue)}
-
-/* ── DASHBOARD SPECIFIC ── */
-.alert-priority-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
-.alert-priority-row:last-child{border-bottom:none}
-
-/* ── SETTINGS ── */
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
-.setting-row:last-child{border-bottom:none}
-.toggle{width:44px;height:26px;border-radius:13px;background:var(--border);border:none;position:relative;flex-shrink:0;transition:background .2s}
-.toggle.on{background:var(--green)}
-.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
-.toggle.on::after{left:21px}
+.modal-close{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 </style>
 </head>
 <body>
@@ -169,7 +208,10 @@ a,button{cursor:pointer}
 <!-- TOP BAR -->
 <div id="topbar">
   <div class="tb-logo">🛡️</div>
-  <div class="tb-brand">FineGuard</div>
+  <div>
+    <div class="tb-brand">FineGuard</div>
+    <div class="tb-tagline">Centralise. Prioritise. Comply.</div>
+  </div>
   <span class="tb-badge">3 alerts</span>
   <div class="tb-avatar">G</div>
 </div>
@@ -180,115 +222,195 @@ a,button{cursor:pointer}
   <!-- ══ DASHBOARD ══ -->
   <div class="section active" id="s-dashboard">
     <div class="page-hd">
+      <div class="date">SAT · 13 JUN 2026</div>
       <h1>Compliance Dashboard</h1>
-      <p>Real-time overview · 13 Jun 2026</p>
+      <p>Welcome back, <strong>George</strong></p>
     </div>
 
-    <!-- Status segments -->
-    <div class="status-bar" style="margin-bottom:12px">
-      <div class="status-seg" style="background:var(--green-lt)" onclick="showSection('filings')">
-        <div class="ss-num" style="color:var(--green)">23</div>
-        <div class="ss-label" style="color:var(--green)">✓ Compliant</div>
-        <div class="ss-pct" style="color:var(--green)">67%</div>
-      </div>
-      <div class="status-seg" style="background:var(--amber-lt)" onclick="showSection('filings')">
-        <div class="ss-num" style="color:var(--amber)">7</div>
-        <div class="ss-label" style="color:var(--amber)">⚡ At Risk</div>
-        <div class="ss-pct" style="color:var(--amber)">21%</div>
-      </div>
-      <div class="status-seg" style="background:var(--orange-lt)" onclick="showSection('filings')">
-        <div class="ss-num" style="color:var(--orange)">3</div>
-        <div class="ss-label" style="color:var(--orange)">⚠ Action Req.</div>
-        <div class="ss-pct" style="color:var(--orange)">9%</div>
-      </div>
-      <div class="status-seg" style="background:var(--red-lt)" onclick="showSection('filings')">
-        <div class="ss-num" style="color:var(--red)">1</div>
-        <div class="ss-label" style="color:var(--red)">🔴 Overdue</div>
-        <div class="ss-pct" style="color:var(--red)">3%</div>
-      </div>
-    </div>
-    <div class="prog" style="margin-bottom:16px">
-      <div class="prog-seg" style="flex:67;background:var(--green-dot)"></div>
-      <div class="prog-seg" style="flex:21;background:#f59e0b"></div>
-      <div class="prog-seg" style="flex:9;background:var(--orange)"></div>
-      <div class="prog-seg" style="flex:3;background:var(--red)"></div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stat-row" style="margin-bottom:12px">
-      <div class="stat-box"><div class="stat-n" style="color:var(--blue)">4</div><div class="stat-l">Entities Monitored</div></div>
-      <div class="stat-box"><div class="stat-n" style="color:var(--amber)">11</div><div class="stat-l">Deadlines (30 days)</div></div>
-      <div class="stat-box"><div class="stat-n" style="color:var(--orange)">3</div><div class="stat-l">Open Actions</div></div>
-      <div class="stat-box"><div class="stat-n" style="color:var(--red)">1</div><div class="stat-l">Overdue Now</div></div>
-    </div>
-
-    <!-- Priority alerts -->
+    <!-- Compliance status card -->
     <div class="card">
-      <div class="card-pad" style="padding-bottom:8px">
-        <div class="card-title">Priority Alerts <a onclick="showSection('alerts')">View all →</a></div>
+      <div class="card-hd">
+        <span class="card-hd-title">Overall Compliance Status</span>
+        <span class="card-hd-link" onclick="showSection('filings')">View filings →</span>
       </div>
-      <div style="padding:0 16px 12px">
-        <div class="alert-priority-row" onclick="showSection('alerts')">
-          <span style="font-size:18px">🔴</span>
-          <div style="flex:1"><div style="font-size:13px;font-weight:600">PAYE Year End Overdue</div><div style="font-size:11px;color:var(--muted)">Acme Ltd · Due Jun 5</div></div>
-          <span class="badge b-red">Overdue</span>
+      <div class="card-pad" style="padding-top:14px">
+        <div class="cs-grid">
+          <div class="cs-tile" style="background:#f0fdf4;border-color:#bbf7d0" onclick="showSection('filings')">
+            <div class="cs-num" style="color:var(--green)">23</div>
+            <div class="cs-label" style="color:var(--green)">✓ Compliant</div>
+            <div class="cs-pct" style="color:var(--green)">67%</div>
+          </div>
+          <div class="cs-tile" style="background:#fefce8;border-color:#fde68a" onclick="showSection('filings')">
+            <div class="cs-num" style="color:var(--amber)">7</div>
+            <div class="cs-label" style="color:var(--amber)">⚡ At Risk</div>
+            <div class="cs-pct" style="color:var(--amber)">21%</div>
+          </div>
+          <div class="cs-tile" style="background:#fff7ed;border-color:#fed7aa" onclick="showSection('filings')">
+            <div class="cs-num" style="color:var(--orange)">3</div>
+            <div class="cs-label" style="color:var(--orange)">⚠ Action Req.</div>
+            <div class="cs-pct" style="color:var(--orange)">9%</div>
+          </div>
+          <div class="cs-tile" style="background:var(--red-lt);border-color:#fca5a5" onclick="showSection('filings')">
+            <div class="cs-num" style="color:var(--red)">1</div>
+            <div class="cs-label" style="color:var(--red)">🔴 Overdue</div>
+            <div class="cs-pct" style="color:var(--red)">3%</div>
+          </div>
         </div>
-        <div class="alert-priority-row" onclick="showSection('alerts')">
-          <span style="font-size:18px">🟠</span>
-          <div style="flex:1"><div style="font-size:13px;font-weight:600">Corporation Tax CT600</div><div style="font-size:11px;color:var(--muted)">Acme Ltd · Due Jun 15</div></div>
-          <span class="badge b-orange">Urgent</span>
+        <!-- Progress strip -->
+        <div class="cs-prog">
+          <div class="cs-prog-seg" style="flex:67;background:var(--green-dot);border-radius:4px 0 0 4px"></div>
+          <div class="cs-prog-seg" style="flex:21;background:#f59e0b"></div>
+          <div class="cs-prog-seg" style="flex:9;background:var(--orange)"></div>
+          <div class="cs-prog-seg" style="flex:3;background:var(--red);border-radius:0 4px 4px 0"></div>
         </div>
-        <div class="alert-priority-row" onclick="showSection('alerts')">
-          <span style="font-size:18px">🟡</span>
-          <div style="flex:1"><div style="font-size:13px;font-weight:600">VAT Return Q1 2026</div><div style="font-size:11px;color:var(--muted)">Bright Futures · Due Jun 30</div></div>
-          <span class="badge b-amber">High</span>
+        <div class="cs-footer">
+          <span>34 active obligations</span>
+          <span>5 completed this week ✓</span>
         </div>
       </div>
     </div>
 
-    <!-- Upcoming filings -->
-    <div class="card">
-      <div class="card-pad" style="padding-bottom:8px">
-        <div class="card-title">Upcoming Filings <a onclick="showSection('filings')">View all →</a></div>
+    <!-- Urgent banner -->
+    <div class="urgent-banner" onclick="showSection('filings')">
+      <span style="font-size:20px">🔴</span>
+      <div class="ub-body">
+        <div class="ub-title">1 overdue · 3 due today</div>
+        <div class="ub-sub">Tap to see urgent items</div>
       </div>
-      <div style="padding:0 16px 12px">
-        <div class="row">
-          <div class="row-icon" style="background:#fee2e2">📋</div>
-          <div class="row-body"><div class="row-title">CT600 — Acme Ltd</div><div class="row-sub">Corporation Tax</div></div>
-          <div class="row-right"><div class="row-date overdue">15 Jun</div><span class="badge b-red">Urgent</span></div>
+      <span style="font-size:18px;opacity:.7">→</span>
+    </div>
+
+    <!-- Key metrics -->
+    <div class="stat-row">
+      <div class="stat-box" style="background:#eff6ff;border-color:#bfdbfe">
+        <div class="stat-n" style="color:var(--blue)">34</div>
+        <div class="stat-l" style="color:var(--blue)">Active Items</div>
+      </div>
+      <div class="stat-box" style="background:#fff7ed;border-color:#fed7aa">
+        <div class="stat-n" style="color:var(--orange)">8</div>
+        <div class="stat-l" style="color:var(--orange)">Open Actions</div>
+      </div>
+      <div class="stat-box" style="background:var(--purple-lt);border-color:#ddd6fe">
+        <div class="stat-n" style="color:var(--purple)">2</div>
+        <div class="stat-l" style="color:var(--purple)">Decisions</div>
+      </div>
+      <div class="stat-box" style="background:#fff7ed;border-color:#fed7aa">
+        <div class="stat-n" style="color:var(--orange)">4</div>
+        <div class="stat-l" style="color:var(--orange)">Alert Deliveries</div>
+      </div>
+    </div>
+
+    <!-- Priority items -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-hd-title">Priority Items</span>
+        <span class="card-hd-link" onclick="showSection('filings')">View all →</span>
+      </div>
+      <div style="padding:0 16px 4px">
+        <div class="row" onclick="openFilingModal('PAYE Year End','P60s and P11D overdue for Acme Ltd.','5 Jun 2026','Overdue','Urgent','Acme Ltd')">
+          <span style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;display:block"></span>
+          <div class="row-body">
+            <div class="row-title">PAYE Year End — Acme Ltd</div>
+            <div class="row-sub">Acme Ltd</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--red);flex-shrink:0">5 Jun</div>
         </div>
-        <div class="row">
-          <div class="row-icon" style="background:#fff7ed">📄</div>
-          <div class="row-body"><div class="row-title">VAT Return Q1</div><div class="row-sub">Bright Futures Ltd</div></div>
-          <div class="row-right"><div class="row-date" style="color:var(--orange)">30 Jun</div><span class="badge b-amber">High</span></div>
+        <div class="row" onclick="openFilingModal('Corporation Tax CT600','Annual CT600 for Acme Ltd.','15 Jun 2026','Action Required','Urgent','Acme Ltd')">
+          <span style="width:10px;height:10px;border-radius:50%;background:var(--orange);flex-shrink:0;display:block"></span>
+          <div class="row-body">
+            <div class="row-title">Corporation Tax — CT600</div>
+            <div class="row-sub">Acme Ltd</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--orange);flex-shrink:0">15 Jun</div>
         </div>
-        <div class="row">
-          <div class="row-icon" style="background:var(--blue-xlt)">🏛️</div>
-          <div class="row-body"><div class="row-title">Confirmation Statement</div><div class="row-sub">Tech Corp Ltd</div></div>
-          <div class="row-right"><div class="row-date">10 Jul</div><span class="badge b-blue">Medium</span></div>
+        <div class="row" onclick="openFilingModal('VAT Return Q1 2026','MTD VAT return for Bright Futures.','30 Jun 2026','At Risk','High','Bright Futures Ltd')">
+          <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0;display:block"></span>
+          <div class="row-body">
+            <div class="row-title">VAT Return Q1 2026</div>
+            <div class="row-sub">Bright Futures Ltd</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--amber);flex-shrink:0">30 Jun</div>
+        </div>
+        <div class="row" onclick="openFilingModal('Confirmation Statement','Annual CH filing for Tech Corp.','10 Jul 2026','Compliant','Medium','Tech Corp Ltd')">
+          <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0;display:block"></span>
+          <div class="row-body">
+            <div class="row-title">Confirmation Statement</div>
+            <div class="row-sub">Tech Corp Ltd</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0">10 Jul</div>
+        </div>
+        <div class="row" style="border-bottom:none" onclick="openFilingModal('Annual Accounts','Companies House filing for Sunset Retail.','31 Jul 2026','Compliant','Medium','Sunset Retail')">
+          <span style="width:10px;height:10px;border-radius:50%;background:#e2e8f0;flex-shrink:0;display:block"></span>
+          <div class="row-body">
+            <div class="row-title">Annual Accounts</div>
+            <div class="row-sub">Sunset Retail</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0">31 Jul</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team pulse -->
+    <div class="card card-pad">
+      <div class="card-hd" style="margin:-16px -16px 14px;border-radius:0">
+        <span class="card-hd-title">Team Pulse</span>
+        <span class="card-hd-link" onclick="toast('Teams view')">Full view →</span>
+      </div>
+      <div class="team-grid">
+        <div class="team-chip" onclick="toast('Dagon: 4 items')">
+          <div class="team-avatar">D</div>
+          <div class="team-name">Dagon</div>
+          <div class="team-count">4</div>
+        </div>
+        <div class="team-chip" onclick="toast('Alissa: 3 items')">
+          <div class="team-avatar">A</div>
+          <div class="team-name">Alissa</div>
+          <div class="team-count">3</div>
+        </div>
+        <div class="team-chip" onclick="toast('Michelle: 6 items')">
+          <div class="team-avatar">M</div>
+          <div class="team-name">Michelle</div>
+          <div class="team-count">6</div>
+        </div>
+        <div class="team-chip" onclick="toast('Chris: 2 items')">
+          <div class="team-avatar">C</div>
+          <div class="team-name">Chris</div>
+          <div class="team-count">2</div>
+        </div>
+        <div class="team-chip" onclick="toast('George: 5 items')">
+          <div class="team-avatar">G</div>
+          <div class="team-name">George</div>
+          <div class="team-count">5</div>
+        </div>
+        <div class="team-chip" onclick="toast('Charlie: 0 items')">
+          <div class="team-avatar" style="background:var(--border);color:var(--muted)">C</div>
+          <div class="team-name">Charlie</div>
+          <div class="team-count zero">0</div>
         </div>
       </div>
     </div>
 
     <!-- Quick actions -->
-    <div class="card card-pad">
-      <div class="card-title">Quick Actions</div>
-      <button class="btn btn-primary btn-full" onclick="openNewAlert()">+ New Compliance Alert</button>
-      <button class="btn btn-secondary btn-full" onclick="showSection('portfolio')">🏢 View Portfolio</button>
-      <button class="btn btn-secondary btn-full" style="margin-bottom:0" onclick="showSection('decisions')">⚖️ Decision Queue (2)</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-primary" style="justify-content:center;padding:14px" onclick="openNewAlert()">+ New Item</button>
+      <button class="btn" style="background:var(--orange);color:#fff;justify-content:center;padding:14px" onclick="showSection('filings')">Today's Actions</button>
+      <button class="btn" style="background:var(--purple);color:#fff;justify-content:center;padding:14px" onclick="showSection('decisions')">Decisions</button>
+      <button class="btn btn-navy" style="background:var(--navy);justify-content:center;padding:14px" onclick="showSection('portfolio')">Portfolio</button>
     </div>
   </div>
 
   <!-- ══ ALERTS ══ -->
   <div class="section" id="s-alerts">
     <div class="page-hd">
-      <h1>Notifications</h1>
-      <p>3 unread · 6 total</p>
+      <h1>Compliance Alerts</h1>
+      <p>3 unread · 5 total</p>
     </div>
 
     <!-- At a Glance -->
     <div class="card card-pad" style="margin-bottom:12px">
-      <div class="card-title">At a Glance</div>
+      <div class="card-hd" style="margin:-16px -16px 14px;border-radius:0">
+        <span class="card-hd-title">At a Glance</span>
+      </div>
       <div class="glance-row">
         <div class="glance-icon" style="background:var(--red-lt)">🔴</div>
         <div><div class="glance-n" style="color:var(--red)">2</div><div class="glance-l">High Priority</div></div>
@@ -303,69 +425,68 @@ a,button{cursor:pointer}
       </div>
       <div class="glance-row">
         <div class="glance-icon" style="background:var(--green-lt)">✅</div>
-        <div><div class="glance-n" style="color:var(--green)">2</div><div class="glance-l">Completed Today</div></div>
+        <div><div class="glance-n" style="color:var(--green)">2</div><div class="glance-l">Acknowledged</div></div>
       </div>
     </div>
 
-    <!-- Notification list -->
     <div class="card">
-      <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:13px;font-weight:700">All Notifications</span>
-        <button class="btn btn-secondary btn-sm" onclick="toast('Marked all as read')">✓ Mark all read</button>
+      <div class="card-hd">
+        <span class="card-hd-title">All Notifications</span>
+        <button class="btn btn-secondary btn-sm" onclick="toast('All marked as read')">✓ Mark all read</button>
       </div>
 
       <div class="alert-item">
-        <div class="ai-unread-dot"></div>
+        <div class="ai-dot"></div>
         <div class="ai-icon" style="background:var(--red-lt)">⚠️</div>
         <div class="ai-body">
           <div class="ai-title">Critical: PAYE Year End Overdue</div>
-          <div class="ai-desc">Your PAYE year-end submission is overdue. Complete immediately.</div>
+          <div class="ai-desc">PAYE year-end submission overdue. Complete immediately.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-red">Overdue</span><span style="font-size:11px;font-weight:600;color:var(--red)">▲ Urgent</span></div>
         </div>
       </div>
 
       <div class="alert-item">
-        <div class="ai-unread-dot"></div>
+        <div class="ai-dot"></div>
         <div class="ai-icon" style="background:#fff7ed">📅</div>
         <div class="ai-body">
           <div class="ai-title">Corporation Tax CT600 Due Soon</div>
-          <div class="ai-desc">Complete the CT600 for Acme Ltd by Jun 15, 2026.</div>
+          <div class="ai-desc">Complete CT600 for Acme Ltd by 15 Jun 2026.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-amber">Due Soon</span><span style="font-size:11px;font-weight:600;color:var(--orange)">▲ High</span></div>
         </div>
       </div>
 
       <div class="alert-item">
-        <div class="ai-unread-dot"></div>
+        <div class="ai-dot"></div>
         <div class="ai-icon" style="background:var(--blue-xlt)">📋</div>
         <div class="ai-body">
           <div class="ai-title">Policy Acknowledgement Required</div>
-          <div class="ai-desc">Code of Conduct Policy requires acknowledgement before month end.</div>
+          <div class="ai-desc">Code of Conduct requires acknowledgement before month end.</div>
           <div><span class="badge b-blue">Policy</span></div>
         </div>
       </div>
 
       <div class="alert-item" style="opacity:.6">
-        <div style="width:8px;height:8px;border-radius:50%;background:transparent;flex-shrink:0;margin-top:6px"></div>
+        <div class="ai-dot read"></div>
         <div class="ai-icon" style="background:#f3e8ff">💬</div>
         <div class="ai-body">
           <div class="ai-title">New Regulatory Update — AML Rules</div>
-          <div class="ai-desc">A new regulatory update has been published. Review and take action.</div>
+          <div class="ai-desc">New regulation published. Review and take action if needed.</div>
           <div><span class="badge b-gray">Update</span></div>
         </div>
       </div>
 
       <div class="alert-item" style="opacity:.6">
-        <div style="width:8px;height:8px;border-radius:50%;background:transparent;flex-shrink:0;margin-top:6px"></div>
+        <div class="ai-dot read"></div>
         <div class="ai-icon" style="background:var(--green-lt)">✅</div>
         <div class="ai-body">
           <div class="ai-title">Q2 Compliance Report Submitted</div>
           <div class="ai-desc">Report successfully submitted and accepted.</div>
-          <div><span class="badge b-green">Completed</span></div>
+          <div><span class="badge b-green">Acknowledged</span></div>
         </div>
       </div>
 
-      <div style="padding:12px;text-align:center;border-top:1px solid var(--border)">
-        <a style="font-size:13px;color:var(--blue);font-weight:500" onclick="toast('All notifications loaded')">View all →</a>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center">
+        <span style="font-size:13px;color:var(--blue);font-weight:500;cursor:pointer" onclick="toast('All notifications loaded')">View all →</span>
       </div>
     </div>
 
@@ -374,98 +495,113 @@ a,button{cursor:pointer}
 
   <!-- ══ FILINGS ══ -->
   <div class="section" id="s-filings">
-    <div class="page-hd">
-      <h1>Filing Obligations</h1>
-      <p>Upcoming compliance deadlines</p>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:10px">
+      <div class="page-hd" style="margin-bottom:0">
+        <h1>Filing Obligations</h1>
+        <p>Manage compliance deadlines</p>
+      </div>
+      <button class="btn btn-navy btn-sm" style="background:var(--navy);flex-shrink:0;margin-top:4px" onclick="openNewAlert()">+ Add</button>
     </div>
 
-    <div class="stat-row" style="margin-bottom:14px">
-      <div class="stat-box"><div class="stat-n" style="color:var(--blue)">6</div><div class="stat-l">Total</div></div>
-      <div class="stat-box"><div class="stat-n" style="color:var(--red)">1</div><div class="stat-l">Overdue</div></div>
-      <div class="stat-box"><div class="stat-n" style="color:var(--orange)">2</div><div class="stat-l">Due Soon</div></div>
-      <div class="stat-box"><div class="stat-n" style="color:var(--green)">3</div><div class="stat-l">Compliant</div></div>
-    </div>
-
-    <div class="pills">
-      <div class="pill active">All</div>
-      <div class="pill" onclick="toast('Filter: Overdue')">🔴 Overdue</div>
-      <div class="pill" onclick="toast('Filter: Due Soon')">⚡ Due Soon</div>
-      <div class="pill" onclick="toast('Filter: Compliant')">✓ OK</div>
-    </div>
-
-    <div class="card card-pad" onclick="openFilingModal('CT600 — Acme Ltd','Annual Corporation Tax submission for Acme Ltd.','Jun 15, 2026','Overdue','Urgent','Acme Ltd')">
-      <div style="display:flex;align-items:flex-start;gap:12px">
-        <div class="row-icon" style="background:#fee2e2">📋</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">Corporation Tax — CT600</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Annual CT600 · Acme Ltd</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-red">Overdue</span><span class="badge b-red">Urgent</span></div>
-        </div>
-        <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--red)">15 Jun</div><div style="font-size:10px;color:var(--red);font-weight:600">OVERDUE</div></div>
+    <!-- Summary tiles -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:14px">
+      <div style="background:var(--red-lt);border:1px solid #fca5a5;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--red)">1</div>
+        <div style="font-size:10px;font-weight:600;color:var(--red);margin-top:2px">Overdue</div>
+      </div>
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--orange)">3</div>
+        <div style="font-size:10px;font-weight:600;color:var(--orange);margin-top:2px">Action Req.</div>
+      </div>
+      <div style="background:#fefce8;border:1px solid #fde68a;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--amber)">2</div>
+        <div style="font-size:10px;font-weight:600;color:var(--amber);margin-top:2px">At Risk</div>
+      </div>
+      <div style="background:var(--green-lt);border:1px solid #86efac;border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--green)">3</div>
+        <div style="font-size:10px;font-weight:600;color:var(--green);margin-top:2px">Compliant</div>
       </div>
     </div>
 
-    <div class="card card-pad" onclick="openFilingModal('VAT Return Q1 2026','MTD VAT submission for Bright Futures Ltd.','Jun 30, 2026','At Risk','High','Bright Futures Ltd')">
-      <div style="display:flex;align-items:flex-start;gap:12px">
-        <div class="row-icon" style="background:#fff7ed">📄</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">VAT Return Q1 2026</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">MTD VAT · Bright Futures Ltd</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-amber">At Risk</span><span class="badge b-amber">High</span></div>
+    <!-- Filing cards — ordered by urgency, colour-coded left border -->
+    <div class="filing-card f-overdue" onclick="openFilingModal('PAYE Year End','P60s and P11D submission for Acme Ltd.','5 Jun 2026','Overdue','Urgent','Acme Ltd')">
+      <div class="fc-body">
+        <div class="fc-title">PAYE Year End</div>
+        <div class="fc-meta">
+          <span style="font-size:12px;color:var(--muted)">Acme Ltd</span>
+          <span class="badge b-red">Overdue</span><span class="badge b-red">Urgent</span>
         </div>
-        <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--orange)">30 Jun</div></div>
+      </div>
+      <div class="fc-date">
+        <div class="fc-date-val" style="color:var(--red)">5 Jun</div>
+        <div class="fc-overdue-lbl">Overdue</div>
       </div>
     </div>
 
-    <div class="card card-pad" onclick="openFilingModal('Confirmation Statement','Annual Companies House filing for Tech Corp Ltd.','10 Jul 2026','Compliant','Medium','Tech Corp Ltd')">
-      <div style="display:flex;align-items:flex-start;gap:12px">
-        <div class="row-icon" style="background:var(--blue-xlt)">🏛️</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">Confirmation Statement</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Annual CH filing · Tech Corp Ltd</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-green">Compliant</span><span class="badge b-blue">Medium</span></div>
+    <div class="filing-card f-action" onclick="openFilingModal('Corporation Tax — CT600','Annual CT600 for Acme Ltd.','15 Jun 2026','Action Required','Urgent','Acme Ltd')">
+      <div class="fc-body">
+        <div class="fc-title">Corporation Tax — CT600</div>
+        <div class="fc-meta">
+          <span style="font-size:12px;color:var(--muted)">Acme Ltd</span>
+          <span class="badge b-orange">Action Req.</span><span class="badge b-red">Urgent</span>
         </div>
-        <div style="text-align:right"><div style="font-size:13px;font-weight:700">10 Jul</div></div>
+      </div>
+      <div class="fc-date">
+        <div class="fc-date-val" style="color:var(--orange)">15 Jun</div>
       </div>
     </div>
 
-    <div class="card card-pad" onclick="openFilingModal('PAYE Year End','P60s and P11D submission for Acme Ltd.','5 Jun 2026','Overdue','Urgent','Acme Ltd')">
-      <div style="display:flex;align-items:flex-start;gap:12px">
-        <div class="row-icon" style="background:#fee2e2">👥</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">PAYE Year End</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">P60s & P11D · Acme Ltd</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-red">Overdue</span><span class="badge b-red">Urgent</span></div>
+    <div class="filing-card f-action" onclick="openFilingModal('VAT Return Q1 2026','MTD VAT for Bright Futures Ltd.','30 Jun 2026','Action Required','High','Bright Futures Ltd')">
+      <div class="fc-body">
+        <div class="fc-title">VAT Return Q1 2026</div>
+        <div class="fc-meta">
+          <span style="font-size:12px;color:var(--muted)">Bright Futures Ltd</span>
+          <span class="badge b-orange">Action Req.</span><span class="badge b-amber">High</span>
         </div>
-        <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--red)">5 Jun</div><div style="font-size:10px;color:var(--red);font-weight:600">OVERDUE</div></div>
+      </div>
+      <div class="fc-date">
+        <div class="fc-date-val" style="color:var(--orange)">30 Jun</div>
       </div>
     </div>
 
-    <div class="card card-pad" onclick="openFilingModal('Self Assessment SA100','Personal tax return for James Harrison.','31 Jan 2026','Compliant','Low','James Harrison')">
-      <div style="display:flex;align-items:flex-start;gap:12px">
-        <div class="row-icon" style="background:var(--green-lt)">🧾</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">Self Assessment SA100</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Personal tax · James Harrison</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-green">Compliant</span><span class="badge b-gray">Low</span></div>
+    <div class="filing-card f-risk" onclick="openFilingModal('Confirmation Statement','Annual CH filing for Tech Corp Ltd.','10 Jul 2026','At Risk','Medium','Tech Corp Ltd')">
+      <div class="fc-body">
+        <div class="fc-title">Confirmation Statement</div>
+        <div class="fc-meta">
+          <span style="font-size:12px;color:var(--muted)">Tech Corp Ltd</span>
+          <span class="badge b-amber">At Risk</span><span class="badge b-blue">Medium</span>
         </div>
-        <div style="text-align:right"><div style="font-size:13px;font-weight:700">31 Jan</div></div>
+      </div>
+      <div class="fc-date">
+        <div class="fc-date-val">10 Jul</div>
       </div>
     </div>
 
-    <div class="card card-pad" onclick="openFilingModal('Annual Accounts','Companies House filing for Sunset Retail.','31 Jul 2026','Compliant','Medium','Sunset Retail')">
-      <div style="display:flex;align-items:flex-start;gap:12px">
-        <div class="row-icon" style="background:var(--green-lt)">📊</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">Annual Accounts</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Companies House · Sunset Retail</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-green">Compliant</span><span class="badge b-blue">Medium</span></div>
+    <div class="filing-card f-compliant" onclick="openFilingModal('Self Assessment SA100','Personal tax return for James Harrison.','31 Jan 2027','Compliant','Low','James Harrison')">
+      <div class="fc-body">
+        <div class="fc-title">Self Assessment SA100</div>
+        <div class="fc-meta">
+          <span style="font-size:12px;color:var(--muted)">James Harrison</span>
+          <span class="badge b-green">Compliant</span><span class="badge b-gray">Low</span>
         </div>
-        <div style="text-align:right"><div style="font-size:13px;font-weight:700">31 Jul</div></div>
+      </div>
+      <div class="fc-date">
+        <div class="fc-date-val">31 Jan</div>
       </div>
     </div>
 
-    <button class="btn btn-primary btn-full" onclick="openNewAlert()">+ Add Filing Obligation</button>
+    <div class="filing-card f-compliant" onclick="openFilingModal('Annual Accounts','Companies House filing for Sunset Retail.','31 Jul 2026','Compliant','Medium','Sunset Retail')">
+      <div class="fc-body">
+        <div class="fc-title">Annual Accounts</div>
+        <div class="fc-meta">
+          <span style="font-size:12px;color:var(--muted)">Sunset Retail</span>
+          <span class="badge b-green">Compliant</span><span class="badge b-blue">Medium</span>
+        </div>
+      </div>
+      <div class="fc-date">
+        <div class="fc-date-val">31 Jul</div>
+      </div>
+    </div>
   </div>
 
   <!-- ══ PORTFOLIO ══ -->
@@ -475,83 +611,148 @@ a,button{cursor:pointer}
       <p>Manage. Monitor. Grow.</p>
     </div>
 
-    <!-- Portfolio banner -->
-    <div class="card card-pad" style="background:linear-gradient(135deg,var(--navy) 0%,#1a3a6c 100%);border:none;margin-bottom:14px">
-      <div style="color:rgba(255,255,255,.6);font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:10px">Portfolio Overview</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-        <div style="text-align:center"><div style="font-size:26px;font-weight:800;color:#fff">4</div><div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase">Companies</div></div>
-        <div style="text-align:center"><div style="font-size:26px;font-weight:800;color:#4ade80">3</div><div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase">Compliant</div></div>
-        <div style="text-align:center"><div style="font-size:26px;font-weight:800;color:#60a5fa">24/7</div><div style="font-size:10px;color:rgba(255,255,255,.6);text-transform:uppercase">Monitoring</div></div>
+    <!-- Banner -->
+    <div class="portfolio-banner" style="background:linear-gradient(135deg,var(--navy) 0%,#1a3a6c 100%)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:10px">🛡️ Portfolio Overview</div>
+      <div class="po-overview">
+        <div class="po-stat">
+          <div class="po-n">4</div>
+          <div class="po-l">Companies</div>
+        </div>
+        <div class="po-stat">
+          <div class="po-n" style="color:#4ade80">3</div>
+          <div class="po-l">Compliant</div>
+        </div>
+        <div class="po-stat">
+          <div class="po-n" style="color:#f87171">1</div>
+          <div class="po-l">Attention</div>
+        </div>
       </div>
     </div>
 
-    <!-- Company cards -->
-    <div class="company-card" onclick="openCompanyModal('Acme Ltd','Manufacturing & Distribution','👷','compliant','Sarah Chen')">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <div class="cc-avatar">👷</div>
+    <!-- Company cards — matching production layout -->
+    <div class="company-card" onclick="openCompanyModal('Acme Ltd','Manufacturing & Distribution','👷','compliant','Sarah Chen',4,2,0)">
+      <div class="co-hd">
+        <div class="co-avatar">👷</div>
         <div style="flex:1">
-          <div style="font-size:16px;font-weight:800">Acme Ltd</div>
-          <div style="font-size:12px;color:var(--muted)">Manufacturing & Distribution</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="co-name">Acme Ltd</div>
+            <span class="badge b-green">✓ Compliant</span>
+          </div>
+          <div class="co-type">Manufacturing & Distribution</div>
         </div>
-        <span class="badge b-green">✓ Compliant</span>
       </div>
-      <ul class="cc-checklist">
-        <li><span>✅</span> Safety Compliance</li>
-        <li><span>✅</span> Documents Filed</li>
-        <li><span>✅</span> Insurance Current</li>
-        <li><span>✅</span> Financials Up To Date</li>
-      </ul>
+      <div class="co-stats">
+        <div class="co-stat">
+          <div class="co-stat-n" style="color:var(--blue)">4</div>
+          <div class="co-stat-l">Active Items</div>
+        </div>
+        <div class="co-stat">
+          <div class="co-stat-n">2</div>
+          <div class="co-stat-l">Contacts</div>
+        </div>
+        <div class="co-stat" style="background:var(--green-lt)">
+          <div class="co-stat-n" style="color:var(--green)">0</div>
+          <div class="co-stat-l">Overdue</div>
+        </div>
+      </div>
+      <div class="co-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Acme Ltd')">Contacts</button>
+      </div>
     </div>
 
-    <div class="company-card" onclick="openCompanyModal('Bright Futures Ltd','Customer Support','👩‍💼','compliant','Emma Wilson')">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <div class="cc-avatar">👩‍💼</div>
+    <div class="company-card" onclick="openCompanyModal('Bright Futures Ltd','Customer Support','👩‍💼','compliant','Emma Wilson',3,3,0)">
+      <div class="co-hd">
+        <div class="co-avatar">👩‍💼</div>
         <div style="flex:1">
-          <div style="font-size:16px;font-weight:800">Bright Futures Ltd</div>
-          <div style="font-size:12px;color:var(--muted)">Customer Support</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="co-name">Bright Futures Ltd</div>
+            <span class="badge b-green">✓ Compliant</span>
+          </div>
+          <div class="co-type">Customer Support</div>
         </div>
-        <span class="badge b-green">✓ Compliant</span>
       </div>
-      <ul class="cc-checklist">
-        <li><span>✅</span> Safety Compliance</li>
-        <li><span>✅</span> Documents Filed</li>
-        <li><span>✅</span> Insurance Current</li>
-        <li><span>✅</span> Financials Up To Date</li>
-      </ul>
+      <div class="co-stats">
+        <div class="co-stat">
+          <div class="co-stat-n" style="color:var(--blue)">3</div>
+          <div class="co-stat-l">Active Items</div>
+        </div>
+        <div class="co-stat">
+          <div class="co-stat-n">3</div>
+          <div class="co-stat-l">Contacts</div>
+        </div>
+        <div class="co-stat" style="background:var(--green-lt)">
+          <div class="co-stat-n" style="color:var(--green)">0</div>
+          <div class="co-stat-l">Overdue</div>
+        </div>
+      </div>
+      <div class="co-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Bright Futures Ltd')">Contacts</button>
+      </div>
     </div>
 
-    <div class="company-card" onclick="openCompanyModal('Tech Corp Ltd','Technology & SaaS','👨‍💼','attention','Liam O\'Brien')">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <div class="cc-avatar">👨‍💼</div>
+    <div class="company-card" onclick="openCompanyModal('Tech Corp Ltd','Technology & SaaS','👨‍💼','attention','Liam O\'Brien',5,1,1)">
+      <div class="co-hd">
+        <div class="co-avatar">👨‍💼</div>
         <div style="flex:1">
-          <div style="font-size:16px;font-weight:800">Tech Corp Ltd</div>
-          <div style="font-size:12px;color:var(--muted)">Technology & SaaS</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="co-name">Tech Corp Ltd</div>
+            <span class="badge b-amber">⚠ Attention</span>
+          </div>
+          <div class="co-type">Technology & SaaS</div>
         </div>
-        <span class="badge b-amber">⚠ Attention</span>
       </div>
-      <ul class="cc-checklist">
-        <li><span>✅</span> Safety Compliance</li>
-        <li><span>⚠️</span> Documents — Review Needed</li>
-        <li><span>✅</span> Insurance Current</li>
-        <li><span>✅</span> Financials Up To Date</li>
-      </ul>
+      <div class="co-stats">
+        <div class="co-stat">
+          <div class="co-stat-n" style="color:var(--blue)">5</div>
+          <div class="co-stat-l">Active Items</div>
+        </div>
+        <div class="co-stat">
+          <div class="co-stat-n">1</div>
+          <div class="co-stat-l">Contacts</div>
+        </div>
+        <div class="co-stat" style="background:var(--red-lt)">
+          <div class="co-stat-n" style="color:var(--red)">1</div>
+          <div class="co-stat-l">Overdue</div>
+        </div>
+      </div>
+      <div class="co-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Tech Corp Ltd')">Contacts</button>
+      </div>
     </div>
 
-    <div class="company-card" onclick="openCompanyModal('Sunset Retail','Retail & Commerce','🛍️','compliant','Priya Kumar')">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <div class="cc-avatar">🛍️</div>
+    <div class="company-card" onclick="openCompanyModal('Sunset Retail','Retail & Commerce','🛍️','compliant','Priya Kumar',2,2,0)">
+      <div class="co-hd">
+        <div class="co-avatar">🛍️</div>
         <div style="flex:1">
-          <div style="font-size:16px;font-weight:800">Sunset Retail</div>
-          <div style="font-size:12px;color:var(--muted)">Retail & Commerce</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="co-name">Sunset Retail</div>
+            <span class="badge b-green">✓ Compliant</span>
+          </div>
+          <div class="co-type">Retail & Commerce</div>
         </div>
-        <span class="badge b-green">✓ Compliant</span>
       </div>
-      <ul class="cc-checklist">
-        <li><span>✅</span> Safety Compliance</li>
-        <li><span>✅</span> Documents Filed</li>
-        <li><span>✅</span> Insurance Current</li>
-        <li><span>✅</span> Financials Up To Date</li>
-      </ul>
+      <div class="co-stats">
+        <div class="co-stat">
+          <div class="co-stat-n" style="color:var(--blue)">2</div>
+          <div class="co-stat-l">Active Items</div>
+        </div>
+        <div class="co-stat">
+          <div class="co-stat-n">2</div>
+          <div class="co-stat-l">Contacts</div>
+        </div>
+        <div class="co-stat" style="background:var(--green-lt)">
+          <div class="co-stat-n" style="color:var(--green)">0</div>
+          <div class="co-stat-l">Overdue</div>
+        </div>
+      </div>
+      <div class="co-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Sunset Retail')">Contacts</button>
+      </div>
     </div>
   </div>
 
@@ -563,34 +764,34 @@ a,button{cursor:pointer}
     </div>
 
     <div class="decision-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div class="dc-top">
         <span class="badge b-amber">⚖️ Decision Required</span>
         <div style="text-align:right"><div style="font-size:10px;color:var(--muted)">Due</div><div style="font-size:13px;font-weight:700;color:var(--orange)">18 Jun 2026</div></div>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">Bright Futures Ltd</div>
+      <div class="dc-company">Bright Futures Ltd</div>
       <div class="dc-q">Approve referral agreement with FinTech Partners (15% revenue share)?</div>
-      <div class="dc-box"><div class="dc-label">Options</div>A) Approve as-is &nbsp; B) Negotiate to 12% &nbsp; C) Decline</div>
-      <div class="dc-box" style="background:var(--blue-xlt)"><div class="dc-label" style="color:var(--blue)">Recommendation</div><span style="color:var(--navy)">Recommend Option A — market rate for quality leads</span></div>
+      <div class="dc-box"><div class="dc-lbl">Options</div>A) Approve as-is &nbsp; B) Negotiate to 12% &nbsp; C) Decline</div>
+      <div class="dc-rec"><div class="dc-lbl">Recommendation</div>Recommend Option A — market rate for quality leads</div>
       <div class="dc-actions">
-        <button class="btn btn-green" onclick="resolveDecision(this,'Approved')">✓ Approve</button>
-        <button class="btn btn-danger" onclick="resolveDecision(this,'Rejected')">✗ Reject</button>
-        <button class="btn btn-secondary" onclick="resolveDecision(this,'More Info')">? Need Info</button>
+        <button class="btn btn-green" onclick="resolveDecision(this)">✓ Approve</button>
+        <button class="btn btn-danger" onclick="resolveDecision(this)">✗ Reject</button>
+        <button class="btn btn-secondary" onclick="resolveDecision(this)">? Need Info</button>
       </div>
     </div>
 
     <div class="decision-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div class="dc-top">
         <span class="badge b-amber">⚖️ Decision Required</span>
         <div style="text-align:right"><div style="font-size:10px;color:var(--muted)">Due</div><div style="font-size:13px;font-weight:700;color:var(--orange)">25 Jun 2026</div></div>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">Acme Ltd</div>
+      <div class="dc-company">Acme Ltd</div>
       <div class="dc-q">Counter-offer on lease: accept 4% increase or push back to 3%?</div>
-      <div class="dc-box"><div class="dc-label">Options</div>A) Accept 4% &nbsp; B) Counter 3% &nbsp; C) Explore alternatives</div>
-      <div class="dc-box" style="background:var(--blue-xlt)"><div class="dc-label" style="color:var(--blue)">Recommendation</div><span style="color:var(--navy)">Counter at 3% — landlord motivated to retain us</span></div>
+      <div class="dc-box"><div class="dc-lbl">Options</div>A) Accept 4% &nbsp; B) Counter 3% &nbsp; C) Explore alternatives</div>
+      <div class="dc-rec"><div class="dc-lbl">Recommendation</div>Counter at 3% — landlord motivated to retain us</div>
       <div class="dc-actions">
-        <button class="btn btn-green" onclick="resolveDecision(this,'Approved')">✓ Approve</button>
-        <button class="btn btn-danger" onclick="resolveDecision(this,'Rejected')">✗ Reject</button>
-        <button class="btn btn-secondary" onclick="resolveDecision(this,'More Info')">? Need Info</button>
+        <button class="btn btn-green" onclick="resolveDecision(this)">✓ Approve</button>
+        <button class="btn btn-danger" onclick="resolveDecision(this)">✗ Reject</button>
+        <button class="btn btn-secondary" onclick="resolveDecision(this)">? Need Info</button>
       </div>
     </div>
   </div>
@@ -600,24 +801,23 @@ a,button{cursor:pointer}
 <!-- BOTTOM NAV -->
 <nav id="bottom-nav">
   <button class="bn-tab active" id="tab-dashboard" onclick="showSection('dashboard')">
-    <div class="bn-icon">⊞</div>Dashboard
+    <span class="bn-icon">⊞</span>Dashboard
   </button>
   <button class="bn-tab" id="tab-alerts" onclick="showSection('alerts')">
-    <div class="bn-icon">🔔</div>Alerts
+    <span class="bn-icon">🔔</span>Alerts
     <span class="bn-dot"></span>
   </button>
   <button class="bn-tab" id="tab-filings" onclick="showSection('filings')">
-    <div class="bn-icon">📄</div>Filings
+    <span class="bn-icon">📄</span>Filings
   </button>
   <button class="bn-tab" id="tab-portfolio" onclick="showSection('portfolio')">
-    <div class="bn-icon">🏢</div>Portfolio
+    <span class="bn-icon">🏢</span>Portfolio
   </button>
   <button class="bn-tab" id="tab-decisions" onclick="showSection('decisions')">
-    <div class="bn-icon">⚖️</div>Decisions
+    <span class="bn-icon">⚖️</span>Decisions
   </button>
 </nav>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script>
@@ -631,73 +831,66 @@ function showSection(name) {
   window.scrollTo(0, 0);
 }
 
+var toastTimer;
 function toast(msg) {
+  clearTimeout(toastTimer);
   var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.opacity = '1';
-  t.style.transform = 'translateX(-50%) translateY(0)';
-  t.style.background = '#0f172a';
-  t.style.color = '#fff';
-  t.style.padding = '10px 20px';
-  t.style.borderRadius = '20px';
-  t.style.position = 'fixed';
-  t.style.bottom = 'calc(62px + 12px)';
-  t.style.left = '50%';
-  t.style.transform = 'translateX(-50%)';
-  t.style.fontSize = '13px';
-  t.style.fontWeight = '500';
-  t.style.zIndex = '200';
-  t.style.pointerEvents = 'none';
-  clearTimeout(t._timer);
-  t._timer = setTimeout(function() { t.style.opacity = '0'; }, 2500);
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2400);
 }
 
-function resolveDecision(btn, status) {
+function resolveDecision(btn) {
   var card = btn.closest('.decision-card');
-  if (card) {
-    card.style.opacity = '0.4';
-    card.style.pointerEvents = 'none';
-  }
-  toast('Decision recorded: ' + status + ' ✓');
+  if (card) { card.style.opacity = '0.4'; card.style.pointerEvents = 'none'; }
+  toast('Decision recorded');
 }
 
 function openFilingModal(title, desc, due, status, priority, entity) {
-  var modal = document.createElement('div');
-  modal.className = 'modal-bg';
-  var statusClass = {Overdue:'b-red','At Risk':'b-amber',Compliant:'b-green'}[status] || 'b-gray';
-  var priClass = {Urgent:'b-red',High:'b-amber',Medium:'b-blue',Low:'b-gray'}[priority] || 'b-gray';
-  modal.innerHTML = '<div class="modal">' +
-    '<div class="modal-hd"><h3>' + title + '</h3><button onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="badge ' + statusClass + '">' + status + '</span><span class="badge ' + priClass + '">' + priority + '</span></div>' +
-    '<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:12px">' +
-      '<div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Entity</div>' +
+  var smap = {Overdue:'b-red','Action Required':'b-orange','At Risk':'b-amber',Compliant:'b-green'};
+  var pmap = {Urgent:'b-red',High:'b-amber',Medium:'b-blue',Low:'b-gray'};
+  var sc = smap[status] || 'b-gray';
+  var pc = pmap[priority] || 'b-gray';
+  var m = document.createElement('div');
+  m.className = 'modal-bg';
+  m.innerHTML = '<div class="modal">' +
+    '<div class="modal-hd"><h3>' + title + '</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="badge ' + sc + '">' + status + '</span><span class="badge ' + pc + '">' + priority + '</span></div>' +
+    '<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Entity</div>' +
       '<div style="font-size:14px;font-weight:600">' + entity + '</div>' +
     '</div>' +
     '<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:12px">' +
-      '<div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Due Date</div>' +
+      '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Due Date</div>' +
       '<div style="font-size:14px;font-weight:600">' + due + '</div>' +
     '</div>' +
     '<p style="font-size:13px;color:var(--muted);margin-bottom:16px">' + desc + '</p>' +
     '<div style="display:flex;gap:8px">' +
-      '<button class="btn btn-primary" onclick="this.closest(\'.modal-bg\').remove();toast(\'Marked complete ✓\')">Mark Complete</button>' +
-      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove();toast(\'Reminder set ✓\')">Set Reminder</button>' +
+      '<button class="btn btn-primary" onclick="this.closest(\'.modal-bg\').remove();toast(\'Marked complete\')">Mark Complete</button>' +
+      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove();toast(\'Reminder set\')">Set Reminder</button>' +
       '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Close</button>' +
     '</div>' +
   '</div>';
-  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
-  document.body.appendChild(modal);
+  m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
 }
 
-function openCompanyModal(name, type, avatar, status, person) {
-  var modal = document.createElement('div');
-  modal.className = 'modal-bg';
+function openCompanyModal(name, type, avatar, status, person, items, contacts, overdue) {
   var ok = status === 'compliant';
-  modal.innerHTML = '<div class="modal">' +
-    '<div class="modal-hd"><h3>' + name + '</h3><button onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
+  var m = document.createElement('div');
+  m.className = 'modal-bg';
+  m.innerHTML = '<div class="modal">' +
+    '<div class="modal-hd"><h3>' + name + '</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
     '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">' +
       '<div style="width:56px;height:56px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:26px">' + avatar + '</div>' +
-      '<div><div style="font-size:16px;font-weight:800">' + name + '</div><div style="font-size:12px;color:var(--muted)">' + type + '</div>' +
-      '<div style="margin-top:4px"><span class="badge ' + (ok ? 'b-green' : 'b-amber') + '">' + (ok ? '✓ Compliant' : '⚠ Needs Attention') + '</span></div></div>' +
+      '<div><div style="font-size:17px;font-weight:800">' + name + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">' + type + '</div>' +
+      '<span class="badge ' + (ok ? 'b-green' : 'b-amber') + '" style="margin-top:5px;display:inline-flex">' + (ok ? '✓ Compliant' : '⚠ Attention') + '</span></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">' +
+      '<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--blue)">' + items + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Active Items</div></div>' +
+      '<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800">' + contacts + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Contacts</div></div>' +
+      '<div style="background:' + (overdue > 0 ? 'var(--red-lt)' : 'var(--green-lt)') + ';border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:' + (overdue > 0 ? 'var(--red)' : 'var(--green)') + '">' + overdue + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Overdue</div></div>' +
     '</div>' +
     '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Primary contact: <strong style="color:var(--text)">' + person + '</strong></p>' +
     '<div style="display:flex;gap:8px">' +
@@ -705,34 +898,34 @@ function openCompanyModal(name, type, avatar, status, person) {
       '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Close</button>' +
     '</div>' +
   '</div>';
-  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
-  document.body.appendChild(modal);
+  m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
 }
 
 function openNewAlert() {
-  var modal = document.createElement('div');
-  modal.className = 'modal-bg';
-  modal.innerHTML = '<div class="modal">' +
-    '<div class="modal-hd"><h3>New Compliance Alert</h3><button onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
+  var m = document.createElement('div');
+  m.className = 'modal-bg';
+  m.innerHTML = '<div class="modal">' +
+    '<div class="modal-hd"><h3>New Compliance Alert</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
     '<div class="form-group"><label>Title *</label><input id="na-t" placeholder="e.g. Corporation Tax — Acme Ltd"></div>' +
     '<div class="form-group"><label>Entity / Company</label><input id="na-co" placeholder="Client name"></div>' +
     '<div class="form-group"><label>Due Date</label><input id="na-d" type="date"></div>' +
-    '<div class="form-group"><label>Priority</label><select id="na-p"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div>' +
-    '<div class="form-group"><label>Notes</label><textarea id="na-n" placeholder="Context, reference numbers…"></textarea></div>' +
+    '<div class="form-group"><label>Priority</label><select><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div>' +
+    '<div class="form-group"><label>Notes</label><textarea placeholder="Context, reference numbers…"></textarea></div>' +
     '<div style="display:flex;gap:8px">' +
-      '<button class="btn btn-primary" onclick="submitNewAlert(this)">Create Alert</button>' +
+      '<button class="btn btn-primary" onclick="submitAlert(this)">Create Alert</button>' +
       '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button>' +
     '</div>' +
   '</div>';
-  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
-  document.body.appendChild(modal);
+  m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
 }
 
-function submitNewAlert(btn) {
+function submitAlert(btn) {
   var t = document.getElementById('na-t');
   if (!t || !t.value.trim()) { toast('Title is required'); return; }
   btn.closest('.modal-bg').remove();
-  toast('Alert created ✓');
+  toast('Alert created');
   showSection('alerts');
 }
 </script>
