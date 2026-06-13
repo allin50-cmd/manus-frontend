@@ -1,7 +1,7 @@
 {
-  "name": "UltraCore SheetOps",
-  "short_name": "SheetOps",
-  "description": "Spreadsheets that do the work, not just store the work.",
+  "name": "UltraCore Ops",
+  "short_name": "UltraCore",
+  "description": "Simple operator control centre using Supabase Postgres as the source of truth.",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#1e293b",
