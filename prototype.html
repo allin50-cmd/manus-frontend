@@ -516,7 +516,7 @@ function renderDeadlines() {
     if (filter!=='all' && d.status!==filter && filter!=='accounts' && filter!=='confirmation' && filter!=='director') return false
     if (filter==='all' && d.status==='done') return false
     var name = coName(d.companyId).toLowerCase()
-    if (search && !name.includes(search) && !(TYPE_INFO[d.type]||{}).label?.toLowerCase().includes(search) && !d.ref.toLowerCase().includes(search)) return false
+    if (search && !name.includes(search) && !((TYPE_INFO[d.type]||{}).label||'').toLowerCase().includes(search) && !d.ref.toLowerCase().includes(search)) return false
     return true
   }).sort(function(a,b){
     var so = (STATUS_ORDER[a.status]||99)-(STATUS_ORDER[b.status]||99)
@@ -695,7 +695,7 @@ function renderSettings() {
   h += '<div class="card card-pad" style="margin-bottom:12px">'
   h += '<div class="card-hd" style="margin:-16px -16px 14px;border-radius:0"><span class="card-hd-title">Account</span></div>'
   h += settingsRow('Plan','Pro — 8 companies monitored')
-  h += settingsRow('Billing','£'+8*state.settings.alertDays.length+'/mo (£1 per alert slot per company)')
+  h += settingsRow('Billing','£'+state.companies.length+'/mo (£1 per company monitored)')
   h += settingsRow('Email','george@firm.co.uk')
   h += '</div>'
 
@@ -868,7 +868,7 @@ function submitDeadline() {
   var notes = (document.getElementById('ad-notes')||{}).value||''
   var n = daysUntil(due)
   var status = n<0?'overdue':n<=30?'due-soon':n<=90?'upcoming':'ok'
-  state.deadlines.push({id:uid(),companyId:coId,type,dueDate:due,status,filedAt:null,ref:ref.trim()||type,notes:notes.trim()})
+  state.deadlines.push({id:uid(),companyId:coId,type:type,dueDate:due,status:status,filedAt:null,ref:ref.trim()||type,notes:notes.trim()})
   saveState()
   document.querySelector('.modal-bg').remove()
   toast('Deadline added')
@@ -1007,7 +1007,12 @@ function fg(label,input) { return '<div class="form-group"><label>'+label+'</lab
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 function renderAll() {
-  renderDashboard(); renderCompanies(); renderDeadlines(); renderAlerts(); renderSettings(); updateTopBar()
+  try {
+    renderDashboard(); renderCompanies(); renderDeadlines(); renderAlerts(); renderSettings(); updateTopBar()
+  } catch(e) {
+    var el = document.getElementById('s-dashboard')
+    if (el) el.innerHTML = '<div style="padding:24px;color:#dc2626;font-size:13px;background:#fee2e2;border-radius:12px;margin:12px">⚠ Load error: '+e.message+'<br><small style="opacity:.7">Open in Chrome or Safari browser</small></div>'
+  }
 }
 renderAll()
 </script>
