@@ -12,53 +12,41 @@
   --green:#16a34a;--green-lt:#dcfce7;--green-dot:#22c55e;
   --amber:#d97706;--amber-lt:#fef3c7;--orange:#ea580c;--orange-lt:#ffedd5;
   --red:#dc2626;--red-lt:#fee2e2;--purple:#7c3aed;--purple-lt:#f5f3ff;
-  --shadow:0 1px 4px rgba(15,23,42,.08),0 4px 16px rgba(15,23,42,.04);
-  --shadow-md:0 4px 12px rgba(15,23,42,.1);
-  --nav-h:56px;--bottom-h:62px;
+  --nav-h:56px;--bottom-h:66px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
-/* ── TOP BAR ── */
 #topbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:50}
 .tb-logo{width:32px;height:32px;background:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .tb-brand{color:#fff;font-size:17px;font-weight:800;letter-spacing:-.3px;flex:1}
-.tb-tagline{font-size:10px;color:rgba(255,255,255,.45);font-weight:400;letter-spacing:0}
+.tb-tagline{font-size:10px;color:rgba(255,255,255,.45)}
 .tb-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
-.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0;cursor:pointer}
 
-/* ── BOTTOM NAV ── */
 #bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--bottom-h);background:var(--white);border-top:1px solid var(--border);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
 .bn-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--muted);font-weight:500;padding:8px 4px 6px;border:none;background:none;position:relative;transition:color .15s}
-.bn-icon{font-size:19px;line-height:1;transition:transform .15s}
+.bn-icon{font-size:19px;line-height:1}
 .bn-tab.active{color:var(--blue)}
-.bn-tab.active .bn-icon{transform:scale(1.12)}
 .bn-dot{position:absolute;top:7px;right:calc(50% - 16px);width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--white)}
 
-/* ── MAIN ── */
 #main{margin-top:var(--nav-h);padding:14px 12px calc(var(--bottom-h) + 16px);max-width:540px;margin-left:auto;margin-right:auto}
+.section{display:none}.section.active{display:block}
 
-/* ── SECTIONS ── */
-.section{display:none}
-.section.active{display:block}
-
-/* ── CARDS ── */
-.card{background:var(--white);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px;border:1px solid var(--border)}
+.card{background:var(--white);border-radius:16px;box-shadow:0 1px 4px rgba(15,23,42,.08);overflow:hidden;margin-bottom:12px;border:1px solid var(--border)}
 .card-pad{padding:16px}
 .card-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .card-hd-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.card-hd-link{font-size:12px;font-weight:600;color:var(--blue)}
+.card-hd-link{font-size:12px;font-weight:600;color:var(--blue);cursor:pointer;border:none;background:none}
 
-/* ── PAGE HEADER ── */
 .page-hd{margin-bottom:16px}
 .page-hd .date{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
 .page-hd h1{font-size:22px;font-weight:800;line-height:1.2}
 .page-hd p{font-size:13px;color:var(--muted);margin-top:3px}
 
-/* ── COMPLIANCE STATUS CARD ── */
 .cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.cs-tile{border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:opacity .15s;border:1px solid}
-.cs-tile:active{opacity:.8}
+.cs-tile{border-radius:12px;padding:12px;text-align:center;cursor:pointer;border:1px solid;transition:transform .1s}
+.cs-tile:active{transform:scale(.97)}
 .cs-num{font-size:22px;font-weight:800;line-height:1}
 .cs-label{font-size:11px;font-weight:600;margin-top:3px}
 .cs-pct{font-size:10px;opacity:.65;margin-top:1px}
@@ -66,78 +54,57 @@ a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .cs-prog-seg{height:100%}
 .cs-footer{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-top:10px;border-top:1px solid var(--border);margin-top:4px}
 
-/* ── STAT ROW ── */
 .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .stat-box{border-radius:12px;padding:14px;border:1px solid}
 .stat-n{font-size:26px;font-weight:800}
 .stat-l{font-size:11px;font-weight:500;margin-top:3px;opacity:.8}
 
-/* ── URGENT BANNER ── */
 .urgent-banner{display:flex;align-items:center;gap:12px;background:var(--red);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;cursor:pointer}
 .urgent-banner:active{opacity:.9}
 .ub-body{flex:1}
 .ub-title{font-size:14px;font-weight:700}
 .ub-sub{font-size:11px;opacity:.8;margin-top:2px}
 
-/* ── ROW ITEMS ── */
 .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .row:last-child{border-bottom:none}
-.row-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .row-body{flex:1;min-width:0}
 .row-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row-sub{font-size:12px;color:var(--muted);margin-top:1px}
-.row-right{text-align:right;flex-shrink:0}
-.row-date{font-size:13px;font-weight:700}
-.overdue{color:var(--red)}
 
-/* ── TEAM PULSE ── */
 .team-grid{display:flex;flex-wrap:wrap;gap:8px}
-.team-chip{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer}
+.team-chip{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:background .15s}
 .team-chip:active{background:var(--border)}
 .team-avatar{width:28px;height:28px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
 .team-name{font-size:13px;font-weight:600}
 .team-count{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .team-count.zero{background:var(--border);color:var(--muted)}
 
-/* ── ALERT ITEMS ── */
-.alert-item{display:flex;align-items:flex-start;gap:10px;padding:14px;border-bottom:1px solid var(--border)}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
 .alert-item:last-child{border-bottom:none}
+.alert-item:active{background:var(--bg)}
 .ai-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:6px}
-.ai-dot.read{background:transparent}
+.ai-dot.read{background:transparent;border:1.5px solid var(--border)}
 .ai-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .ai-body{flex:1;min-width:0}
 .ai-title{font-size:14px;font-weight:600;margin-bottom:3px}
-.ai-desc{font-size:12px;color:var(--muted);margin-bottom:6px}
+.ai-desc{font-size:12px;color:var(--muted);margin-bottom:6px;line-height:1.4}
 
-/* ── GLANCE ROWS ── */
-.glance-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
-.glance-row:last-child{border-bottom:none}
-.glance-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.glance-n{font-size:20px;font-weight:800}
-.glance-l{font-size:12px;color:var(--muted);margin-top:1px}
-
-/* ── FILING ITEMS (left-bordered cards) ── */
 .filing-card{background:var(--white);border-radius:12px;border:1px solid var(--border);border-left-width:4px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;transition:box-shadow .15s}
-.filing-card:active{box-shadow:var(--shadow-md)}
-.filing-card.f-overdue{border-left-color:var(--red)}
-.filing-card.f-action{border-left-color:var(--orange)}
-.filing-card.f-risk{border-left-color:var(--amber)}
-.filing-card.f-compliant{border-left-color:var(--green-dot)}
+.filing-card:active{box-shadow:0 4px 12px rgba(15,23,42,.1)}
 .fc-body{flex:1;min-width:0}
 .fc-title{font-size:14px;font-weight:700;margin-bottom:4px}
 .fc-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
 .fc-date{text-align:right;flex-shrink:0}
 .fc-date-val{font-size:13px;font-weight:700}
-.fc-overdue-lbl{font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase}
+.fc-overdue-lbl{font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;margin-top:2px}
 
-/* ── PORTFOLIO ── */
 .portfolio-banner{border-radius:16px;padding:20px;margin-bottom:14px;color:#fff}
 .po-overview{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
 .po-stat{text-align:center}
 .po-n{font-size:26px;font-weight:800}
 .po-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.5;margin-top:2px}
 .company-card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s}
-.company-card:active{box-shadow:var(--shadow-md)}
+.company-card:active{box-shadow:0 4px 12px rgba(15,23,42,.1)}
 .co-hd{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .co-avatar{width:48px;height:48px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .co-name{font-size:15px;font-weight:800}
@@ -148,18 +115,16 @@ a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .co-stat-l{font-size:10px;color:var(--muted);margin-top:2px}
 .co-actions{display:flex;gap:8px}
 
-/* ── DECISION CARD ── */
 .decision-card{background:var(--white);border-radius:16px;border:1px solid var(--border);border-left:4px solid var(--amber);padding:16px;margin-bottom:10px}
 .dc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
-.dc-company{font-size:12px;color:var(--muted);margin-bottom:8px}
+.dc-company{font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600}
 .dc-q{font-size:15px;font-weight:700;line-height:1.4;margin-bottom:10px}
-.dc-box{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:8px}
+.dc-box{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:8px;line-height:1.5}
 .dc-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.dc-rec{background:var(--blue-xlt);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+.dc-rec{background:var(--blue-xlt);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px;line-height:1.5}
 .dc-rec .dc-lbl{color:var(--blue)}
 .dc-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-/* ── BADGES ── */
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .b-green{background:var(--green-lt);color:var(--green)}
 .b-amber{background:var(--amber-lt);color:var(--amber)}
@@ -169,662 +134,72 @@ a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .b-purple{background:var(--purple-lt);color:var(--purple)}
 .b-gray{background:#f1f5f9;color:var(--muted)}
 
-/* ── PILLS ── */
-.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.pill{padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;background:var(--white);color:var(--muted);cursor:pointer}
+.pills{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;background:var(--white);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
 .pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 
-/* ── BUTTONS ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s}
 .btn:active{opacity:.8}
 .btn-primary{background:var(--blue);color:#fff}
-.btn-navy{color:#fff}
 .btn-green{background:var(--green);color:#fff}
 .btn-danger{background:var(--red);color:#fff}
 .btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
 .btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
 .btn-full{width:100%;justify-content:center;margin-bottom:8px}
 
-/* ── FORMS ── */
 .form-group{margin-bottom:14px}
 .form-group label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--white);color:var(--text);-webkit-appearance:none}
-.form-group textarea{resize:vertical;min-height:80px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--white);color:var(--text);-webkit-appearance:none;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--blue)}
+.form-group textarea{resize:vertical;min-height:80px;line-height:1.5}
 
-/* ── TOAST ── */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-wrap input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;background:#fff;color:var(--text);-webkit-appearance:none;outline:none}
+.search-wrap input:focus{border-color:var(--blue)}
+
 #toast{position:fixed;bottom:calc(var(--bottom-h) + 12px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:200}
 #toast.show{opacity:1}
 
-/* ── MODAL ── */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end}
-.modal{background:var(--white);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:88vh;overflow-y:auto}
+.modal{background:var(--white);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
 .modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .modal-hd h3{font-size:17px;font-weight:700}
 .modal-close{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+.empty-state{background:#fff;border-radius:16px;padding:48px 20px;text-align:center}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px}
+.empty-state .es-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.empty-state .es-sub{font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div id="topbar">
   <div class="tb-logo">🛡️</div>
-  <div>
+  <div style="flex:1">
     <div class="tb-brand">FineGuard</div>
     <div class="tb-tagline">Centralise. Prioritise. Comply.</div>
   </div>
-  <span class="tb-badge">3 alerts</span>
-  <div class="tb-avatar">G</div>
+  <span id="tb-badge" class="tb-badge" style="display:none"></span>
+  <div class="tb-avatar" onclick="openSettings()">G</div>
 </div>
 
-<!-- MAIN -->
 <div id="main">
+  <div class="section active" id="s-dashboard"></div>
+  <div class="section" id="s-alerts"></div>
+  <div class="section" id="s-filings"></div>
+  <div class="section" id="s-portfolio"></div>
+  <div class="section" id="s-decisions"></div>
+</div>
 
-  <!-- ══ DASHBOARD ══ -->
-  <div class="section active" id="s-dashboard">
-    <div class="page-hd">
-      <div class="date">SAT · 13 JUN 2026</div>
-      <h1>Compliance Dashboard</h1>
-      <p>Welcome back, <strong>George</strong></p>
-    </div>
-
-    <!-- Compliance status card -->
-    <div class="card">
-      <div class="card-hd">
-        <span class="card-hd-title">Overall Compliance Status</span>
-        <span class="card-hd-link" onclick="showSection('filings')">View filings →</span>
-      </div>
-      <div class="card-pad" style="padding-top:14px">
-        <div class="cs-grid">
-          <div class="cs-tile" style="background:#f0fdf4;border-color:#bbf7d0" onclick="showSection('filings')">
-            <div class="cs-num" style="color:var(--green)">23</div>
-            <div class="cs-label" style="color:var(--green)">✓ Compliant</div>
-            <div class="cs-pct" style="color:var(--green)">67%</div>
-          </div>
-          <div class="cs-tile" style="background:#fefce8;border-color:#fde68a" onclick="showSection('filings')">
-            <div class="cs-num" style="color:var(--amber)">7</div>
-            <div class="cs-label" style="color:var(--amber)">⚡ At Risk</div>
-            <div class="cs-pct" style="color:var(--amber)">21%</div>
-          </div>
-          <div class="cs-tile" style="background:#fff7ed;border-color:#fed7aa" onclick="showSection('filings')">
-            <div class="cs-num" style="color:var(--orange)">3</div>
-            <div class="cs-label" style="color:var(--orange)">⚠ Action Req.</div>
-            <div class="cs-pct" style="color:var(--orange)">9%</div>
-          </div>
-          <div class="cs-tile" style="background:var(--red-lt);border-color:#fca5a5" onclick="showSection('filings')">
-            <div class="cs-num" style="color:var(--red)">1</div>
-            <div class="cs-label" style="color:var(--red)">🔴 Overdue</div>
-            <div class="cs-pct" style="color:var(--red)">3%</div>
-          </div>
-        </div>
-        <!-- Progress strip -->
-        <div class="cs-prog">
-          <div class="cs-prog-seg" style="flex:67;background:var(--green-dot);border-radius:4px 0 0 4px"></div>
-          <div class="cs-prog-seg" style="flex:21;background:#f59e0b"></div>
-          <div class="cs-prog-seg" style="flex:9;background:var(--orange)"></div>
-          <div class="cs-prog-seg" style="flex:3;background:var(--red);border-radius:0 4px 4px 0"></div>
-        </div>
-        <div class="cs-footer">
-          <span>34 active obligations</span>
-          <span>5 completed this week ✓</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Urgent banner -->
-    <div class="urgent-banner" onclick="showSection('filings')">
-      <span style="font-size:20px">🔴</span>
-      <div class="ub-body">
-        <div class="ub-title">1 overdue · 3 due today</div>
-        <div class="ub-sub">Tap to see urgent items</div>
-      </div>
-      <span style="font-size:18px;opacity:.7">→</span>
-    </div>
-
-    <!-- Key metrics -->
-    <div class="stat-row">
-      <div class="stat-box" style="background:#eff6ff;border-color:#bfdbfe">
-        <div class="stat-n" style="color:var(--blue)">34</div>
-        <div class="stat-l" style="color:var(--blue)">Active Items</div>
-      </div>
-      <div class="stat-box" style="background:#fff7ed;border-color:#fed7aa">
-        <div class="stat-n" style="color:var(--orange)">8</div>
-        <div class="stat-l" style="color:var(--orange)">Open Actions</div>
-      </div>
-      <div class="stat-box" style="background:var(--purple-lt);border-color:#ddd6fe">
-        <div class="stat-n" style="color:var(--purple)">2</div>
-        <div class="stat-l" style="color:var(--purple)">Decisions</div>
-      </div>
-      <div class="stat-box" style="background:#fff7ed;border-color:#fed7aa">
-        <div class="stat-n" style="color:var(--orange)">4</div>
-        <div class="stat-l" style="color:var(--orange)">Alert Deliveries</div>
-      </div>
-    </div>
-
-    <!-- Priority items -->
-    <div class="card">
-      <div class="card-hd">
-        <span class="card-hd-title">Priority Items</span>
-        <span class="card-hd-link" onclick="showSection('filings')">View all →</span>
-      </div>
-      <div style="padding:0 16px 4px">
-        <div class="row" onclick="openFilingModal('PAYE Year End','P60s and P11D overdue for Acme Ltd.','5 Jun 2026','Overdue','Urgent','Acme Ltd')">
-          <span style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;display:block"></span>
-          <div class="row-body">
-            <div class="row-title">PAYE Year End — Acme Ltd</div>
-            <div class="row-sub">Acme Ltd</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--red);flex-shrink:0">5 Jun</div>
-        </div>
-        <div class="row" onclick="openFilingModal('Corporation Tax CT600','Annual CT600 for Acme Ltd.','15 Jun 2026','Action Required','Urgent','Acme Ltd')">
-          <span style="width:10px;height:10px;border-radius:50%;background:var(--orange);flex-shrink:0;display:block"></span>
-          <div class="row-body">
-            <div class="row-title">Corporation Tax — CT600</div>
-            <div class="row-sub">Acme Ltd</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--orange);flex-shrink:0">15 Jun</div>
-        </div>
-        <div class="row" onclick="openFilingModal('VAT Return Q1 2026','MTD VAT return for Bright Futures.','30 Jun 2026','At Risk','High','Bright Futures Ltd')">
-          <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0;display:block"></span>
-          <div class="row-body">
-            <div class="row-title">VAT Return Q1 2026</div>
-            <div class="row-sub">Bright Futures Ltd</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--amber);flex-shrink:0">30 Jun</div>
-        </div>
-        <div class="row" onclick="openFilingModal('Confirmation Statement','Annual CH filing for Tech Corp.','10 Jul 2026','Compliant','Medium','Tech Corp Ltd')">
-          <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0;display:block"></span>
-          <div class="row-body">
-            <div class="row-title">Confirmation Statement</div>
-            <div class="row-sub">Tech Corp Ltd</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0">10 Jul</div>
-        </div>
-        <div class="row" style="border-bottom:none" onclick="openFilingModal('Annual Accounts','Companies House filing for Sunset Retail.','31 Jul 2026','Compliant','Medium','Sunset Retail')">
-          <span style="width:10px;height:10px;border-radius:50%;background:#e2e8f0;flex-shrink:0;display:block"></span>
-          <div class="row-body">
-            <div class="row-title">Annual Accounts</div>
-            <div class="row-sub">Sunset Retail</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0">31 Jul</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Team pulse -->
-    <div class="card card-pad">
-      <div class="card-hd" style="margin:-16px -16px 14px;border-radius:0">
-        <span class="card-hd-title">Team Pulse</span>
-        <span class="card-hd-link" onclick="toast('Teams view')">Full view →</span>
-      </div>
-      <div class="team-grid">
-        <div class="team-chip" onclick="toast('Dagon: 4 items')">
-          <div class="team-avatar">D</div>
-          <div class="team-name">Dagon</div>
-          <div class="team-count">4</div>
-        </div>
-        <div class="team-chip" onclick="toast('Alissa: 3 items')">
-          <div class="team-avatar">A</div>
-          <div class="team-name">Alissa</div>
-          <div class="team-count">3</div>
-        </div>
-        <div class="team-chip" onclick="toast('Michelle: 6 items')">
-          <div class="team-avatar">M</div>
-          <div class="team-name">Michelle</div>
-          <div class="team-count">6</div>
-        </div>
-        <div class="team-chip" onclick="toast('Chris: 2 items')">
-          <div class="team-avatar">C</div>
-          <div class="team-name">Chris</div>
-          <div class="team-count">2</div>
-        </div>
-        <div class="team-chip" onclick="toast('George: 5 items')">
-          <div class="team-avatar">G</div>
-          <div class="team-name">George</div>
-          <div class="team-count">5</div>
-        </div>
-        <div class="team-chip" onclick="toast('Charlie: 0 items')">
-          <div class="team-avatar" style="background:var(--border);color:var(--muted)">C</div>
-          <div class="team-name">Charlie</div>
-          <div class="team-count zero">0</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick actions -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <button class="btn btn-primary" style="justify-content:center;padding:14px" onclick="openNewAlert()">+ New Item</button>
-      <button class="btn" style="background:var(--orange);color:#fff;justify-content:center;padding:14px" onclick="showSection('filings')">Today's Actions</button>
-      <button class="btn" style="background:var(--purple);color:#fff;justify-content:center;padding:14px" onclick="showSection('decisions')">Decisions</button>
-      <button class="btn btn-navy" style="background:var(--navy);justify-content:center;padding:14px" onclick="showSection('portfolio')">Portfolio</button>
-    </div>
-  </div>
-
-  <!-- ══ ALERTS ══ -->
-  <div class="section" id="s-alerts">
-    <div class="page-hd">
-      <h1>Compliance Alerts</h1>
-      <p>3 unread · 5 total</p>
-    </div>
-
-    <!-- At a Glance -->
-    <div class="card card-pad" style="margin-bottom:12px">
-      <div class="card-hd" style="margin:-16px -16px 14px;border-radius:0">
-        <span class="card-hd-title">At a Glance</span>
-      </div>
-      <div class="glance-row">
-        <div class="glance-icon" style="background:var(--red-lt)">🔴</div>
-        <div><div class="glance-n" style="color:var(--red)">2</div><div class="glance-l">High Priority</div></div>
-      </div>
-      <div class="glance-row">
-        <div class="glance-icon" style="background:var(--amber-lt)">🟠</div>
-        <div><div class="glance-n" style="color:var(--amber)">5</div><div class="glance-l">Medium Priority</div></div>
-      </div>
-      <div class="glance-row">
-        <div class="glance-icon" style="background:var(--blue-xlt)">🔵</div>
-        <div><div class="glance-n" style="color:var(--blue)">3</div><div class="glance-l">Unread</div></div>
-      </div>
-      <div class="glance-row">
-        <div class="glance-icon" style="background:var(--green-lt)">✅</div>
-        <div><div class="glance-n" style="color:var(--green)">2</div><div class="glance-l">Acknowledged</div></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd">
-        <span class="card-hd-title">All Notifications</span>
-        <button class="btn btn-secondary btn-sm" onclick="markAllRead()">✓ Mark all read</button>
-      </div>
-
-      <div class="alert-item unread" onclick="markRead(this)">
-        <div class="ai-dot"></div>
-        <div class="ai-icon" style="background:var(--red-lt)">⚠️</div>
-        <div class="ai-body">
-          <div class="ai-title">Critical: PAYE Year End Overdue</div>
-          <div class="ai-desc">PAYE year-end submission overdue. Complete immediately.</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-red">Overdue</span><span style="font-size:11px;font-weight:600;color:var(--red)">▲ Urgent</span></div>
-        </div>
-      </div>
-
-      <div class="alert-item unread" onclick="markRead(this)">
-        <div class="ai-dot"></div>
-        <div class="ai-icon" style="background:#fff7ed">📅</div>
-        <div class="ai-body">
-          <div class="ai-title">Corporation Tax CT600 Due Soon</div>
-          <div class="ai-desc">Complete CT600 for Acme Ltd by 15 Jun 2026.</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-amber">Due Soon</span><span style="font-size:11px;font-weight:600;color:var(--orange)">▲ High</span></div>
-        </div>
-      </div>
-
-      <div class="alert-item unread" onclick="markRead(this)">
-        <div class="ai-dot"></div>
-        <div class="ai-icon" style="background:var(--blue-xlt)">📋</div>
-        <div class="ai-body">
-          <div class="ai-title">Policy Acknowledgement Required</div>
-          <div class="ai-desc">Code of Conduct requires acknowledgement before month end.</div>
-          <div><span class="badge b-blue">Policy</span></div>
-        </div>
-      </div>
-
-      <div class="alert-item" style="opacity:.6" onclick="markRead(this)">
-        <div class="ai-dot read"></div>
-        <div class="ai-icon" style="background:#f3e8ff">💬</div>
-        <div class="ai-body">
-          <div class="ai-title">New Regulatory Update — AML Rules</div>
-          <div class="ai-desc">New regulation published. Review and take action if needed.</div>
-          <div><span class="badge b-gray">Update</span></div>
-        </div>
-      </div>
-
-      <div class="alert-item" style="opacity:.6" onclick="markRead(this)">
-        <div class="ai-dot read"></div>
-        <div class="ai-icon" style="background:var(--green-lt)">✅</div>
-        <div class="ai-body">
-          <div class="ai-title">Q2 Compliance Report Submitted</div>
-          <div class="ai-desc">Report successfully submitted and accepted.</div>
-          <div><span class="badge b-green">Acknowledged</span></div>
-        </div>
-      </div>
-
-      <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center">
-        <span style="font-size:13px;color:var(--blue);font-weight:500;cursor:pointer" onclick="toast('All notifications loaded')">View all →</span>
-      </div>
-    </div>
-
-    <button class="btn btn-primary btn-full" onclick="openNewAlert()">+ New Alert</button>
-  </div>
-
-  <!-- ══ FILINGS ══ -->
-  <div class="section" id="s-filings">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:10px">
-      <div class="page-hd" style="margin-bottom:0">
-        <h1>Filing Obligations</h1>
-        <p>Manage compliance deadlines</p>
-      </div>
-      <button class="btn btn-navy btn-sm" style="background:var(--navy);flex-shrink:0;margin-top:4px" onclick="openNewAlert()">+ Add</button>
-    </div>
-
-    <!-- Summary tiles -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px">
-      <div class="f-tile" data-filter="overdue" onclick="filterFilings('overdue')" style="background:var(--red-lt);border:1px solid #fca5a5;border-radius:12px;padding:10px;text-align:center;cursor:pointer">
-        <div style="font-size:20px;font-weight:800;color:var(--red)">1</div>
-        <div style="font-size:10px;font-weight:600;color:var(--red);margin-top:2px">Overdue</div>
-      </div>
-      <div class="f-tile" data-filter="action" onclick="filterFilings('action')" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px;text-align:center;cursor:pointer">
-        <div style="font-size:20px;font-weight:800;color:var(--orange)">2</div>
-        <div style="font-size:10px;font-weight:600;color:var(--orange);margin-top:2px">Action Req.</div>
-      </div>
-      <div class="f-tile" data-filter="risk" onclick="filterFilings('risk')" style="background:#fefce8;border:1px solid #fde68a;border-radius:12px;padding:10px;text-align:center;cursor:pointer">
-        <div style="font-size:20px;font-weight:800;color:var(--amber)">1</div>
-        <div style="font-size:10px;font-weight:600;color:var(--amber);margin-top:2px">At Risk</div>
-      </div>
-      <div class="f-tile" data-filter="compliant" onclick="filterFilings('compliant')" style="background:var(--green-lt);border:1px solid #86efac;border-radius:12px;padding:10px;text-align:center;cursor:pointer">
-        <div style="font-size:20px;font-weight:800;color:var(--green)">2</div>
-        <div style="font-size:10px;font-weight:600;color:var(--green);margin-top:2px">Compliant</div>
-      </div>
-    </div>
-
-    <!-- Filter chips -->
-    <div class="pills" id="filing-pills">
-      <button class="pill active" data-filter="all" onclick="filterFilings('all')">All (6)</button>
-      <button class="pill" data-filter="overdue" onclick="filterFilings('overdue')">🔴 Overdue</button>
-      <button class="pill" data-filter="action" onclick="filterFilings('action')">⚠ Action Req.</button>
-      <button class="pill" data-filter="risk" onclick="filterFilings('risk')">⚡ At Risk</button>
-      <button class="pill" data-filter="compliant" onclick="filterFilings('compliant')">✓ Compliant</button>
-    </div>
-
-    <!-- Filing cards — ordered by urgency, colour-coded left border -->
-    <div id="filing-list">
-    <div class="filing-card f-overdue" data-bucket="overdue" onclick="openFilingModal('PAYE Year End','P60s and P11D submission for Acme Ltd.','5 Jun 2026','Overdue','Urgent','Acme Ltd')">
-      <div class="fc-body">
-        <div class="fc-title">PAYE Year End</div>
-        <div class="fc-meta">
-          <span style="font-size:12px;color:var(--muted)">Acme Ltd</span>
-          <span class="badge b-red">Overdue</span><span class="badge b-red">Urgent</span>
-        </div>
-      </div>
-      <div class="fc-date">
-        <div class="fc-date-val" style="color:var(--red)">5 Jun</div>
-        <div class="fc-overdue-lbl">Overdue</div>
-      </div>
-    </div>
-
-    <div class="filing-card f-action" data-bucket="action" onclick="openFilingModal('Corporation Tax — CT600','Annual CT600 for Acme Ltd.','15 Jun 2026','Action Required','Urgent','Acme Ltd')">
-      <div class="fc-body">
-        <div class="fc-title">Corporation Tax — CT600</div>
-        <div class="fc-meta">
-          <span style="font-size:12px;color:var(--muted)">Acme Ltd</span>
-          <span class="badge b-orange">Action Req.</span><span class="badge b-red">Urgent</span>
-        </div>
-      </div>
-      <div class="fc-date">
-        <div class="fc-date-val" style="color:var(--orange)">15 Jun</div>
-      </div>
-    </div>
-
-    <div class="filing-card f-action" data-bucket="action" onclick="openFilingModal('VAT Return Q1 2026','MTD VAT for Bright Futures Ltd.','30 Jun 2026','Action Required','High','Bright Futures Ltd')">
-      <div class="fc-body">
-        <div class="fc-title">VAT Return Q1 2026</div>
-        <div class="fc-meta">
-          <span style="font-size:12px;color:var(--muted)">Bright Futures Ltd</span>
-          <span class="badge b-orange">Action Req.</span><span class="badge b-amber">High</span>
-        </div>
-      </div>
-      <div class="fc-date">
-        <div class="fc-date-val" style="color:var(--orange)">30 Jun</div>
-      </div>
-    </div>
-
-    <div class="filing-card f-risk" data-bucket="risk" onclick="openFilingModal('Confirmation Statement','Annual CH filing for Tech Corp Ltd.','10 Jul 2026','At Risk','Medium','Tech Corp Ltd')">
-      <div class="fc-body">
-        <div class="fc-title">Confirmation Statement</div>
-        <div class="fc-meta">
-          <span style="font-size:12px;color:var(--muted)">Tech Corp Ltd</span>
-          <span class="badge b-amber">At Risk</span><span class="badge b-blue">Medium</span>
-        </div>
-      </div>
-      <div class="fc-date">
-        <div class="fc-date-val">10 Jul</div>
-      </div>
-    </div>
-
-    <div class="filing-card f-compliant" data-bucket="compliant" onclick="openFilingModal('Self Assessment SA100','Personal tax return for James Harrison.','31 Jan 2027','Compliant','Low','James Harrison')">
-      <div class="fc-body">
-        <div class="fc-title">Self Assessment SA100</div>
-        <div class="fc-meta">
-          <span style="font-size:12px;color:var(--muted)">James Harrison</span>
-          <span class="badge b-green">Compliant</span><span class="badge b-gray">Low</span>
-        </div>
-      </div>
-      <div class="fc-date">
-        <div class="fc-date-val">31 Jan</div>
-      </div>
-    </div>
-
-    <div class="filing-card f-compliant" data-bucket="compliant" onclick="openFilingModal('Annual Accounts','Companies House filing for Sunset Retail.','31 Jul 2026','Compliant','Medium','Sunset Retail')">
-      <div class="fc-body">
-        <div class="fc-title">Annual Accounts</div>
-        <div class="fc-meta">
-          <span style="font-size:12px;color:var(--muted)">Sunset Retail</span>
-          <span class="badge b-green">Compliant</span><span class="badge b-blue">Medium</span>
-        </div>
-      </div>
-      <div class="fc-date">
-        <div class="fc-date-val">31 Jul</div>
-      </div>
-    </div>
-    </div><!-- /filing-list -->
-  </div>
-
-  <!-- ══ PORTFOLIO ══ -->
-  <div class="section" id="s-portfolio">
-    <div class="page-hd">
-      <h1>Portfolio Management</h1>
-      <p>Manage. Monitor. Grow.</p>
-    </div>
-
-    <!-- Banner -->
-    <div class="portfolio-banner" style="background:linear-gradient(135deg,var(--navy) 0%,#1a3a6c 100%)">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:10px">🛡️ Portfolio Overview</div>
-      <div class="po-overview">
-        <div class="po-stat">
-          <div class="po-n">4</div>
-          <div class="po-l">Companies</div>
-        </div>
-        <div class="po-stat">
-          <div class="po-n" style="color:#4ade80">3</div>
-          <div class="po-l">Compliant</div>
-        </div>
-        <div class="po-stat">
-          <div class="po-n" style="color:#f87171">1</div>
-          <div class="po-l">Attention</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Company cards — matching production layout -->
-    <div class="company-card" onclick="openCompanyModal('Acme Ltd','Manufacturing & Distribution','👷','compliant','Sarah Chen',4,2,0)">
-      <div class="co-hd">
-        <div class="co-avatar">👷</div>
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div class="co-name">Acme Ltd</div>
-            <span class="badge b-green">✓ Compliant</span>
-          </div>
-          <div class="co-type">Manufacturing & Distribution</div>
-        </div>
-      </div>
-      <div class="co-stats">
-        <div class="co-stat">
-          <div class="co-stat-n" style="color:var(--blue)">4</div>
-          <div class="co-stat-l">Active Items</div>
-        </div>
-        <div class="co-stat">
-          <div class="co-stat-n">2</div>
-          <div class="co-stat-l">Contacts</div>
-        </div>
-        <div class="co-stat" style="background:var(--green-lt)">
-          <div class="co-stat-n" style="color:var(--green)">0</div>
-          <div class="co-stat-l">Overdue</div>
-        </div>
-      </div>
-      <div class="co-actions">
-        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
-        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Acme Ltd')">Contacts</button>
-      </div>
-    </div>
-
-    <div class="company-card" onclick="openCompanyModal('Bright Futures Ltd','Customer Support','👩‍💼','compliant','Emma Wilson',3,3,0)">
-      <div class="co-hd">
-        <div class="co-avatar">👩‍💼</div>
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div class="co-name">Bright Futures Ltd</div>
-            <span class="badge b-green">✓ Compliant</span>
-          </div>
-          <div class="co-type">Customer Support</div>
-        </div>
-      </div>
-      <div class="co-stats">
-        <div class="co-stat">
-          <div class="co-stat-n" style="color:var(--blue)">3</div>
-          <div class="co-stat-l">Active Items</div>
-        </div>
-        <div class="co-stat">
-          <div class="co-stat-n">3</div>
-          <div class="co-stat-l">Contacts</div>
-        </div>
-        <div class="co-stat" style="background:var(--green-lt)">
-          <div class="co-stat-n" style="color:var(--green)">0</div>
-          <div class="co-stat-l">Overdue</div>
-        </div>
-      </div>
-      <div class="co-actions">
-        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
-        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Bright Futures Ltd')">Contacts</button>
-      </div>
-    </div>
-
-    <div class="company-card" onclick="openCompanyModal('Tech Corp Ltd','Technology & SaaS','👨‍💼','attention','Liam O\'Brien',5,1,1)">
-      <div class="co-hd">
-        <div class="co-avatar">👨‍💼</div>
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div class="co-name">Tech Corp Ltd</div>
-            <span class="badge b-amber">⚠ Attention</span>
-          </div>
-          <div class="co-type">Technology & SaaS</div>
-        </div>
-      </div>
-      <div class="co-stats">
-        <div class="co-stat">
-          <div class="co-stat-n" style="color:var(--blue)">5</div>
-          <div class="co-stat-l">Active Items</div>
-        </div>
-        <div class="co-stat">
-          <div class="co-stat-n">1</div>
-          <div class="co-stat-l">Contacts</div>
-        </div>
-        <div class="co-stat" style="background:var(--red-lt)">
-          <div class="co-stat-n" style="color:var(--red)">1</div>
-          <div class="co-stat-l">Overdue</div>
-        </div>
-      </div>
-      <div class="co-actions">
-        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
-        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Tech Corp Ltd')">Contacts</button>
-      </div>
-    </div>
-
-    <div class="company-card" onclick="openCompanyModal('Sunset Retail','Retail & Commerce','🛍️','compliant','Priya Kumar',2,2,0)">
-      <div class="co-hd">
-        <div class="co-avatar">🛍️</div>
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div class="co-name">Sunset Retail</div>
-            <span class="badge b-green">✓ Compliant</span>
-          </div>
-          <div class="co-type">Retail & Commerce</div>
-        </div>
-      </div>
-      <div class="co-stats">
-        <div class="co-stat">
-          <div class="co-stat-n" style="color:var(--blue)">2</div>
-          <div class="co-stat-l">Active Items</div>
-        </div>
-        <div class="co-stat">
-          <div class="co-stat-n">2</div>
-          <div class="co-stat-l">Contacts</div>
-        </div>
-        <div class="co-stat" style="background:var(--green-lt)">
-          <div class="co-stat-n" style="color:var(--green)">0</div>
-          <div class="co-stat-l">Overdue</div>
-        </div>
-      </div>
-      <div class="co-actions">
-        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();showSection('filings')">View Items</button>
-        <button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast('Contacts for Sunset Retail')">Contacts</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ DECISIONS ══ -->
-  <div class="section" id="s-decisions">
-    <div class="page-hd">
-      <h1>Decision Queue</h1>
-      <p id="dec-sub">2 items awaiting your approval</p>
-    </div>
-
-    <div id="dec-list">
-    <div class="decision-card" id="dec-1">
-      <div class="dc-top">
-        <span class="badge b-amber">⚖️ Decision Required</span>
-        <div style="text-align:right"><div style="font-size:10px;color:var(--muted)">Due</div><div style="font-size:13px;font-weight:700;color:var(--orange)">18 Jun 2026</div></div>
-      </div>
-      <div class="dc-company">Bright Futures Ltd</div>
-      <div class="dc-q">Approve referral agreement with FinTech Partners (15% revenue share)?</div>
-      <div class="dc-box"><div class="dc-lbl">Options</div>A) Approve as-is &nbsp; B) Negotiate to 12% &nbsp; C) Decline</div>
-      <div class="dc-rec"><div class="dc-lbl">Recommendation</div>Recommend Option A — market rate for quality leads</div>
-      <div class="dc-actions">
-        <button class="btn btn-green" onclick="resolveDecision('dec-1','Approved')">✓ Approve</button>
-        <button class="btn btn-danger" onclick="resolveDecision('dec-1','Rejected')">✗ Reject</button>
-        <button class="btn btn-secondary" onclick="resolveDecision('dec-1','More Info Needed')">? Need Info</button>
-      </div>
-    </div>
-
-    <div class="decision-card" id="dec-2">
-      <div class="dc-top">
-        <span class="badge b-amber">⚖️ Decision Required</span>
-        <div style="text-align:right"><div style="font-size:10px;color:var(--muted)">Due</div><div style="font-size:13px;font-weight:700;color:var(--orange)">25 Jun 2026</div></div>
-      </div>
-      <div class="dc-company">Acme Ltd</div>
-      <div class="dc-q">Counter-offer on lease: accept 4% increase or push back to 3%?</div>
-      <div class="dc-box"><div class="dc-lbl">Options</div>A) Accept 4% &nbsp; B) Counter 3% &nbsp; C) Explore alternatives</div>
-      <div class="dc-rec"><div class="dc-lbl">Recommendation</div>Counter at 3% — landlord motivated to retain us</div>
-      <div class="dc-actions">
-        <button class="btn btn-green" onclick="resolveDecision('dec-2','Approved')">✓ Approve</button>
-        <button class="btn btn-danger" onclick="resolveDecision('dec-2','Rejected')">✗ Reject</button>
-        <button class="btn btn-secondary" onclick="resolveDecision('dec-2','More Info Needed')">? Need Info</button>
-      </div>
-    </div>
-    </div>
-
-    <div id="dec-empty" style="display:none;text-align:center;padding:40px 20px">
-      <div style="font-size:48px;margin-bottom:12px">✅</div>
-      <div style="font-size:18px;font-weight:700;margin-bottom:6px">All caught up!</div>
-      <div style="font-size:14px;color:var(--muted)">No decisions awaiting your approval.</div>
-    </div>
-  </div>
-
-</div><!-- /main -->
-
-<!-- BOTTOM NAV -->
 <nav id="bottom-nav">
   <button class="bn-tab active" id="tab-dashboard" onclick="showSection('dashboard')">
     <span class="bn-icon">⊞</span>Dashboard
   </button>
   <button class="bn-tab" id="tab-alerts" onclick="showSection('alerts')">
     <span class="bn-icon">🔔</span>Alerts
-    <span class="bn-dot"></span>
+    <span class="bn-dot" id="alert-dot"></span>
   </button>
   <button class="bn-tab" id="tab-filings" onclick="showSection('filings')">
     <span class="bn-icon">📄</span>Filings
@@ -840,172 +215,746 @@ a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 <div id="toast"></div>
 
 <script>
+// ── Default dataset ───────────────────────────────────────────────────────────
+var DEFAULT = {
+  filings: [
+    {id:'f1',title:'PAYE Year End',entity:'Acme Ltd',type:'Compliance Alert',priority:'Urgent',status:'overdue',dueDate:'2026-06-05',owner:'Michelle',notes:'P60s and P11D submission required for all employees. Contact HMRC immediately.'},
+    {id:'f2',title:'Corporation Tax — CT600',entity:'Acme Ltd',type:'Compliance Alert',priority:'Urgent',status:'action',dueDate:'2026-06-15',owner:'Dagon',notes:'Annual CT600 filing for financial year ending March 2026. All accounts finalised.'},
+    {id:'f3',title:'VAT Return Q1 2026',entity:'Bright Futures Ltd',type:'Compliance Alert',priority:'High',status:'action',dueDate:'2026-06-30',owner:'Alissa',notes:'Making Tax Digital VAT return. Quarterly submission via MTD software.'},
+    {id:'f4',title:'Payroll Run — June 2026',entity:'Acme Ltd',type:'Internal Task',priority:'High',status:'risk',dueDate:'2026-06-28',owner:'Alissa',notes:'Monthly payroll processing and RTI submission to HMRC.'},
+    {id:'f5',title:'Confirmation Statement',entity:'Tech Corp Ltd',type:'Document Record',priority:'Medium',status:'risk',dueDate:'2026-07-10',owner:'Chris',notes:'Annual Companies House confirmation statement.'},
+    {id:'f6',title:'Annual Accounts',entity:'Sunset Retail',type:'Document Record',priority:'Medium',status:'compliant',dueDate:'2026-07-31',owner:'Michelle',notes:'Companies House annual accounts filing. Accountant has draft ready.'},
+    {id:'f7',title:'Self Assessment SA100',entity:'James Harrison',type:'Compliance Alert',priority:'Low',status:'compliant',dueDate:'2027-01-31',owner:'George',notes:'Personal tax return for FY 2025/26. Plenty of time remaining.'},
+    {id:'f8',title:'AML Training Records',entity:'Bright Futures Ltd',type:'Compliance Alert',priority:'Medium',status:'compliant',dueDate:'2026-09-30',owner:'Dagon',notes:'Annual AML training completion records for all staff.'},
+  ],
+  alerts: [
+    {id:'a1',title:'Critical: PAYE Year End Overdue',desc:'PAYE year-end submission overdue. Complete immediately to avoid HMRC penalties.',priority:'Urgent',badge:'Overdue',read:false,icon:'⚠️',color:'red'},
+    {id:'a2',title:'Corporation Tax CT600 Due in 2 Days',desc:'Complete CT600 for Acme Ltd by 15 Jun 2026. All figures confirmed.',priority:'High',badge:'Due Soon',read:false,icon:'📅',color:'amber'},
+    {id:'a3',title:'Policy Acknowledgement Required',desc:'Code of Conduct policy requires acknowledgement from all staff before month end.',priority:'Medium',badge:'Policy',read:false,icon:'📋',color:'blue'},
+    {id:'a4',title:'New Regulatory Update — AML Rules',desc:'New AML regulation published 10 Jun 2026. Review and take action if applicable.',priority:'Low',badge:'Update',read:true,icon:'💬',color:'purple'},
+    {id:'a5',title:'Q2 Compliance Report Submitted',desc:'Quarterly compliance report successfully submitted and accepted by regulator.',priority:'Low',badge:'Acknowledged',read:true,icon:'✅',color:'green'},
+  ],
+  decisions: [
+    {id:'d1',company:'Bright Futures Ltd',question:'Approve referral agreement with FinTech Partners (15% revenue share)?',options:'A) Approve as-is   B) Negotiate to 12%   C) Decline',recommendation:'Recommend Option A — market rate for quality leads in this sector.',dueDate:'2026-06-18',resolved:false,resolution:null},
+    {id:'d2',company:'Acme Ltd',question:'Counter-offer on lease renewal: accept 4% increase or push back to 3%?',options:'A) Accept 4%   B) Counter 3%   C) Explore alternatives',recommendation:'Counter at 3% — landlord is motivated to retain long-term tenant.',dueDate:'2026-06-25',resolved:false,resolution:null},
+    {id:'d3',company:'Tech Corp Ltd',question:'Approve £12k spend on new compliance management software (annual licence)?',options:'A) Approve full amount   B) Negotiate 2-year deal for discount   C) Defer to Q3',recommendation:'Option B — likely 15–20% discount on a 2-year term.',dueDate:'2026-07-05',resolved:false,resolution:null},
+  ],
+  companies: [
+    {id:'c1',name:'Acme Ltd',type:'Manufacturing & Distribution',avatar:'👷',person:'Sarah Chen'},
+    {id:'c2',name:'Bright Futures Ltd',type:'Customer Support',avatar:'👩‍💼',person:'Emma Wilson'},
+    {id:'c3',name:'Tech Corp Ltd',type:'Technology & SaaS',avatar:'👨‍💼',person:'Liam O\'Brien'},
+    {id:'c4',name:'Sunset Retail',type:'Retail & Commerce',avatar:'🛍️',person:'Priya Kumar'},
+  ]
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+function loadState() {
+  try { var s = localStorage.getItem('fg2'); return s ? JSON.parse(s) : clone(DEFAULT) } catch(e) { return clone(DEFAULT) }
+}
+function saveState() { try { localStorage.setItem('fg2', JSON.stringify(state)) } catch(e) {} }
+function clone(o) { return JSON.parse(JSON.stringify(o)) }
+
+var state = loadState()
+var ui = { section:'dashboard', filingFilter:'all', filingSearch:'', alertFilter:'all' }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function uid() { return 'x' + Math.random().toString(36).slice(2,8) + Date.now().toString(36) }
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function fmtShort(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})
+}
+function fmtFull(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})
+}
+function isPast(d) { return d && new Date(d) < new Date() }
+
+var toastTimer
+function toast(msg) {
+  clearTimeout(toastTimer)
+  var t = document.getElementById('toast')
+  t.textContent = '✓ ' + msg
+  t.classList.add('show')
+  toastTimer = setTimeout(function(){ t.classList.remove('show') }, 2400)
+}
+
+// ── Metrics ───────────────────────────────────────────────────────────────────
+var STATUS_ORDER = {overdue:0,action:1,risk:2,compliant:3,done:4}
+var STATUS_INFO = {
+  overdue:  {label:'Overdue',     badge:'b-red',    border:'var(--red)',       bg:'var(--red-lt)'},
+  action:   {label:'Action Req.', badge:'b-orange',  border:'var(--orange)',    bg:'var(--orange-lt)'},
+  risk:     {label:'At Risk',     badge:'b-amber',  border:'var(--amber)',     bg:'var(--amber-lt)'},
+  compliant:{label:'Compliant',   badge:'b-green',  border:'var(--green-dot)', bg:'var(--green-lt)'},
+  done:     {label:'Completed',   badge:'b-green',  border:'var(--green)',     bg:'var(--green-lt)'},
+}
+var PRIORITY_BADGE = {Urgent:'b-red',High:'b-amber',Medium:'b-blue',Low:'b-gray'}
+var PRIORITY_DOT   = {Urgent:'var(--red)',High:'var(--orange)',Medium:'#f59e0b',Low:'var(--muted)'}
+var ALERT_BG    = {red:'var(--red-lt)',amber:'var(--amber-lt)',blue:'var(--blue-xlt)',purple:'#f3e8ff',green:'var(--green-lt)',gray:'#f1f5f9'}
+var ALERT_BADGE = {red:'b-red',amber:'b-amber',blue:'b-blue',purple:'b-purple',green:'b-green',gray:'b-gray'}
+
+function metrics() {
+  var active = state.filings.filter(function(f){return f.status!=='done'})
+  var overdue   = active.filter(function(f){return f.status==='overdue'}).length
+  var action    = active.filter(function(f){return f.status==='action'}).length
+  var risk      = active.filter(function(f){return f.status==='risk'}).length
+  var compliant = active.filter(function(f){return f.status==='compliant'}).length
+  var done      = state.filings.filter(function(f){return f.status==='done'}).length
+  var total     = active.length
+  var unread    = state.alerts.filter(function(a){return !a.read}).length
+  var openDec   = state.decisions.filter(function(d){return !d.resolved}).length
+  return {overdue,action,risk,compliant,done,total,unread,openDec,grand:total||1}
+}
+
+function coStats(name) {
+  var active = state.filings.filter(function(f){return f.entity===name&&f.status!=='done'})
+  return {items:active.length, overdue:active.filter(function(f){return f.status==='overdue'}).length}
+}
+
 // ── Navigation ────────────────────────────────────────────────────────────────
 function showSection(name) {
-  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
-  document.querySelectorAll('.bn-tab').forEach(function(t) { t.classList.remove('active'); });
-  var sec = document.getElementById('s-' + name);
-  var tab = document.getElementById('tab-' + name);
-  if (sec) sec.classList.add('active');
-  if (tab) tab.classList.add('active');
-  window.scrollTo(0, 0);
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')})
+  document.querySelectorAll('.bn-tab').forEach(function(t){t.classList.remove('active')})
+  var sec = document.getElementById('s-'+name)
+  var tab = document.getElementById('tab-'+name)
+  if (sec) sec.classList.add('active')
+  if (tab) tab.classList.add('active')
+  window.scrollTo(0,0)
+  ui.section = name
+  var renders = {dashboard:renderDashboard,alerts:renderAlerts,filings:renderFilings,portfolio:renderPortfolio,decisions:renderDecisions}
+  if (renders[name]) renders[name]()
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-var toastTimer;
-function toast(msg) {
-  clearTimeout(toastTimer);
-  var t = document.getElementById('toast');
-  t.textContent = '✓ ' + msg;
-  t.classList.add('show');
-  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2400);
+function updateTopBar() {
+  var m = metrics()
+  var badge = document.getElementById('tb-badge')
+  var dot = document.getElementById('alert-dot')
+  if (badge) { badge.style.display = m.unread > 0 ? '' : 'none'; badge.textContent = m.unread + ' alert' + (m.unread!==1?'s':'') }
+  if (dot) dot.style.display = m.unread > 0 ? '' : 'none'
 }
 
-// ── Decisions ─────────────────────────────────────────────────────────────────
-var decResolved = {};
-function resolveDecision(id, action) {
-  if (decResolved[id]) return;
-  decResolved[id] = true;
-  var card = document.getElementById(id);
-  if (card) {
-    card.style.transition = 'opacity .3s,transform .3s';
-    card.style.opacity = '0'; card.style.transform = 'scale(.96)';
-    setTimeout(function() { card.style.display = 'none'; updateDecCount(); }, 320);
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  var m = metrics()
+  var pct = function(n){ return Math.round(n/m.grand*100) }
+  var today = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase()
+
+  var priorityItems = state.filings
+    .filter(function(f){return f.status!=='done'})
+    .sort(function(a,b){
+      var so = (STATUS_ORDER[a.status]||99)-(STATUS_ORDER[b.status]||99)
+      if (so!==0) return so
+      return ['Urgent','High','Medium','Low'].indexOf(a.priority) - ['Urgent','High','Medium','Low'].indexOf(b.priority)
+    }).slice(0,5)
+
+  var owners = ['Dagon','Alissa','Michelle','Chris','George','Charlie']
+  var ownerCounts = {}
+  owners.forEach(function(o){ownerCounts[o]=0})
+  state.filings.forEach(function(f){if(f.status!=='done'&&ownerCounts.hasOwnProperty(f.owner))ownerCounts[f.owner]++})
+
+  var h = ''
+  h += '<div class="page-hd"><div class="date">'+today+'</div><h1>Compliance Dashboard</h1><p>Welcome back, <strong>George</strong></p></div>'
+
+  // Compliance card
+  h += '<div class="card"><div class="card-hd"><span class="card-hd-title">Overall Compliance Status</span><button class="card-hd-link" onclick="showSection(\'filings\')">View filings →</button></div><div class="card-pad" style="padding-top:14px">'
+  h += '<div class="cs-grid">'
+  h += csTile(m.compliant,'#f0fdf4','#bbf7d0','var(--green)','✓ Compliant',pct(m.compliant),'compliant')
+  h += csTile(m.risk,'#fefce8','#fde68a','var(--amber)','⚡ At Risk',pct(m.risk),'risk')
+  h += csTile(m.action,'#fff7ed','#fed7aa','var(--orange)','⚠ Action Req.',pct(m.action),'action')
+  h += csTile(m.overdue,'var(--red-lt)','#fca5a5','var(--red)','🔴 Overdue',pct(m.overdue),'overdue')
+  h += '</div>'
+  h += '<div class="cs-prog">'
+  h += '<div class="cs-prog-seg" style="flex:'+(m.compliant||0.01)+';background:var(--green-dot);border-radius:4px 0 0 4px"></div>'
+  h += '<div class="cs-prog-seg" style="flex:'+(m.risk||0.01)+';background:#f59e0b"></div>'
+  h += '<div class="cs-prog-seg" style="flex:'+(m.action||0.01)+';background:var(--orange)"></div>'
+  h += '<div class="cs-prog-seg" style="flex:'+(m.overdue||0.01)+';background:var(--red);border-radius:0 4px 4px 0"></div>'
+  h += '</div>'
+  h += '<div class="cs-footer"><span>'+m.total+' active obligations</span><span>'+m.done+' completed ✓</span></div>'
+  h += '</div></div>'
+
+  // Urgent banner
+  if (m.overdue+m.action > 0) {
+    var urgentText = [m.overdue>0&&m.overdue+' overdue', m.action>0&&m.action+' action required'].filter(Boolean).join(' · ')
+    h += '<div class="urgent-banner" onclick="filterFilingsAndGo(\'overdue\')">'
+    h += '<span style="font-size:20px">🔴</span><div class="ub-body"><div class="ub-title">'+urgentText+'</div><div class="ub-sub">Tap to see urgent items</div></div><span style="font-size:18px;opacity:.7">→</span></div>'
   }
-  toast('Decision ' + action);
-}
-function updateDecCount() {
-  var remaining = document.querySelectorAll('#dec-list .decision-card:not([style*="display: none"])').length;
-  var sub = document.getElementById('dec-sub');
-  var empty = document.getElementById('dec-empty');
-  if (sub) sub.textContent = remaining === 0 ? 'All decisions resolved' : remaining + ' item' + (remaining > 1 ? 's' : '') + ' awaiting your approval';
-  if (empty) empty.style.display = remaining === 0 ? 'block' : 'none';
+
+  // Stat row
+  h += '<div class="stat-row">'
+  h += statBox(m.total,'Active Items','#eff6ff','#bfdbfe','var(--blue)')
+  h += statBox(m.overdue,'Overdue',m.overdue>0?'var(--red-lt)':'var(--green-lt)',m.overdue>0?'#fca5a5':'#86efac',m.overdue>0?'var(--red)':'var(--green)')
+  h += statBox(m.openDec,'Decisions','var(--purple-lt)','#ddd6fe','var(--purple)')
+  h += statBox(m.unread,'Unread Alerts','#fff7ed','#fed7aa','var(--orange)')
+  h += '</div>'
+
+  // Priority items
+  if (priorityItems.length > 0) {
+    h += '<div class="card"><div class="card-hd"><span class="card-hd-title">Priority Items</span><button class="card-hd-link" onclick="showSection(\'filings\')">View all →</button></div><div style="padding:0 16px 4px">'
+    priorityItems.forEach(function(item,i){
+      var dotColor = PRIORITY_DOT[item.priority]||'var(--muted)'
+      var dateColor = item.status==='overdue'?'color:var(--red)':item.status==='action'?'color:var(--orange)':''
+      h += '<div class="row" style="'+(i===priorityItems.length-1?'border-bottom:none':'')+'" onclick="openFilingModal(\''+item.id+'\')">'
+      h += '<span style="width:10px;height:10px;border-radius:50%;background:'+dotColor+';flex-shrink:0;display:block"></span>'
+      h += '<div class="row-body"><div class="row-title">'+esc(item.title)+'</div><div class="row-sub">'+esc(item.entity)+'</div></div>'
+      h += '<div style="font-size:12px;font-weight:700;flex-shrink:0;'+dateColor+'">'+fmtShort(item.dueDate)+'</div>'
+      h += '</div>'
+    })
+    h += '</div></div>'
+  }
+
+  // Team pulse
+  h += '<div class="card card-pad"><div class="card-hd" style="margin:-16px -16px 14px;border-radius:0"><span class="card-hd-title">Team Pulse</span><button class="card-hd-link" onclick="toast(\'Teams view coming soon\')">Full view →</button></div><div class="team-grid">'
+  owners.forEach(function(o){
+    var c = ownerCounts[o]||0
+    h += '<div class="team-chip" onclick="filterFilingsByOwner(\''+o+'\')">'
+    h += '<div class="team-avatar" style="'+(c===0?'background:var(--border);color:var(--muted)':'')+'">'+o[0]+'</div>'
+    h += '<div class="team-name">'+o+'</div>'
+    h += '<div class="team-count'+(c===0?' zero':'')+'">'+c+'</div>'
+    h += '</div>'
+  })
+  h += '</div></div>'
+
+  // Quick actions
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+  h += '<button class="btn btn-primary" style="justify-content:center;padding:14px" onclick="openNewFiling()">+ New Filing</button>'
+  h += '<button class="btn" style="background:var(--orange);color:#fff;justify-content:center;padding:14px" onclick="filterFilingsAndGo(\'overdue\')">Today\'s Actions</button>'
+  h += '<button class="btn" style="background:var(--purple);color:#fff;justify-content:center;padding:14px" onclick="showSection(\'decisions\')">Decisions ('+m.openDec+')</button>'
+  h += '<button class="btn" style="background:var(--navy);color:#fff;justify-content:center;padding:14px" onclick="showSection(\'portfolio\')">Portfolio</button>'
+  h += '</div>'
+
+  document.getElementById('s-dashboard').innerHTML = h
+  updateTopBar()
 }
 
-// ── Alerts — mark as read ─────────────────────────────────────────────────────
-function markRead(item) {
-  if (!item.classList.contains('unread')) return;
-  item.classList.remove('unread');
-  item.style.opacity = '.6';
-  var dot = item.querySelector('.ai-dot');
-  if (dot) dot.classList.add('read');
-  updateAlertBadge();
+function csTile(n,bg,border,color,label,pctVal,filter) {
+  return '<div class="cs-tile" style="background:'+bg+';border-color:'+border+'" onclick="filterFilingsAndGo(\''+filter+'\')">'
+    +'<div class="cs-num" style="color:'+color+'">'+n+'</div>'
+    +'<div class="cs-label" style="color:'+color+'">'+label+'</div>'
+    +'<div class="cs-pct" style="color:'+color+'">'+pctVal+'%</div>'
+    +'</div>'
 }
-function markAllRead() {
-  document.querySelectorAll('.alert-item.unread').forEach(function(item) { markRead(item); });
-  toast('All marked as read');
-}
-function updateAlertBadge() {
-  var unread = document.querySelectorAll('.alert-item.unread').length;
-  var badge = document.querySelector('.tb-badge');
-  if (badge) badge.textContent = unread > 0 ? unread + ' alert' + (unread > 1 ? 's' : '') : '';
-  var dot = document.querySelector('#tab-alerts .bn-dot');
-  if (dot) dot.style.display = unread > 0 ? 'block' : 'none';
+function statBox(n,label,bg,border,color) {
+  return '<div class="stat-box" style="background:'+bg+';border-color:'+border+'">'
+    +'<div class="stat-n" style="color:'+color+'">'+n+'</div>'
+    +'<div class="stat-l" style="color:'+color+'">'+label+'</div>'
+    +'</div>'
 }
 
-// ── Filings filter ────────────────────────────────────────────────────────────
-function filterFilings(filter) {
-  // Update pill active state
-  document.querySelectorAll('#filing-pills .pill').forEach(function(p) {
-    p.classList.toggle('active', p.dataset.filter === filter);
-  });
-  // Update tile outline
-  document.querySelectorAll('.f-tile').forEach(function(t) {
-    t.style.outline = t.dataset.filter === filter ? '2px solid var(--navy)' : 'none';
-  });
-  // Show/hide cards
-  document.querySelectorAll('#filing-list .filing-card').forEach(function(c) {
-    c.style.display = (filter === 'all' || c.dataset.bucket === filter) ? 'flex' : 'none';
-  });
+// ── ALERTS ────────────────────────────────────────────────────────────────────
+function renderAlerts() {
+  var m = metrics()
+  var unread = state.alerts.filter(function(a){return !a.read}).length
+  var filtered = uiState_alertFiltered()
+
+  var h = '<div class="page-hd"><h1>Compliance Alerts</h1><p>'+unread+' unread · '+state.alerts.length+' total</p></div>'
+
+  h += '<div class="pills">'
+  h += pill('all','All ('+state.alerts.length+')','alertFilter')
+  h += pill('unread','🔵 Unread ('+unread+')','alertFilter')
+  h += pill('read','Read ('+(state.alerts.length-unread)+')','alertFilter')
+  h += '</div>'
+
+  h += '<div class="card"><div class="card-hd"><span class="card-hd-title">Notifications</span>'
+  if (unread > 0) h += '<button class="btn btn-secondary btn-sm" onclick="markAllAlertsRead()">✓ Mark all read</button>'
+  else h += '<span style="font-size:12px;color:var(--green);font-weight:600">All read ✓</span>'
+  h += '</div>'
+
+  if (filtered.length === 0) {
+    h += '<div style="padding:32px;text-align:center;color:var(--muted);font-size:14px">No alerts in this filter</div>'
+  } else {
+    filtered.forEach(function(a){
+      var bgc = ALERT_BG[a.color]||ALERT_BG.gray
+      var bc = ALERT_BADGE[a.color]||'b-gray'
+      h += '<div class="alert-item'+(a.read?'':' unread')+'" style="'+(a.read?'opacity:.65':'')+';" onclick="toggleAlertRead(\''+a.id+'\')">'
+      h += '<div class="ai-dot'+(a.read?' read':'')+'"></div>'
+      h += '<div class="ai-icon" style="background:'+bgc+'">'+a.icon+'</div>'
+      h += '<div class="ai-body">'
+      h += '<div class="ai-title">'+esc(a.title)+'</div>'
+      h += '<div class="ai-desc">'+esc(a.desc)+'</div>'
+      h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"><span class="badge '+bc+'">'+esc(a.badge)+'</span>'
+      if (a.priority==='Urgent') h += '<span style="font-size:11px;font-weight:700;color:var(--red)">▲ Urgent</span>'
+      if (a.priority==='High')   h += '<span style="font-size:11px;font-weight:700;color:var(--orange)">▲ High</span>'
+      h += '</div></div>'
+      h += '<button style="border:none;background:none;font-size:20px;color:var(--muted);padding:0 4px;flex-shrink:0;line-height:1" onclick="event.stopPropagation();deleteAlert(\''+a.id+'\')">×</button>'
+      h += '</div>'
+    })
+  }
+  h += '</div>'
+  h += '<button class="btn btn-primary btn-full" onclick="openNewAlert()">+ New Alert</button>'
+
+  document.getElementById('s-alerts').innerHTML = h
+}
+
+function uiState_alertFiltered() {
+  return state.alerts.filter(function(a){
+    if (ui.alertFilter==='unread') return !a.read
+    if (ui.alertFilter==='read') return a.read
+    return true
+  })
+}
+
+// ── FILINGS ───────────────────────────────────────────────────────────────────
+function renderFilings() {
+  var m = metrics()
+  var search = ui.filingSearch.toLowerCase().trim()
+  var filter = ui.filingFilter
+
+  var allActive = state.filings.filter(function(f){return f.status!=='done'})
+  var doneItems = state.filings.filter(function(f){return f.status==='done'})
+
+  var filtered = state.filings.filter(function(f){
+    if (filter==='done') return f.status==='done'
+    if (filter!=='all' && f.status!==filter) return false
+    if (filter==='all' && f.status==='done') return false
+    if (search && !f.title.toLowerCase().includes(search) && !f.entity.toLowerCase().includes(search) && !f.owner.toLowerCase().includes(search) && !(f.notes||'').toLowerCase().includes(search)) return false
+    return true
+  }).sort(function(a,b){
+    var so = (STATUS_ORDER[a.status]||99)-(STATUS_ORDER[b.status]||99)
+    if (so!==0) return so
+    return ['Urgent','High','Medium','Low'].indexOf(a.priority)-['Urgent','High','Medium','Low'].indexOf(b.priority)
+  })
+
+  var h = ''
+  h += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:10px">'
+  h += '<div class="page-hd" style="margin-bottom:0"><h1>Filing Obligations</h1><p>'+allActive.length+' active · '+doneItems.length+' completed</p></div>'
+  h += '<button class="btn btn-sm" style="background:var(--navy);color:#fff;flex-shrink:0;margin-top:4px" onclick="openNewFiling()">+ Add</button></div>'
+
+  // Summary tiles
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px">'
+  h += fTile('overdue',m.overdue,'var(--red)','var(--red-lt)','#fca5a5','Overdue')
+  h += fTile('action',m.action,'var(--orange)','#fff7ed','#fed7aa','Action')
+  h += fTile('risk',m.risk,'var(--amber)','#fefce8','#fde68a','At Risk')
+  h += fTile('compliant',m.compliant,'var(--green)','var(--green-lt)','#86efac','Compliant')
+  h += '</div>'
+
+  // Search
+  h += '<div class="search-wrap"><input type="search" placeholder="🔍  Search filings, entities, owners…" value="'+esc(ui.filingSearch)+'" oninput="onFilingSearch(this.value)" id="fsearch"></div>'
+
+  // Filter pills
+  h += '<div class="pills">'
+  h += fPill('all','All ('+allActive.length+')')
+  h += fPill('overdue','🔴 Overdue')
+  h += fPill('action','⚠ Action')
+  h += fPill('risk','⚡ At Risk')
+  h += fPill('compliant','✓ Compliant')
+  h += fPill('done','✅ Done ('+doneItems.length+')')
+  h += '</div>'
+
+  if (filtered.length === 0) {
+    h += '<div class="empty-state"><div class="es-icon">📋</div><div class="es-title">No items found</div><div class="es-sub">Try a different filter or search term</div></div>'
+  } else {
+    filtered.forEach(function(item){
+      var si = STATUS_INFO[item.status]||STATUS_INFO.compliant
+      var pb = PRIORITY_BADGE[item.priority]||'b-gray'
+      var dateColor = item.status==='overdue'?'var(--red)':item.status==='action'?'var(--orange)':'var(--muted)'
+      h += '<div class="filing-card" style="border-left-color:'+si.border+(item.status==='done'?';opacity:.65':'')+';" onclick="openFilingModal(\''+item.id+'\')">'
+      h += '<div class="fc-body">'
+      h += '<div class="fc-title">'+esc(item.title)+'</div>'
+      h += '<div class="fc-meta"><span style="font-size:12px;color:var(--muted)">'+esc(item.entity)+'</span><span class="badge '+si.badge+'">'+si.label+'</span><span class="badge '+pb+'">'+item.priority+'</span></div>'
+      h += '<div style="font-size:11px;color:var(--muted);margin-top:5px">👤 '+esc(item.owner)+'</div>'
+      h += '</div>'
+      h += '<div class="fc-date"><div class="fc-date-val" style="color:'+dateColor+'">'+fmtShort(item.dueDate)+'</div>'
+      if (item.status==='overdue') h += '<div class="fc-overdue-lbl">Overdue</div>'
+      h += '</div></div>'
+    })
+  }
+
+  document.getElementById('s-filings').innerHTML = h
+
+  // Restore search focus if user was typing
+  if (search) {
+    var inp = document.getElementById('fsearch')
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length) }
+  }
+}
+
+function fTile(f,n,color,bg,border,label) {
+  var active = ui.filingFilter===f
+  return '<div onclick="setFilingFilter(\''+f+'\')" style="background:'+bg+';border:'+(active?'2px solid var(--navy)':'1px solid '+border)+';border-radius:12px;padding:10px;text-align:center;cursor:pointer;transition:border .15s">'
+    +'<div style="font-size:20px;font-weight:800;color:'+color+'">'+n+'</div>'
+    +'<div style="font-size:10px;font-weight:600;color:'+color+';margin-top:2px">'+label+'</div>'
+    +'</div>'
+}
+function fPill(f,label) {
+  return '<button class="pill'+(ui.filingFilter===f?' active':'')+'" onclick="setFilingFilter(\''+f+'\')">'+label+'</button>'
+}
+
+// ── PORTFOLIO ─────────────────────────────────────────────────────────────────
+function renderPortfolio() {
+  var compOk = 0, compAt = 0
+  var coData = state.companies.map(function(c){
+    var s = coStats(c.name)
+    if (s.overdue===0) compOk++; else compAt++
+    return Object.assign({},c,s)
+  })
+
+  var h = '<div class="page-hd"><h1>Portfolio Management</h1><p>Manage. Monitor. Grow.</p></div>'
+  h += '<div class="portfolio-banner" style="background:linear-gradient(135deg,var(--navy) 0%,#1a3a6c 100%)">'
+  h += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:10px">🛡️ Portfolio Overview</div>'
+  h += '<div class="po-overview">'
+  h += '<div class="po-stat"><div class="po-n">'+state.companies.length+'</div><div class="po-l">Companies</div></div>'
+  h += '<div class="po-stat"><div class="po-n" style="color:#4ade80">'+compOk+'</div><div class="po-l">Compliant</div></div>'
+  h += '<div class="po-stat"><div class="po-n" style="color:#f87171">'+compAt+'</div><div class="po-l">Attention</div></div>'
+  h += '</div></div>'
+
+  coData.forEach(function(c){
+    var ok = c.overdue===0
+    h += '<div class="company-card" onclick="openCompanyModal(\''+c.id+'\')">'
+    h += '<div class="co-hd"><div class="co-avatar">'+c.avatar+'</div><div style="flex:1">'
+    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div class="co-name">'+esc(c.name)+'</div><span class="badge '+(ok?'b-green':'b-amber')+'">'+(ok?'✓ Compliant':'⚠ Attention')+'</span></div>'
+    h += '<div class="co-type">'+esc(c.type)+'</div></div></div>'
+    h += '<div class="co-stats">'
+    h += '<div class="co-stat"><div class="co-stat-n" style="color:var(--blue)">'+c.items+'</div><div class="co-stat-l">Active Items</div></div>'
+    h += '<div class="co-stat"><div class="co-stat-n">'+esc(c.person).split(' ')[0]+'</div><div class="co-stat-l">Contact</div></div>'
+    h += '<div class="co-stat" style="background:'+(c.overdue>0?'var(--red-lt)':'var(--green-lt)')+'"><div class="co-stat-n" style="color:'+(c.overdue>0?'var(--red)':'var(--green)')+'">'+c.overdue+'</div><div class="co-stat-l">Overdue</div></div>'
+    h += '</div>'
+    h += '<div class="co-actions">'
+    h += '<button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();filterFilingsByEntity(\''+esc(c.name)+'\')">View Filings</button>'
+    h += '<button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();toast(\'Contacts for '+esc(c.name)+'\')">Contacts</button>'
+    h += '</div></div>'
+  })
+
+  document.getElementById('s-portfolio').innerHTML = h
+}
+
+// ── DECISIONS ─────────────────────────────────────────────────────────────────
+function renderDecisions() {
+  var open     = state.decisions.filter(function(d){return !d.resolved})
+  var resolved = state.decisions.filter(function(d){return d.resolved})
+
+  var h = '<div class="page-hd"><h1>Decision Queue</h1><p>'
+    +(open.length===0?'All decisions resolved ✓':open.length+' item'+(open.length!==1?'s':'')+' awaiting approval')
+    +'</p></div>'
+
+  if (open.length===0) {
+    h += '<div class="empty-state"><div class="es-icon">✅</div><div class="es-title">All caught up!</div><div class="es-sub">No decisions awaiting your approval.</div></div>'
+  }
+
+  open.forEach(function(d){
+    var overdue = isPast(d.dueDate)
+    h += '<div class="decision-card">'
+    h += '<div class="dc-top"><span class="badge b-amber">⚖️ Decision Required</span>'
+    h += '<div style="text-align:right"><div style="font-size:10px;color:var(--muted)">Due</div><div style="font-size:13px;font-weight:700;color:'+(overdue?'var(--red)':'var(--orange)')+'">'+fmtFull(d.dueDate)+'</div></div></div>'
+    h += '<div class="dc-company">'+esc(d.company)+'</div>'
+    h += '<div class="dc-q">'+esc(d.question)+'</div>'
+    h += '<div class="dc-box"><div class="dc-lbl">Options</div>'+esc(d.options)+'</div>'
+    h += '<div class="dc-rec"><div class="dc-lbl">Recommendation</div>'+esc(d.recommendation)+'</div>'
+    h += '<div class="dc-actions">'
+    h += '<button class="btn btn-green" onclick="resolveDecision(\''+d.id+'\',\'Approved\')">✓ Approve</button>'
+    h += '<button class="btn btn-danger" onclick="resolveDecision(\''+d.id+'\',\'Rejected\')">✗ Reject</button>'
+    h += '<button class="btn btn-secondary" onclick="resolveDecision(\''+d.id+'\',\'More Info\')">? Need Info</button>'
+    h += '</div></div>'
+  })
+
+  if (resolved.length>0) {
+    h += '<details style="margin-top:8px"><summary style="background:#fff;border-radius:12px;padding:14px 16px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">Resolved ('+resolved.length+') <span>▾</span></summary>'
+    resolved.forEach(function(d){
+      var resColor = d.resolution==='Approved'?'var(--green)':d.resolution==='Rejected'?'var(--red)':'var(--muted)'
+      var resBadge = d.resolution==='Approved'?'b-green':d.resolution==='Rejected'?'b-red':'b-gray'
+      h += '<div class="decision-card" style="border-left-color:'+resColor+';opacity:.7;margin-top:8px">'
+      h += '<div class="dc-top"><span class="badge '+resBadge+'">'+esc(d.resolution||'Resolved')+'</span></div>'
+      h += '<div class="dc-company">'+esc(d.company)+'</div>'
+      h += '<div class="dc-q" style="font-size:13px">'+esc(d.question)+'</div>'
+      h += '</div>'
+    })
+    h += '</details>'
+  }
+
+  h += '<button class="btn btn-primary btn-full" style="margin-top:12px" onclick="openNewDecision()">+ New Decision</button>'
+
+  document.getElementById('s-decisions').innerHTML = h
 }
 
 // ── Filing modal ──────────────────────────────────────────────────────────────
-function openFilingModal(title, desc, due, status, priority, entity) {
-  var smap = {Overdue:'b-red','Action Required':'b-orange','At Risk':'b-amber',Compliant:'b-green'};
-  var pmap = {Urgent:'b-red',High:'b-amber',Medium:'b-blue',Low:'b-gray'};
-  var m = document.createElement('div');
-  m.className = 'modal-bg';
-  m.innerHTML = '<div class="modal">' +
-    '<div class="modal-hd"><h3>' + title + '</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
-      '<span class="badge ' + (smap[status]||'b-gray') + '">' + status + '</span>' +
-      '<span class="badge ' + (pmap[priority]||'b-gray') + '">' + priority + '</span>' +
-    '</div>' +
-    '<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">' +
-      '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Entity</div>' +
-      '<div style="font-size:14px;font-weight:600">' + entity + '</div>' +
-    '</div>' +
-    '<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:12px">' +
-      '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Due Date</div>' +
-      '<div style="font-size:14px;font-weight:600">' + due + '</div>' +
-    '</div>' +
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:16px">' + desc + '</p>' +
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-      '<button class="btn btn-primary" onclick="this.closest(\'.modal-bg\').remove();toast(\'Marked complete\')">✓ Mark Complete</button>' +
-      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove();toast(\'Reminder set\')">🔔 Set Reminder</button>' +
-      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Close</button>' +
-    '</div>' +
-  '</div>';
-  m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });
-  document.body.appendChild(m);
+function openFilingModal(id) {
+  var item = state.filings.find(function(f){return f.id===id})
+  if (!item) return
+  var si = STATUS_INFO[item.status]||STATUS_INFO.compliant
+  var pb = PRIORITY_BADGE[item.priority]||'b-gray'
+  var isDone = item.status==='done'
+
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>'+esc(item.title)+'</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="badge '+si.badge+'">'+si.label+'</span><span class="badge '+pb+'">'+item.priority+'</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+    +infoBox('Entity',esc(item.entity))
+    +infoBox('Due Date','<span style="'+(item.status==='overdue'?'color:var(--red)':'')+'">'+(item.dueDate?fmtFull(item.dueDate):'No date set')+'</span>')
+    +infoBox('Owner',esc(item.owner))
+    +infoBox('Type',esc(item.type))
+    +'</div>'
+    +(item.notes?'<p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">'+esc(item.notes)+'</p>':'')
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +(!isDone?'<button class="btn btn-green" onclick="this.closest(\'.modal-bg\').remove();markFilingDone(\''+id+'\')">✓ Mark Complete</button>':'')
+    +(!isDone?'<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove();toast(\'Reminder set\')">🔔 Reminder</button>':'')
+    +'<button class="btn btn-secondary" style="color:var(--red)" onclick="this.closest(\'.modal-bg\').remove();deleteFiling(\''+id+'\')">🗑 Delete</button>'
+    +'<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Close</button>'
+    +'</div>'
+  document.body.appendChild(m)
 }
 
 // ── Company modal ─────────────────────────────────────────────────────────────
-function openCompanyModal(name, type, avatar, status, person, items, contacts, overdue) {
-  var ok = status === 'compliant';
-  var m = document.createElement('div');
-  m.className = 'modal-bg';
-  m.innerHTML = '<div class="modal">' +
-    '<div class="modal-hd"><h3>' + name + '</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
-    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">' +
-      '<div style="width:56px;height:56px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:26px">' + avatar + '</div>' +
-      '<div><div style="font-size:17px;font-weight:800">' + name + '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">' + type + '</div>' +
-      '<span class="badge ' + (ok ? 'b-green' : 'b-amber') + '" style="margin-top:5px;display:inline-flex">' + (ok ? '✓ Compliant' : '⚠ Attention') + '</span></div>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">' +
-      '<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--blue)">' + items + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Active Items</div></div>' +
-      '<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800">' + contacts + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Contacts</div></div>' +
-      '<div style="background:' + (overdue > 0 ? 'var(--red-lt)' : 'var(--green-lt)') + ';border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:' + (overdue > 0 ? 'var(--red)' : 'var(--green)') + '">' + overdue + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Overdue</div></div>' +
-    '</div>' +
-    '<p style="font-size:13px;color:var(--muted);margin-bottom:14px">Primary contact: <strong style="color:var(--text)">' + person + '</strong></p>' +
-    '<div style="display:flex;gap:8px">' +
-      '<button class="btn btn-primary" onclick="this.closest(\'.modal-bg\').remove();showSection(\'filings\')">View Filings</button>' +
-      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Close</button>' +
-    '</div>' +
-  '</div>';
-  m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });
-  document.body.appendChild(m);
+function openCompanyModal(id) {
+  var c = state.companies.find(function(x){return x.id===id})
+  if (!c) return
+  var s = coStats(c.name)
+  var ok = s.overdue===0
+  var coFilings = state.filings.filter(function(f){return f.entity===c.name&&f.status!=='done'})
+
+  var filingRows = coFilings.map(function(f){
+    var si = STATUS_INFO[f.status]||STATUS_INFO.compliant
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<span class="badge '+si.badge+'">'+si.label+'</span>'
+      +'<span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.title)+'</span>'
+      +'<span style="font-size:12px;color:var(--muted);flex-shrink:0">'+fmtShort(f.dueDate)+'</span>'
+      +'</div>'
+  }).join('')
+
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>'+esc(c.name)+'</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">'
+    +'<div style="width:56px;height:56px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:26px">'+c.avatar+'</div>'
+    +'<div><div style="font-size:17px;font-weight:800">'+esc(c.name)+'</div><div style="font-size:12px;color:var(--muted)">'+esc(c.type)+'</div>'
+    +'<span class="badge '+(ok?'b-green':'b-amber')+'" style="margin-top:5px;display:inline-flex">'+(ok?'✓ Compliant':'⚠ Attention')+'</span></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    +'<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--blue)">'+s.items+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Active Items</div></div>'
+    +'<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:14px;font-weight:700">'+esc(c.person)+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Contact</div></div>'
+    +'<div style="background:'+(s.overdue>0?'var(--red-lt)':'var(--green-lt)')+';border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:'+(s.overdue>0?'var(--red)':'var(--green)')+'">'+s.overdue+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Overdue</div></div>'
+    +'</div>'
+    +(coFilings.length>0?'<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Active Filings</div>'+filingRows+'</div>':'')
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-primary" onclick="this.closest(\'.modal-bg\').remove();filterFilingsByEntity(\''+esc(c.name)+'\')">View Filings</button>'
+    +'<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Close</button>'
+    +'</div>'
+  document.body.appendChild(m)
 }
 
-// ── New item modal ────────────────────────────────────────────────────────────
+// ── New filing modal ──────────────────────────────────────────────────────────
+function openNewFiling() {
+  var opts = state.companies.map(function(c){return '<option>'+esc(c.name)+'</option>'}).join('')
+  var today = new Date().toISOString().split('T')[0]
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>New Filing</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +fg('Title *','<input id="nf-t" placeholder="e.g. Corporation Tax — CT600" autocomplete="off">')
+    +fg('Entity / Company','<select id="nf-e"><option value="">— Select —</option>'+opts+'<option value="__">Other…</option></select>')
+    +'<div class="form-group" id="nf-ow" style="display:none">'+fglabel('Company name')+'<input id="nf-ot" placeholder="Enter company name"></div>'
+    +fg('Due Date','<input id="nf-d" type="date" value="'+today+'">')
+    +fg('Priority','<select id="nf-p"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select>')
+    +fg('Type','<select id="nf-tp"><option>Compliance Alert</option><option>Document Record</option><option>Internal Task</option></select>')
+    +fg('Owner','<select id="nf-o"><option>George</option><option>Dagon</option><option>Alissa</option><option>Michelle</option><option>Chris</option><option>Charlie</option></select>')
+    +fg('Notes','<textarea id="nf-n" placeholder="Context, reference numbers, deadlines…"></textarea>')
+    +'<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="submitFiling()">Create Filing</button><button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>'
+  document.body.appendChild(m)
+  setTimeout(function(){ var i=document.getElementById('nf-t'); if(i)i.focus() },50)
+  var sel = document.getElementById('nf-e')
+  if (sel) sel.onchange = function(){ document.getElementById('nf-ow').style.display = this.value==='__'?'block':'none' }
+}
+
+function submitFiling() {
+  var title = (document.getElementById('nf-t')||{}).value||''
+  if (!title.trim()) { toast('Title is required'); return }
+  var eSel = document.getElementById('nf-e')
+  var entity = eSel&&eSel.value==='__' ? ((document.getElementById('nf-ot')||{}).value||'').trim() : (eSel||{}).value||''
+  var due = (document.getElementById('nf-d')||{}).value||''
+  var priority = (document.getElementById('nf-p')||{}).value||'Medium'
+  var type = (document.getElementById('nf-tp')||{}).value||'Compliance Alert'
+  var owner = (document.getElementById('nf-o')||{}).value||'George'
+  var notes = (document.getElementById('nf-n')||{}).value||''
+  var status = 'compliant'
+  if (due) {
+    var diff = Math.ceil((new Date(due)-new Date())/86400000)
+    if (diff<0) status='overdue'; else if (diff<=7) status='action'; else if (diff<=30) status='risk'
+  }
+  state.filings.push({id:uid(),title:title.trim(),entity:entity||'General',type,priority,status,dueDate:due,owner,notes:notes.trim()})
+  saveState()
+  document.querySelector('.modal-bg').remove()
+  toast('Filing created')
+  renderFilings(); renderDashboard(); renderPortfolio()
+}
+
+// ── New alert modal ───────────────────────────────────────────────────────────
 function openNewAlert() {
-  var m = document.createElement('div');
-  m.className = 'modal-bg';
-  m.innerHTML = '<div class="modal">' +
-    '<div class="modal-hd"><h3>New Filing / Alert</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>' +
-    '<div class="form-group"><label>Title *</label><input id="na-t" placeholder="e.g. Corporation Tax — Acme Ltd"></div>' +
-    '<div class="form-group"><label>Entity / Company</label><input id="na-co" placeholder="Client name"></div>' +
-    '<div class="form-group"><label>Due Date</label><input id="na-d" type="date"></div>' +
-    '<div class="form-group"><label>Priority</label><select><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div>' +
-    '<div class="form-group"><label>Notes</label><textarea placeholder="Context, reference numbers…"></textarea></div>' +
-    '<div style="display:flex;gap:8px">' +
-      '<button class="btn btn-primary" onclick="submitAlert(this)">Create</button>' +
-      '<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button>' +
-    '</div>' +
-  '</div>';
-  m.addEventListener('click', function(e) { if (e.target === m) m.remove(); });
-  document.body.appendChild(m);
-  setTimeout(function() { var i = document.getElementById('na-t'); if(i) i.focus(); }, 50);
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>New Alert</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +fg('Title *','<input id="na-t" placeholder="e.g. VAT Return Overdue" autocomplete="off">')
+    +fg('Description','<textarea id="na-d" placeholder="Details about this alert…"></textarea>')
+    +fg('Priority','<select id="na-p"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select>')
+    +'<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="submitAlert()">Create Alert</button><button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>'
+  document.body.appendChild(m)
+  setTimeout(function(){ var i=document.getElementById('na-t'); if(i)i.focus() },50)
 }
 
-function submitAlert(btn) {
-  var t = document.getElementById('na-t');
-  if (!t || !t.value.trim()) { toast('Title is required'); return; }
-  btn.closest('.modal-bg').remove();
-  toast('Item created');
-  showSection('filings');
+function submitAlert() {
+  var title = (document.getElementById('na-t')||{}).value||''
+  if (!title.trim()) { toast('Title is required'); return }
+  var desc = (document.getElementById('na-d')||{}).value||''
+  var priority = (document.getElementById('na-p')||{}).value||'Medium'
+  var colorMap={Urgent:'red',High:'amber',Medium:'blue',Low:'gray'}
+  var badgeMap={Urgent:'Urgent',High:'High Priority',Medium:'Notification',Low:'Info'}
+  var iconMap={Urgent:'⚠️',High:'📅',Medium:'📋',Low:'💬'}
+  state.alerts.unshift({id:uid(),title:title.trim(),desc:desc.trim()||'No additional details.',priority,badge:badgeMap[priority],read:false,icon:iconMap[priority]||'📋',color:colorMap[priority]||'blue'})
+  saveState()
+  document.querySelector('.modal-bg').remove()
+  toast('Alert created')
+  renderAlerts(); updateTopBar(); renderDashboard()
 }
+
+// ── New decision modal ────────────────────────────────────────────────────────
+function openNewDecision() {
+  var opts = state.companies.map(function(c){return '<option>'+esc(c.name)+'</option>'}).join('')
+  var today = new Date(); today.setDate(today.getDate()+14)
+  var defDue = today.toISOString().split('T')[0]
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>New Decision</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +fg('Company','<select id="nd-c">'+opts+'</select>')
+    +fg('Question *','<textarea id="nd-q" placeholder="What decision needs to be made?"></textarea>')
+    +fg('Options','<textarea id="nd-o" placeholder="A) Option 1   B) Option 2   C) Option 3"></textarea>')
+    +fg('Recommendation','<textarea id="nd-r" placeholder="Recommended course of action…"></textarea>')
+    +fg('Due Date','<input id="nd-d" type="date" value="'+defDue+'">')
+    +'<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="submitDecision()">Create Decision</button><button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>'
+  document.body.appendChild(m)
+  setTimeout(function(){ var i=document.getElementById('nd-q'); if(i)i.focus() },50)
+}
+
+function submitDecision() {
+  var q = (document.getElementById('nd-q')||{}).value||''
+  if (!q.trim()) { toast('Question is required'); return }
+  var company = (document.getElementById('nd-c')||{}).value||''
+  var options = (document.getElementById('nd-o')||{}).value||''
+  var rec = (document.getElementById('nd-r')||{}).value||''
+  var due = (document.getElementById('nd-d')||{}).value||''
+  state.decisions.unshift({id:uid(),company:company||'General',question:q.trim(),options:options.trim(),recommendation:rec.trim(),dueDate:due,resolved:false,resolution:null})
+  saveState()
+  document.querySelector('.modal-bg').remove()
+  toast('Decision created')
+  renderDecisions(); renderDashboard()
+}
+
+// ── Settings modal ────────────────────────────────────────────────────────────
+function openSettings() {
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>Settings</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +'<div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg);border-radius:12px;margin-bottom:16px">'
+    +'<div style="width:52px;height:52px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800">G</div>'
+    +'<div><div style="font-size:16px;font-weight:700">George</div><div style="font-size:12px;color:var(--muted)">Compliance Manager</div><div style="font-size:12px;color:var(--blue);margin-top:2px">george@firm.co.uk</div></div>'
+    +'</div>'
+    +settingsRow('🔔','Notification Preferences',"toast('Coming soon')")
+    +settingsRow('🔑','Change Passcode',"toast('Coming soon')")
+    +settingsRow('📊','Export Data',"exportData()")
+    +'<div style="margin-top:6px">'+settingsRow('↺','Reset Demo Data',"this.closest('.modal-bg').remove();resetData()",'var(--red)')+'</div>'
+    +'<button class="btn btn-danger btn-full" style="margin-top:8px" onclick="this.closest(\'.modal-bg\').remove();toast(\'Signed out — prototype only\')">Sign Out</button>'
+  document.body.appendChild(m)
+}
+
+function settingsRow(icon,label,action,color) {
+  return '<div style="padding:14px;background:#fff;border:1px solid var(--border);border-radius:12px;font-size:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px" onclick="'+action+'">'
+    +'<span style="'+(color?'color:'+color:'')+'">'+icon+' '+label+'</span><span style="color:var(--muted)">›</span></div>'
+}
+
+function resetData() {
+  if (!confirm('Reset all data to default demo values?')) return
+  localStorage.removeItem('fg2')
+  state = clone(DEFAULT)
+  ui.filingFilter='all'; ui.filingSearch=''; ui.alertFilter='all'
+  renderAll()
+  toast('Data reset to defaults')
+}
+
+function exportData() {
+  var json = JSON.stringify(state, null, 2)
+  var blob = new Blob([json], {type:'application/json'})
+  var a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = 'fineguard-export.json'
+  a.click()
+  toast('Data exported')
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function markFilingDone(id) {
+  var item = state.filings.find(function(f){return f.id===id})
+  if (item) { item.status='done'; saveState() }
+  toast('Marked as complete')
+  renderFilings(); renderDashboard(); renderPortfolio()
+}
+
+function deleteFiling(id) {
+  if (!confirm('Delete this filing?')) return
+  state.filings = state.filings.filter(function(f){return f.id!==id})
+  saveState()
+  renderFilings(); renderDashboard(); renderPortfolio()
+  toast('Filing deleted')
+}
+
+function toggleAlertRead(id) {
+  var a = state.alerts.find(function(x){return x.id===id})
+  if (a) { a.read=!a.read; saveState() }
+  renderAlerts(); updateTopBar(); renderDashboard()
+}
+
+function markAllAlertsRead() {
+  state.alerts.forEach(function(a){a.read=true})
+  saveState(); renderAlerts(); updateTopBar(); renderDashboard(); toast('All marked as read')
+}
+
+function deleteAlert(id) {
+  if (!confirm('Delete this alert?')) return
+  state.alerts = state.alerts.filter(function(a){return a.id!==id})
+  saveState(); renderAlerts(); updateTopBar(); renderDashboard()
+}
+
+function resolveDecision(id, action) {
+  var d = state.decisions.find(function(x){return x.id===id})
+  if (d) { d.resolved=true; d.resolution=action; saveState() }
+  toast('Decision: '+action)
+  renderDecisions(); renderDashboard()
+}
+
+// ── Filter helpers ────────────────────────────────────────────────────────────
+function setFilingFilter(f) { ui.filingFilter=f; ui.filingSearch=''; renderFilings() }
+function onFilingSearch(v) { ui.filingSearch=v; ui.filingFilter='all'; renderFilings() }
+function filterFilingsAndGo(f) { ui.filingFilter=f; ui.filingSearch=''; showSection('filings') }
+function filterFilingsByOwner(o) { ui.filingSearch=o; ui.filingFilter='all'; showSection('filings') }
+function filterFilingsByEntity(n) { ui.filingSearch=n; ui.filingFilter='all'; showSection('filings') }
+function setAlertFilter(f) { ui.alertFilter=f; renderAlerts() }
+
+function pill(val,label,key) {
+  return '<button class="pill'+(ui[key]===val?' active':'')+'" onclick="setAlertFilter(\''+val+'\')">'+label+'</button>'
+}
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
+function mkModal() {
+  var bg = document.createElement('div')
+  bg.className = 'modal-bg'
+  bg.innerHTML = '<div class="modal"></div>'
+  bg.addEventListener('click',function(e){ if(e.target===bg) bg.remove() })
+  return bg
+}
+function infoBox(label,val) {
+  return '<div style="background:var(--bg);border-radius:10px;padding:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">'+label+'</div><div style="font-size:14px;font-weight:600">'+val+'</div></div>'
+}
+function fg(label,input) {
+  return '<div class="form-group"><label>'+label+'</label>'+input+'</div>'
+}
+function fglabel(label) {
+  return '<label style="display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">'+label+'</label>'
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderDashboard(); renderAlerts(); renderFilings(); renderPortfolio(); renderDecisions(); updateTopBar()
+}
+renderAll()
 </script>
 </body>
 </html>
