@@ -2,1175 +2,1216 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>UltraCore SheetOps</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>FineGuard – Compliance Dashboard</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+:root {
+  --navy: #0c2340;
+  --navy2: #112d4e;
+  --navy3: #1a3a6c;
+  --blue: #1d4ed8;
+  --blue-lt: #3b82f6;
+  --blue-xlt: #dbeafe;
+  --bg: #eff6ff;
+  --bg2: #f0f7ff;
+  --white: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --green: #16a34a;
+  --green-lt: #dcfce7;
+  --green-dot: #22c55e;
+  --amber: #d97706;
+  --amber-lt: #fef3c7;
+  --orange: #ea580c;
+  --orange-lt: #ffedd5;
+  --red: #dc2626;
+  --red-lt: #fee2e2;
+  --shadow: 0 1px 4px rgba(15,23,42,.08), 0 4px 16px rgba(15,23,42,.04);
+  --shadow-md: 0 4px 12px rgba(15,23,42,.12), 0 2px 6px rgba(15,23,42,.06);
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-/* ─── Nav ─── */
-#topnav { background: #0f172a; color: #fff; padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-#topnav .brand { font-weight: 700; font-size: 15px; letter-spacing: .03em; color: #fff; cursor: pointer; }
-#topnav .links { display: flex; gap: 20px; }
-#topnav .links a { color: #94a3b8; font-size: 13px; text-decoration: none; cursor: pointer; transition: color .15s; }
-#topnav .links a:hover, #topnav .links a.active { color: #fff; font-weight: 500; }
-#topnav .user-area { display: flex; gap: 16px; align-items: center; font-size: 12px; color: #94a3b8; }
-#topnav .user-area span { cursor: pointer; } #topnav .user-area span:hover { color: #fff; }
+/* ── SIDEBAR ── */
+#sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 64px;
+  background: var(--navy); display: flex; flex-direction: column; align-items: center;
+  padding: 16px 0; z-index: 60; transition: width .2s;
+}
+#sidebar.expanded { width: 220px; }
+.sb-logo { display: flex; align-items: center; gap: 10px; padding: 0 16px 20px; width: 100%; }
+.sb-logo .logo-icon { width: 36px; height: 36px; background: var(--blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.sb-logo .logo-text { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -.3px; opacity: 0; transition: opacity .15s; white-space: nowrap; }
+#sidebar.expanded .logo-text { opacity: 1; }
+.sb-divider { width: 36px; height: 1px; background: rgba(255,255,255,.12); margin: 8px auto; }
+#sidebar.expanded .sb-divider { width: calc(100% - 32px); }
+.sb-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; width: calc(100% - 16px); margin: 2px 8px; border-radius: 10px; cursor: pointer; transition: background .15s; text-decoration: none; position: relative; }
+.sb-item .sb-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 17px; flex-shrink: 0; }
+.sb-item .sb-label { color: rgba(255,255,255,.65); font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .1s; white-space: nowrap; }
+#sidebar.expanded .sb-label { opacity: 1; }
+.sb-item:hover { background: rgba(255,255,255,.08); }
+.sb-item:hover .sb-label { color: #fff; }
+.sb-item.active { background: var(--blue); }
+.sb-item.active .sb-icon { background: rgba(255,255,255,.15); }
+.sb-item.active .sb-label { color: #fff; }
+.sb-badge { position: absolute; top: 8px; right: 8px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; min-width: 17px; height: 17px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+#sidebar.expanded .sb-badge { position: static; margin-left: auto; }
+.sb-toggle { margin-top: auto; }
 
-#bottomnav { display: none; background: #0f172a; border-top: 1px solid #334155; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; height: 60px; }
-#bottomnav .tabs { display: flex; height: 100%; }
-#bottomnav .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #64748b; cursor: pointer; font-size: 10px; border-radius: 8px; margin: 4px 2px; transition: background .15s, color .15s; }
-#bottomnav .tab .icon { font-size: 18px; line-height: 1; }
-#bottomnav .tab.active { background: #1e293b; color: #fff; font-weight: 600; }
-#bottomnav .tab:hover { background: #1e293b; color: #93c5fd; }
+/* ── TOP BAR ── */
+#topbar {
+  position: fixed; top: 0; left: 64px; right: 0; height: 60px;
+  background: var(--white); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; z-index: 50; transition: left .2s;
+}
+#topbar.shifted { left: 220px; }
+.topbar-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.topbar-title span { color: var(--muted); font-size: 13px; font-weight: 400; margin-left: 8px; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.topbar-bell { position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 10px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); font-size: 16px; }
+.topbar-bell .dot { position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; background: var(--blue); border-radius: 50%; border: 2px solid #fff; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--navy3)); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+.user-chip { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.user-name { font-size: 13px; font-weight: 600; }
+.user-role { font-size: 11px; color: var(--muted); }
 
-#more-menu { display: none; position: fixed; bottom: 64px; left: 12px; right: 12px; background: #1e293b; border-radius: 16px; padding: 12px; z-index: 60; }
-#more-menu a { display: block; padding: 12px 16px; color: #e2e8f0; font-size: 14px; border-radius: 8px; cursor: pointer; }
-#more-menu a:hover { background: #334155; }
-#more-menu .overlay { position: fixed; inset: 0; z-index: -1; }
+/* ── MAIN ── */
+#main { margin-left: 64px; margin-top: 60px; padding: 24px; min-height: calc(100vh - 60px); transition: margin-left .2s; }
+#main.shifted { margin-left: 220px; }
 
-/* ─── Main ─── */
-#main { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+/* ── CARDS ── */
+.card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+.card-pad { padding: 20px; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+.card-title a { font-size: 12px; font-weight: 500; color: var(--blue); cursor: pointer; }
 
-/* ─── Cards ─── */
-.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; }
-.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.stat-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; }
-.stat-card.red { background: #fef2f2; border-color: #fecaca; }
-.stat-card.orange { background: #fff7ed; border-color: #fed7aa; }
-.stat-card.blue { background: #eff6ff; border-color: #bfdbfe; }
-.stat-card.green { background: #f0fdf4; border-color: #bbf7d0; }
-.stat-num { font-size: 28px; font-weight: 700; }
-.stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
-.stat-card.red .stat-num { color: #dc2626; }
-.stat-card.orange .stat-num { color: #ea580c; }
-.stat-card.blue .stat-num { color: #2563eb; }
-.stat-card.green .stat-num { color: #16a34a; }
+/* ── STATUS BAR ── */
+.compliance-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.comp-seg { flex: 1; min-width: 80px; border-radius: 12px; padding: 14px 16px; border: 1px solid transparent; cursor: pointer; transition: transform .15s; }
+.comp-seg:hover { transform: translateY(-2px); }
+.comp-seg .cs-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.comp-seg .cs-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.comp-seg .cs-num { font-size: 28px; font-weight: 800; margin-top: 4px; }
+.comp-seg .cs-pct { font-size: 12px; color: var(--muted); }
+.cs-compliant { background: #f0fdf4; border-color: #bbf7d0; }
+.cs-compliant .cs-dot { background: var(--green-dot); }
+.cs-compliant .cs-num { color: var(--green); }
+.cs-risk { background: var(--amber-lt); border-color: #fcd34d; }
+.cs-risk .cs-dot { background: var(--amber); }
+.cs-risk .cs-num { color: var(--amber); }
+.cs-action { background: var(--orange-lt); border-color: #fdba74; }
+.cs-action .cs-dot { background: var(--orange); }
+.cs-action .cs-num { color: var(--orange); }
+.cs-overdue { background: var(--red-lt); border-color: #fca5a5; }
+.cs-overdue .cs-dot { background: var(--red); }
+.cs-overdue .cs-num { color: var(--red); }
 
-/* ─── Badges ─── */
-.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
-.b-captured { background: #e2e8f0; color: #475569; }
-.b-controlled { background: #dbeafe; color: #1d4ed8; }
-.b-inprogress { background: #fef3c7; color: #b45309; }
-.b-waiting { background: #f3e8ff; color: #7c3aed; }
-.b-followupdue { background: #fee2e2; color: #991b1b; }
-.b-escalated { background: #fce7f3; color: #be185d; }
-.b-decisonneeded { background: #fef3c7; color: #92400e; }
-.b-completed { background: #dcfce7; color: #15803d; }
-.b-paused { background: #f1f5f9; color: #475569; }
-.b-notfit { background: #f1f5f9; color: #94a3b8; }
-.b-archived { background: #f1f5f9; color: #94a3b8; }
+/* ── PROGRESS STRIP ── */
+.prog-strip { height: 10px; border-radius: 5px; display: flex; overflow: hidden; gap: 2px; margin-bottom: 6px; }
+.ps-seg { height: 100%; border-radius: 3px; }
 
-.pri-low { background: #f1f5f9; color: #475569; }
-.pri-medium { background: #dbeafe; color: #1d4ed8; }
-.pri-high { background: #ffedd5; color: #c2410c; }
-.pri-urgent { background: #fee2e2; color: #b91c1c; }
+/* ── STAT ROW ── */
+.stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-item { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+.stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.stat-n { font-size: 22px; font-weight: 800; }
+.stat-l { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.stat-delta { font-size: 11px; color: var(--green); margin-top: 2px; }
 
-/* ─── Table ─── */
-.table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid #e2e8f0; background: #fff; }
+/* ── TABLE ── */
+.tbl-wrap { overflow-x: auto; border-radius: 12px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
-tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+thead th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); background: var(--bg); white-space: nowrap; }
+thead th:first-child { border-radius: 12px 0 0 0; }
+thead th:last-child { border-radius: 0 12px 0 0; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; cursor: pointer; }
 tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: #f8fafc; }
-td { padding: 10px 12px; vertical-align: middle; }
-td a { color: #2563eb; font-weight: 500; cursor: pointer; text-decoration: none; }
-td a:hover { text-decoration: underline; }
+tbody tr:hover { background: var(--bg2); }
+td { padding: 12px 14px; vertical-align: middle; }
+.td-title { font-weight: 600; font-size: 13px; }
+.td-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-/* ─── Forms ─── */
-.form-group { margin-bottom: 16px; }
-label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
-input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; background: #fff; transition: border-color .15s, box-shadow .15s; }
-input:focus, select:focus, textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+/* ── BADGES ── */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.b-green { background: var(--green-lt); color: var(--green); }
+.b-amber { background: var(--amber-lt); color: var(--amber); }
+.b-orange { background: var(--orange-lt); color: var(--orange); }
+.b-red { background: var(--red-lt); color: var(--red); }
+.b-blue { background: var(--blue-xlt); color: var(--blue); }
+.b-gray { background: #f1f5f9; color: #475569; }
+.b-navy { background: var(--navy2); color: #93c5fd; }
+.dot-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.dot-green { background: var(--green-dot); }
+.dot-amber { background: #f59e0b; }
+.dot-red { background: var(--red); }
+.dot-blue { background: var(--blue-lt); }
+.dot-gray { background: #94a3b8; }
+
+/* ── ALERT ITEM ── */
+.alert-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+.alert-item:last-child { border-bottom: none; }
+.alert-item:hover { background: var(--bg); }
+.alert-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.alert-body { flex: 1; min-width: 0; }
+.alert-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.alert-desc { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.alert-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.alert-time { font-size: 11px; color: var(--muted); }
+.alert-check { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; flex-shrink: 0; transition: all .15s; }
+.alert-check:hover, .alert-check.done { background: var(--green-dot); border-color: var(--green-dot); color: #fff; }
+
+/* ── NOTIF PRIORITY BADGE ── */
+.pri-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+
+/* ── GLANCE PANEL ── */
+.glance { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.glance-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+.glance-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.glance-row:last-child { border-bottom: none; }
+.glance-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.glance-n { font-size: 18px; font-weight: 800; }
+.glance-l { font-size: 11px; color: var(--muted); }
+
+/* ── COMPANY CARD ── */
+.company-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); position: relative; transition: transform .15s, box-shadow .15s; cursor: pointer; }
+.company-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.company-card .cc-status { position: absolute; top: 14px; right: 14px; }
+.cc-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; background: var(--blue-xlt); display: flex; align-items: center; justify-content: center; font-size: 26px; }
+.cc-name { font-size: 15px; font-weight: 700; color: var(--text); }
+.cc-type { font-size: 12px; color: var(--muted); margin-top: 1px; margin-bottom: 10px; }
+.cc-check-list { list-style: none; }
+.cc-check-list li { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); padding: 3px 0; }
+.cc-check-list li .ci { font-size: 13px; }
+
+/* ── FORMS ── */
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+input, select, textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; outline: none; background: #fff; color: var(--text); transition: border-color .15s, box-shadow .15s; }
+input:focus, select:focus, textarea:focus { border-color: var(--blue-lt); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
 textarea { min-height: 80px; resize: vertical; }
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background .15s, transform .1s; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
 .btn:active { transform: scale(.97); }
-.btn-primary { background: #2563eb; color: #fff; }
-.btn-primary:hover { background: #1d4ed8; }
-.btn-secondary { background: #f1f5f9; color: #334155; }
-.btn-secondary:hover { background: #e2e8f0; }
-.btn-danger { background: #fef2f2; color: #dc2626; }
-.btn-danger:hover { background: #fee2e2; }
-.btn-green { background: #f0fdf4; color: #15803d; }
-.btn-green:hover { background: #dcfce7; }
-.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-primary { background: var(--blue); color: #fff; box-shadow: 0 2px 6px rgba(29,78,216,.3); }
+.btn-primary:hover { background: #1e40af; }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: var(--red-lt); color: var(--red); }
+.btn-danger:hover { background: #fecaca; }
+.btn-green { background: var(--green-lt); color: var(--green); }
+.btn-green:hover { background: #bbf7d0; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-icon { width: 34px; height: 34px; padding: 0; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); display: inline-flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+.btn-icon:hover { background: var(--border); }
 
-/* ─── Misc ─── */
-h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
-h2 { font-size: 16px; font-weight: 700; color: #1e293b; }
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-.text-muted { color: #64748b; font-size: 13px; }
-.text-xs { font-size: 11px; }
-.text-sm { font-size: 13px; }
-.gap-2 { gap: 8px; }
-.flex { display: flex; }
-.items-center { align-items: center; }
-.flex-1 { flex: 1; }
-.space-y > * + * { margin-top: 12px; }
-.space-y-sm > * + * { margin-top: 8px; }
-.pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; background: #f1f5f9; color: #475569; transition: all .15s; }
-.pill.active, .pill:hover { background: #1e293b; color: #fff; }
+/* ── DONUT CHART (CSS only) ── */
+.donut-wrap { display: flex; align-items: center; gap: 20px; }
+.donut { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(var(--green-dot) 0% 67%, var(--amber) 67% 88%, var(--orange) 88% 97%, var(--red) 97% 100%); display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+.donut::after { content: ''; width: 54px; height: 54px; background: #fff; border-radius: 50%; position: absolute; }
+.donut-center { position: relative; z-index: 1; text-align: center; }
+.donut-center .dn { font-size: 16px; font-weight: 800; }
+.donut-center .dl { font-size: 9px; color: var(--muted); }
+.donut-legend { flex: 1; }
+.dl-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 0; }
+.dl-row strong { margin-left: auto; font-weight: 700; }
 
-/* ─── Mobile cards ─── */
-.mob-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
-.mob-card + .mob-card { margin-top: 10px; }
+/* ── TREND LINE (CSS sparkline) ── */
+.trend-wrap { height: 60px; background: linear-gradient(180deg, rgba(59,130,246,.05) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; gap: 3px; padding: 6px 8px 0; overflow: hidden; position: relative; }
+.trend-bar { flex: 1; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--blue-lt), rgba(59,130,246,.4)); transition: height .3s; }
+.trend-line { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
 
-/* ─── Action strip ─── */
-.action-strip { background: #f0f9ff; border-left: 3px solid #38bdf8; border-radius: 0 10px 10px 0; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
-.action-strip span { font-size: 13px; font-weight: 500; color: #0369a1; flex: 1; }
+/* ── LOGIN ── */
+#login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, var(--navy) 0%, var(--navy3) 60%, #1e3a8a 100%); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.login-box { background: rgba(255,255,255,.98); border-radius: 24px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.login-logo .li { width: 44px; height: 44px; background: var(--blue); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.login-brand { font-size: 22px; font-weight: 800; color: var(--text); }
+.login-tagline { font-size: 13px; color: var(--muted); margin-bottom: 30px; }
+.login-box h2 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+.login-error { color: var(--red); font-size: 13px; margin-bottom: 10px; padding: 10px 12px; background: var(--red-lt); border-radius: 8px; }
 
-/* ─── Section heading ─── */
-.section-head { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; margin-top: 20px; }
+/* ── MODAL ── */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 90; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
+.modal { background: #fff; border-radius: 20px; padding: 24px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md); }
+.modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.modal-hd h3 { font-size: 16px; font-weight: 700; }
+.modal-hd button { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); padding: 0 4px; line-height: 1; }
+.modal-hd button:hover { color: var(--text); }
 
-/* ─── Login screen ─── */
-#login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-.login-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 380px; text-align: center; }
-.login-logo { font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-.login-sub { font-size: 13px; color: #64748b; margin-bottom: 28px; }
-.login-box input { font-size: 16px; text-align: center; letter-spacing: .2em; margin-bottom: 14px; }
-.login-error { color: #dc2626; font-size: 13px; margin-bottom: 10px; }
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy2); color: #fff; padding: 11px 18px; border-radius: 12px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity .2s, transform .2s; transform: translateY(8px); pointer-events: none; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 8px; }
+#toast.show { opacity: 1; transform: none; }
 
-/* ─── Toast ─── */
-#toast { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 13px; z-index: 100; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
-#toast.show { opacity: 1; }
+/* ── SECTION HEADER ── */
+.sec-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.sec-hd h2 { font-size: 15px; font-weight: 700; }
+.sec-hd a { font-size: 12px; color: var(--blue); cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 4px; }
 
-/* ─── Modal ─── */
-.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 80; display: flex; align-items: flex-end; justify-content: center; }
-@media (min-width: 600px) { .modal-bg { align-items: center; } }
-.modal { background: #fff; border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-@media (min-width: 600px) { .modal { border-radius: 20px; } }
-.modal-title { font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; }
-.modal-title button { background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; padding: 0 4px; }
+/* ── GRID LAYOUTS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.dash-layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+.notif-layout { display: grid; grid-template-columns: 1fr 260px; gap: 16px; }
 
-/* ─── Progress bar ─── */
-.prog-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-.prog-fill { height: 100%; background: #3b82f6; border-radius: 4px; transition: width .4s; }
+/* ── PILL FILTER ── */
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.pill { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: #fff; color: var(--muted); transition: all .15s; }
+.pill.active, .pill:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
 
-/* ─── Alert status ─── */
-.del-sent { background: #dbeafe; color: #1d4ed8; }
-.del-acked { background: #dcfce7; color: #15803d; }
-.del-failed { background: #fee2e2; color: #b91c1c; }
-.del-pending { background: #fef3c7; color: #92400e; }
-.del-escalated { background: #fce7f3; color: #be185d; }
+/* ── SHIELD ICON SVG ── */
+.shield-svg { display: inline-block; }
 
-/* ─── Empty state ─── */
-.empty { text-align: center; padding: 48px 24px; }
-.empty-icon { width: 56px; height: 56px; background: #f1f5f9; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 24px; }
-.empty p { color: #64748b; font-size: 14px; }
+/* ── MOBILE ── */
+#mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--navy); border-top: 1px solid rgba(255,255,255,.1); z-index: 60; padding: 4px 0 8px; }
+#mobile-nav .mn-tabs { display: flex; }
+#mobile-nav .mn-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; cursor: pointer; color: rgba(255,255,255,.45); font-size: 10px; font-weight: 500; border-radius: 10px; margin: 0 4px; transition: color .15s, background .15s; }
+#mobile-nav .mn-tab .mi { font-size: 19px; line-height: 1; }
+#mobile-nav .mn-tab.active { color: #fff; background: rgba(255,255,255,.1); }
 
-/* ─── Responsive ─── */
-@media (max-width: 599px) {
-  #topnav { display: none; }
-  #bottomnav { display: flex; }
-  #main { padding: 16px 12px 76px; }
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-  .hide-mob { display: none !important; }
-  .show-mob { display: block !important; }
-  h1 { font-size: 20px; }
+/* ── EMPTY ── */
+.empty-state { text-align: center; padding: 48px 24px; }
+.empty-state .ei { font-size: 40px; margin-bottom: 10px; }
+.empty-state p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) { .dash-layout { grid-template-columns: 1fr; } .notif-layout { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr 1fr; } .grid-4 { grid-template-columns: 1fr 1fr; } .compliance-bar { flex-wrap: wrap; } .comp-seg { min-width: calc(50% - 3px); } }
+@media (max-width: 640px) {
+  #sidebar { display: none; }
+  #topbar { left: 0 !important; }
+  #main { margin-left: 0 !important; padding: 16px 12px 76px; }
+  #mobile-nav { display: flex; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
 }
-@media (min-width: 600px) {
-  .show-mob { display: none !important; }
-  .hide-mob { display: block !important; }
-}
+@media (min-width: 641px) and (max-width: 820px) { .stat-row { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
 
-<!-- Login -->
+<!-- ── LOGIN ── -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">⊞ SheetOps</div>
-    <div class="login-sub">UltraCore Compliance & Work Tracking</div>
-    <div id="login-error" class="login-error" style="display:none"></div>
-    <input type="password" id="passcode" placeholder="Enter passcode" autocomplete="current-password">
-    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Sign in</button>
-    <div style="margin-top:12px;font-size:11px;color:#94a3b8">Demo passcode: demo1234</div>
+    <div class="login-logo">
+      <div class="li">🛡️</div>
+      <span class="login-brand">FineGuard</span>
+    </div>
+    <div class="login-tagline">Centralize. Prioritize. Comply.</div>
+    <h2>Sign in to your account</h2>
+    <div id="login-error" style="display:none" class="login-error"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" value="george@firm.co.uk" readonly style="background:#f8fafc">
+    </div>
+    <div class="form-group">
+      <label>Passcode</label>
+      <input type="password" id="passcode" placeholder="Enter passcode">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="doLogin()">Sign in</button>
+    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--muted)">Demo passcode: <strong>demo1234</strong></div>
   </div>
 </div>
 
-<!-- App shell (hidden until logged in) -->
+<!-- ── APP ── -->
 <div id="app" style="display:none">
 
-  <!-- Desktop nav -->
-  <nav id="topnav">
-    <div class="brand" onclick="nav('dashboard')">⊞ SheetOps</div>
-    <div class="links">
-      <a onclick="nav('dashboard')" data-page="dashboard">Dashboard</a>
-      <a onclick="nav('work-items')" data-page="work-items">Work Items</a>
-      <a onclick="nav('today')" data-page="today">Today</a>
-      <a onclick="nav('decisions')" data-page="decisions">Decisions</a>
-      <a onclick="nav('alerts')" data-page="alerts">Alerts</a>
-      <a onclick="nav('contacts')" data-page="contacts">Contacts</a>
-      <a onclick="nav('teams')" data-page="teams">Teams</a>
-      <a onclick="nav('recipients')" data-page="recipients">Recipients</a>
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sb-logo">
+      <div class="logo-icon">🛡️</div>
+      <span class="logo-text">FineGuard</span>
     </div>
-    <div class="user-area">
-      <span onclick="nav('settings')">George</span>
-      <span onclick="doLogout()">Log out</span>
+    <div class="sb-divider"></div>
+    <div class="sb-item active" data-page="dashboard" onclick="nav('dashboard')">
+      <div class="sb-icon">⊞</div><span class="sb-label">Dashboard</span>
+    </div>
+    <div class="sb-item" data-page="notifications" onclick="nav('notifications')" style="position:relative">
+      <div class="sb-icon">🔔</div><span class="sb-label">Notifications</span>
+      <span class="sb-badge">3</span>
+    </div>
+    <div class="sb-item" data-page="filings" onclick="nav('filings')">
+      <div class="sb-icon">📄</div><span class="sb-label">Filings</span>
+    </div>
+    <div class="sb-item" data-page="portfolio" onclick="nav('portfolio')">
+      <div class="sb-icon">🏢</div><span class="sb-label">Portfolio</span>
+    </div>
+    <div class="sb-item" data-page="decisions" onclick="nav('decisions')">
+      <div class="sb-icon">⚖️</div><span class="sb-label">Decisions</span>
+    </div>
+    <div class="sb-item" data-page="teams" onclick="nav('teams')">
+      <div class="sb-icon">👥</div><span class="sb-label">Teams</span>
+    </div>
+    <div class="sb-item" data-page="reports" onclick="nav('reports')">
+      <div class="sb-icon">📊</div><span class="sb-label">Reports</span>
+    </div>
+    <div class="sb-divider" style="margin-top:auto"></div>
+    <div class="sb-item" data-page="settings" onclick="nav('settings')">
+      <div class="sb-icon">⚙️</div><span class="sb-label">Settings</span>
+    </div>
+    <div class="sb-item" onclick="doLogout()">
+      <div class="sb-icon">→</div><span class="sb-label">Log out</span>
+    </div>
+    <div class="sb-item sb-toggle" onclick="toggleSidebar()">
+      <div class="sb-icon" id="toggle-icon">⟩</div><span class="sb-label">Collapse</span>
     </div>
   </nav>
 
-  <!-- Mobile bottom nav -->
-  <nav id="bottomnav">
-    <div class="tabs">
-      <div class="tab" data-page="dashboard" onclick="nav('dashboard')">
-        <span class="icon">⊞</span><span>Dashboard</span>
-      </div>
-      <div class="tab" data-page="work-items" onclick="nav('work-items')">
-        <span class="icon">≡</span><span>Work Items</span>
-      </div>
-      <div class="tab" data-page="today" onclick="nav('today')">
-        <span class="icon">◎</span><span>Today</span>
-      </div>
-      <div class="tab" data-page="decisions" onclick="nav('decisions')">
-        <span class="icon">✓</span><span>Decisions</span>
-      </div>
-      <div class="tab" onclick="toggleMore()">
-        <span class="icon">⋯</span><span>More</span>
+  <!-- Top bar -->
+  <div id="topbar">
+    <div class="topbar-title" id="topbar-title">Compliance Dashboard <span>Real-time overview of your compliance status</span></div>
+    <div class="topbar-right">
+      <div class="topbar-bell" onclick="nav('notifications')">🔔<div class="dot"></div></div>
+      <div class="user-chip">
+        <div class="avatar">G</div>
+        <div>
+          <div class="user-name">George Harrington</div>
+          <div class="user-role">Compliance Manager</div>
+        </div>
       </div>
     </div>
-  </nav>
-
-  <!-- More menu overlay -->
-  <div id="more-menu" style="display:none">
-    <div class="overlay" onclick="toggleMore()"></div>
-    <a onclick="nav('alerts');toggleMore()">Compliance Alerts</a>
-    <a onclick="nav('contacts');toggleMore()">Contacts</a>
-    <a onclick="nav('teams');toggleMore()">Teams</a>
-    <a onclick="nav('recipients');toggleMore()">Alert Recipients</a>
-    <a onclick="nav('settings');toggleMore()" style="color:#94a3b8">Settings (George)</a>
-    <a onclick="doLogout()" style="color:#f87171">Log out</a>
   </div>
+
+  <!-- Mobile nav -->
+  <nav id="mobile-nav">
+    <div class="mn-tabs">
+      <div class="mn-tab active" data-page="dashboard" onclick="nav('dashboard')"><div class="mi">⊞</div>Dashboard</div>
+      <div class="mn-tab" data-page="notifications" onclick="nav('notifications')"><div class="mi">🔔</div>Alerts</div>
+      <div class="mn-tab" data-page="filings" onclick="nav('filings')"><div class="mi">📄</div>Filings</div>
+      <div class="mn-tab" data-page="portfolio" onclick="nav('portfolio')"><div class="mi">🏢</div>Portfolio</div>
+      <div class="mn-tab" data-page="decisions" onclick="nav('decisions')"><div class="mi">⚖️</div>Decisions</div>
+    </div>
+  </nav>
 
   <div id="main"></div>
 </div>
 
-<div id="toast"></div>
+<div id="toast">✓ <span id="toast-msg"></span></div>
 
 <script>
-// ─────────────────────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────────────────────
-const DEMO_PASSCODE = 'demo1234'
-let currentPage = 'dashboard'
-let filterStatus = 'all', filterType = 'all', filterOwner = 'all', filterPriority = 'all'
-let modalOpen = false
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const DEMO_PASS = 'demo1234'
+let sidebarExpanded = false
 
-const WI_TYPES = ['ComplianceAlert','InternalTask','Partnership','Operations','TechTask','DocumentRecord','Other']
-const WI_STATUSES = ['Captured','Controlled','InProgress','Waiting','FollowUpDue','Escalated','DecisionNeeded','Completed','Paused','NotFit','Archived']
-const PRIORITIES = ['Low','Medium','High','Urgent']
-const OWNERS = ['George','Michelle','Chris','Dagon','Alissa','Charlie']
-
-// Mock data
-let workItems = [
-  { id:'wi1', type:'ComplianceAlert', title:'Corporation Tax — Acme Ltd CT600', company:'Acme Ltd', owner:'Michelle', status:'FollowUpDue', priority:'Urgent', nextAction:'Submit CT600 to HMRC by deadline', dueDate:'2026-06-15', decisionNeeded:false, notes:'CT600 prepared. Awaiting final sign-off before submission. HMRC online portal ready.' },
-  { id:'wi2', type:'ComplianceAlert', title:'VAT Return Q1 2026 — Bright Futures', company:'Bright Futures Ltd', owner:'Michelle', status:'InProgress', priority:'High', nextAction:'Reconcile with bank statements', dueDate:'2026-06-30', decisionNeeded:false, notes:'MTD submission required. Xero data exported.' },
-  { id:'wi3', type:'ComplianceAlert', title:'Confirmation Statement — Tech Corp', company:'Tech Corp', owner:'George', status:'Captured', priority:'Medium', nextAction:'File at Companies House', dueDate:'2026-07-10', decisionNeeded:false, notes:'Annual confirmation statement due. No changes to register.' },
-  { id:'wi4', type:'InternalTask', title:'Onboard new accounting client — Sunset Retail', company:'Sunset Retail', owner:'Dagon', status:'InProgress', priority:'Medium', nextAction:'Send engagement letter', dueDate:'2026-06-20', decisionNeeded:false, notes:'Prospect converted. Engagement letter drafted.' },
-  { id:'wi5', type:'Partnership', title:'Referral agreement with FinTech Partners', company:null, owner:'Alissa', status:'DecisionNeeded', priority:'High', nextAction:'George to approve terms', dueDate:'2026-06-18', decisionNeeded:true, notes:'Draft agreement reviewed by legal. Revenue share: 15%. Decision required.' },
-  { id:'wi6', type:'TechTask', title:'Migrate client portal to new server', company:null, owner:'Chris', status:'Waiting', priority:'Medium', nextAction:'Wait for hosting confirmation', dueDate:'2026-07-01', decisionNeeded:false, notes:'New server provisioned. Waiting on DNS propagation.' },
-  { id:'wi7', type:'ComplianceAlert', title:'Self Assessment — James Harrison', company:'James Harrison', owner:'George', status:'Completed', priority:'Low', nextAction:null, dueDate:'2026-04-05', decisionNeeded:false, notes:'SA100 filed and confirmed.' },
-  { id:'wi8', type:'Operations', title:'Office lease renewal negotiation', company:null, owner:'Michelle', status:'Escalated', priority:'High', nextAction:'George to review terms', dueDate:'2026-06-25', decisionNeeded:true, notes:'Landlord proposing 8% rent increase. Need decision on counter-offer.' },
-  { id:'wi9', type:'ComplianceAlert', title:'PAYE Year End — Acme Ltd', company:'Acme Ltd', owner:'Michelle', status:'Controlled', priority:'Medium', nextAction:'Finalise P60s', dueDate:'2026-06-05', decisionNeeded:false, notes:'P11D submitted. P60s in progress.' },
-  { id:'wi10', type:'DocumentRecord', title:'Client contract — Blue Ocean Services', company:'Blue Ocean Services', owner:'Alissa', status:'Captured', priority:'Low', nextAction:'Send for signing', dueDate:'2026-07-15', decisionNeeded:false, notes:'Contract template customised.' },
+const companies = [
+  { id:'c1', name:'Acme Ltd', type:'Manufacturing & Distribution', status:'compliant', avatar:'👷', person:'Sarah Chen', items:['Safety','Documents','Insurance','Financials'], ok:[true,true,true,true] },
+  { id:'c2', name:'Bright Futures Ltd', type:'Customer Support', status:'compliant', avatar:'👩‍💼', person:'Emma Wilson', items:['Safety','Documents','Insurance','Financials'], ok:[true,true,true,true] },
+  { id:'c3', name:'Tech Corp Ltd', type:'Technology & SaaS', status:'attention', avatar:'👨‍💼', person:'Liam O\'Brien', items:['Safety','Documents','Insurance','Financials'], ok:[true,false,true,true] },
+  { id:'c4', name:'Sunset Retail', type:'Retail & Commerce', status:'compliant', avatar:'👨‍💼', person:'Priya Kumar', items:['Safety','Documents','Insurance','Financials'], ok:[true,true,true,true] },
 ]
 
-let decisions = [
-  { id:'d1', workItemId:'wi5', question:'Approve referral agreement with FinTech Partners (15% revenue share)?', options:'A) Approve as-is  B) Negotiate to 12%  C) Decline', recommendation:'Recommend Option A — market rate for quality leads', decisionBy:'George', status:'Open', dueDate:'2026-06-18' },
-  { id:'d2', workItemId:'wi8', question:'Counter-offer on lease: accept 4% increase or push back to 3%?', options:'A) Accept 4%  B) Counter 3%  C) Explore alternatives', recommendation:'Counter at 3% — landlord motivated to retain us', decisionBy:'George', status:'Open', dueDate:'2026-06-25' },
+const filings = [
+  { id:'f1', title:'Corporation Tax — CT600', sub:'Annual CT600 submission', entity:'Acme Ltd', due:'2026-06-15', status:'action', priority:'Urgent' },
+  { id:'f2', title:'VAT Return Q1 2026', sub:'MTD VAT submission', entity:'Bright Futures Ltd', due:'2026-06-30', status:'risk', priority:'High' },
+  { id:'f3', title:'Confirmation Statement', sub:'Annual CH filing', entity:'Tech Corp Ltd', due:'2026-07-10', status:'compliant', priority:'Medium' },
+  { id:'f4', title:'PAYE Year End', sub:'P60s & P11D submission', entity:'Acme Ltd', due:'2026-06-05', status:'overdue', priority:'Urgent' },
+  { id:'f5', title:'Self Assessment SA100', sub:'Personal tax return', entity:'James Harrison', due:'2026-01-31', status:'compliant', priority:'Low' },
+  { id:'f6', title:'Annual Accounts', sub:'Companies House filing', entity:'Sunset Retail', due:'2026-07-31', status:'compliant', priority:'Medium' },
 ]
 
-let contacts = [
-  { id:'c1', company:'Acme Ltd', name:'Sarah Chen', role:'Finance Director', email:'sarah@acme.co.uk', phone:'+44 7700 900123', isPrimary:true },
-  { id:'c2', company:'Acme Ltd', name:'James Patel', role:'MD', email:'james@acme.co.uk', phone:'+44 7700 900124', isPrimary:false },
-  { id:'c3', company:'Bright Futures Ltd', name:'Emma Wilson', role:'CFO', email:'emma@brightfutures.co.uk', phone:'+44 7700 900200', isPrimary:true },
-  { id:'c4', company:'Tech Corp', name:'Liam O\'Brien', role:'CEO', email:'liam@techcorp.io', phone:'+44 7700 900300', isPrimary:true },
-  { id:'c5', company:'Sunset Retail', name:'Priya Kumar', role:'Director', email:'priya@sunsetretail.co.uk', phone:'+44 7700 900400', isPrimary:true },
+const notifications = [
+  { id:'n1', type:'alert', icon:'✉️', iconBg:'#dbeafe', title:'Quarterly Compliance Report Submitted', desc:'Your Q2 compliance report has been successfully submitted and accepted.', tag:'Completed', tagColor:'b-green', time:'2m ago', dot:'green', priority:'', read:false, done:true },
+  { id:'n2', type:'deadline', icon:'📅', iconBg:'#fff7ed', title:'Corporation Tax CT600 Due Soon', desc:'Please complete the CT600 submission for Acme Ltd by the due date.', tag:'Due Soon', tagColor:'b-amber', time:'15m ago', dot:'amber', priority:'High', read:false, done:false },
+  { id:'n3', type:'overdue', icon:'⚠️', iconBg:'#fee2e2', title:'Critical: PAYE Year End Overdue', desc:'Your PAYE year-end submission is overdue. Please complete it immediately.', tag:'Overdue', tagColor:'b-red', time:'1h ago', dot:'red', priority:'Urgent', read:false, done:false },
+  { id:'n4', type:'update', icon:'💬', iconBg:'#f3e8ff', title:'New Regulatory Update — AML Rules', desc:'A new regulatory update has been published. Review the changes and take action if needed.', tag:'New', tagColor:'b-blue', time:'3h ago', dot:'blue', priority:'', read:true, done:false },
+  { id:'n5', type:'complete', icon:'✅', iconBg:'#dcfce7', title:'VAT Reconciliation Completed', desc:'The VAT reconciliation for Bright Futures Ltd has been completed successfully.', tag:'Completed', tagColor:'b-green', time:'1d ago', dot:'green', priority:'', read:true, done:true },
+  { id:'n6', type:'alert', icon:'📋', iconBg:'#f3e8ff', title:'Policy Acknowledgement Required', desc:'Code of Conduct Policy requires your acknowledgement before month end.', tag:'Policy', tagColor:'b-gray', time:'2d ago', dot:'amber', priority:'Medium', read:true, done:false },
 ]
 
-let recipients = [
-  { id:'r1', company:'Acme Ltd', name:'Sarah Chen', email:'sarah@acme.co.uk', role:'Director', channel:'Email', level:1, suppressed:false },
-  { id:'r2', company:'Acme Ltd', name:'Michelle (Accountant)', email:'michelle@firm.co.uk', role:'Accountant', channel:'Dashboard', level:2, suppressed:false },
-  { id:'r3', company:'Bright Futures Ltd', name:'Emma Wilson', email:'emma@brightfutures.co.uk', role:'Director', channel:'Email', level:1, suppressed:false },
-  { id:'r4', company:'Tech Corp', name:'Liam O\'Brien', email:'liam@techcorp.io', role:'Director', channel:'Email', level:1, suppressed:true },
+const decisions = [
+  { id:'d1', company:'Bright Futures Ltd', question:'Approve referral agreement with FinTech Partners (15% revenue share)?', options:'A) Approve as-is  B) Negotiate to 12%  C) Decline', recommendation:'Recommend Option A — market rate for quality leads', by:'George', due:'2026-06-18', status:'Open' },
+  { id:'d2', company:'Acme Ltd', question:'Counter-offer on lease: accept 4% increase or push back to 3%?', options:'A) Accept 4%  B) Counter 3%  C) Explore alternatives', recommendation:'Counter at 3% — landlord motivated to retain us', by:'George', due:'2026-06-25', status:'Open' },
 ]
 
-let deliveries = [
-  { id:'del1', workItemId:'wi1', recipient:'Sarah Chen', channel:'Email', status:'Sent', sentAt:'2026-06-10', acked:false },
-  { id:'del2', workItemId:'wi2', recipient:'Emma Wilson', channel:'Email', status:'Acknowledged', sentAt:'2026-06-08', acked:true },
-  { id:'del3', workItemId:'wi9', recipient:'Sarah Chen', channel:'Email', status:'Failed', sentAt:'2026-06-04', acked:false },
-]
-
-let activity = [
-  { id:'a1', workItemId:'wi1', person:'Michelle', event:'NoteAdded', summary:'CT600 prepared and reviewed internally', time:'2h ago' },
-  { id:'a2', workItemId:'wi4', person:'Dagon', event:'StatusChanged', summary:'Status changed to In Progress', time:'5h ago' },
-  { id:'a3', workItemId:'wi5', person:'Alissa', event:'DecisionRequested', summary:'Escalated to George: Approve referral agreement?', time:'1d ago' },
-  { id:'a4', workItemId:'wi7', person:'George', event:'StatusChanged', summary:'Status changed to Completed', time:'2d ago' },
-]
-
-// ─────────────────────────────────────────────────────────────
-// UTILS
-// ─────────────────────────────────────────────────────────────
-function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function formatDate(d) { if (!d) return '—'; const dt = new Date(d); return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
-function isOverdue(d) { if (!d) return false; return new Date(d) < new Date(new Date().toDateString()); }
+// ─── UTILS ──────────────────────────────────────────────────────────────────
+function esc(s) { if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function isOverdue(d) { return d && new Date(d) < new Date(new Date().toDateString()); }
+function statusLabel(s) { return {compliant:'Compliant',risk:'At Risk',action:'Action Required',overdue:'Overdue'}[s]||s; }
 function statusBadge(s) {
-  const map = {Captured:'b-captured',Controlled:'b-controlled',InProgress:'b-inprogress',Waiting:'b-waiting',FollowUpDue:'b-followupdue',Escalated:'b-escalated',DecisionNeeded:'b-decisonneeded',Completed:'b-completed',Paused:'b-paused',NotFit:'b-notfit',Archived:'b-archived'};
-  const labels = {InProgress:'In Progress',FollowUpDue:'Follow-up Due',DecisionNeeded:'Decision Needed',NotFit:'Not Fit'};
-  return `<span class="badge ${map[s]||'b-captured'}">${labels[s]||s}</span>`;
+  const m = {compliant:'b-green',risk:'b-amber',action:'b-orange',overdue:'b-red'};
+  return `<span class="badge ${m[s]||'b-gray'}">${statusLabel(s)}</span>`;
 }
-function priBadge(p) {
-  const map = {Low:'pri-low',Medium:'pri-medium',High:'pri-high',Urgent:'pri-urgent'};
-  return `<span class="badge ${map[p]||'pri-low'}">${p}</span>`;
-}
-function delBadge(s) {
-  const map = {Sent:'del-sent',Acknowledged:'del-acked',Failed:'del-failed',Pending:'del-pending',Escalated:'del-escalated'};
-  return `<span class="badge ${map[s]||'del-pending'}">${s}</span>`;
-}
-function typeLabel(t) {
-  const m = {ComplianceAlert:'Compliance',InternalTask:'Task',Partnership:'Partnership',Operations:'Ops',TechTask:'Tech',DocumentRecord:'Doc',Other:'Other',ConstructionLead:'Construction',PlanningLead:'Planning',MediaBrief:'Media'};
-  return m[t]||t;
-}
-function toast(msg, dur=2400) {
+function priColor(p) { return {Low:'b-gray',Medium:'b-blue',High:'b-amber',Urgent:'b-red'}[p]||'b-gray'; }
+
+function toast(msg) {
+  document.getElementById('toast-msg').textContent = msg;
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), dur);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
 }
-function closeModal() { const m = document.getElementById('modal'); if(m) m.remove(); modalOpen=false; }
+
+function closeModal() { document.getElementById('modal')?.remove(); }
 function showModal(html) {
   closeModal();
   const m = document.createElement('div');
   m.id = 'modal'; m.className = 'modal-bg';
   m.innerHTML = `<div class="modal">${html}</div>`;
-  m.addEventListener('click', e => { if(e.target===m) closeModal(); });
+  m.addEventListener('click', e=>{ if(e.target===m) closeModal(); });
   document.body.appendChild(m);
-  modalOpen = true;
 }
 
-// ─────────────────────────────────────────────────────────────
-// AUTH
-// ─────────────────────────────────────────────────────────────
+// ─── AUTH ────────────────────────────────────────────────────────────────────
 function doLogin() {
   const v = document.getElementById('passcode').value;
-  if (v === DEMO_PASSCODE) {
+  if (v === DEMO_PASS) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     nav('dashboard');
   } else {
     const el = document.getElementById('login-error');
-    el.textContent = 'Incorrect passcode'; el.style.display = 'block';
+    el.textContent = 'Incorrect passcode. Try: demo1234'; el.style.display = 'block';
   }
 }
-document.getElementById('passcode').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('passcode').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
 function doLogout() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('passcode').value = '';
 }
 
-// ─────────────────────────────────────────────────────────────
-// ROUTER
-// ─────────────────────────────────────────────────────────────
+// ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  sidebarExpanded = !sidebarExpanded;
+  document.getElementById('sidebar').classList.toggle('expanded', sidebarExpanded);
+  document.getElementById('topbar').classList.toggle('shifted', sidebarExpanded);
+  document.getElementById('main').classList.toggle('shifted', sidebarExpanded);
+  document.getElementById('toggle-icon').textContent = sidebarExpanded ? '⟨' : '⟩';
+}
+
+// ─── ROUTER ──────────────────────────────────────────────────────────────────
+const PAGE_TITLES = {
+  dashboard: ['Compliance Dashboard','Real-time overview of your compliance status'],
+  notifications: ['Notifications Center','Alerts, deadlines and updates'],
+  filings: ['Filing Obligations','Upcoming deadlines and submission status'],
+  portfolio: ['Portfolio Management','Manage. Monitor. Grow.'],
+  decisions: ['Decision Queue','Items requiring your approval'],
+  teams: ['Teams','Live work status across every team'],
+  reports: ['Reports & Analytics','Compliance trend and performance data'],
+  settings: ['Settings','Account and preferences'],
+}
+
 function nav(page, params={}) {
-  currentPage = page;
-  toggleMore(false);
-  // update nav active states
-  document.querySelectorAll('[data-page]').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === page);
+  document.querySelectorAll('[data-page]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.page===page);
   });
-  const main = document.getElementById('main');
-  const renders = {
-    dashboard: renderDashboard, 'work-items': renderWorkItems,
-    today: renderToday, decisions: renderDecisions,
-    alerts: renderAlerts, contacts: renderContacts,
-    teams: renderTeams, recipients: renderRecipients,
-    settings: renderSettings,
-  };
-  if (page === 'work-item-detail') { main.innerHTML = renderWorkItemDetail(params.id); return; }
-  if (page === 'new-work-item') { main.innerHTML = renderNewWorkItem(); return; }
-  if (renders[page]) main.innerHTML = renders[page]();
-  else main.innerHTML = `<h1>${page}</h1>`;
+  const titles = PAGE_TITLES[page]||[page,''];
+  document.getElementById('topbar-title').innerHTML = `${esc(titles[0])} <span>${esc(titles[1])}</span>`;
+
+  const views = { dashboard:renderDashboard, notifications:renderNotifications, filings:renderFilings, portfolio:renderPortfolio, decisions:renderDecisions, teams:renderTeams, reports:renderReports, settings:renderSettings };
+  const fn = views[page];
+  document.getElementById('main').innerHTML = fn ? fn() : `<h2>${page}</h2>`;
   window.scrollTo(0,0);
 }
 
-function toggleMore(force) {
-  const m = document.getElementById('more-menu');
-  const show = force !== undefined ? force : m.style.display === 'none';
-  m.style.display = show ? 'block' : 'none';
-}
-
-// ─────────────────────────────────────────────────────────────
-// VIEWS
-// ─────────────────────────────────────────────────────────────
+// ─── VIEWS ───────────────────────────────────────────────────────────────────
 
 function renderDashboard() {
-  const now = new Date(); now.setHours(0,0,0,0);
-  const open = workItems.filter(w=>!['Completed','Archived','NotFit'].includes(w.status));
-  const overdue = open.filter(w=>w.dueDate && new Date(w.dueDate)<now);
-  const dueToday = open.filter(w=>w.dueDate && new Date(w.dueDate).toDateString()===now.toDateString());
-  const decisions_needed = workItems.filter(w=>w.decisionNeeded && !['Completed','Archived'].includes(w.status));
-  const completed = workItems.filter(w=>w.status==='Completed');
-  const pending_alerts = deliveries.filter(d=>d.status==='Sent').length;
-  const compliance = workItems.filter(w=>w.type==='ComplianceAlert');
-  const statusCounts = {};
-  open.forEach(w=>{ statusCounts[w.status]=(statusCounts[w.status]||0)+1; });
-
-  const pipeline = [
-    {s:'Captured',color:'#94a3b8'},{s:'InProgress',color:'#f59e0b'},{s:'Controlled',color:'#3b82f6'},
-    {s:'Waiting',color:'#a78bfa'},{s:'FollowUpDue',color:'#ef4444'},{s:'Escalated',color:'#ec4899'},
-  ].map(({s,color})=>({s,color,n:statusCounts[s]||0})).filter(x=>x.n>0);
-  const pipeTotal = pipeline.reduce((a,x)=>a+x.n,0)||1;
+  const compliant = 23, risk = 7, action = 3, overdue = 1, total = 34;
+  const bars = [
+    {w:67,c:'var(--green-dot)'},{w:21,c:'#f59e0b'},{w:9,c:'var(--orange)'},{w:3,c:'var(--red)'}
+  ];
+  const barHtml = bars.map(b=>`<div class="ps-seg" style="flex:${b.w};background:${b.c};border-radius:3px"></div>`).join('');
+  const trendHeights = [32,38,30,44,40,52,48,60,56,68,72,80];
 
   return `
-  <div class="page-header">
-    <div><h1>Dashboard</h1><p class="text-muted">Friday, 13 Jun 2026</p></div>
-    <button class="btn btn-primary btn-sm" onclick="nav('new-work-item')">+ Add Item</button>
-  </div>
-
-  <div class="stat-grid" style="margin-bottom:16px">
-    <div class="stat-card ${overdue.length>0?'red':''}" onclick="nav('work-items')" style="cursor:pointer">
-      <div class="stat-num">${overdue.length}</div>
-      <div class="stat-label">Overdue items</div>
-    </div>
-    <div class="stat-card ${dueToday.length>0?'orange':''}" onclick="nav('today')" style="cursor:pointer">
-      <div class="stat-num">${dueToday.length}</div>
-      <div class="stat-label">Due today</div>
-    </div>
-    <div class="stat-card ${decisions_needed.length>0?'orange':''}" onclick="nav('decisions')" style="cursor:pointer">
-      <div class="stat-num">${decisions_needed.length}</div>
-      <div class="stat-label">Decisions needed</div>
-    </div>
-    <div class="stat-card" onclick="nav('work-items')" style="cursor:pointer">
-      <div class="stat-num">${open.length}</div>
-      <div class="stat-label">Open items</div>
-    </div>
-    <div class="stat-card green" onclick="nav('work-items')" style="cursor:pointer">
-      <div class="stat-num">${completed.length}</div>
-      <div class="stat-label">Completed</div>
-    </div>
-    <div class="stat-card ${pending_alerts>0?'orange':''}" onclick="nav('alerts')" style="cursor:pointer">
-      <div class="stat-num">${pending_alerts}</div>
-      <div class="stat-label">Alerts awaiting ack</div>
-    </div>
-  </div>
-
-  <!-- Pipeline -->
-  <div class="card" style="padding:18px;margin-bottom:16px">
-    <h2 style="margin-bottom:12px">Pipeline</h2>
-    <div style="display:flex;gap:4px;height:32px;border-radius:8px;overflow:hidden;margin-bottom:10px">
-      ${pipeline.map(x=>`<div style="flex:${x.n};background:${x.color};cursor:pointer" title="${x.s}: ${x.n}" onclick="nav('work-items')"></div>`).join('')}
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px">
-      ${pipeline.map(x=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#64748b"><span style="width:10px;height:10px;background:${x.color};border-radius:2px;display:inline-block"></span>${x.s}: <strong>${x.n}</strong></div>`).join('')}
-    </div>
-  </div>
-
-  <!-- Compliance summary -->
-  <div class="card" style="padding:18px;margin-bottom:16px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <h2>Compliance Alerts</h2>
-      <button class="btn btn-secondary btn-sm" onclick="nav('alerts')">View all</button>
-    </div>
-    <div style="display:flex;gap:16px;font-size:13px;flex-wrap:wrap">
-      <div><span style="color:#64748b">Total:</span> <strong>${compliance.length}</strong></div>
-      <div><span style="color:#64748b">Awaiting ack:</span> <strong style="color:${pending_alerts>0?'#ea580c':'#16a34a'}">${pending_alerts}</strong></div>
-      <div><span style="color:#64748b">Failed:</span> <strong style="color:${deliveries.filter(d=>d.status==='Failed').length>0?'#dc2626':'#16a34a'}">${deliveries.filter(d=>d.status==='Failed').length}</strong></div>
-    </div>
-  </div>
-
-  <!-- Recent activity -->
-  <div class="card" style="padding:18px">
-    <h2 style="margin-bottom:12px">Recent Activity</h2>
-    <div class="space-y">
-      ${activity.map(a=>{
-        const wi = workItems.find(w=>w.id===a.workItemId);
-        return `<div style="display:flex;gap:10px;align-items:flex-start">
-          <div style="width:28px;height:28px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${a.person[0]}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px"><strong>${esc(a.person)}</strong> — ${esc(a.summary)}</div>
-            ${wi?`<div style="font-size:11px;color:#64748b;margin-top:2px">${esc(wi.title)} · ${a.time}</div>`:''}
+  <!-- Compliance status + monitoring -->
+  <div class="dash-layout" style="margin-bottom:16px">
+    <div>
+      <div class="card card-pad" style="margin-bottom:14px">
+        <div class="card-title">Overall Compliance Status <a onclick="nav('reports')">View trend →</a></div>
+        <div class="compliance-bar">
+          <div class="comp-seg cs-compliant" onclick="nav('filings')">
+            <div><span class="dot dot-green cs-dot"></span><span class="cs-label">Compliant</span></div>
+            <div class="cs-num">${compliant}</div>
+            <div class="cs-pct">67%</div>
           </div>
-        </div>`;
-      }).join('')}
+          <div class="comp-seg cs-risk" onclick="nav('filings')">
+            <div><span class="dot" style="background:#f59e0b;display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px"></span><span class="cs-label">At Risk</span></div>
+            <div class="cs-num">${risk}</div>
+            <div class="cs-pct">21%</div>
+          </div>
+          <div class="comp-seg cs-action" onclick="nav('filings')">
+            <div><span class="dot" style="background:var(--orange);display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px"></span><span class="cs-label">Action Required</span></div>
+            <div class="cs-num">${action}</div>
+            <div class="cs-pct">9%</div>
+          </div>
+          <div class="comp-seg cs-overdue" onclick="nav('filings')">
+            <div><span class="dot dot-red cs-dot"></span><span class="cs-label">Overdue</span></div>
+            <div class="cs-num">${overdue}</div>
+            <div class="cs-pct">3%</div>
+          </div>
+        </div>
+        <div class="prog-strip">${barHtml}</div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>0%</span><span>67% Compliant</span><span>100%</span></div>
+      </div>
+
+      <!-- Filing deadlines -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-pad" style="padding-bottom:0">
+          <div class="card-title">Upcoming Filing Deadlines <a onclick="nav('filings')">View all →</a></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Filing / Obligation</th><th>Entity</th><th>Due Date</th><th>Status</th></tr></thead>
+            <tbody>
+              ${filings.slice(0,4).map(f=>`
+              <tr onclick="openFilingDetail('${f.id}')">
+                <td><div class="td-title">${esc(f.title)}</div><div class="td-sub">${esc(f.sub)}</div></td>
+                <td style="font-size:13px;color:var(--muted)">${esc(f.entity)}</td>
+                <td style="font-size:13px;white-space:nowrap;color:${isOverdue(f.due)?'var(--red)':'var(--text)'};font-weight:${isOverdue(f.due)?600:400}">${fmtDate(f.due)}</td>
+                <td>${statusBadge(f.status)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center">
+          <a onclick="nav('filings')" style="font-size:13px;color:var(--blue);font-weight:500;cursor:pointer">View all deadlines →</a>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid-2">
+        <div class="card card-pad">
+          <div class="card-title">Compliance Status by Category</div>
+          <div class="donut-wrap">
+            <div class="donut">
+              <div class="donut-center"><div class="dn">${total}</div><div class="dl">Total</div></div>
+            </div>
+            <div class="donut-legend">
+              <div class="dl-row"><span class="dot dot-green"></span><span style="font-size:12px;color:var(--muted)">Compliant</span><span style="font-size:12px;color:var(--muted);margin-left:4px">67%</span><strong style="font-size:12px">${compliant}</strong></div>
+              <div class="dl-row"><span class="dot" style="background:#f59e0b"></span><span style="font-size:12px;color:var(--muted)">At Risk</span><span style="font-size:12px;color:var(--muted);margin-left:4px">21%</span><strong style="font-size:12px">${risk}</strong></div>
+              <div class="dl-row"><span class="dot" style="background:var(--orange)"></span><span style="font-size:12px;color:var(--muted)">Action Req.</span><span style="font-size:12px;color:var(--muted);margin-left:4px">9%</span><strong style="font-size:12px">${action}</strong></div>
+              <div class="dl-row"><span class="dot dot-red"></span><span style="font-size:12px;color:var(--muted)">Overdue</span><span style="font-size:12px;color:var(--muted);margin-left:4px">3%</span><strong style="font-size:12px">${overdue}</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div class="card-title">Compliance Trend <span style="font-size:12px;font-weight:400;color:var(--muted)">Last 12 months</span></div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+            <span style="font-size:28px;font-weight:800;color:var(--green)">87%</span>
+            <span style="font-size:12px;color:var(--green)">↑ +4% this month</span>
+          </div>
+          <div class="trend-wrap">
+            ${trendHeights.map(h=>`<div class="trend-bar" style="height:${h}%"></div>`).join('')}
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;padding:0 4px">
+            <span>Jun</span><span>Aug</span><span>Oct</span><span>Dec</span><span>Feb</span><span>Apr</span><span>Jun</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div>
+      <!-- Monitoring overview -->
+      <div class="card card-pad" style="margin-bottom:14px">
+        <div class="card-title">Monitoring Overview</div>
+        <div class="stat-row" style="margin-bottom:10px">
+          <div class="stat-item">
+            <div class="stat-icon" style="background:#dbeafe">👥</div>
+            <div><div class="stat-n">${companies.length}</div><div class="stat-l">Entities</div><div class="stat-delta">+1 this month</div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon" style="background:#fef3c7">📋</div>
+            <div><div class="stat-n">142</div><div class="stat-l">Obligations</div><div class="stat-delta">+8 this month</div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon" style="background:#f0fdf4">📅</div>
+            <div><div class="stat-n">11</div><div class="stat-l">Deadlines</div><div class="stat-delta">Next 30 days</div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon" style="background:#fee2e2">🔔</div>
+            <div><div class="stat-n" style="color:var(--red)">4</div><div class="stat-l">Open Alerts</div><div style="font-size:11px;color:var(--red)">Require attention</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compliance alerts -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-pad" style="padding-bottom:8px">
+          <div class="card-title">Compliance Alerts <a onclick="nav('notifications')">View all →</a></div>
+        </div>
+        ${[
+          {icon:'🔴',title:'Overdue Filing',desc:'CT Return for Acme Ltd is overdue',date:'Jun 15, 2026'},
+          {icon:'🟠',title:'Document Expiring Soon',desc:'Business licence expires in 10 days',date:'Jun 20, 2026'},
+          {icon:'🟡',title:'Upcoming Deadline',desc:'VAT Return Q1 for Bright Futures due',date:'Jun 30, 2026'},
+          {icon:'🔵',title:'Regulatory Update',desc:'New AML regulation effective Jul 1',date:'Jun 19, 2026'},
+        ].map(a=>`
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-top:1px solid var(--border);cursor:pointer" onclick="nav('notifications')">
+          <span style="font-size:14px;margin-top:1px">${a.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${esc(a.title)}</div>
+            <div style="font-size:11px;color:var(--muted)">${esc(a.desc)}</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);white-space:nowrap">${a.date}</div>
+          <span style="color:var(--muted);font-size:14px">›</span>
+        </div>`).join('')}
+        <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center">
+          <a onclick="nav('notifications')" style="font-size:12px;color:var(--blue);font-weight:500;cursor:pointer">View all alerts →</a>
+        </div>
+      </div>
+
+      <!-- Recent activity -->
+      <div class="card card-pad">
+        <div class="card-title">Recent Activity</div>
+        ${[
+          {person:'Sarah Johnson',action:'Annual Report filed for Alpha Corp Ltd.',time:'May 20, 2024'},
+          {person:'Michael Chen',action:'Business Licence uploaded for Beta Holdings.',time:'May 19, 2024'},
+          {person:'George H.',action:'New entity added: Delta Partners LLP',time:'May 18, 2024'},
+        ].map(a=>`
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div class="avatar" style="width:30px;height:30px;font-size:12px;flex-shrink:0">${a.person[0]}</div>
+          <div>
+            <div style="font-size:12px;font-weight:500">${esc(a.action)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${a.time} · ${esc(a.person)}</div>
+          </div>
+        </div>`).join('')}
+      </div>
     </div>
   </div>`;
 }
 
-function renderWorkItems() {
-  let items = workItems.filter(w => {
-    if (filterStatus !== 'all' && w.status !== filterStatus) return false;
-    if (filterType !== 'all' && w.type !== filterType) return false;
-    if (filterOwner !== 'all' && w.owner !== filterOwner) return false;
-    if (filterPriority !== 'all' && w.priority !== filterPriority) return false;
-    return true;
-  });
-  const hasFilter = filterStatus!=='all'||filterType!=='all'||filterOwner!=='all'||filterPriority!=='all';
+function renderNotifications() {
+  const unread = notifications.filter(n=>!n.read).length;
+  const highPri = notifications.filter(n=>n.priority==='Urgent'||n.priority==='High').length;
+  const completed = notifications.filter(n=>n.done).length;
 
   return `
-  <div class="page-header">
-    <h1>Work Items</h1>
-    <button class="btn btn-primary btn-sm" onclick="nav('new-work-item')">+ Add</button>
-  </div>
-
-  <!-- Filters -->
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-    <select onchange="filterStatus=this.value;nav('work-items')" style="flex:1;min-width:120px;padding:7px 10px;font-size:13px">
-      <option value="all" ${filterStatus==='all'?'selected':''}>All statuses</option>
-      ${WI_STATUSES.map(s=>`<option value="${s}" ${filterStatus===s?'selected':''}>${s}</option>`).join('')}
-    </select>
-    <select onchange="filterType=this.value;nav('work-items')" style="flex:1;min-width:120px;padding:7px 10px;font-size:13px">
-      <option value="all" ${filterType==='all'?'selected':''}>All types</option>
-      ${WI_TYPES.map(t=>`<option value="${t}" ${filterType===t?'selected':''}>${t}</option>`).join('')}
-    </select>
-    <select onchange="filterOwner=this.value;nav('work-items')" style="flex:1;min-width:100px;padding:7px 10px;font-size:13px">
-      <option value="all" ${filterOwner==='all'?'selected':''}>All owners</option>
-      ${OWNERS.map(o=>`<option value="${o}" ${filterOwner===o?'selected':''}>${o}</option>`).join('')}
-    </select>
-    <select onchange="filterPriority=this.value;nav('work-items')" style="flex:1;min-width:100px;padding:7px 10px;font-size:13px">
-      <option value="all" ${filterPriority==='all'?'selected':''}>All priorities</option>
-      ${PRIORITIES.map(p=>`<option value="${p}" ${filterPriority===p?'selected':''}>${p}</option>`).join('')}
-    </select>
-    ${hasFilter?`<button class="btn btn-secondary btn-sm" onclick="filterStatus='all';filterType='all';filterOwner='all';filterPriority='all';nav('work-items')">Clear</button>`:''}
-  </div>
-  <p style="font-size:12px;color:#94a3b8;margin-bottom:10px">${items.length} item${items.length!==1?'s':''}</p>
-
-  <!-- Desktop table -->
-  <div class="table-wrap hide-mob">
-    <table>
-      <thead><tr>
-        <th>Type</th><th>Title</th><th>Company</th><th>Owner</th>
-        <th>Status</th><th>Priority</th><th>Due</th><th>?</th>
-      </tr></thead>
-      <tbody>
-        ${items.length===0?`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📋</div><p>No items match filters</p></div></td></tr>`:''}
-        ${items.map(w=>`<tr>
-          <td style="color:#64748b;font-size:11px">${typeLabel(w.type)}</td>
-          <td><a onclick="nav('work-item-detail',{id:'${w.id}'})">${esc(w.title)}</a></td>
-          <td style="font-size:12px;color:#475569">${esc(w.company)||'—'}</td>
-          <td style="font-size:12px;font-weight:600">${esc(w.owner)}</td>
-          <td>${statusBadge(w.status)}</td>
-          <td>${priBadge(w.priority)}</td>
-          <td style="font-size:12px;white-space:nowrap"><span style="color:${isOverdue(w.dueDate)?'#dc2626':'#475569'};font-weight:${isOverdue(w.dueDate)?600:400}">${formatDate(w.dueDate)}</span></td>
-          <td style="text-align:center">${w.decisionNeeded?'🔴':''}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Mobile cards -->
-  <div class="show-mob">
-    ${items.length===0?`<div class="empty"><div class="empty-icon">📋</div><p>No items match filters</p></div>`:''}
-    ${items.map(w=>`
-    <div class="mob-card" onclick="nav('work-item-detail',{id:'${w.id}'})">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <span class="badge b-captured" style="background:#f1f5f9;color:#64748b">${typeLabel(w.type)}</span>
-          ${priBadge(w.priority)}
+  <div class="notif-layout">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <!-- Header bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="topbar-bell" style="cursor:default">🔔</div>
+            <h2 style="font-size:16px;font-weight:700">All Notifications</h2>
+            <span class="badge b-blue" style="font-size:12px">${unread} new</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="markAllRead()">✓ Mark all as read</button>
+            <button class="btn-icon">⫶</button>
+          </div>
         </div>
-        ${statusBadge(w.status)}
+
+        <!-- Filter pills -->
+        <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
+          <button class="pill active">All</button>
+          <button class="pill" onclick="toast('Filter applied')">Unread</button>
+          <button class="pill" onclick="toast('Filter applied')">High Priority</button>
+          <button class="pill" onclick="toast('Filter applied')">Deadlines</button>
+          <button class="pill" onclick="toast('Filter applied')">Completed</button>
+        </div>
+
+        <!-- Notification list -->
+        ${notifications.map(n=>`
+        <div class="alert-item ${n.read?'':''}">
+          <div style="width:8px;height:8px;border-radius:50%;background:${n.read?'transparent':'var(--blue)'};margin-top:6px;flex-shrink:0"></div>
+          <div class="alert-icon" style="background:${n.iconBg}">${n.icon}</div>
+          <div class="alert-body">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+              <div class="alert-title">${esc(n.title)}</div>
+              <span class="alert-time">${n.time}</span>
+            </div>
+            <div class="alert-desc">${esc(n.desc)}</div>
+            <div class="alert-meta">
+              <span class="badge ${n.tagColor}">${n.tag}</span>
+              ${n.priority?`<span style="font-size:11px;font-weight:600;color:${n.priority==='Urgent'?'var(--red)':n.priority==='High'?'var(--orange)':'var(--amber)'}">▲ ${n.priority}</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div class="alert-check ${n.done?'done':''}" onclick="markDone('${n.id}')" title="Mark done">${n.done?'✓':'○'}</div>
+            <span style="font-size:18px;color:var(--muted)">›</span>
+          </div>
+        </div>`).join('')}
+
+        <div style="padding:14px;text-align:center;border-top:1px solid var(--border)">
+          <a onclick="toast('Loaded more')" style="font-size:13px;color:var(--blue);cursor:pointer;font-weight:500">View all notifications →</a>
+        </div>
       </div>
-      <p style="font-weight:600;font-size:14px;margin-bottom:4px">${esc(w.title)}</p>
-      ${w.company?`<p style="font-size:12px;color:#64748b;margin-bottom:4px">${esc(w.company)}</p>`:''}
-      <p style="font-size:12px;color:#475569">Owner: <strong>${esc(w.owner)}</strong></p>
-      ${w.nextAction?`<div class="action-strip" style="margin-top:8px"><span>${esc(w.nextAction)}</span><span style="color:#38bdf8">→</span></div>`:''}
-      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px">
-        <span style="color:${isOverdue(w.dueDate)?'#dc2626':'#64748b'};font-weight:${isOverdue(w.dueDate)?600:400}">Due: ${formatDate(w.dueDate)}</span>
-        ${w.decisionNeeded?'<span style="color:#dc2626;font-weight:600">Decision needed</span>':''}
+    </div>
+
+    <!-- Right: At a Glance -->
+    <div>
+      <div class="glance" style="margin-bottom:14px">
+        <div class="glance-title">At a Glance</div>
+        <div class="glance-row">
+          <div class="glance-icon" style="background:var(--red-lt)">🔴</div>
+          <div><div class="glance-n" style="color:var(--red)">${highPri}</div><div class="glance-l">High Priority</div></div>
+        </div>
+        <div class="glance-row">
+          <div class="glance-icon" style="background:var(--amber-lt)">🟠</div>
+          <div><div class="glance-n" style="color:var(--amber)">5</div><div class="glance-l">Medium Priority</div></div>
+        </div>
+        <div class="glance-row">
+          <div class="glance-icon" style="background:var(--blue-xlt)">🔵</div>
+          <div><div class="glance-n" style="color:var(--blue)">${unread}</div><div class="glance-l">Unread</div></div>
+        </div>
+        <div class="glance-row">
+          <div class="glance-icon" style="background:var(--green-lt)">✅</div>
+          <div><div class="glance-n" style="color:var(--green)">${completed}</div><div class="glance-l">Completed</div></div>
+        </div>
       </div>
-    </div>`).join('')}
+
+      <!-- Quick actions -->
+      <div class="glance" style="margin-bottom:14px">
+        <div class="glance-title">Quick Actions</div>
+        <button class="btn btn-primary" style="width:100%;margin-bottom:8px;justify-content:center" onclick="openNewAlert()">+ New Alert</button>
+        <button class="btn btn-secondary" style="width:100%;margin-bottom:8px;justify-content:center" onclick="nav('filings')">📄 View Filings</button>
+        <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="nav('portfolio')">🏢 Portfolio</button>
+      </div>
+
+      <!-- Upcoming deadlines mini -->
+      <div class="glance">
+        <div class="glance-title">Upcoming Deadlines</div>
+        ${filings.filter(f=>f.status!=='compliant').slice(0,3).map(f=>`
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="nav('filings')">
+          <div style="font-size:13px;font-weight:600">${esc(f.title)}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:3px">
+            <span style="font-size:11px;color:var(--muted)">${esc(f.entity)}</span>
+            <span style="font-size:11px;font-weight:600;color:${isOverdue(f.due)?'var(--red)':'var(--orange)'}">${fmtDate(f.due)}</span>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
   </div>`;
 }
 
-function renderWorkItemDetail(id) {
-  const w = workItems.find(x=>x.id===id);
-  if (!w) return `<div class="empty"><p>Not found</p></div>`;
-  const log = activity.filter(a=>a.workItemId===id);
-  const decs = decisions.filter(d=>d.workItemId===id);
-  const dels = deliveries.filter(d=>d.workItemId===id);
-
+function renderFilings() {
   return `
-  <div style="margin-bottom:16px">
-    <a onclick="nav('work-items')" style="color:#64748b;font-size:13px;cursor:pointer">← Work Items</a>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <div>
+      <h1 style="font-size:22px;font-weight:800">Filing Obligations</h1>
+      <p style="font-size:13px;color:var(--muted);margin-top:2px">Manage all upcoming compliance deadlines</p>
+    </div>
+    <button class="btn btn-primary" onclick="openNewFiling()">+ Add Obligation</button>
   </div>
 
-  <div class="card" style="padding:20px;margin-bottom:14px">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-          <span class="badge" style="background:#f1f5f9;color:#64748b">${typeLabel(w.type)}</span>
-          ${priBadge(w.priority)}
-          ${statusBadge(w.status)}
-        </div>
-        <h1 style="font-size:18px;margin-bottom:4px">${esc(w.title)}</h1>
-        ${w.company?`<p style="font-size:13px;color:#64748b">${esc(w.company)}</p>`:''}
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px">
-      <div><div class="text-xs" style="color:#94a3b8;margin-bottom:2px">OWNER</div><div style="font-size:14px;font-weight:600">${esc(w.owner)}</div></div>
-      <div><div class="text-xs" style="color:#94a3b8;margin-bottom:2px">DUE DATE</div><div style="font-size:14px;font-weight:600;color:${isOverdue(w.dueDate)?'#dc2626':'#1e293b'}">${formatDate(w.dueDate)}</div></div>
-      ${w.company?`<div><div class="text-xs" style="color:#94a3b8;margin-bottom:2px">COMPANY</div><div style="font-size:14px;font-weight:600">${esc(w.company)}</div></div>`:''}
-    </div>
-
-    ${w.nextAction?`<div class="action-strip" style="margin-bottom:14px"><span>${esc(w.nextAction)}</span></div>`:''}
-    ${w.notes?`<div style="background:#f8fafc;border-radius:10px;padding:12px;font-size:13px;color:#475569;white-space:pre-wrap">${esc(w.notes)}</div>`:''}
-  </div>
-
-  <!-- Actions -->
-  <div class="card" style="padding:18px;margin-bottom:14px">
-    <h2 style="margin-bottom:14px">Actions</h2>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-secondary btn-sm" onclick="openLogNote('${w.id}')">📝 Log note</button>
-      <button class="btn btn-secondary btn-sm" onclick="openChangeStatus('${w.id}')">⇄ Change status</button>
-      <button class="btn btn-danger btn-sm" onclick="openEscalate('${w.id}')">↑ Escalate</button>
-    </div>
-  </div>
-
-  <!-- Decisions -->
-  ${decs.length>0?`
-  <div class="card" style="padding:18px;margin-bottom:14px">
-    <h2 style="margin-bottom:12px">Decisions</h2>
-    ${decs.map(d=>`
-    <div style="border:1px solid #fde68a;background:#fefce8;border-radius:10px;padding:12px;margin-bottom:8px">
-      <p style="font-weight:600;font-size:14px;margin-bottom:6px">${esc(d.question)}</p>
-      ${d.options?`<p style="font-size:12px;color:#64748b;margin-bottom:4px">${esc(d.options)}</p>`:''}
-      ${d.recommendation?`<p style="font-size:12px;color:#1d4ed8"><em>Rec:</em> ${esc(d.recommendation)}</p>`:''}
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-green btn-sm" onclick="resolveDecision('${d.id}','Approved')">✓ Approve</button>
-        <button class="btn btn-danger btn-sm" onclick="resolveDecision('${d.id}','Rejected')">✗ Reject</button>
-        <button class="btn btn-secondary btn-sm" onclick="resolveDecision('${d.id}','MoreInfoNeeded')">? Need info</button>
-      </div>
+  <!-- Stats -->
+  <div class="grid-4" style="margin-bottom:16px">
+    ${[
+      {label:'Total Filings',n:filings.length,color:'var(--blue)',bg:'var(--blue-xlt)',icon:'📋'},
+      {label:'Overdue',n:filings.filter(f=>f.status==='overdue').length,color:'var(--red)',bg:'var(--red-lt)',icon:'⚠️'},
+      {label:'Due This Month',n:filings.filter(f=>f.status==='action'||f.status==='risk').length,color:'var(--orange)',bg:'var(--orange-lt)',icon:'📅'},
+      {label:'Compliant',n:filings.filter(f=>f.status==='compliant').length,color:'var(--green)',bg:'var(--green-lt)',icon:'✅'},
+    ].map(s=>`
+    <div class="card card-pad" style="text-align:center">
+      <div style="font-size:24px;margin-bottom:6px">${s.icon}</div>
+      <div style="font-size:26px;font-weight:800;color:${s.color}">${s.n}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${s.label}</div>
     </div>`).join('')}
-  </div>`:''}
+  </div>
 
-  <!-- Alert deliveries -->
-  ${dels.length>0?`
-  <div class="card" style="padding:18px;margin-bottom:14px">
-    <h2 style="margin-bottom:12px">Alert Deliveries</h2>
-    ${dels.map(d=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9">
+  <!-- Filter pills -->
+  <div class="pills" style="margin-bottom:14px">
+    <div class="pill active">All Statuses</div>
+    <div class="pill" onclick="toast('Filter: Compliant')">✓ Compliant</div>
+    <div class="pill" onclick="toast('Filter: At Risk')">⚡ At Risk</div>
+    <div class="pill" onclick="toast('Filter: Action Required')">⚠️ Action Required</div>
+    <div class="pill" onclick="toast('Filter: Overdue')">🔴 Overdue</div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Filing / Obligation</th><th>Entity</th><th>Due Date</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${filings.map(f=>`
+          <tr onclick="openFilingDetail('${f.id}')">
+            <td>
+              <div class="td-title">${esc(f.title)}</div>
+              <div class="td-sub">${esc(f.sub)}</div>
+            </td>
+            <td style="font-size:13px">${esc(f.entity)}</td>
+            <td>
+              <span style="font-size:13px;font-weight:${isOverdue(f.due)?600:400};color:${isOverdue(f.due)?'var(--red)':'var(--text)'}">${fmtDate(f.due)}</span>
+              ${isOverdue(f.due)?`<div style="font-size:10px;color:var(--red);font-weight:600">OVERDUE</div>`:''}
+            </td>
+            <td><span class="badge ${priColor(f.priority)}">${f.priority}</span></td>
+            <td>${statusBadge(f.status)}</td>
+            <td><span style="color:var(--muted);font-size:16px">›</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderPortfolio() {
+  const compliantCount = companies.filter(c=>c.status==='compliant').length;
+  return `
+  <div style="text-align:center;margin-bottom:24px">
+    <h1 style="font-size:26px;font-weight:800">Portfolio Management</h1>
+    <p style="color:var(--muted);margin-top:4px;font-size:14px">Manage. Monitor. Grow.</p>
+  </div>
+
+  <!-- Portfolio overview banner -->
+  <div class="card" style="padding:20px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);border:none;color:#fff;margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
       <div>
-        <div style="font-size:13px;font-weight:600">${esc(d.recipient)}</div>
-        <div style="font-size:11px;color:#64748b">${d.channel} · ${d.sentAt}</div>
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);margin-bottom:6px">Portfolio Overview</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:13px;color:rgba(255,255,255,.7)">🛡️ All Companies Protected</span>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        ${delBadge(d.status)}
-        ${d.status==='Failed'?`<button class="btn btn-secondary btn-sm" onclick="retryDelivery('${d.id}')">Retry</button>`:''}
-        ${d.status==='Sent'?`<button class="btn btn-green btn-sm" onclick="ackDelivery('${d.id}')">Ack</button>`:''}
+      <div style="display:flex;gap:20px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:28px;font-weight:800">${companies.length}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase">Companies</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:28px;font-weight:800;color:#4ade80">${compliantCount}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase">Compliant</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:28px;font-weight:800;color:#60a5fa">0</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase">Alerts</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:28px;font-weight:800">24/7</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.6);text-transform:uppercase">Monitoring</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Company grid -->
+  <div class="grid-2" style="margin-bottom:20px">
+    ${companies.map(c=>`
+    <div class="company-card" onclick="openCompanyDetail('${c.id}')">
+      <div class="cc-status">
+        <span class="badge ${c.status==='compliant'?'b-green':'b-amber'}">
+          ${c.status==='compliant'?'✓ Compliant':'⚠ Needs Attention'}
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">${c.avatar}</div>
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="font-size:18px">🏢</span>
+            <span style="font-size:15px;font-weight:800">${esc(c.name)}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">${esc(c.type)}</div>
+        </div>
+      </div>
+      <ul class="cc-check-list">
+        ${c.items.map((item,i)=>`<li><span class="ci">${c.ok[i]?'✅':'⚠️'}</span>${item}</li>`).join('')}
+      </ul>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--muted)">Primary: ${esc(c.person)}</span>
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openCompanyDetail('${c.id}')">View →</button>
       </div>
     </div>`).join('')}
-  </div>`:''}
+  </div>
 
-  <!-- Activity log -->
-  <div class="card" style="padding:18px">
-    <h2 style="margin-bottom:12px">Activity Log</h2>
-    ${log.length===0?`<p class="text-muted">No activity yet.</p>`:''}
-    <div class="space-y">
-      ${log.map(a=>`
-      <div style="display:flex;gap:10px;align-items:flex-start">
-        <div style="width:28px;height:28px;background:#f1f5f9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${a.person[0]}</div>
-        <div>
-          <div style="font-size:13px"><strong>${esc(a.person)}</strong> — ${esc(a.summary)}</div>
-          <div style="font-size:11px;color:#94a3b8;margin-top:2px">${a.time}</div>
-        </div>
+  <!-- Feature strip -->
+  <div class="card card-pad">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
+      ${[
+        {icon:'🛡️',title:'Centralized Oversight',desc:'One view of all your companies'},
+        {icon:'📊',title:'Real-Time Monitoring',desc:'Track compliance and performance'},
+        {icon:'⚠️',title:'Risk Management',desc:'Identify issues and reduce risk'},
+        {icon:'📄',title:'Reporting & Analytics',desc:'Data-driven insights for decisions'},
+        {icon:'📈',title:'Drive Growth',desc:'Support companies and grow your portfolio'},
+      ].map(f=>`
+      <div style="text-align:center;padding:12px">
+        <div style="font-size:28px;margin-bottom:6px">${f.icon}</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:2px">${f.title}</div>
+        <div style="font-size:11px;color:var(--muted)">${f.desc}</div>
       </div>`).join('')}
     </div>
   </div>`;
-}
-
-function renderToday() {
-  const now = new Date(); now.setHours(0,0,0,0);
-  const end = new Date(now); end.setHours(23,59,59,999);
-  const overdue = workItems.filter(w=>w.dueDate&&new Date(w.dueDate)<now&&!['Completed','Archived','NotFit'].includes(w.status));
-  const dueToday = workItems.filter(w=>w.dueDate&&new Date(w.dueDate)>=now&&new Date(w.dueDate)<=end&&!['Completed','Archived','NotFit'].includes(w.status));
-
-  const itemCard = (w) => `
-  <div class="mob-card" style="cursor:pointer" onclick="nav('work-item-detail',{id:'${w.id}'})">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
-      <div style="flex:1;min-width:0">
-        <p style="font-weight:600;font-size:14px">${esc(w.title)}</p>
-        ${w.company?`<p style="font-size:12px;color:#64748b">${esc(w.company)}</p>`:''}
-      </div>
-      ${statusBadge(w.status)}
-    </div>
-    ${w.nextAction?`<div class="action-strip"><span>${esc(w.nextAction)}</span></div>`:''}
-    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px">
-      <span>${esc(w.owner)}</span>
-      ${priBadge(w.priority)}
-    </div>
-  </div>`;
-
-  return `
-  <div class="page-header">
-    <div><h1>Today's Actions</h1><p class="text-muted">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</p></div>
-  </div>
-
-  ${overdue.length>0?`
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-    <span style="width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block"></span>
-    <h2 style="color:#dc2626;font-size:14px">OVERDUE (${overdue.length})</h2>
-  </div>
-  ${overdue.map(itemCard).join('')}
-  <div style="margin-bottom:20px"></div>
-  `:''}
-
-  ${dueToday.length>0?`
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-    <span style="width:8px;height:8px;background:#f59e0b;border-radius:50%;display:inline-block"></span>
-    <h2 style="color:#b45309;font-size:14px">DUE TODAY (${dueToday.length})</h2>
-  </div>
-  ${dueToday.map(itemCard).join('')}
-  `:`<div class="card" style="padding:32px;text-align:center"><div style="font-size:32px;margin-bottom:8px">✅</div><p style="font-weight:600;color:#16a34a">Nothing due today</p></div>`}
-
-  ${overdue.length===0&&dueToday.length===0?`
-  <div class="card" style="padding:48px;text-align:center;margin-top:16px">
-    <div style="font-size:40px;margin-bottom:10px">🎉</div>
-    <p style="font-weight:700;color:#1e293b;font-size:16px">All clear!</p>
-    <p class="text-muted" style="margin-top:4px">No overdue or due-today items.</p>
-  </div>`:''}`;
 }
 
 function renderDecisions() {
   const open = decisions.filter(d=>d.status==='Open');
   return `
-  <div class="page-header"><h1>Decision Queue</h1></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <div>
+      <h1 style="font-size:22px;font-weight:800">Decision Queue</h1>
+      <p style="font-size:13px;color:var(--muted);margin-top:2px">${open.length} item${open.length!==1?'s':''} awaiting your decision</p>
+    </div>
+  </div>
 
   ${open.length===0?`
-  <div class="card" style="padding:48px;text-align:center">
-    <div style="font-size:36px;margin-bottom:10px">✓</div>
-    <p style="font-weight:700;color:#16a34a">No open decisions</p>
-    <p class="text-muted" style="margin-top:4px">Nothing waiting for a decision right now.</p>
-  </div>`:open.map(d=>{
-    const wi = workItems.find(w=>w.id===d.workItemId);
-    const overdue = d.dueDate && new Date(d.dueDate) < new Date(new Date().toDateString());
-    return `
-  <div class="card" style="padding:18px;margin-bottom:14px;border-color:${overdue?'#fca5a5':'#e2e8f0'}">
-    ${overdue?`<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><span style="width:8px;height:8px;background:#ef4444;border-radius:50%;display:inline-block"></span><span style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase">Overdue · ${formatDate(d.dueDate)}</span></div>`:''}
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px">
-      <div style="flex:1">
-        ${wi?`<p style="font-size:12px;color:#2563eb;cursor:pointer" onclick="nav('work-item-detail',{id:'${wi.id}'})">${esc(wi.title)}${wi.company?' · '+esc(wi.company):''}</p>`:''}
-        <p style="font-weight:700;font-size:15px;margin-top:4px">${esc(d.question)}</p>
+  <div class="card" style="padding:60px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">✅</div>
+    <h2 style="color:var(--green);font-size:18px">No open decisions</h2>
+    <p style="color:var(--muted);margin-top:6px;font-size:13px">Nothing waiting for a decision right now.</p>
+  </div>`:''}
+
+  ${open.map(d=>`
+  <div class="card card-pad" style="margin-bottom:14px;border-left:4px solid var(--amber)">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span class="badge b-amber">⚖️ Decision Required</span>
+          <span style="font-size:12px;color:var(--muted)">${esc(d.company)}</span>
+        </div>
+        <h2 style="font-size:16px;font-weight:700;color:var(--text)">${esc(d.question)}</h2>
       </div>
-      ${!overdue&&d.dueDate?`<span style="font-size:12px;color:#ea580c;font-weight:600;white-space:nowrap">Due ${formatDate(d.dueDate)}</span>`:''}
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:11px;color:var(--muted)">Due date</div>
+        <div style="font-size:13px;font-weight:600;color:${isOverdue(d.due)?'var(--red)':'var(--orange)'}">${fmtDate(d.due)}</div>
+      </div>
     </div>
-    ${d.options?`<div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:13px;color:#475569;margin-bottom:10px"><strong style="font-size:11px;color:#94a3b8;text-transform:uppercase">Options: </strong>${esc(d.options)}</div>`:''}
-    ${d.recommendation?`<div style="background:#eff6ff;border-radius:8px;padding:10px;font-size:13px;color:#1e40af;margin-bottom:10px"><strong style="font-size:11px;color:#3b82f6;text-transform:uppercase">Recommendation: </strong>${esc(d.recommendation)}</div>`:''}
+    ${d.options?`<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Options</div><div style="font-size:13px;color:var(--text)">${esc(d.options)}</div></div>`:''}
+    ${d.recommendation?`<div style="background:var(--blue-xlt);border-radius:10px;padding:12px;margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Recommendation</div><div style="font-size:13px;color:var(--navy3)">${esc(d.recommendation)}</div></div>`:''}
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <p style="font-size:12px;color:#64748b">Awaiting: <strong style="color:#1e293b">${esc(d.decisionBy)}</strong></p>
+      <p style="font-size:12px;color:var(--muted)">Awaiting decision from: <strong style="color:var(--text)">${esc(d.by)}</strong></p>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-green btn-sm" onclick="resolveDecision('${d.id}','Approved')">✓ Approve</button>
-        <button class="btn btn-danger btn-sm" onclick="resolveDecision('${d.id}','Rejected')">✗ Reject</button>
-        <button class="btn btn-secondary btn-sm" onclick="resolveDecision('${d.id}','MoreInfoNeeded')">? Info</button>
+        <button class="btn btn-green" onclick="resolveDecision('${d.id}','Approved')">✓ Approve</button>
+        <button class="btn btn-danger" onclick="resolveDecision('${d.id}','Rejected')">✗ Reject</button>
+        <button class="btn btn-secondary" onclick="resolveDecision('${d.id}','MoreInfoNeeded')">? Need Info</button>
       </div>
-    </div>
-  </div>`;}).join('')}`;
-}
-
-function renderAlerts() {
-  const alerts = workItems.filter(w=>w.type==='ComplianceAlert');
-  const pending = deliveries.filter(d=>d.status==='Sent').length;
-  const acked = deliveries.filter(d=>d.status==='Acknowledged').length;
-  const failed = deliveries.filter(d=>d.status==='Failed').length;
-
-  return `
-  <div class="page-header">
-    <div><h1>Compliance Alerts</h1><p class="text-muted">All compliance work items and delivery status</p></div>
-    <button class="btn btn-primary btn-sm" onclick="openNewAlert()">+ New Alert</button>
-  </div>
-
-  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
-    <div class="stat-card"><div class="stat-num">${alerts.length}</div><div class="stat-label">Total</div></div>
-    <div class="stat-card ${pending>0?'orange':''}"><div class="stat-num">${pending}</div><div class="stat-label">Awaiting ack</div></div>
-    <div class="stat-card green"><div class="stat-num">${acked}</div><div class="stat-label">Acknowledged</div></div>
-    <div class="stat-card ${failed>0?'red':''}"><div class="stat-num">${failed}</div><div class="stat-label">Failed</div></div>
-  </div>
-
-  <div class="space-y">
-    ${alerts.map(w=>{
-      const dels = deliveries.filter(d=>d.workItemId===w.id);
-      const hasUnacked = dels.some(d=>d.status==='Sent'||d.status==='Pending');
-      return `
-      <div class="card" style="padding:14px;border-color:${hasUnacked?'#fed7aa':'#e2e8f0'};cursor:pointer" onclick="nav('work-item-detail',{id:'${w.id}'})">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-              <span style="font-weight:600;font-size:14px">${esc(w.title)}</span>
-              ${priBadge(w.priority)}
-              ${hasUnacked?`<span class="badge" style="background:#fff7ed;color:#c2410c">Awaiting ack</span>`:''}
-            </div>
-            <p style="font-size:12px;color:#64748b">${w.company?`<strong style="color:#334155">${esc(w.company)}</strong> · `:''}Due ${formatDate(w.dueDate)}</p>
-            ${dels.length>0?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${dels.slice(0,4).map(d=>`<span class="badge ${d.status==='Acknowledged'?'del-acked':d.status==='Failed'?'del-failed':d.status==='Sent'?'del-sent':'del-pending'}">${d.status} · ${esc(d.recipient)}</span>`).join('')}</div>`:'<p style="font-size:11px;color:#94a3b8;margin-top:4px">No deliveries</p>'}
-          </div>
-          <div style="font-size:11px;color:#94a3b8;white-space:nowrap">${formatDate(w.dueDate)}</div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-}
-
-function renderContacts() {
-  const companies = [...new Set(contacts.map(c=>c.company))].sort();
-  return `
-  <div class="page-header">
-    <h1>Contacts</h1>
-    <button class="btn btn-primary btn-sm" onclick="openNewContact()">+ Add</button>
-  </div>
-  ${companies.map(comp=>`
-  <div style="margin-bottom:16px">
-    <h2 style="margin-bottom:8px">${esc(comp)}</h2>
-    <div class="card">
-      ${contacts.filter(c=>c.company===comp).map((c,i,arr)=>`
-      <div style="padding:12px 16px;${i<arr.length-1?'border-bottom:1px solid #f1f5f9':''}">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-weight:600;font-size:14px">${esc(c.name)}</span>
-              ${c.isPrimary?`<span class="badge" style="background:#f0fdf4;color:#15803d">Primary</span>`:''}
-            </div>
-            ${c.role?`<p style="font-size:12px;color:#64748b;margin-top:2px">${esc(c.role)}</p>`:''}
-            <div style="display:flex;gap:14px;margin-top:4px">
-              ${c.email?`<a href="mailto:${esc(c.email)}" style="font-size:12px;color:#2563eb">${esc(c.email)}</a>`:''}
-              ${c.phone?`<a href="tel:${esc(c.phone)}" style="font-size:12px;color:#2563eb">${esc(c.phone)}</a>`:''}
-            </div>
-          </div>
-        </div>
-      </div>`).join('')}
     </div>
   </div>`).join('')}`;
 }
 
 function renderTeams() {
   const teams = [
-    { name:'Sales & BD', owners:['Dagon','Alissa'], color:'#ea580c', bg:'#fff7ed', border:'#fed7aa' },
-    { name:'Operations', owners:['Michelle'], color:'#059669', bg:'#f0fdf4', border:'#bbf7d0' },
-    { name:'Tech', owners:['Chris','Charlie'], color:'#2563eb', bg:'#eff6ff', border:'#bfdbfe' },
-    { name:'Leadership', owners:['George'], color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' },
+    {name:'Sales & BD',owners:'Dagon · Alissa',color:'#ea580c',bg:'#fff7ed',border:'#fed7aa',icon:'🤝',active:4,overdue:1,done:2},
+    {name:'Operations',owners:'Michelle',color:'var(--green)',bg:'#f0fdf4',border:'#bbf7d0',icon:'⚙️',active:6,overdue:2,done:5},
+    {name:'Tech',owners:'Chris · Charlie',color:'var(--blue)',bg:'var(--blue-xlt)',border:'#bfdbfe',icon:'💻',active:3,overdue:0,done:8},
+    {name:'Leadership',owners:'George',color:'#7c3aed',bg:'#f5f3ff',border:'#ddd6fe',icon:'👑',active:2,overdue:0,done:3},
   ];
   return `
-  <div class="page-header">
-    <div><h1>Teams</h1><p class="text-muted">Live work status across every team</p></div>
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:22px;font-weight:800">Teams</h1>
+    <p style="color:var(--muted);font-size:13px;margin-top:2px">Live work status across every team</p>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
-    ${teams.map(team=>{
-      const items = workItems.filter(w=>team.owners.includes(w.owner)&&!['Archived','NotFit'].includes(w.status));
-      const overdue = items.filter(w=>w.dueDate&&new Date(w.dueDate)<new Date(new Date().toDateString())&&!['Completed'].includes(w.status));
-      const done = workItems.filter(w=>team.owners.includes(w.owner)&&w.status==='Completed').length;
-      return `
-      <div style="background:${team.bg};border:1px solid ${team.border};border-radius:14px;padding:18px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-          <div>
-            <h2 style="color:${team.color}">${team.name}</h2>
-            <p style="font-size:12px;color:#64748b;margin-top:2px">${team.owners.join(' · ')}</p>
+  <div class="grid-2">
+    ${teams.map(t=>`
+    <div style="background:${t.bg};border:1px solid ${t.border};border-radius:16px;padding:20px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+            <span style="font-size:20px">${t.icon}</span>
+            <h2 style="font-size:16px;font-weight:800;color:${t.color}">${t.name}</h2>
           </div>
-          <div style="text-align:right">
-            <div style="font-size:30px;font-weight:700;color:${team.color}">${items.length}</div>
-            <div style="font-size:11px;color:#64748b">active</div>
-          </div>
+          <p style="font-size:12px;color:var(--muted)">${t.owners}</p>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          ${overdue.length>0?`<span class="badge" style="background:#fee2e2;color:#b91c1c">${overdue.length} overdue</span>`:''}
-          <span class="badge" style="background:#dcfce7;color:#15803d">${done} done</span>
+        <div style="text-align:right">
+          <div style="font-size:32px;font-weight:800;color:${t.color}">${t.active}</div>
+          <div style="font-size:11px;color:var(--muted)">active items</div>
         </div>
-        <div class="space-y-sm">
-          ${items.slice(0,3).map(w=>`
-          <div style="background:rgba(255,255,255,.8);border-radius:10px;padding:8px 12px;cursor:pointer" onclick="nav('work-item-detail',{id:'${w.id}'})">
-            <p style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(w.title)}</p>
-            ${w.company?`<p style="font-size:11px;color:#64748b">${esc(w.company)}</p>`:''}
-          </div>`).join('')}
-        </div>
-        <div style="margin-top:12px">
-          ${team.owners.map(o=>`<a onclick="filterOwner='${o}';nav('work-items')" style="font-size:12px;font-weight:600;color:${team.color};cursor:pointer">${o}'s items → </a>`).join('')}
-          ${team.name==='Leadership'?`<a onclick="nav('decisions')" style="font-size:12px;font-weight:600;color:${team.color};cursor:pointer">Decisions →</a>`:''}
-        </div>
-      </div>`;
-    }).join('')}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        ${t.overdue>0?`<span class="badge b-red">${t.overdue} overdue</span>`:''}
+        <span class="badge b-green">${t.done} done this week</span>
+      </div>
+      <div style="background:rgba(255,255,255,.7);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--muted)">
+        Click to view all team items →
+      </div>
+    </div>`).join('')}
   </div>`;
 }
 
-function renderRecipients() {
-  const companies = [...new Set(recipients.map(r=>r.company))].sort();
+function renderReports() {
+  const trendH = [30,38,28,44,52,48,58,54,68,72,76,87];
   return `
-  <div class="page-header">
-    <div><h1>Alert Recipients</h1><p class="text-muted">Who receives compliance alerts per company</p></div>
-    <button class="btn btn-primary btn-sm" onclick="openNewRecipient()">+ Add</button>
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:22px;font-weight:800">Reports & Analytics</h1>
+    <p style="color:var(--muted);font-size:13px;margin-top:2px">Compliance performance over time</p>
   </div>
-
-  <div style="display:flex;gap:8px;margin-bottom:16px">
-    <button class="btn btn-secondary btn-sm" onclick="runEscalationCheck()">Run Escalation Check</button>
-  </div>
-
-  ${companies.map(comp=>`
-  <div style="margin-bottom:16px">
-    <h2 style="margin-bottom:8px">${esc(comp)}</h2>
-    <div class="card">
-      ${recipients.filter(r=>r.company===comp).map((r,i,arr)=>`
-      <div style="padding:12px 16px;${i<arr.length-1?'border-bottom:1px solid #f1f5f9':''}">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span style="font-weight:600;font-size:14px">${esc(r.name)}</span>
-              <span class="badge" style="background:#f1f5f9;color:#475569">${r.role}</span>
-              <span class="badge" style="background:#f0f9ff;color:#0369a1">L${r.level}</span>
-              ${r.suppressed?`<span class="badge" style="background:#fef3c7;color:#92400e">Suppressed</span>`:''}
-            </div>
-            <p style="font-size:12px;color:#64748b;margin-top:2px">${r.channel}${r.email?' · '+esc(r.email):''}</p>
-          </div>
-          <div style="display:flex;gap:6px">
-            ${r.suppressed
-              ? `<button class="btn btn-green btn-sm" onclick="unsuppressRecipient('${r.id}')">Unsuppress</button>`
-              : `<button class="btn btn-danger btn-sm" onclick="suppressRecipient('${r.id}')">Suppress</button>`}
-          </div>
-        </div>
-      </div>`).join('')}
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card card-pad">
+      <div class="card-title">Compliance Trend — 12 Months</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px">
+        <span style="font-size:36px;font-weight:800;color:var(--green)">87%</span>
+        <span style="font-size:13px;color:var(--green)">↑ +4% vs last month</span>
+      </div>
+      <div class="trend-wrap" style="height:100px">
+        ${trendH.map(h=>`<div class="trend-bar" style="height:${h}%"></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px;padding:0 4px">
+        ${['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'].map(m=>`<span>${m}</span>`).join('')}
+      </div>
     </div>
-  </div>`).join('')}`;
+    <div class="card card-pad">
+      <div class="card-title">Status Breakdown</div>
+      <div class="donut-wrap">
+        <div class="donut" style="width:100px;height:100px">
+          <div class="donut-center"><div class="dn">34</div><div class="dl">Entities</div></div>
+        </div>
+        <div class="donut-legend">
+          ${[['Compliant','var(--green-dot)','23','67%'],['At Risk','#f59e0b','7','21%'],['Action Req.','var(--orange)','3','9%'],['Overdue','var(--red)','1','3%']].map(([l,c,n,p])=>`
+          <div class="dl-row"><span class="dot" style="background:${c};width:10px;height:10px;border-radius:50%;display:inline-block"></span><span style="font-size:12px;color:var(--muted);flex:1">${l}</span><span style="font-size:12px;color:var(--muted)">${p}</span><strong style="font-size:12px;margin-left:8px">${n}</strong></div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-pad" style="padding-bottom:0">
+      <div class="card-title">Compliance by Category</div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Total</th><th>Compliant</th><th>At Risk</th><th>Overdue</th><th>Score</th></tr></thead>
+        <tbody>
+          ${[
+            {cat:'Corporation Tax',t:8,c:6,r:1,o:1},
+            {cat:'VAT / MTD',t:6,c:5,r:1,o:0},
+            {cat:'Companies House',t:5,c:4,r:1,o:0},
+            {cat:'PAYE',t:4,c:3,r:0,o:1},
+            {cat:'Self Assessment',t:11,c:5,r:4,o:2},
+          ].map(r=>`
+          <tr>
+            <td style="font-weight:600">${r.cat}</td>
+            <td>${r.t}</td>
+            <td style="color:var(--green);font-weight:600">${r.c}</td>
+            <td style="color:var(--amber);font-weight:600">${r.r}</td>
+            <td style="color:var(--red);font-weight:600">${r.o}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="prog-strip" style="flex:1;margin:0"><div class="ps-seg" style="flex:${r.c};background:var(--green-dot)"></div><div class="ps-seg" style="flex:${r.r};background:#f59e0b"></div><div class="ps-seg" style="flex:${r.o};background:var(--red)"></div></div>
+                <span style="font-size:12px;font-weight:700;color:var(--green)">${Math.round(r.c/r.t*100)}%</span>
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
 function renderSettings() {
   return `
-  <div class="page-header"><h1>Settings</h1></div>
-  <div class="card" style="padding:20px;max-width:480px">
-    <h2 style="margin-bottom:16px">Change Password</h2>
-    <div class="form-group"><label>Current password</label><input type="password" id="cur-pass" placeholder="Current password"></div>
-    <div class="form-group"><label>New password</label><input type="password" id="new-pass" placeholder="Min 8 characters"></div>
-    <div class="form-group"><label>Confirm new password</label><input type="password" id="conf-pass" placeholder="Repeat new password"></div>
-    <button class="btn btn-primary" onclick="changePassword()">Update password</button>
-    <p style="margin-top:16px;font-size:12px;color:#94a3b8">Logged in as <strong>George</strong></p>
-  </div>`;
-}
-
-function renderNewWorkItem() {
-  return `
-  <div style="margin-bottom:16px"><a onclick="nav('work-items')" style="color:#64748b;font-size:13px;cursor:pointer">← Work Items</a></div>
-  <h1 style="margin-bottom:20px">New Work Item</h1>
-  <div class="card" style="padding:20px;max-width:600px">
-    <div class="form-group"><label>Title *</label><input id="nw-title" placeholder="Brief description of the work"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="form-group"><label>Type</label>
-        <select id="nw-type">${WI_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label>Priority</label>
-        <select id="nw-priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select>
-      </div>
+  <div style="margin-bottom:20px">
+    <h1 style="font-size:22px;font-weight:800">Settings</h1>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px">
+    <div class="card card-pad">
+      <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Account Details</h2>
+      <div class="form-group"><label>Full Name</label><input value="George Harrington"></div>
+      <div class="form-group"><label>Email</label><input value="george@firm.co.uk"></div>
+      <div class="form-group"><label>Role</label><input value="Compliance Manager" readonly style="background:#f8fafc"></div>
+      <button class="btn btn-primary" onclick="toast('Account updated ✓')">Save Changes</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="form-group"><label>Owner</label>
-        <select id="nw-owner">${OWNERS.map(o=>`<option>${o}</option>`).join('')}</select>
-      </div>
-      <div class="form-group"><label>Due Date</label><input id="nw-due" type="date"></div>
+    <div class="card card-pad">
+      <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Change Password</h2>
+      <div class="form-group"><label>Current Password</label><input type="password" id="cur-pass"></div>
+      <div class="form-group"><label>New Password</label><input type="password" id="new-pass" placeholder="Min 8 characters"></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="conf-pass"></div>
+      <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
     </div>
-    <div class="form-group"><label>Company</label><input id="nw-company" placeholder="Client or company name"></div>
-    <div class="form-group"><label>Next Action</label><input id="nw-action" placeholder="What's the immediate next step?"></div>
-    <div class="form-group"><label>Notes</label><textarea id="nw-notes" placeholder="Context, details, links…"></textarea></div>
-    <div style="display:flex;gap:10px">
-      <button class="btn btn-primary" onclick="createWorkItem()">Create Work Item</button>
-      <button class="btn btn-secondary" onclick="nav('work-items')">Cancel</button>
+    <div class="card card-pad" style="grid-column:1/-1">
+      <h2 style="font-size:15px;font-weight:700;margin-bottom:16px">Notification Preferences</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${[['Email alerts','On'],['Push notifications','On'],['Weekly digest','Off'],['Compliance reminders','On']].map(([l,s])=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+          <span style="font-size:13px;font-weight:500">${l}</span>
+          <button onclick="this.textContent=this.textContent==='On'?'Off':'On';toast('Preference saved')" style="padding:4px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;background:${s==='On'?'var(--green-lt)':'var(--bg)'};color:${s==='On'?'var(--green)':'var(--muted)'}">${s}</button>
+        </div>`).join('')}
+      </div>
     </div>
   </div>`;
 }
 
-// ─────────────────────────────────────────────────────────────
-// ACTIONS
-// ─────────────────────────────────────────────────────────────
-function createWorkItem() {
-  const title = document.getElementById('nw-title').value.trim();
-  if (!title) { toast('Title is required'); return; }
-  const id = 'wi'+Date.now();
-  workItems.unshift({
-    id, type: document.getElementById('nw-type').value,
-    title, company: document.getElementById('nw-company').value.trim()||null,
-    owner: document.getElementById('nw-owner').value,
-    status: 'Captured', priority: document.getElementById('nw-priority').value,
-    nextAction: document.getElementById('nw-action').value.trim()||null,
-    dueDate: document.getElementById('nw-due').value||null,
-    decisionNeeded: false,
-    notes: document.getElementById('nw-notes').value.trim()||null,
-  });
-  activity.unshift({ id:'a'+Date.now(), workItemId:id, person:'George', event:'Created', summary:'Work item created', time:'Just now' });
-  toast('Work item created ✓');
-  nav('work-item-detail',{id});
+// ─── ACTIONS ────────────────────────────────────────────────────────────────
+function markAllRead() {
+  notifications.forEach(n=>n.read=true);
+  toast('All notifications marked as read');
+  nav('notifications');
+}
+function markDone(id) {
+  const n = notifications.find(x=>x.id===id);
+  if (n) { n.done=!n.done; toast(n.done?'Marked as done ✓':'Unmarked'); nav('notifications'); }
 }
 
-function openLogNote(wid) {
-  showModal(`
-  <div class="modal-title">Log Note <button onclick="closeModal()">×</button></div>
-  <div class="form-group"><label>Note</label><textarea id="note-text" placeholder="What happened? What's the update?" style="min-height:100px"></textarea></div>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="logNote('${wid}')">Save note</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-  </div>`);
-  setTimeout(()=>document.getElementById('note-text')?.focus(),100);
-}
-function logNote(wid) {
-  const text = document.getElementById('note-text')?.value.trim();
-  if (!text) { toast('Note cannot be empty'); return; }
-  activity.unshift({ id:'a'+Date.now(), workItemId:wid, person:'George', event:'NoteAdded', summary:text, time:'Just now' });
-  closeModal(); toast('Note logged ✓'); nav('work-item-detail',{id:wid});
+function resolveDecision(id, status) {
+  const d = decisions.find(x=>x.id===id);
+  if (d) { d.status=status; toast(`Decision: ${status} ✓`); nav('decisions'); }
 }
 
-function openChangeStatus(wid) {
-  const w = workItems.find(x=>x.id===wid);
+function openFilingDetail(id) {
+  const f = filings.find(x=>x.id===id);
+  if (!f) return;
   showModal(`
-  <div class="modal-title">Change Status <button onclick="closeModal()">×</button></div>
-  <p style="font-size:13px;color:#64748b;margin-bottom:14px">Current: ${statusBadge(w.status)}</p>
-  <div class="form-group"><label>New Status</label>
-    <select id="new-status">${WI_STATUSES.map(s=>`<option value="${s}" ${s===w.status?'selected':''}>${s}</option>`).join('')}</select>
+  <div class="modal-hd">
+    <h3>${esc(f.title)}</h3>
+    <button onclick="closeModal()">×</button>
   </div>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="changeStatus('${wid}')">Update status</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-  </div>`);
-}
-function changeStatus(wid) {
-  const w = workItems.find(x=>x.id===wid);
-  const oldStatus = w.status;
-  w.status = document.getElementById('new-status').value;
-  activity.unshift({ id:'a'+Date.now(), workItemId:wid, person:'George', event:'StatusChanged', summary:`Status changed to ${w.status}`, time:'Just now' });
-  closeModal(); toast(`Status → ${w.status} ✓`); nav('work-item-detail',{id:wid});
-}
-
-function openEscalate(wid) {
-  showModal(`
-  <div class="modal-title">Escalate for Decision <button onclick="closeModal()">×</button></div>
-  <div class="form-group"><label>Question *</label><input id="esc-q" placeholder="What decision is needed?"></div>
-  <div class="form-group"><label>Options</label><input id="esc-opts" placeholder="A) … B) … C) …"></div>
-  <div class="form-group"><label>Recommendation</label><input id="esc-rec" placeholder="Your recommendation"></div>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-danger" onclick="escalateItem('${wid}')">Escalate</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-  </div>`);
-}
-function escalateItem(wid) {
-  const q = document.getElementById('esc-q').value.trim();
-  if (!q) { toast('Question is required'); return; }
-  const w = workItems.find(x=>x.id===wid);
-  w.status = 'Escalated'; w.decisionNeeded = true;
-  decisions.push({ id:'d'+Date.now(), workItemId:wid, question:q, options:document.getElementById('esc-opts').value.trim()||null, recommendation:document.getElementById('esc-rec').value.trim()||null, decisionBy:'George', status:'Open', dueDate:null });
-  activity.unshift({ id:'a'+Date.now(), workItemId:wid, person:'George', event:'DecisionRequested', summary:`Escalated: ${q}`, time:'Just now' });
-  closeModal(); toast('Escalated to George ✓'); nav('work-item-detail',{id:wid});
-}
-
-function resolveDecision(did, status) {
-  const d = decisions.find(x=>x.id===did);
-  if (!d) return;
-  d.status = status;
-  const w = workItems.find(x=>x.id===d.workItemId);
-  if (w) { w.decisionNeeded = false; if (!['Completed','Archived'].includes(w.status)) w.status = 'InProgress'; }
-  activity.unshift({ id:'a'+Date.now(), workItemId:d.workItemId, person:'George', event:'DecisionMade', summary:`Decision: ${status}`, time:'Just now' });
-  toast(`Decision: ${status} ✓`);
-  if (currentPage==='decisions') nav('decisions');
-  else nav('work-item-detail',{id:d.workItemId});
-}
-
-function retryDelivery(did) {
-  const d = deliveries.find(x=>x.id===did);
-  if (d) { d.status='Pending'; toast('Retry queued ✓'); nav('work-item-detail',{id:d.workItemId}); }
-}
-function ackDelivery(did) {
-  const d = deliveries.find(x=>x.id===did);
-  if (d) { d.status='Acknowledged'; toast('Acknowledged ✓'); nav('work-item-detail',{id:d.workItemId}); }
-}
-
-function suppressRecipient(rid) {
-  const r = recipients.find(x=>x.id===rid);
-  if (!r) return;
-  const reason = prompt('Suppression reason (optional):');
-  if (reason === null) return;
-  r.suppressed = true;
-  toast(`${r.name} suppressed`);
-  nav('recipients');
-}
-function unsuppressRecipient(rid) {
-  const r = recipients.find(x=>x.id===rid);
-  if (r) { r.suppressed=false; toast(`${r.name} unsuppressed`); nav('recipients'); }
-}
-function runEscalationCheck() {
-  toast('Escalation check run — no deliveries require escalation', 3000);
-}
-
-function openNewContact() {
-  showModal(`
-  <div class="modal-title">New Contact <button onclick="closeModal()">×</button></div>
-  <div class="form-group"><label>Name *</label><input id="nc-name" placeholder="Full name"></div>
-  <div class="form-group"><label>Company *</label><input id="nc-company" placeholder="Company name"></div>
-  <div class="form-group"><label>Role</label><input id="nc-role" placeholder="Job title or role"></div>
-  <div class="form-group"><label>Email</label><input id="nc-email" type="email" placeholder="email@example.com"></div>
-  <div class="form-group"><label>Phone</label><input id="nc-phone" type="tel" placeholder="+44 7700 000000"></div>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="createContact()">Add contact</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-  </div>`);
-}
-function createContact() {
-  const name = document.getElementById('nc-name').value.trim();
-  const company = document.getElementById('nc-company').value.trim();
-  if (!name||!company) { toast('Name and company required'); return; }
-  contacts.push({ id:'c'+Date.now(), company, name, role:document.getElementById('nc-role').value.trim()||null, email:document.getElementById('nc-email').value.trim()||null, phone:document.getElementById('nc-phone').value.trim()||null, isPrimary:false });
-  closeModal(); toast('Contact added ✓'); nav('contacts');
-}
-
-function openNewRecipient() {
-  showModal(`
-  <div class="modal-title">New Alert Recipient <button onclick="closeModal()">×</button></div>
-  <div class="form-group"><label>Name *</label><input id="nr-name" placeholder="Full name"></div>
-  <div class="form-group"><label>Company *</label><input id="nr-company" placeholder="Client company"></div>
-  <div class="form-group"><label>Email</label><input id="nr-email" type="email" placeholder="email@example.com"></div>
-  <div class="form-group"><label>Role</label>
-    <select id="nr-role"><option>Director</option><option>Accountant</option><option>CompanySecretary</option><option>Admin</option><option>ComplianceManager</option><option>ExternalAdviser</option></select>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    ${statusBadge(f.status)}
+    <span class="badge ${priColor(f.priority)}">${f.priority}</span>
   </div>
-  <div class="form-group"><label>Channel</label>
-    <select id="nr-channel"><option>Email</option><option>Dashboard</option><option>Sms</option><option>WhatsApp</option></select>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div style="background:var(--bg);border-radius:10px;padding:12px"><div style="font-size:11px;color:var(--muted);margin-bottom:3px">ENTITY</div><div style="font-weight:600">${esc(f.entity)}</div></div>
+    <div style="background:var(--bg);border-radius:10px;padding:12px"><div style="font-size:11px;color:var(--muted);margin-bottom:3px">DUE DATE</div><div style="font-weight:600;color:${isOverdue(f.due)?'var(--red)':'var(--text)'}">${fmtDate(f.due)}</div></div>
   </div>
-  <div class="form-group"><label>Escalation Level</label>
-    <select id="nr-level"><option value="1">Level 1 (first)</option><option value="2">Level 2</option><option value="3">Level 3</option></select>
-  </div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:16px">${esc(f.sub)}</p>
   <div style="display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="createRecipient()">Add recipient</button>
-    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="closeModal();toast('Filing marked complete ✓')">Mark Complete</button>
+    <button class="btn btn-secondary" onclick="closeModal();toast('Reminder set ✓')">Set Reminder</button>
+    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
   </div>`);
 }
-function createRecipient() {
-  const name = document.getElementById('nr-name').value.trim();
-  const company = document.getElementById('nr-company').value.trim();
-  if (!name||!company) { toast('Name and company required'); return; }
-  recipients.push({ id:'r'+Date.now(), company, name, email:document.getElementById('nr-email').value.trim()||null, role:document.getElementById('nr-role').value, channel:document.getElementById('nr-channel').value, level:Number(document.getElementById('nr-level').value), suppressed:false });
-  closeModal(); toast('Recipient added ✓'); nav('recipients');
+
+function openCompanyDetail(id) {
+  const c = companies.find(x=>x.id===id);
+  if (!c) return;
+  showModal(`
+  <div class="modal-hd">
+    <h3>${esc(c.name)}</h3>
+    <button onclick="closeModal()">×</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+    <div style="width:60px;height:60px;border-radius:50%;background:var(--blue-xlt);display:flex;align-items:center;justify-content:center;font-size:26px">${c.avatar}</div>
+    <div>
+      <div style="font-size:16px;font-weight:700">${esc(c.name)}</div>
+      <div style="font-size:13px;color:var(--muted)">${esc(c.type)}</div>
+      <div style="margin-top:4px">${c.status==='compliant'?'<span class="badge b-green">✓ Compliant</span>':'<span class="badge b-amber">⚠ Needs Attention</span>'}</div>
+    </div>
+  </div>
+  <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase">Compliance Checklist</div>
+    ${c.items.map((item,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>${c.ok[i]?'✅':'⚠️'}</span><span style="font-size:13px;flex:1">${item}</span><span style="font-size:12px;font-weight:600;color:${c.ok[i]?'var(--green)':'var(--orange)'}">${c.ok[i]?'Compliant':'Needs Review'}</span></div>`).join('')}
+  </div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Primary contact: <strong>${esc(c.person)}</strong></p>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="closeModal();toast('Viewing filings for '+decodeURIComponent('${encodeURIComponent(c.name)}'))">View Filings</button>
+    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+  </div>`);
 }
 
 function openNewAlert() {
   showModal(`
-  <div class="modal-title">New Compliance Alert <button onclick="closeModal()">×</button></div>
-  <div class="form-group"><label>Title *</label><input id="na-title" placeholder="e.g. Corporation Tax — Acme Ltd CT600"></div>
-  <div class="form-group"><label>Company *</label><input id="na-company" placeholder="Client company name"></div>
-  <div class="form-group"><label>Priority</label>
-    <select id="na-pri"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select>
+  <div class="modal-hd"><h3>New Compliance Alert</h3><button onclick="closeModal()">×</button></div>
+  <div class="form-group"><label>Title *</label><input id="na-t" placeholder="e.g. Corporation Tax — Acme Ltd CT600"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="form-group"><label>Entity / Company</label><input id="na-co" placeholder="Client name"></div>
+    <div class="form-group"><label>Due Date</label><input id="na-d" type="date"></div>
   </div>
-  <div class="form-group"><label>Due Date</label><input id="na-due" type="date"></div>
-  <div class="form-group"><label>Notes</label><textarea id="na-notes" placeholder="Details, reference numbers…" style="min-height:80px"></textarea></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="form-group"><label>Priority</label><select id="na-p"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div>
+    <div class="form-group"><label>Status</label><select id="na-s"><option value="compliant">Compliant</option><option value="risk">At Risk</option><option value="action" selected>Action Required</option><option value="overdue">Overdue</option></select></div>
+  </div>
+  <div class="form-group"><label>Notes</label><textarea id="na-n" placeholder="Context, reference numbers, next steps…"></textarea></div>
   <div style="display:flex;gap:8px">
-    <button class="btn btn-primary" onclick="createAlert()">Create alert</button>
+    <button class="btn btn-primary" onclick="createAlert()">Create Alert</button>
     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
   </div>`);
 }
 function createAlert() {
-  const title = document.getElementById('na-title').value.trim();
-  const company = document.getElementById('na-company').value.trim();
-  if (!title||!company) { toast('Title and company required'); return; }
-  const id = 'wi'+Date.now();
-  workItems.unshift({ id, type:'ComplianceAlert', title, company, owner:'Michelle', status:'Captured', priority:document.getElementById('na-pri').value, nextAction:null, dueDate:document.getElementById('na-due').value||null, decisionNeeded:false, notes:document.getElementById('na-notes').value.trim()||null });
-  closeModal(); toast('Alert created ✓'); nav('alerts');
+  const t = document.getElementById('na-t')?.value.trim();
+  if (!t) { toast('Title is required'); return; }
+  filings.unshift({ id:'f'+Date.now(), title:t, sub:'New compliance obligation', entity:document.getElementById('na-co').value.trim()||'—', due:document.getElementById('na-d').value||null, status:document.getElementById('na-s').value, priority:document.getElementById('na-p').value });
+  closeModal(); toast('Alert created ✓'); nav('filings');
 }
 
+function openNewFiling() { openNewAlert(); }
+
 function changePassword() {
-  const cur = document.getElementById('cur-pass').value;
-  const nw = document.getElementById('new-pass').value;
-  const cf = document.getElementById('conf-pass').value;
+  const cur = document.getElementById('cur-pass')?.value;
+  const nw = document.getElementById('new-pass')?.value;
+  const cf = document.getElementById('conf-pass')?.value;
   if (!cur||!nw||!cf) { toast('All fields required'); return; }
   if (nw.length<8) { toast('New password must be 8+ characters'); return; }
   if (nw!==cf) { toast('Passwords do not match'); return; }
-  toast('Password updated ✓');
-  document.getElementById('cur-pass').value=''; document.getElementById('new-pass').value=''; document.getElementById('conf-pass').value='';
+  toast('Password updated successfully ✓');
 }
 </script>
 </body>
