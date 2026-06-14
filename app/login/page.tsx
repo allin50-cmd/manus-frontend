@@ -46,7 +46,7 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18M3 14h18M3 18h18" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">UltraCore SheetOps</h1>
+          <h1 className="text-2xl font-bold text-white">UltraCore Ops</h1>
           <p className="text-slate-400 text-sm mt-1">Business command hub</p>
         </div>
 

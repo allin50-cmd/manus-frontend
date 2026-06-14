@@ -1,5 +1,5 @@
 {
-  "name": "ultracore-sheetops",
+  "name": "ultracore-ops",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,18 +7,16 @@
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "type-check:server": "echo 'Server merged into Next.js App Router — no separate server to check'",
+    "type-check:server": "echo 'No separate server — all routes are Next.js App Router'",
     "test": "vitest run",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:import-fineguard": "tsx prisma/import-fineguard.ts",
-    "db:import-fineguard-recipients": "tsx prisma/import-fineguard-recipients.ts",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
     "@prisma/client": "^5.14.0",
+    "@supabase/supabase-js": "^2.108.1",
     "jose": "^5.9.6",
     "next": "^14.2.35",
     "openai": "^6.42.0",

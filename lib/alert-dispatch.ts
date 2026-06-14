@@ -11,7 +11,7 @@ import { escHtml } from '@/lib/utils'
 import type { WorkItem } from '@prisma/client'
 
 function appUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://app.ultracoresheetops.com'
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://ultracore-ops.vercel.app'
 }
 
 function getResend(): Resend | null {
@@ -265,7 +265,7 @@ export async function sendAlertEmail(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: recipient.email,
-      subject: `[FineGuard Alert] ${workItem.title}`,
+      subject: `[UltraCore Alert] ${workItem.title}`,
       text: buildEmailText({ workItem, recipient, deadline, ackUrl }),
       html: buildEmailHtml({ workItem, recipient, deadline, ackUrl }),
     })
@@ -313,9 +313,9 @@ function buildEmailText({
     '',
     ackUrl
       ? `Acknowledge this alert with one click:\n${ackUrl}`
-      : 'Please log in to UltraCore SheetOps to acknowledge this alert.',
+      : 'Please log in to UltraCore Ops to acknowledge this alert.',
     '',
-    '— FineGuard Compliance System',
+    '— UltraCore Ops',
   ].join('\n')
 }
 
@@ -342,13 +342,13 @@ function buildEmailHtml({
         Acknowledge Alert
       </a>
       <p style="margin:8px 0 0;font-size:11px;color:#94a3b8">One-click — no login required. Link is single-use.</p>`
-    : `<p style="margin:16px 0 0;font-size:13px;color:#64748b">Please log in to UltraCore SheetOps to acknowledge this alert and take any required action.</p>`
+    : `<p style="margin:16px 0 0;font-size:13px;color:#64748b">Please log in to UltraCore Ops to acknowledge this alert and take any required action.</p>`
   return `
 <!DOCTYPE html>
 <html>
 <body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1e293b">
   <div style="background:#1e293b;padding:16px 24px;border-radius:8px 8px 0 0">
-    <p style="color:#94a3b8;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:.05em">FineGuard Compliance Alert</p>
+    <p style="color:#94a3b8;font-size:12px;margin:0;text-transform:uppercase;letter-spacing:.05em">UltraCore Ops — Compliance Alert</p>
     <h1 style="color:#fff;font-size:20px;margin:4px 0 0">${eTitle}</h1>
   </div>
   <div style="border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 8px 8px">
@@ -368,7 +368,7 @@ function buildEmailHtml({
     </table>
     ${notes}
     ${ackButton}
-    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">— FineGuard Compliance System</p>
+    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">— UltraCore Ops</p>
   </div>
 </body>
 </html>`

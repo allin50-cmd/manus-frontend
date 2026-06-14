@@ -4,13 +4,13 @@ import NavBar from '../components/NavBar'
 import { getSession } from '../lib/auth'
 
 export const metadata: Metadata = {
-  title: 'FineGuard – Compliance Dashboard',
-  description: 'Centralise. Prioritise. Comply.',
+  title: 'UltraCore Ops – Business Command Hub',
+  description: 'Centralise. Prioritise. Execute.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'FineGuard',
+    title: 'UltraCore Ops',
   },
   icons: {
     apple: '/icons/icon-192.svg',

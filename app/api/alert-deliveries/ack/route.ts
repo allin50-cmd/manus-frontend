@@ -71,7 +71,7 @@ function successHtml(title: string, company: string | null, state: string) {
     <h1 style="color:#15803d;font-size:22px;margin:0 0 8px">Alert acknowledged</h1>
     <p style="color:#475569;font-size:15px;margin:0 0 4px"><strong>${escHtml(title)}</strong></p>
     ${company ? `<p style="color:#94a3b8;font-size:13px;margin:0 0 24px">${escHtml(company)}</p>` : '<p style="margin:0 0 24px"></p>'}
-    <p style="color:#64748b;font-size:13px;margin:0">Thank you. This has been recorded in the FineGuard compliance system.</p>
+    <p style="color:#64748b;font-size:13px;margin:0">Thank you. This has been recorded in UltraCore Ops.</p>
   </div>
 </body>
 </html>`

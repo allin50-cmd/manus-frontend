@@ -56,7 +56,7 @@ export default function NavBar({ person }: { person: string | null }) {
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-base leading-none">
               🛡️
             </div>
-            <span className="font-extrabold text-white text-base tracking-tight">FineGuard</span>
+            <span className="font-extrabold text-white text-base tracking-tight">UltraCore Ops</span>
           </Link>
 
           <div className="w-px h-5 bg-white/20" />
