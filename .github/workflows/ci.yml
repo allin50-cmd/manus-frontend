@@ -39,4 +39,3 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
-          COMPANIES_HOUSE_API_KEY: placeholder-ci-build-only

@@ -7,7 +7,7 @@ html {
 }
 
 body {
-  @apply bg-fineguard-bg text-slate-900;
+  @apply bg-uc-bg text-slate-900;
 }
 
 /* Bottom nav clearance on mobile */

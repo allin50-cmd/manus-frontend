@@ -1,10 +1,8 @@
-# FineGuard — Agent Context (AGENTS.md)
+# UltraCore Ops — Agent Context
 
 ## What this is
 
-FineGuard is a **UK Companies House compliance management platform** for a small advisory firm. It tracks work items, filing deadlines, decisions, alert recipients, and voice-captured actions. The primary user is "George" (a compliance manager).
-
-There is also a standalone HTML prototype at `public/prototype.html` — a self-contained single-file app with localStorage persistence used for client demos.
+UltraCore Ops is a **business command hub** for a small advisory firm. It creates, tracks, and audits companies, contacts, work items, filing deadlines, decisions, and compliance alerts. The primary user is "George". Supabase PostgreSQL is the single source of truth — no Google Sheets, no external data sources.
 
 ---
 
@@ -13,13 +11,12 @@ There is also a standalone HTML prototype at `public/prototype.html` — a self-
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 14 App Router (TypeScript) |
-| Database | PostgreSQL via Prisma ORM |
+| Database | Supabase PostgreSQL via Prisma ORM |
 | Auth | httpOnly JWT cookie (`session`), passcode-based |
 | Styling | Tailwind CSS |
-| Email | Resend |
-| Voice | OpenAI Whisper (transcription only) |
-| Mobile | Expo (React Native) in `mobile/` |
-| Deploy | Vercel + Neon PostgreSQL |
+| Email | Resend (optional) |
+| Voice | OpenAI Whisper — transcription only, one input method into the same work-item workflow |
+| Deploy | Vercel (serverless Node.js) |
 
 ---
 
@@ -27,35 +24,58 @@ There is also a standalone HTML prototype at `public/prototype.html` — a self-
 
 ```
 app/
-  api/              ← Next.js API routes (server-only, Prisma)
-  (pages)/          ← Next.js page components
+  api/              ← Next.js API routes (server-only, all use Prisma)
+  activity/         ← Audit log page
+  alert-events/     ← Alert audit log
+  alert-recipients/ ← Recipient management
+  alerts/           ← Compliance alerts list + new alert form
+  contacts/         ← Contact directory
+  dashboard/        ← Compliance dashboard
+  decisions/        ← Decision queue
+  filings/          ← Filing obligations view
+  login/            ← Passcode login
+  portfolio/        ← Company portfolio overview
+  settings/         ← Change passcode
+  teams/            ← Team workload view
+  templates/        ← Message/document templates
+  today/            ← Today's priority actions
+  voice-intake/     ← Audio → Whisper → work item draft
+  work-items/       ← Work item CRUD
+
 lib/
-  auth.ts           ← JWT session helpers (getSession, requireSession)
+  auth.ts           ← JWT session helpers (getSession, requireAuth)
   db.ts             ← Prisma client singleton
+  supabase.ts       ← Supabase admin client (lazy init, for storage/realtime if needed)
+  alert-dispatch.ts ← Email alert sending via Resend
+  work-item-enums.ts← Single source of truth for enum values + labels
+
 prisma/
-  schema.prisma     ← Single source of truth for DB schema
-mobile/
-  app/(tabs)/       ← Expo tab screens
-  lib/api.ts        ← Mobile API client (cookie-based auth)
+  schema.prisma     ← Database schema (all tables defined here)
+  seed.ts           ← Demo data seed
+
+components/         ← Shared React components
+middleware.ts       ← Auth guard (JWT verification on every request)
 public/
-  prototype.html    ← Standalone demo app (no build required)
+  prototype.html    ← Standalone UK Companies House demo (localStorage, no backend)
 ```
 
 ---
 
-## Key rules — read before changing anything
+## Hard rules — do not violate
 
-1. **No Edge runtime on Prisma routes.** All `app/api/` routes run on Node.js runtime. Never add `export const runtime = 'edge'` to any file that imports from `lib/db`.
+1. **No Edge runtime on Prisma routes.** Never add `export const runtime = 'edge'` to any file that imports from `lib/db`. All `app/api/` routes run on Node.js.
 
-2. **Auth is server-only.** `JWT_SECRET` is never exposed to the client. The `secret()` function in `lib/auth.ts` throws if `JWT_SECRET` is unset. Every API route that needs auth calls `getSession()` or `requireSession()`.
+2. **Auth is server-only.** `JWT_SECRET` is never sent to the client. `secret()` in `lib/auth.ts` throws if `JWT_SECRET` is unset. Every API route calls `getSession()` or `requireAuth()`.
 
-3. **No AI agents.** Do not add LangChain, OpenAI Assistants, or any agent framework. OpenAI is used only for Whisper transcription in `app/api/voice/transcribe/route.ts`.
+3. **No AI agents or agent frameworks.** OpenAI is used only for Whisper transcription (`app/api/voice/transcribe/route.ts`). No LangChain, no OpenAI Assistants.
 
-4. **No complex RBAC.** Auth is a single shared passcode. There are no user roles.
+4. **No tRPC. No monorepo. No complex RBAC.** Auth is a single shared passcode — no user roles.
 
-5. **DB schema changes** use `prisma db push` (no migration files). Run `npx prisma db push` after editing `schema.prisma`.
+5. **DB schema changes** use `prisma db push` only (no Prisma migration files). Run `npx prisma db push` after editing `schema.prisma`.
 
-6. **prototype.html** is a single self-contained file. All JavaScript must be ES5-compatible (no `?.`, no `const`/`let`, no arrow functions, no template literals in the script block). Data persists in `localStorage` under key `fgpro`.
+6. **`prototype.html`** — all JS must be ES5-compatible (no `?.`, no `const`/`let`, no arrow functions). Data persists in `localStorage` under key `fgpro`.
+
+7. **Supabase is the only database.** No Google Sheets, no Neon, no other external data sources.
 
 ---
 
@@ -63,36 +83,38 @@ public/
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes | Neon PostgreSQL pooled connection |
-| `DIRECT_URL` | Yes | Neon direct connection (for `prisma db push`) |
-| `JWT_SECRET` | Yes | Signing session tokens (min 32 chars) |
-| `DEFAULT_PASSCODE` | Yes | App login passcode |
-| `NEXT_PUBLIC_APP_URL` | Yes | Full URL e.g. `https://app.vercel.app` |
-| `RESEND_API_KEY` | Optional | Email alert delivery |
+| `DATABASE_URL` | Yes | Supabase pooled connection (port 6543, `?pgbouncer=true`) |
+| `DIRECT_URL` | Yes | Supabase direct connection (port 5432) — schema push only |
+| `JWT_SECRET` | Yes | Signing session tokens — throws if unset |
+| `DEFAULT_PASSCODE` | Yes | Shared login passcode |
+| `NEXT_PUBLIC_APP_URL` | Yes | Full deployment URL e.g. `https://your-project.vercel.app` |
+| `SUPABASE_URL` | Yes | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key — server-side only |
+| `RESEND_API_KEY` | Optional | Email delivery (alerts still show on dashboard without it) |
 | `RESEND_FROM_EMAIL` | Optional | Verified sender address |
-| `OPENAI_API_KEY` | Optional | Voice transcription |
-| `CRON_SECRET` | Optional | Protect `/api/alert-escalation-check` |
+| `OPENAI_API_KEY` | Optional | Whisper voice transcription |
+| `CRON_SECRET` | Optional | Bearer token protecting `/api/alert-escalation-check` |
 
 ---
 
-## Data model summary
+## Data model
 
 ```
-WorkItem        ← central entity (compliance task, filing, decision)
-  ├── Action[]          ← tasks attached to a work item
-  ├── ActivityLog[]     ← audit trail
+WorkItem        ← central entity (filing, task, compliance alert, partnership, etc.)
+  ├── Action[]          ← sub-tasks
+  ├── ActivityLog[]     ← append-only audit trail
   ├── Decision[]        ← decisions awaiting approval
   ├── AlertDelivery[]   ← notification delivery records
-  └── VoiceIntake[]     ← audio recordings + parsed JSON
+  └── VoiceIntake[]     ← audio + transcript + parsed draft
 
-AlertRecipient  ← who gets notified (email/SMS/dashboard/WhatsApp)
+AlertRecipient  ← who gets notified per company (email/dashboard)
   └── AlertDelivery[]
 
 Company         ← portfolio company
   └── Contact[]
 
-Template        ← message/document templates
-UserPassword    ← bcrypt-hashed passcodes per person
+Template        ← reusable message bodies
+UserPassword    ← scrypt-hashed passcodes per person
 ```
 
 ---
@@ -103,35 +125,46 @@ UserPassword    ← bcrypt-hashed passcodes per person
 |---|---|---|
 | POST | `/api/auth/login` | Passcode login → sets httpOnly JWT cookie |
 | POST | `/api/auth/logout` | Clears session cookie |
+| POST | `/api/auth/change-password` | Update personal passcode |
 | GET/POST | `/api/work-items` | List / create work items |
-| GET/PATCH/DELETE | `/api/work-items/[id]` | Single work item CRUD |
-| POST | `/api/work-items/[id]/actions` | Add action |
-| POST | `/api/work-items/[id]/escalate` | Escalate work item |
-| GET | `/api/dashboard` | Compliance summary for mobile |
+| GET/PATCH | `/api/work-items/[id]` | Read / update a work item |
+| POST | `/api/work-items/[id]/actions` | Add sub-task |
+| PATCH | `/api/work-items/[id]/actions/[actionId]` | Update sub-task |
+| POST | `/api/work-items/[id]/escalate` | Escalate status |
+| POST | `/api/work-items/[id]/log` | Append activity note |
+| GET | `/api/dashboard` | Compliance summary (used by dashboard page) |
 | GET | `/api/decisions` | Open decisions list |
+| PATCH | `/api/decisions/[id]` | Approve / reject / MoreInfoNeeded |
 | GET | `/api/portfolio` | Companies with live counts |
+| GET/POST | `/api/contacts` | Contact list / create |
+| PATCH | `/api/contacts/[id]` | Update contact |
 | GET/POST | `/api/alert-recipients` | Recipient management |
+| PATCH/DELETE | `/api/alert-recipients/[id]` | Update / deactivate |
+| POST | `/api/alert-recipients/[id]/suppress` | Suppress alerts |
+| POST | `/api/alert-recipients/[id]/unsuppress` | Lift suppression |
 | GET | `/api/alert-deliveries` | Alert delivery log |
+| POST | `/api/alert-deliveries/[id]/retry` | Retry failed delivery |
+| POST | `/api/alert-deliveries/[id]/acknowledge` | Acknowledge delivery |
+| GET | `/api/alert-deliveries/ack` | One-click ack link (no login required) |
+| POST | `/api/alert-escalation-check` | Run escalation sweep (cron or manual) |
+| POST | `/api/voice/upload` | Store audio |
 | POST | `/api/voice/transcribe` | Whisper transcription |
-| POST | `/api/sheets-webhook` | Ingest from Google Sheets |
+| POST | `/api/voice/approve` | Approve voice draft → create work item |
+| POST | `/api/voice/reject` | Discard voice draft |
 
 ---
 
 ## Development commands
 
 ```bash
-npm run dev          # Start dev server on :3000
-npm run build        # Production build
-npx prisma db push   # Apply schema changes
-npx prisma studio    # Browse database in browser
-npx tsc --noEmit     # Type-check only
+npm run dev              # Start dev server on :3000
+npm run build            # Production build
+npm test                 # Run unit tests (vitest)
+npx prisma db push       # Push schema to database (uses DIRECT_URL)
+npx prisma studio        # Browse database in browser
+npx tsc --noEmit         # Type-check only
+npm run db:seed          # Seed demo data
 ```
-
----
-
-## Mobile app (Expo)
-
-Located in `mobile/`. Uses `expo-secure-store` for JWT storage on iOS. Auth flow: POST to `/api/auth/login` → extract `Set-Cookie` → store token → pass as `Cookie: session=<value>` on all requests. See `mobile/lib/api.ts`.
 
 ---
 
