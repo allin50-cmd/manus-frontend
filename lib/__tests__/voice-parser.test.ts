@@ -181,4 +181,100 @@ describe('parseTranscript', () => {
       expect(diff).toBeLessThan(14 * 86_400_000)
     }
   })
+
+  // ── New relative dates (iteration 6) ──────────────────────────────────────
+  it('parses "today" as today\'s date', () => {
+    const d = parseTranscript('Call the solicitor today about the planning application')
+    expect(d.dueDate).toBe(new Date().toISOString().slice(0, 10))
+  })
+
+  it('parses "tomorrow" as tomorrow\'s date', () => {
+    const d = parseTranscript('Follow up with the builder tomorrow')
+    const tom = new Date()
+    tom.setDate(tom.getDate() + 1)
+    expect(d.dueDate).toBe(tom.toISOString().slice(0, 10))
+  })
+
+  it('prefers "tomorrow" over "today" when both words appear', () => {
+    const d = parseTranscript("Call John tomorrow about today's meeting")
+    const tom = new Date()
+    tom.setDate(tom.getDate() + 1)
+    expect(d.dueDate).toBe(tom.toISOString().slice(0, 10))
+  })
+
+  it('parses "this Friday" as the upcoming Friday', () => {
+    const d = parseTranscript('Get the compliance report done by this Friday')
+    expect(d.dueDate).toBeTruthy()
+    expect(new Date(d.dueDate!).getDay()).toBe(5)
+  })
+
+  it('parses "next month" as a date one month ahead', () => {
+    const d = parseTranscript('Schedule the annual review for next month')
+    expect(d.dueDate).toBeTruthy()
+    const today = new Date()
+    const expected = new Date(today)
+    expected.setMonth(today.getMonth() + 1)
+    expect(d.dueDate).toBe(expected.toISOString().slice(0, 10))
+  })
+
+  // ── Status suggestion (iteration 6) ──────────────────────────────────────
+  it('suggests Waiting when "waiting for" appears', () => {
+    const d = parseTranscript('Compliance alert waiting for client confirmation')
+    expect(d.status).toBe('Waiting')
+  })
+
+  it('suggests Waiting when "on hold" appears', () => {
+    const d = parseTranscript('New lead, on hold pending their board decision')
+    expect(d.status).toBe('Waiting')
+  })
+
+  it('suggests DecisionNeeded for "needs a decision"', () => {
+    const d = parseTranscript('Partnership proposal needs a decision from George')
+    expect(d.status).toBe('DecisionNeeded')
+  })
+
+  it('suggests Escalated for "escalated"', () => {
+    const d = parseTranscript('This compliance alert has been escalated to the director')
+    expect(d.status).toBe('Escalated')
+  })
+
+  it('suggests InProgress for "in progress"', () => {
+    const d = parseTranscript('The planning submission is in progress')
+    expect(d.status).toBe('InProgress')
+  })
+
+  it('leaves status undefined when no keyword matches', () => {
+    const d = parseTranscript('Call the client about the EasyEstimate bid')
+    expect(d.status).toBeUndefined()
+  })
+
+  // ── Title owner-tail stripping (iteration 6) ──────────────────────────────
+  it('strips trailing "for [owner name]" from the title', () => {
+    const d = parseTranscript('Follow up on the EasyEstimate bid for Michelle')
+    expect(d.owner).toBe('Michelle')
+    expect(d.title).not.toMatch(/\bfor Michelle\b/i)
+    expect(d.title.toLowerCase()).toContain('easyestimate')
+  })
+
+  // ── First-person next action (iteration 7) ────────────────────────────────
+  it('extracts next action from "I need to" (first person)', () => {
+    const d = parseTranscript('Compliance review for Acme. I need to chase the accountant.')
+    expect(d.nextAction).toBeTruthy()
+    expect(d.nextAction).toContain('chase the accountant')
+  })
+
+  it('extracts next action from "we should"', () => {
+    const d = parseTranscript('Partnership with Builder Co. We should send the proposal today.')
+    expect(d.nextAction).toBeTruthy()
+    expect(d.nextAction).toContain('send the proposal')
+  })
+
+  it('does NOT extract next action from bare "should" (non-first-person)', () => {
+    // "the building should be inspected" is a description, not a user action
+    const d = parseTranscript('The planning application should be reviewed by the council')
+    // nextAction may or may not be set, but should NOT contain passive description
+    if (d.nextAction) {
+      expect(d.nextAction).not.toMatch(/^be reviewed/i)
+    }
+  })
 })

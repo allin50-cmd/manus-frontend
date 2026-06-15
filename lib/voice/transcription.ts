@@ -29,10 +29,18 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Pr
   const arrayBuffer = audioBuffer.buffer.slice(byteOffset, byteOffset + byteLength) as ArrayBuffer
   const file = new File([arrayBuffer], `audio.${ext}`, { type: mimeType })
 
+  // Priming prompt: tells Whisper the expected vocabulary so business terms,
+  // names, and company spellings survive transcription accurately.
+  const prompt =
+    'UltraCore Ops. People: George, Dagon, Alissa, Michelle, Chris, Charlie. ' +
+    'Terms: compliance alert, planning lead, construction lead, work item, follow-up, ' +
+    'EasyEstimate, decision needed, escalated, waiting for, next action.'
+
   const response = await groq.audio.transcriptions.create({
     model: 'whisper-large-v3-turbo',
     file,
     language: 'en',
+    prompt,
   })
 
   return response.text

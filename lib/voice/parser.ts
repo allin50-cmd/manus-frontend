@@ -15,6 +15,16 @@ const MONTHS: Record<string, string> = {
   jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
 }
 
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+function nextWeekday(today: Date, targetDay: number, mustBeInFuture = false): string {
+  let diff = (targetDay - today.getDay() + 7) % 7
+  if (diff === 0 || mustBeInFuture) diff = diff || 7
+  const nd = new Date(today)
+  nd.setDate(today.getDate() + diff)
+  return nd.toISOString().slice(0, 10)
+}
+
 function parseDate(text: string): string | undefined {
   const today = new Date()
 
@@ -25,7 +35,7 @@ function parseDate(text: string): string | undefined {
     if (!isNaN(d.getTime())) return `${isoM[1]}-${isoM[2]}-${isoM[3]}`
   }
 
-  // UK: "due 15/06/2026" or "15-06-26"
+  // UK: "due 15/06/2026" or "due 15-06-26"
   const ukM = text.match(/(?:due|by|before|deadline)\s+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i)
   if (ukM) {
     const day   = ukM[1].padStart(2, '0')
@@ -39,21 +49,20 @@ function parseDate(text: string): string | undefined {
     ) return `${year}-${month}-${day}`
   }
 
-  // Spoken: "due 15th June 2026" / "by June 15" / "by 15 June"
+  // Spoken: "due 15th June 2026" / "by June 15" / "deadline 15 June"
+  const MONTH_NAMES = 'january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec'
   const spokenM = text.match(
-    /(?:due|by|before|deadline)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)(?:\s+(\d{4}))?/i,
+    new RegExp(`(?:due|by|before|deadline)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MONTH_NAMES})(?:\\s+(\\d{4}))?`, 'i'),
   ) ?? text.match(
-    /(?:due|by|before|deadline)\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?/i,
+    new RegExp(`(?:due|by|before|deadline)\\s+(${MONTH_NAMES})\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:\\s+(\\d{4}))?`, 'i'),
   )
   if (spokenM) {
     let day: string, monthName: string, year: string
     if (/^\d/.test(spokenM[1])) {
-      // "15th June 2026"
       day = spokenM[1].padStart(2, '0')
       monthName = spokenM[2].toLowerCase()
       year = spokenM[3] ?? String(today.getFullYear())
     } else {
-      // "June 15 2026"
       monthName = spokenM[1].toLowerCase()
       day = spokenM[2].padStart(2, '0')
       year = spokenM[3] ?? String(today.getFullYear())
@@ -67,8 +76,25 @@ function parseDate(text: string): string | undefined {
     }
   }
 
-  // Relative: "end of month", "end of week", "next week", "next Monday"
   const rel = text.toLowerCase()
+
+  // Check tomorrow before today: both words can appear in one sentence and
+  // "tomorrow" is the intended deadline when they do.
+  if (/\btomorrow\b/.test(rel)) {
+    const tom = new Date(today)
+    tom.setDate(today.getDate() + 1)
+    return tom.toISOString().slice(0, 10)
+  }
+  if (/\btoday\b/.test(rel)) return today.toISOString().slice(0, 10)
+
+  // "this [weekday]" — nearest upcoming instance
+  for (let i = 0; i < DAY_NAMES.length; i++) {
+    if (new RegExp(`\\bthis\\s+${DAY_NAMES[i]}\\b`).test(rel)) {
+      return nextWeekday(today, i, true)
+    }
+  }
+
+  // "end of month / week", "next week", "next month", "next [weekday]"
   if (/\bend of (?:this )?month\b/.test(rel)) {
     const eom = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     return eom.toISOString().slice(0, 10)
@@ -83,16 +109,26 @@ function parseDate(text: string): string | undefined {
     nw.setDate(today.getDate() + 7)
     return nw.toISOString().slice(0, 10)
   }
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-  for (let i = 0; i < dayNames.length; i++) {
-    if (new RegExp(`\\bnext\\s+${dayNames[i]}\\b`).test(rel)) {
-      const diff = (i - today.getDay() + 7) % 7 || 7
-      const nd = new Date(today)
-      nd.setDate(today.getDate() + diff)
-      return nd.toISOString().slice(0, 10)
+  if (/\bnext month\b/.test(rel)) {
+    const nm = new Date(today)
+    nm.setMonth(today.getMonth() + 1)
+    return nm.toISOString().slice(0, 10)
+  }
+  for (let i = 0; i < DAY_NAMES.length; i++) {
+    if (new RegExp(`\\bnext\\s+${DAY_NAMES[i]}\\b`).test(rel)) {
+      return nextWeekday(today, i, true)
     }
   }
 
+  return undefined
+}
+
+function suggestStatus(lower: string): string | undefined {
+  if (/\b(?:waiting\s+for|waiting\s+on|on\s+hold|pending\s+(?:reply|response|their|client|confirmation))\b/.test(lower)) return 'Waiting'
+  if (/\bneed(?:s)?\s+(?:a\s+)?decision\b|\bdecision\s+(?:needed|required)\b/.test(lower)) return 'DecisionNeeded'
+  if (/\bescalated\b/.test(lower)) return 'Escalated'
+  if (/\bfollow[\s\-]?up\s+(?:is\s+)?due\b/.test(lower)) return 'FollowUpDue'
+  if (/\bin\s+progress\b|\bunderway\b|\bstarted\b/.test(lower)) return 'InProgress'
   return undefined
 }
 
@@ -109,11 +145,13 @@ function extractTitle(text: string): string {
 
   // Take up to first sentence boundary
   const sentence = stripped.match(/^(.{10,120}?)(?:[.!?](?:\s|$)|$)/)?.[1] ?? stripped
-  return sentence.trim().slice(0, 120)
+
+  // Strip trailing "for [known owner name]" so it doesn't pollute the title
+  const ownerTail = new RegExp(`\\s+for\\s+(?:${OWNERS.join('|')})\\s*$`, 'i')
+  return sentence.replace(ownerTail, '').trim().slice(0, 120)
 }
 
 function extractOwner(text: string): string | undefined {
-  // Explicit patterns: "assign to Dagon", "for George", "owner is Michelle", "assigned to Chris"
   const ownerPattern = new RegExp(
     `(?:assign(?:ed)?\\s+to|owner\\s+is|for|owned\\s+by|give\\s+to|send\\s+to)\\s+(${OWNERS.join('|')})`,
     'i',
@@ -121,7 +159,6 @@ function extractOwner(text: string): string | undefined {
   const m = text.match(ownerPattern)
   if (m) return m[1]
 
-  // Owner name mentioned standalone with possessive or as subject
   for (const o of OWNERS) {
     if (new RegExp(`\\b${o}'s\\b|\\b${o}\\s+should|\\b${o}\\s+needs\\s+to|\\b${o}\\s+will`, 'i').test(text)) {
       return o
@@ -132,8 +169,10 @@ function extractOwner(text: string): string | undefined {
 }
 
 function extractNextAction(text: string): string | undefined {
+  // "should" alone is too greedy ("the building should be inspected").
+  // Require a first-person subject for "should/must" to reduce false matches.
   const m = text.match(
-    /(?:next\s+(?:action|step|task)\s+is|need\s+to|should|must|action\s+is|follow\s+up\s+(?:by\s+)?(?:is\s+)?(?:to\s+)?)\s+(.{5,200}?)(?:[.!?]|$)/i,
+    /(?:next\s+(?:action|step|task)\s+is|(?:i|we)\s+(?:need\s+to|should|must)|need\s+to|action\s+is|follow\s+up\s+(?:by\s+)?(?:is\s+)?(?:to\s+)?)\s+(.{5,200}?)(?:[.!?]|$)/i,
   )
   return m ? m[1].trim().slice(0, 200) : undefined
 }
@@ -160,6 +199,10 @@ export function parseTranscript(transcript: string): DraftRecord {
       break
     }
   }
+
+  // Status suggestion from keywords
+  const status = suggestStatus(lower)
+  if (status) draft.status = status
 
   // Priority: word-boundary match
   for (const p of PRIORITIES) {

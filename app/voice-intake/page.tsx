@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode } from 'react'
 import type { DraftRecord } from '@/lib/voice/types'
-import { WORK_ITEM_TYPES, TYPE_LABELS, PRIORITIES } from '@/lib/work-item-enums'
+import { WORK_ITEM_TYPES, TYPE_LABELS, PRIORITIES, WORK_ITEM_STATUSES, STATUS_LABELS } from '@/lib/work-item-enums'
 
 type Stage = 'idle' | 'recording' | 'uploading' | 'transcribing' | 'review' | 'done' | 'error'
 
@@ -16,18 +16,24 @@ export default function VoiceIntakePage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [workItemId, setWorkItemId] = useState<string | null>(null)
+  const [elapsed, setElapsed] = useState(0)
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const mimeTypeRef = useRef<string>('audio/mp4')
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Ensure the mic is released if the user navigates away mid-recording.
   useEffect(() => {
     return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
       const recorder = mediaRef.current
       if (recorder && recorder.state !== 'inactive') recorder.stop()
       recorder?.stream.getTracks().forEach((t) => t.stop())
     }
   }, [])
+
+  function stopTimer() {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+  }
 
   // iOS Safari reports false for isTypeSupported on most types yet still records
   // to audio/mp4. Return '' (browser default) rather than null so we still try.
@@ -42,7 +48,7 @@ export default function VoiceIntakePage() {
 
     const mimeType = pickMimeType()
     if (mimeType === null) {
-      setErrorMsg('Audio recording (MediaRecorder) is not available in this browser. Use the “Record / upload an audio file” option below instead.')
+      setErrorMsg('Audio recording (MediaRecorder) is not available in this browser. Use the "Record / upload an audio file" option below instead.')
       setStage('error')
       return
     }
@@ -50,7 +56,7 @@ export default function VoiceIntakePage() {
     // navigator.mediaDevices is undefined on insecure origins and inside some
     // iOS home-screen (standalone PWA) contexts — the classic silent failure.
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setErrorMsg('Microphone access is unavailable here (needs HTTPS, and on iPhone it may be blocked when launched from the Home Screen icon — open in Safari instead). Use the “Record / upload an audio file” option below.')
+      setErrorMsg('Microphone access is unavailable here (needs HTTPS, and on iPhone it may be blocked when launched from the Home Screen icon — open in Safari instead). Use the "Record / upload an audio file" option below.')
       setStage('error')
       return
     }
@@ -63,38 +69,36 @@ export default function VoiceIntakePage() {
       const msg =
         name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your browser settings and try again.'
         : name === 'NotFoundError' ? 'No microphone was found on this device.'
-        : `Microphone error: ${name}. Use the “Record / upload an audio file” option below.`
+        : `Microphone error: ${name}. Use the "Record / upload an audio file" option below.`
       setErrorMsg(msg)
       setStage('error')
       return
     }
 
     try {
-      // Pass a mimeType only when we have a concrete one — handing iOS an empty
-      // string throws, so fall back to the no-options constructor it accepts.
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream)
       chunksRef.current = []
       recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data) }
-      // Use a timeslice so chunks accumulate DURING recording. If the final
-      // flush on stop() yields nothing (an iOS Safari quirk), we still have the
-      // periodic chunks to build a non-empty blob.
+      // 1s timeslice: chunks accumulate during recording. Even if iOS flushes
+      // nothing on stop(), the periodic chunks give us a non-empty blob.
       recorder.start(1000)
       mimeTypeRef.current = recorder.mimeType || mimeType || 'audio/mp4'
       mediaRef.current = recorder
+      // Start elapsed timer
+      setElapsed(0)
+      timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000)
       setStage('recording')
     } catch (err) {
       stream.getTracks().forEach((t) => t.stop())
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : 'unknown error'
-      setErrorMsg(`Could not start recording (${detail}). Use the “Record / upload an audio file” option below.`)
+      setErrorMsg(`Could not start recording (${detail}). Use the "Record / upload an audio file" option below.`)
       setStage('error')
     }
   }
 
-  // Shared upload → transcribe pipeline, used by both the live recorder and the
-  // native file-input fallback. The mime type is sent so the server can label
-  // the file extension Whisper expects.
+  // Shared upload → transcribe pipeline used by both recorder and file-input fallback.
   async function uploadAndTranscribe(blob: Blob, mime: string) {
     if (!blob.size) {
       setErrorMsg('No audio was captured (0 bytes). Record a little longer, or try the file upload option.')
@@ -145,12 +149,12 @@ export default function VoiceIntakePage() {
   async function stopRecording() {
     const recorder = mediaRef.current
     if (!recorder) return
+    stopTimer()
     setStage('uploading')
 
-    // Build the blob inside onstop, after the final ondataavailable has fired,
-    // so chunks are guaranteed populated (critical on iOS Safari). Crucially,
-    // stop the mic tracks INSIDE onstop — killing them synchronously right
-    // after stop() truncates the encoder's final buffer to 0 bytes on iOS.
+    // Build blob inside onstop — after encoder flushes the final buffer.
+    // Stop mic tracks INSIDE onstop: killing them before onstop fires truncates
+    // the encoder on iOS, producing a 0-byte blob.
     const mime = mimeTypeRef.current
     const blob: Blob = await new Promise<Blob>((resolve) => {
       recorder.onstop = () => {
@@ -165,11 +169,10 @@ export default function VoiceIntakePage() {
     await uploadAndTranscribe(blob, mime)
   }
 
-  // Fallback for browsers where MediaRecorder/getUserMedia is blocked (e.g. iOS
-  // home-screen PWA): the OS file picker can record or choose an audio clip.
+  // Fallback for browsers/contexts where MediaRecorder/getUserMedia is blocked.
   async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    e.target.value = '' // allow re-picking the same file
+    e.target.value = ''
     if (!file) return
     setErrorMsg('')
     const mime = file.type || 'audio/mp4'
@@ -217,12 +220,14 @@ export default function VoiceIntakePage() {
   }
 
   function reset() {
+    stopTimer()
     setStage('idle')
     setIntakeId(null)
     setTranscript('')
     setDraft({ title: '', type: 'InternalTask', owner: 'George' })
     setErrorMsg('')
     setWorkItemId(null)
+    setElapsed(0)
   }
 
   function field(label: string, node: ReactNode) {
@@ -236,6 +241,9 @@ export default function VoiceIntakePage() {
 
   const inputCls = 'w-full rounded-lg border border-slate-600 bg-slate-700 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 
+  const mins = String(Math.floor(elapsed / 60)).padStart(2, '0')
+  const secs = String(elapsed % 60).padStart(2, '0')
+
   return (
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8 pb-24 sm:pb-8">
       <div className="max-w-xl mx-auto space-y-6">
@@ -246,9 +254,9 @@ export default function VoiceIntakePage() {
           <div className="space-y-3">
             <button
               onClick={startRecording}
-              className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-lg transition-colors"
+              className="w-full py-5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold text-lg transition-colors"
             >
-              Start Recording
+              🎤 Start Recording
             </button>
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-slate-700" />
@@ -257,31 +265,28 @@ export default function VoiceIntakePage() {
             </div>
             <label className="block w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-center text-sm cursor-pointer transition-colors">
               Record / upload an audio file
-              <input
-                type="file"
-                accept="audio/*"
-                capture
-                className="hidden"
-                onChange={handleFilePick}
-              />
+              <input type="file" accept="audio/*" capture className="hidden" onChange={handleFilePick} />
             </label>
             <p className="text-xs text-slate-500 text-center">
-              On iPhone, if “Start Recording” does nothing, use this to record with the system mic.
+              On iPhone, if Start Recording does nothing, use this to record with the system mic.
             </p>
           </div>
         )}
 
         {stage === 'recording' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-red-900/40 rounded-xl border border-red-600">
-              <span className="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-red-300 font-medium">Recording…</span>
+            <div className="flex items-center justify-between p-4 bg-red-900/40 rounded-xl border border-red-600">
+              <div className="flex items-center gap-3">
+                <span className="inline-block w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-red-300 font-medium">Recording…</span>
+              </div>
+              <span className="text-red-300 font-mono text-lg tabular-nums">{mins}:{secs}</span>
             </div>
             <button
               onClick={stopRecording}
-              className="w-full py-4 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-lg transition-colors"
+              className="w-full py-4 rounded-xl bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white font-semibold text-lg transition-colors"
             >
-              Stop &amp; Transcribe
+              ⏹ Stop &amp; Transcribe
             </button>
           </div>
         )}
@@ -304,13 +309,7 @@ export default function VoiceIntakePage() {
               </button>
               <label className="text-sm text-blue-300 hover:text-blue-200 underline cursor-pointer">
                 Record / upload an audio file
-                <input
-                  type="file"
-                  accept="audio/*"
-                  capture
-                  className="hidden"
-                  onChange={handleFilePick}
-                />
+                <input type="file" accept="audio/*" capture className="hidden" onChange={handleFilePick} />
               </label>
             </div>
           </div>
@@ -342,6 +341,15 @@ export default function VoiceIntakePage() {
                   {WORK_ITEM_TYPES.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
                 </select>
               ))}
+              {field('Status', (
+                <select
+                  className={inputCls}
+                  value={draft.status ?? 'Captured'}
+                  onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))}
+                >
+                  {WORK_ITEM_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                </select>
+              ))}
               {field('Owner', (
                 <input
                   className={inputCls}
@@ -371,6 +379,14 @@ export default function VoiceIntakePage() {
                   className={inputCls}
                   value={draft.dueDate ?? ''}
                   onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))}
+                />
+              ))}
+              {field('Next Action', (
+                <input
+                  className={inputCls}
+                  placeholder="What's the immediate next step?"
+                  value={draft.nextAction ?? ''}
+                  onChange={(e) => setDraft((d) => ({ ...d, nextAction: e.target.value }))}
                 />
               ))}
               {field('Notes', (

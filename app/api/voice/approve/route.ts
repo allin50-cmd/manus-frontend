@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import type { DraftRecord } from '@/lib/voice/types'
-import { WorkItemType, Priority } from '@prisma/client'
-import { isValidType, isValidPriority } from '@/lib/work-item-enums'
+import { WorkItemType, Priority, WorkItemStatus } from '@prisma/client'
+import { isValidType, isValidPriority, isValidWorkItemStatus } from '@/lib/work-item-enums'
 import { dispatchAlerts } from '@/lib/alert-dispatch'
 
 export const runtime = 'nodejs'
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
   // opaque Prisma 500. Fall back to safe defaults rather than rejecting.
   const type: WorkItemType = isValidType(draft.type) ? (draft.type as WorkItemType) : 'InternalTask'
   const priority: Priority = isValidPriority(draft.priority) ? (draft.priority as Priority) : 'Medium'
+  const status: WorkItemStatus = isValidWorkItemStatus(draft.status) ? (draft.status as WorkItemStatus) : 'Captured'
 
   let workItem
   try {
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
           nextAction: draft.nextAction?.trim() || null,
           dueDate: draft.dueDate ? new Date(draft.dueDate) : null,
           notes: draft.notes?.trim() || null,
-          status: 'Captured',
+          status,
         },
       })
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
           person: session.person,
           eventType: 'Created',
           summary: `Created from voice intake by ${session.person}`,
-          newStatus: 'Captured',
+          newStatus: status,
         },
       })
 
