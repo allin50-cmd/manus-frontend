@@ -77,9 +77,10 @@ export default function VoiceIntakePage() {
         : new MediaRecorder(stream)
       chunksRef.current = []
       recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data) }
-      // No timeslice: iOS Safari frequently fails to emit periodic chunks and
-      // only delivers data on stop(). A single final chunk is the reliable path.
-      recorder.start()
+      // Use a timeslice so chunks accumulate DURING recording. If the final
+      // flush on stop() yields nothing (an iOS Safari quirk), we still have the
+      // periodic chunks to build a non-empty blob.
+      recorder.start(1000)
       mimeTypeRef.current = recorder.mimeType || mimeType || 'audio/mp4'
       mediaRef.current = recorder
       setStage('recording')
@@ -147,13 +148,17 @@ export default function VoiceIntakePage() {
     setStage('uploading')
 
     // Build the blob inside onstop, after the final ondataavailable has fired,
-    // so chunks are guaranteed populated (critical on iOS Safari).
+    // so chunks are guaranteed populated (critical on iOS Safari). Crucially,
+    // stop the mic tracks INSIDE onstop — killing them synchronously right
+    // after stop() truncates the encoder's final buffer to 0 bytes on iOS.
     const mime = mimeTypeRef.current
     const blob: Blob = await new Promise<Blob>((resolve) => {
-      recorder.onstop = () => resolve(new Blob(chunksRef.current, { type: mime }))
+      recorder.onstop = () => {
+        recorder.stream.getTracks().forEach((t) => t.stop())
+        resolve(new Blob(chunksRef.current, { type: mime }))
+      }
       try { recorder.requestData() } catch { /* not all browsers support it */ }
       recorder.stop()
-      recorder.stream.getTracks().forEach((t) => t.stop())
     })
     mediaRef.current = null
 
