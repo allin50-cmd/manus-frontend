@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
               title: filing.title,
               company: filing.company.name,
               owner: 'George',
-              status: newStatus === 'OVERDUE' ? 'Escalated' : 'Action',
+              status: newStatus === 'OVERDUE' ? 'Escalated' : 'FollowUpDue',
               priority: newStatus === 'OVERDUE' ? 'High' : 'Medium',
               dueDate: filing.dueDate,
             },

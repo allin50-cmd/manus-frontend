@@ -29,12 +29,8 @@ export default async function PartnershipsPage({
   const filterType =
     typeParam && (PIPELINE_TYPES as readonly string[]).includes(typeParam) ? typeParam : undefined
 
-  let items: Awaited<ReturnType<typeof db.workItem.findMany>> & {
-    companyRef: { id: string; name: string } | null
-    contactRef: { id: string; name: string; role: string | null; email: string | null; phone: string | null } | null
-    outreachLogs: { id: string; occurredAt: Date; followUpDate: Date | null; followUpDone: boolean }[]
-    daysSinceLastTouch: number | null
-  }[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let items: any[] = []
 
   try {
     const raw = await db.workItem.findMany({
@@ -60,8 +56,8 @@ export default async function PartnershipsPage({
   } catch {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-white">Pipeline</h1>
-        <div className="bg-red-900/30 border border-red-700 rounded-xl p-6 text-center text-sm text-red-300">
+        <h1 className="text-2xl font-bold text-slate-900">Pipeline</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
           Could not load pipeline data. Please refresh.
         </div>
       </div>
@@ -96,7 +92,9 @@ export default async function PartnershipsPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Pipeline</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{activeLabel} — {items.length} items</p>
+          <p className="text-slate-500 text-sm mt-0.5">
+            {activeLabel} — {items.length} items
+          </p>
         </div>
 
         {/* View toggle */}
