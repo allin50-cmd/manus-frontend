@@ -48,7 +48,7 @@ export default function VoiceIntakePage() {
 
     const mimeType = pickMimeType()
     if (mimeType === null) {
-      setErrorMsg('Audio recording (MediaRecorder) is not available in this browser. Use the "Record / upload an audio file" option below instead.')
+      setErrorMsg('Audio recording (MediaRecorder) is not available in this browser. Use the 📱 or 📂 buttons below instead instead.')
       setStage('error')
       return
     }
@@ -56,7 +56,7 @@ export default function VoiceIntakePage() {
     // navigator.mediaDevices is undefined on insecure origins and inside some
     // iOS home-screen (standalone PWA) contexts — the classic silent failure.
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setErrorMsg('Microphone access is unavailable here (needs HTTPS, and on iPhone it may be blocked when launched from the Home Screen icon — open in Safari instead). Use the "Record / upload an audio file" option below.')
+      setErrorMsg('Microphone access is unavailable here (needs HTTPS, and on iPhone it may be blocked when launched from the Home Screen icon — open in Safari instead). Use the 📱 or 📂 buttons below instead.')
       setStage('error')
       return
     }
@@ -69,7 +69,7 @@ export default function VoiceIntakePage() {
       const msg =
         name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your browser settings and try again.'
         : name === 'NotFoundError' ? 'No microphone was found on this device.'
-        : `Microphone error: ${name}. Use the "Record / upload an audio file" option below.`
+        : `Microphone error: ${name}. Use the 📱 or 📂 buttons below instead.`
       setErrorMsg(msg)
       setStage('error')
       return
@@ -93,7 +93,7 @@ export default function VoiceIntakePage() {
     } catch (err) {
       stream.getTracks().forEach((t) => t.stop())
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : 'unknown error'
-      setErrorMsg(`Could not start recording (${detail}). Use the "Record / upload an audio file" option below.`)
+      setErrorMsg(`Could not start recording (${detail}). Use the 📱 or 📂 buttons below instead.`)
       setStage('error')
     }
   }
@@ -258,17 +258,33 @@ export default function VoiceIntakePage() {
             >
               🎤 Start Recording
             </button>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-slate-700" />
-              <span className="text-xs text-slate-500 uppercase tracking-wide">or</span>
-              <div className="flex-1 h-px bg-slate-700" />
+
+            {/* iOS native audio options — two separate paths because capture
+                without a value opens the camera on some iOS versions */}
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block py-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-medium text-center text-sm cursor-pointer transition-colors">
+                📱 Record with mic
+                <input
+                  type="file"
+                  accept="audio/*"
+                  capture="user"
+                  className="hidden"
+                  onChange={handleFilePick}
+                />
+              </label>
+              <label className="block py-3 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 font-medium text-center text-sm cursor-pointer transition-colors">
+                📂 Upload audio file
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={handleFilePick}
+                />
+              </label>
             </div>
-            <label className="block w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-center text-sm cursor-pointer transition-colors">
-              Record / upload an audio file
-              <input type="file" accept="audio/*" capture className="hidden" onChange={handleFilePick} />
-            </label>
             <p className="text-xs text-slate-500 text-center">
-              On iPhone, if Start Recording does nothing, use this to record with the system mic.
+              On iPhone: tap 📱 to record with the system mic, or 📂 to pick from Voice Memos / Files.
+              Use 🎤 only if the other options fail.
             </p>
           </div>
         )}
@@ -308,8 +324,12 @@ export default function VoiceIntakePage() {
                 Try again
               </button>
               <label className="text-sm text-blue-300 hover:text-blue-200 underline cursor-pointer">
-                Record / upload an audio file
-                <input type="file" accept="audio/*" capture className="hidden" onChange={handleFilePick} />
+                📱 Record with mic
+                <input type="file" accept="audio/*" capture="user" className="hidden" onChange={handleFilePick} />
+              </label>
+              <label className="text-sm text-blue-300 hover:text-blue-200 underline cursor-pointer">
+                📂 Upload audio
+                <input type="file" accept="audio/*" className="hidden" onChange={handleFilePick} />
               </label>
             </div>
           </div>
