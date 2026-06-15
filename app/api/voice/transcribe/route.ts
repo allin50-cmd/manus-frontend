@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     // Never leak server configuration details to the client.
     if (err instanceof TranscriptionConfigError) {
       return NextResponse.json(
-        { error: 'Transcription is not available right now. Please contact your administrator.' },
+        { error: 'Voice transcription requires an OpenAI API key. Add OPENAI_API_KEY in Vercel → Project → Settings → Environment Variables, then redeploy.' },
         { status: 503 },
       )
     }
