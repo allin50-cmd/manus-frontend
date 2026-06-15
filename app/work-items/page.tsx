@@ -34,7 +34,7 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
   try {
     items = await db.workItem.findMany({
       where,
-      orderBy: [{ priority: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
       take: 500,
     })
   } catch {

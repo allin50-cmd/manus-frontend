@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import type { WorkItemStatus } from '@prisma/client'
@@ -37,5 +37,29 @@ export async function GET() {
     return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  let body: { name?: unknown }
+  try { body = await req.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  if (!name) return NextResponse.json({ error: 'Company name is required' }, { status: 400 })
+
+  try {
+    const company = await db.company.upsert({
+      where: { name },
+      create: { name },
+      update: {},
+    })
+    return NextResponse.json(company, { status: 201 })
+  } catch {
+    return NextResponse.json({ error: 'Could not create company' }, { status: 503 })
   }
 }

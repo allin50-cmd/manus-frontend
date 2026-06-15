@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   try {
     const items = await db.workItem.findMany({
       where,
-      orderBy: [{ priority: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
     })
     return NextResponse.json(items)
   } catch {
@@ -86,6 +86,15 @@ export async function POST(req: NextRequest) {
     })
   } catch {
     return NextResponse.json({ error: 'Could not create work item' }, { status: 503 })
+  }
+
+  // Keep Company table in sync with free-text company field
+  if (item.company) {
+    db.company.upsert({
+      where: { name: item.company },
+      create: { name: item.company },
+      update: {},
+    }).catch(() => {})
   }
 
   await db.activityLog.create({

@@ -3,7 +3,7 @@ import { PrismaClient, WorkItemType, WorkItemStatus, Priority, RecipientRole, De
 const db = new PrismaClient()
 
 async function main() {
-  console.log('Seeding FineGuard demo data...')
+  console.log('Seeding UltraCore Ops demo data...')
 
   // ── Companies ────────────────────────────────────────────────────────────────
   const companies = await Promise.all([
@@ -318,7 +318,7 @@ Please ensure your accountant submits the accounts before the deadline. Late fil
 If you have already filed or appointed an accountant to file, please confirm so we can update our records.
 
 Kind regards
-FineGuard Compliance`,
+UltraCore Ops Compliance`,
       },
       {
         name: 'Confirmation Statement reminder',
@@ -335,7 +335,7 @@ Companies House number: [CH number]
 Please log in to your Companies House WebFiling account or contact us to file on your behalf.
 
 Kind regards
-FineGuard Compliance`,
+UltraCore Ops Compliance`,
       },
       {
         name: 'Director change (AP01)',
@@ -352,7 +352,7 @@ Filing deadline: [Due date]
 Please file promptly to avoid late-filing issues.
 
 Kind regards
-FineGuard Compliance`,
+UltraCore Ops Compliance`,
       },
       {
         name: 'PSC change (PSC04)',
@@ -368,7 +368,7 @@ Deadline: [Due date]
 Failure to keep the PSC register up to date is a criminal offence. Please act promptly.
 
 Kind regards
-FineGuard Compliance`,
+UltraCore Ops Compliance`,
       },
       {
         name: 'Overdue escalation',
@@ -425,7 +425,7 @@ Follow-up date:`,
   })
   console.log('  Created templates')
 
-  console.log('\n✅ Seed complete — FineGuard demo data loaded')
+  console.log('\n✅ Seed complete — UltraCore Ops demo data loaded')
   console.log(`   ${companies.length} companies, ${workItems.length} compliance items, 1 open decision`)
 }
 

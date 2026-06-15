@@ -1,6 +1,7 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
 import Link from 'next/link'
+import AddCompanyForm from './AddCompanyForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,14 +90,16 @@ export default async function PortfolioPage() {
         </div>
       </div>
 
+      {/* Add company */}
+      <AddCompanyForm />
+
       {/* Empty state */}
       {companies.length === 0 && (
         <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-3">
           <div className="text-5xl">🏢</div>
           <p className="font-semibold text-slate-700">No companies yet</p>
           <p className="text-sm text-slate-500">
-            Companies are created automatically when work items reference a company name, or add them via{' '}
-            <Link href="/contacts" className="text-blue-600 hover:underline">Contacts</Link>.
+            Add a company above, or create a work item with a company name and it will appear here automatically.
           </p>
         </div>
       )}
@@ -169,15 +172,6 @@ export default async function PortfolioPage() {
         })}
       </div>
 
-      {/* Add company link */}
-      <div className="text-center py-2">
-        <Link
-          href="/contacts"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:underline"
-        >
-          + Add a company via Contacts
-        </Link>
-      </div>
     </div>
   )
 }
