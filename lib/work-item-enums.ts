@@ -55,6 +55,20 @@ export const TYPE_LABELS: Record<string, string> = {
   Other: 'Other',
 }
 
+// Spoken synonyms for each type — checked by the voice parser after the
+// primary label and enum-token match. Order within each array does not matter.
+export const TYPE_SYNONYMS: Record<string, string[]> = {
+  Partnership: ['partner', 'partnership enquiry', 'joint venture', 'JV'],
+  ConstructionLead: ['build lead', 'construction enquiry', 'contractor lead', 'build enquiry'],
+  PlanningLead: ['planning enquiry', 'planning application', 'planning app', 'planning permission'],
+  ComplianceAlert: ['compliance issue', 'compliance breach', 'regulatory alert', 'regulation alert'],
+  DocumentRecord: ['document', 'file this', 'filing', 'paperwork'],
+  MediaBrief: ['media', 'press', 'PR brief', 'content brief'],
+  Operations: ['ops', 'ops task', 'site ops', 'operational', 'operations issue'],
+  TechTask: ['tech', 'technical task', 'bug', 'dev task', 'system issue'],
+  InternalTask: ['internal', 'admin task', 'housekeeping', 'team task'],
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   Captured: 'Captured',
   Controlled: 'Controlled',

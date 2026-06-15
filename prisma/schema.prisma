@@ -127,6 +127,97 @@ enum AlertEventType {
   EscalationDeliveryCreated
 }
 
+// ── CRM / Partnerships pipeline stages ───────────────────────────────────────
+
+enum PipelineStage {
+  // Software Integration Partnership
+  SIP_Identified
+  SIP_Contacted
+  SIP_IntroCall
+  SIP_Evaluating
+  SIP_Negotiating
+  SIP_Agreed
+  SIP_Live
+  SIP_Paused
+  SIP_Declined
+  // Construction Lead
+  CL_NewEnquiry
+  CL_Qualified
+  CL_Quoting
+  CL_QuoteSent
+  CL_Negotiating
+  CL_Won
+  CL_Lost
+  CL_OnHold
+  // Planning Lead
+  PL_Identified
+  PL_Research
+  PL_Outreach
+  PL_ApplicationPrep
+  PL_Submitted
+  PL_UnderReview
+  PL_Approved
+  PL_Refused
+  PL_OnHold
+}
+
+enum OutreachChannel {
+  Email
+  Phone
+  VideoCall
+  InPerson
+  LinkedIn
+  WhatsApp
+  Other
+}
+
+enum OutreachDirection {
+  Outbound
+  Inbound
+}
+
+// ── Compliance / Filings ──────────────────────────────────────────────────────
+
+enum FilingCategory {
+  CONFIRMATION_STATEMENT
+  ANNUAL_ACCOUNTS
+  VAT_RETURN
+  CORPORATION_TAX_RETURN
+  PAYE_RTI
+  COMPANIES_HOUSE_CHANGE
+  INSURANCE_RENEWAL
+  CONTRACT_RENEWAL
+  REGULATORY_REPORT
+  OTHER
+}
+
+enum FilingStatus {
+  UPCOMING
+  AT_RISK
+  OVERDUE
+  COMPLETED
+  EXEMPT
+  CANCELLED
+}
+
+enum FilingSource {
+  MANUAL
+  CSV_IMPORT
+  COMPANIES_HOUSE
+  SYSTEM_GENERATED
+}
+
+// ── Templates ─────────────────────────────────────────────────────────────────
+
+enum TemplateCategory {
+  ComplianceAlert
+  FollowUp
+  ClientCommunication
+  InternalNote
+  StatusUpdate
+  General
+}
+
 // ── Core models ──────────────────────────────────────────────────────────────
 
 model WorkItem {
@@ -145,12 +236,29 @@ model WorkItem {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
+  // CRM / pipeline fields
+  companyId     String?
+  contactId     String?
+  pipelineStage PipelineStage?
+  dealValue     Decimal?
+
+  companyRef Company? @relation(fields: [companyId], references: [id])
+  contactRef Contact? @relation(fields: [contactId], references: [id])
+
   actions         Action[]
   activityLogs    ActivityLog[]
   decisions       Decision[]
   alertDeliveries AlertDelivery[]
   alertEvents     AlertEvent[]
   voiceIntakes    VoiceIntake[]
+  outreachLogs    OutreachLog[]
+  filing          Filing?
+
+  @@index([companyId])
+  @@index([contactId])
+  @@index([status])
+  @@index([owner])
+  @@index([type])
 }
 
 model Action {
@@ -165,8 +273,17 @@ model Action {
   createdAt   DateTime     @default(now())
   completedAt DateTime?
 
+  // Handoff / reassignment audit trail
+  reassignedFrom String?
+  reassignedAt   DateTime?
+  reassignedBy   String?
+  handoffNote    String?
+
   workItem     WorkItem      @relation(fields: [workItemId], references: [id], onDelete: Cascade)
   activityLogs ActivityLog[]
+
+  @@index([workItemId])
+  @@index([assignedTo])
 }
 
 model ActivityLog {
@@ -183,6 +300,10 @@ model ActivityLog {
 
   workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
   action   Action?  @relation(fields: [actionId], references: [id])
+
+  @@index([workItemId])
+  @@index([person])
+  @@index([createdAt])
 }
 
 model Decision {
@@ -202,13 +323,21 @@ model Decision {
 }
 
 model Template {
-  id        String   @id @default(cuid())
-  name      String
-  useCase   String
-  body      String
-  approved  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String           @id @default(cuid())
+  name         String
+  useCase      String
+  body         String
+  approved     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // Approval workflow
+  category     TemplateCategory @default(General)
+  variables    String[]         @default([])
+  pendingReview Boolean         @default(false)
+  approvedBy   String?
+  approvedAt   DateTime?
+  reviewNote   String?
 }
 
 // ── Alert Recipient models ────────────────────────────────────────────────────
@@ -299,17 +428,27 @@ model VoiceIntake {
   approvedBy       String?
   linkedWorkItemId String?
   linkedWorkItem   WorkItem?         @relation(fields: [linkedWorkItemId], references: [id], onDelete: SetNull)
+
+  // Quality scoring from Whisper verbose_json
+  transcriptConfidence Float?
+  qualityFlags         String[] @default([])
 }
 
 // ── Contacts & Companies ─────────────────────────────────────────────────────
 
 model Company {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  name                 String    @unique
+  companiesHouseNumber String?   @unique
+  incorporationDate    DateTime?
+  jurisdiction         String    @default("UK")
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  contacts Contact[]
+  contacts  Contact[]
+  workItems WorkItem[]
+  filings   Filing[]
 }
 
 model Contact {
@@ -325,5 +464,124 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
+  company      Company       @relation(fields: [companyId], references: [id])
+  workItems    WorkItem[]
+  outreachLogs OutreachLog[]
+}
+
+// ── Outreach Log (CRM) ────────────────────────────────────────────────────────
+
+model OutreachLog {
+  id           String            @id @default(cuid())
+  workItemId   String
+  contactId    String?
+  contactName  String?
+  channel      OutreachChannel
+  direction    OutreachDirection
+  summary      String
+  loggedBy     String
+  occurredAt   DateTime
+  createdAt    DateTime          @default(now())
+  followUpDate DateTime?
+  followUpDone Boolean           @default(false)
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  contact  Contact? @relation(fields: [contactId], references: [id])
+
+  @@index([workItemId])
+  @@index([contactId])
+}
+
+// ── Compliance / Filings ──────────────────────────────────────────────────────
+
+model Filing {
+  id                  String        @id @default(cuid())
+  companyId           String
+  company             Company       @relation(fields: [companyId], references: [id])
+
+  category            FilingCategory
+  title               String
+  statutoryReference  String?
+  description         String?
+
+  dueDate             DateTime
+  periodStart         DateTime?
+  periodEnd           DateTime?
+
+  isRecurring         Boolean       @default(false)
+  recurrenceRule      String?
+  parentFilingId      String?
+  parentFiling        Filing?       @relation("RecurringInstances", fields: [parentFilingId], references: [id])
+  childFilings        Filing[]      @relation("RecurringInstances")
+
+  status              FilingStatus  @default(UPCOMING)
+  completedAt         DateTime?
+  completedByPerson   String?
+  filedReference      String?
+
+  source              FilingSource  @default(MANUAL)
+  externalId          String?
+  importBatchId       String?
+
+  workItemId          String?       @unique
+  workItem            WorkItem?     @relation(fields: [workItemId], references: [id])
+
+  lastReminderSentAt  DateTime?
+  reminderCount       Int           @default(0)
+  suppressReminders   Boolean       @default(false)
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@index([companyId, dueDate])
+  @@index([status, dueDate])
+  @@index([category, companyId])
+}
+
+model CsvImportBatch {
+  id           String   @id @default(cuid())
+  importedBy   String
+  filename     String
+  rowCount     Int
+  successCount Int      @default(0)
+  errorCount   Int      @default(0)
+  errors       Json?
+  createdAt    DateTime @default(now())
+}
+
+model CompaniesHousePollLog {
+  id             String   @id @default(cuid())
+  companyNumber  String
+  endpoint       String
+  polledAt       DateTime @default(now())
+  responseStatus Int
+  itemsFound     Int      @default(0)
+  itemsCreated   Int      @default(0)
+  itemsSkipped   Int      @default(0)
+  errorMessage   String?
+}
+
+// ── Push Notifications ────────────────────────────────────────────────────────
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  person    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([person])
+}
+
+// ── Digest Log ────────────────────────────────────────────────────────────────
+
+model DigestLog {
+  id             String   @id @default(cuid())
+  sentAt         DateTime @default(now())
+  recipientEmail String
+  status         String
+  errorMessage   String?
 }

@@ -1,5 +1,6 @@
 import type { DraftRecord } from './types'
-import { WORK_ITEM_TYPES, PRIORITIES, TYPE_LABELS, OWNERS } from '../work-item-enums'
+import { WORK_ITEM_TYPES, PRIORITIES, TYPE_LABELS, TYPE_SYNONYMS, OWNERS } from '../work-item-enums'
+import { KNOWN_COMPANIES } from './known-entities'
 
 function wordRegex(phrase: string): RegExp {
   const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -78,14 +79,25 @@ function parseDate(text: string): string | undefined {
 
   const rel = text.toLowerCase()
 
-  // Check tomorrow before today: both words can appear in one sentence and
-  // "tomorrow" is the intended deadline when they do.
+  // Check tomorrow before today so "Call John tomorrow about today's meeting"
+  // resolves to tomorrow, not today.
   if (/\btomorrow\b/.test(rel)) {
     const tom = new Date(today)
     tom.setDate(today.getDate() + 1)
     return tom.toISOString().slice(0, 10)
   }
   if (/\btoday\b/.test(rel)) return today.toISOString().slice(0, 10)
+
+  // "in a week" / "in two weeks" / "in a month"
+  if (/\bin\s+(?:a|one|1)\s+week\b/.test(rel)) {
+    const d = new Date(today); d.setDate(today.getDate() + 7); return d.toISOString().slice(0, 10)
+  }
+  if (/\bin\s+(?:two|2)\s+weeks\b/.test(rel)) {
+    const d = new Date(today); d.setDate(today.getDate() + 14); return d.toISOString().slice(0, 10)
+  }
+  if (/\bin\s+(?:a|one|1)\s+month\b/.test(rel)) {
+    const d = new Date(today); d.setMonth(today.getMonth() + 1); return d.toISOString().slice(0, 10)
+  }
 
   // "this [weekday]" — nearest upcoming instance
   for (let i = 0; i < DAY_NAMES.length; i++) {
@@ -94,7 +106,11 @@ function parseDate(text: string): string | undefined {
     }
   }
 
-  // "end of month / week", "next week", "next month", "next [weekday]"
+  // "end of next month" checked before "end of month"
+  if (/\bend of next month\b/.test(rel)) {
+    const eom = new Date(today.getFullYear(), today.getMonth() + 2, 0)
+    return eom.toISOString().slice(0, 10)
+  }
   if (/\bend of (?:this )?month\b/.test(rel)) {
     const eom = new Date(today.getFullYear(), today.getMonth() + 1, 0)
     return eom.toISOString().slice(0, 10)
@@ -120,6 +136,18 @@ function parseDate(text: string): string | undefined {
     }
   }
 
+  // End of quarter: "end of Q1/Q2/Q3/Q4"
+  const qM = rel.match(/\bend of q([1-4])\b/i)
+  if (qM) {
+    const quarter = parseInt(qM[1])
+    const qEndMonths = [2, 5, 8, 11] // 0-indexed: March, June, Sep, Dec
+    const qMonth = qEndMonths[quarter - 1]
+    let qYear = today.getFullYear()
+    const qEndDate = new Date(qYear, qMonth + 1, 0)
+    if (qEndDate < today) qYear++
+    return new Date(qYear, qMonth + 1, 0).toISOString().slice(0, 10)
+  }
+
   return undefined
 }
 
@@ -140,18 +168,27 @@ function extractTitle(text: string): string {
   // Strip common dictation preambles
   const stripped = text
     .replace(/^(?:ok|okay|so|right|um|uh|hey|hi|hello)[,\s]+/gi, '')
+    .replace(/^(?:note\s+that|quick\s+(?:note|item)|just\s+to\s+log|adding)\s*/gi, '')
     .replace(/^(?:add|create|log|record|make|capture)\s+(?:a\s+)?(?:new\s+)?(?:work\s+item|task|note|item)(?:\s+(?:for|about|regarding|to))?\s*/gi, '')
     .trim()
 
   // Take up to first sentence boundary
   const sentence = stripped.match(/^(.{10,120}?)(?:[.!?](?:\s|$)|$)/)?.[1] ?? stripped
 
+  // Strip leading type label if it duplicates what the type field captures
+  const TYPE_LABEL_VALUES = Object.values(TYPE_LABELS).join('|')
+  const labelStripped = sentence.replace(
+    new RegExp(`^(?:${TYPE_LABEL_VALUES})\\s*[:\\-–—]\\s*`, 'i'),
+    '',
+  )
+
   // Strip trailing "for [known owner name]" so it doesn't pollute the title
   const ownerTail = new RegExp(`\\s+for\\s+(?:${OWNERS.join('|')})\\s*$`, 'i')
-  return sentence.replace(ownerTail, '').trim().slice(0, 120)
+  return (labelStripped || sentence).replace(ownerTail, '').trim().slice(0, 120)
 }
 
 function extractOwner(text: string): string | undefined {
+  // Tier 1: explicit prefix pattern
   const ownerPattern = new RegExp(
     `(?:assign(?:ed)?\\s+to|owner\\s+is|for|owned\\s+by|give\\s+to|send\\s+to)\\s+(${OWNERS.join('|')})`,
     'i',
@@ -159,22 +196,27 @@ function extractOwner(text: string): string | undefined {
   const m = text.match(ownerPattern)
   if (m) return m[1]
 
+  // Tier 2: possessive / verb pattern
   for (const o of OWNERS) {
     if (new RegExp(`\\b${o}'s\\b|\\b${o}\\s+should|\\b${o}\\s+needs\\s+to|\\b${o}\\s+will`, 'i').test(text)) {
       return o
     }
   }
 
+  // Tier 3: sole-mention fallback — only when exactly one owner name appears
+  const mentioned = OWNERS.filter((o) => new RegExp(`\\b${o}\\b`, 'i').test(text))
+  if (mentioned.length === 1) return mentioned[0]
+
   return undefined
 }
 
 function extractNextAction(text: string): string | undefined {
-  // "should" alone is too greedy ("the building should be inspected").
-  // Require a first-person subject for "should/must" to reduce false matches.
+  // "should" alone is too greedy — require first-person subject or an explicit action cue.
+  // Cap at 120 chars; stop at "due" keyword to avoid consuming date context.
   const m = text.match(
-    /(?:next\s+(?:action|step|task)\s+is|(?:i|we)\s+(?:need\s+to|should|must)|need\s+to|action\s+is|follow\s+up\s+(?:by\s+)?(?:is\s+)?(?:to\s+)?)\s+(.{5,200}?)(?:[.!?]|$)/i,
+    /(?:next\s+(?:action|step|task)\s+is|action(?:\s+item)?(?:\s+is)?[:\s]+|(?:i|we)\s+(?:need\s+to|should|must)|need\s+to|follow[\s\-]?up\s+(?:with|on|by)[:\s]+|follow\s+up\s+(?:by\s+)?(?:is\s+)?(?:to\s+)?)\s+(.{5,120}?)(?:[.!?]|(?=\s+due\b)|$)/i,
   )
-  return m ? m[1].trim().slice(0, 200) : undefined
+  return m ? m[1].trim().slice(0, 120) : undefined
 }
 
 export function parseTranscript(transcript: string): DraftRecord {
@@ -191,10 +233,15 @@ export function parseTranscript(transcript: string): DraftRecord {
     owner: 'George',
   }
 
-  // Type: match the human label (e.g. "compliance alert") first, then enum token
+  // Type: check primary label and enum token first, then synonyms
   for (const t of WORK_ITEM_TYPES) {
     const label = TYPE_LABELS[t] ?? t
     if (wordRegex(label).test(text) || wordRegex(t).test(text)) {
+      draft.type = t
+      break
+    }
+    const synonyms = TYPE_SYNONYMS[t] ?? []
+    if (synonyms.some((s) => wordRegex(s).test(text))) {
       draft.type = t
       break
     }
@@ -216,11 +263,21 @@ export function parseTranscript(transcript: string): DraftRecord {
   const owner = extractOwner(text)
   if (owner) draft.owner = owner
 
-  // Company: explicit "company/client" cue + capitalised name
+  // Company: explicit cue + capitalised name (extended to prepositions)
   const companyM = text.match(
-    /(?:company|client|organisation|organization)\s+(?:is\s+|called\s+|named\s+)?([A-Z][A-Za-z0-9&'.\-]+(?:\s+[A-Z][A-Za-z0-9&'.\-]+){0,3})/,
+    /(?:company|client|organisation|organization|with|from)\s+(?:is\s+|called\s+|named\s+)?([A-Z][A-Za-z0-9&'.'\-]+(?:\s+[A-Za-z0-9&'.'\-]+){0,4})/,
   )
-  if (companyM) draft.company = companyM[1].trim()
+  if (companyM) {
+    draft.company = companyM[1].trim()
+  } else {
+    // Secondary: scan for known entity names
+    for (const kc of KNOWN_COMPANIES) {
+      if (wordRegex(kc).test(text)) {
+        draft.company = kc
+        break
+      }
+    }
+  }
 
   // Due date
   const dueDate = parseDate(lower)
@@ -230,8 +287,8 @@ export function parseTranscript(transcript: string): DraftRecord {
   const nextAction = extractNextAction(text)
   if (nextAction) draft.nextAction = nextAction
 
-  // Notes: explicit "note(s): ..." or "context: ..."
-  const noteM = text.match(/(?:notes?|context|background|details?)[:\s]+(.+)/i)
+  // Notes: explicit cue — catch-all for everything after the marker
+  const noteM = text.match(/(?:notes?|context|background|details?|additional\s+info|extra\s+context)[:\s]+(.+)/i)
   if (noteM) draft.notes = noteM[1].slice(0, 500).trim()
 
   return draft
