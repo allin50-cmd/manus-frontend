@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 import type { DraftRecord } from '@/lib/voice/types'
 import { WORK_ITEM_TYPES, TYPE_LABELS, PRIORITIES } from '@/lib/work-item-enums'
 
@@ -187,7 +187,7 @@ export default function VoiceIntakePage() {
     setWorkItemId(null)
   }
 
-  function field(label: string, node: React.ReactNode) {
+  function field(label: string, node: ReactNode) {
     return (
       <div className="space-y-1">
         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide">{label}</label>
