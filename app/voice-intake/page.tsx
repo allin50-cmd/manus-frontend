@@ -18,6 +18,7 @@ export default function VoiceIntakePage() {
   const [workItemId, setWorkItemId] = useState<string | null>(null)
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const mimeTypeRef = useRef<string>('audio/mp4')
 
   // Ensure the mic is released if the user navigates away mid-recording.
   useEffect(() => {
@@ -28,17 +29,20 @@ export default function VoiceIntakePage() {
     }
   }, [])
 
+  // iOS Safari reports false for isTypeSupported on most types yet still records
+  // to audio/mp4. Return '' (browser default) rather than null so we still try.
   function pickMimeType(): string | null {
     if (typeof MediaRecorder === 'undefined') return null
-    return SUPPORTED_MIME.find((m) => MediaRecorder.isTypeSupported(m)) ?? null
+    if (typeof MediaRecorder.isTypeSupported !== 'function') return ''
+    return SUPPORTED_MIME.find((m) => MediaRecorder.isTypeSupported(m)) ?? ''
   }
 
   async function startRecording() {
     setErrorMsg('')
 
     const mimeType = pickMimeType()
-    if (!mimeType) {
-      setErrorMsg('Audio recording is not supported in this browser. Try Chrome or Firefox.')
+    if (mimeType === null) {
+      setErrorMsg('Audio recording is not supported in this browser. Try Chrome, Safari, or Firefox.')
       setStage('error')
       return
     }
@@ -53,10 +57,17 @@ export default function VoiceIntakePage() {
     }
 
     try {
-      const recorder = new MediaRecorder(stream, { mimeType })
+      // Pass a mimeType only when we have a concrete one — handing iOS an empty
+      // string throws, so fall back to the no-options constructor it accepts.
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream)
       chunksRef.current = []
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
-      recorder.start(200)
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data) }
+      // No timeslice: iOS Safari frequently fails to emit periodic chunks and
+      // only delivers data on stop(). A single final chunk is the reliable path.
+      recorder.start()
+      mimeTypeRef.current = recorder.mimeType || mimeType || 'audio/mp4'
       mediaRef.current = recorder
       setStage('recording')
     } catch {
@@ -71,16 +82,19 @@ export default function VoiceIntakePage() {
     if (!recorder) return
     setStage('uploading')
 
-    await new Promise<void>((resolve) => {
-      recorder.onstop = () => resolve()
+    // Build the blob inside onstop, after the final ondataavailable has fired,
+    // so chunks are guaranteed populated (critical on iOS Safari).
+    const mime = mimeTypeRef.current
+    const blob: Blob = await new Promise<Blob>((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunksRef.current, { type: mime }))
+      try { recorder.requestData() } catch { /* not all browsers support it */ }
       recorder.stop()
       recorder.stream.getTracks().forEach((t) => t.stop())
     })
     mediaRef.current = null
 
-    const blob = new Blob(chunksRef.current, { type: recorder.mimeType })
     if (!blob.size) {
-      setErrorMsg('No audio was captured. Please try again.')
+      setErrorMsg('No audio was captured. Hold the record button a moment longer and try again.')
       setStage('error')
       return
     }
@@ -88,12 +102,12 @@ export default function VoiceIntakePage() {
     try {
       const uploadRes = await fetch('/api/voice/upload', {
         method: 'POST',
-        headers: { 'content-type': recorder.mimeType },
+        headers: { 'content-type': mime },
         body: blob,
       })
       if (!uploadRes.ok) {
         const err = await uploadRes.json().catch(() => ({}))
-        setErrorMsg(err.error ?? 'Upload failed')
+        setErrorMsg(err.error ? `${err.error} (${uploadRes.status})` : `Upload failed (${uploadRes.status})`)
         setStage('error')
         return
       }
@@ -109,7 +123,7 @@ export default function VoiceIntakePage() {
       })
       if (!txRes.ok) {
         const err = await txRes.json().catch(() => ({}))
-        setErrorMsg(err.error ?? 'Transcription failed')
+        setErrorMsg(err.error ? `${err.error} (${txRes.status})` : `Transcription failed (${txRes.status})`)
         setStage('error')
         return
       }
