@@ -25,6 +25,10 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
         take: 20,
         include: { recipient: true },
       },
+      outreachLogs: {
+        orderBy: { occurredAt: 'desc' },
+        take: 50,
+      },
     },
   })
 
@@ -175,6 +179,14 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
         <AlertDeliveriesSection
           workItemId={item.id}
           deliveries={item.alertDeliveries}
+        />
+      )}
+
+      {/* Outreach log — shown for CRM pipeline types */}
+      {(item.type === 'Partnership' || item.type === 'ConstructionLead' || item.type === 'PlanningLead') && (
+        <OutreachLogSection
+          workItemId={item.id}
+          logs={item.outreachLogs}
         />
       )}
 

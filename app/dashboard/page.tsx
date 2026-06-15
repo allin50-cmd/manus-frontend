@@ -1,7 +1,9 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
+import { getBriefingItems, isOverdue } from '../../lib/queries/briefing'
 import Link from 'next/link'
 import type { WorkItemStatus } from '@prisma/client'
+import MorningBriefing, { type BriefingItemClient } from './DashboardClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,10 +76,32 @@ const PRIORITY_DOT: Record<string, string> = {
 
 export default async function DashboardPage() {
   const session = await requireAuth()
+  const isGeorge = session.person === 'George'
 
+  // Fetch briefing items in parallel with dashboard data for George
+  let briefingItems: BriefingItemClient[] = []
   let data: Awaited<ReturnType<typeof getDashboardData>>
+
   try {
-    data = await getDashboardData()
+    if (isGeorge) {
+      const [dashData, rawBriefing] = await Promise.all([
+        getDashboardData(),
+        getBriefingItems(),
+      ])
+      data = dashData
+      briefingItems = rawBriefing.map((item) => ({
+        id: item.id,
+        title: item.title,
+        company: item.company,
+        owner: item.owner,
+        status: item.status,
+        priority: item.priority,
+        dueDate: item.dueDate ? item.dueDate.toISOString() : null,
+        nextAction: item.nextAction,
+      }))
+    } else {
+      data = await getDashboardData()
+    }
   } catch {
     return (
       <div className="space-y-6">
@@ -110,11 +134,27 @@ export default async function DashboardPage() {
       {/* Page header */}
       <div>
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{today}</p>
-        <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Compliance Dashboard</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mt-0.5">
+          {isGeorge ? 'Morning Briefing' : 'Compliance Dashboard'}
+        </h1>
         <p className="text-slate-500 text-sm mt-0.5">
           Welcome back, <span className="font-medium text-slate-700">{session.person}</span>
         </p>
       </div>
+
+      {/* ── Morning Briefing for George ── */}
+      {isGeorge && (
+        <MorningBriefing items={briefingItems} />
+      )}
+
+      {/* ── Divider between briefing and existing dashboard ── */}
+      {isGeorge && (
+        <div className="flex items-center gap-3 pt-1">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Team Overview</span>
+          <div className="flex-1 h-px bg-slate-200" />
+        </div>
+      )}
 
       {/* ── Compliance status bar ── */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
