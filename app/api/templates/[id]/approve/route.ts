@@ -15,7 +15,12 @@ export async function POST(
 
   const { id } = params
 
-  const existing = await db.template.findUnique({ where: { id } })
+  let existing
+  try {
+    existing = await db.template.findUnique({ where: { id } })
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const variables = extractVariables(existing.body)

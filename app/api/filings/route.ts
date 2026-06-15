@@ -4,12 +4,15 @@ import { getSession } from '@/lib/auth'
 import { FilingStatus, FilingCategory, FilingSource } from '@prisma/client'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 const VALID_STATUSES = new Set<string>(Object.values(FilingStatus))
 const VALID_CATEGORIES = new Set<string>(Object.values(FilingCategory))
 const VALID_SOURCES = new Set<string>(Object.values(FilingSource))
 
 export async function GET(req: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(req.url)
 
   const where: Record<string, unknown> = {}

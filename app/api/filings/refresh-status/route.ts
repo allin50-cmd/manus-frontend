@@ -51,39 +51,56 @@ export async function POST(req: NextRequest) {
     }
 
     if (newStatus !== null) {
-      // Create a WorkItem ComplianceAlert if one doesn't exist yet
-      let workItemId = filing.workItemId
-      if (!workItemId) {
+      const workItemStatus = newStatus === 'OVERDUE' ? 'Escalated' : 'FollowUpDue'
+      const workItemPriority = newStatus === 'OVERDUE' ? 'High' : 'Medium'
+
+      // If a linked WorkItem already exists, keep it in sync with the new status.
+      if (filing.workItemId) {
         try {
-          const workItem = await db.workItem.create({
-            data: {
-              type: 'ComplianceAlert',
-              title: filing.title,
-              company: filing.company.name,
-              owner: 'George',
-              status: newStatus === 'OVERDUE' ? 'Escalated' : 'FollowUpDue',
-              priority: newStatus === 'OVERDUE' ? 'High' : 'Medium',
-              dueDate: filing.dueDate,
-            },
+          await db.workItem.update({
+            where: { id: filing.workItemId },
+            data: { status: workItemStatus, priority: workItemPriority },
           })
-          workItemId = workItem.id
-          workItemsCreated++
         } catch {
-          // Non-fatal: continue updating status even if WorkItem creation fails
+          // Non-fatal
+        }
+        try {
+          await db.filing.update({ where: { id: filing.id }, data: { status: newStatus } })
+        } catch {
+          // Continue processing remaining filings
+        }
+      } else {
+        // Create WorkItem and link it atomically so a failed update can't leave an
+        // orphaned WorkItem that triggers duplicates on the next cron run.
+        try {
+          await db.$transaction(async (tx) => {
+            const workItem = await tx.workItem.create({
+              data: {
+                type: 'ComplianceAlert',
+                title: filing.title,
+                company: filing.company.name,
+                owner: 'George',
+                status: workItemStatus,
+                priority: workItemPriority,
+                dueDate: filing.dueDate,
+              },
+            })
+            await tx.filing.update({
+              where: { id: filing.id },
+              data: { status: newStatus, workItemId: workItem.id },
+            })
+            workItemsCreated++
+          })
+        } catch {
+          // Non-fatal: attempt bare status update so the filing isn't stuck
+          try {
+            await db.filing.update({ where: { id: filing.id }, data: { status: newStatus } })
+          } catch {
+            // Continue processing remaining filings
+          }
         }
       }
 
-      try {
-        await db.filing.update({
-          where: { id: filing.id },
-          data: {
-            status: newStatus,
-            ...(workItemId && !filing.workItemId ? { workItemId } : {}),
-          },
-        })
-      } catch {
-        // Continue processing remaining filings
-      }
     }
   }
 

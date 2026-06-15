@@ -188,9 +188,9 @@ function extractTitle(text: string): string {
 }
 
 function extractOwner(text: string): string | undefined {
-  // Tier 1: explicit prefix pattern
+  // Tier 1: explicit assignment verbs ("for" excluded — prepositional "for" is too greedy)
   const ownerPattern = new RegExp(
-    `(?:assign(?:ed)?\\s+to|owner\\s+is|for|owned\\s+by|give\\s+to|send\\s+to)\\s+(${OWNERS.join('|')})`,
+    `(?:assign(?:ed)?\\s+to|owner\\s+is|owned\\s+by|give\\s+to|send\\s+to)\\s+(${OWNERS.join('|')})`,
     'i',
   )
   const m = text.match(ownerPattern)

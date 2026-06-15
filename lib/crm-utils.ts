@@ -78,12 +78,12 @@ export function stagesForType(type: 'Partnership' | 'ConstructionLead' | 'Planni
   return []
 }
 
-export function isStagValidForType(stage: string, type: string): boolean {
-  if (type === 'Partnership') return SIP_STAGES.includes(stage)
-  if (type === 'ConstructionLead') return CL_STAGES.includes(stage)
-  if (type === 'PlanningLead') return PL_STAGES.includes(stage)
-  return false
+export function isStageValidForType(stage: string, type: string): boolean {
+  return stagesForType(type as 'Partnership' | 'ConstructionLead' | 'PlanningLead').includes(stage)
 }
+
+/** @deprecated Use isStageValidForType (fixes typo in original name). */
+export const isStagValidForType = isStageValidForType
 
 export function daysSinceLastTouch(logs: { occurredAt: Date }[]): number | null {
   if (logs.length === 0) return null

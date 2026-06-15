@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { OWNERS } from '@/lib/work-item-enums'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PERSONS = ['George', 'Dagon', 'Alissa', 'Michelle', 'Chris', 'Charlie'] as const
+const PERSONS = OWNERS
 
 export async function GET() {
   const now = new Date()
