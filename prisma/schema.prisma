@@ -1,6 +1,10 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // Vercel may run functions on either x86 (rhel-openssl-3.0.x) or ARM/Graviton
+  // (linux-arm64-openssl-3.0.x). With the prebuilt deploy flow, `prisma generate`
+  // runs locally, so every runtime we might land on must be listed here or the
+  // query engine binary won't be bundled. "native" covers local dev/build.
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
 }
 
 datasource db {
