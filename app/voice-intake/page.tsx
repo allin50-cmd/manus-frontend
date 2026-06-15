@@ -264,6 +264,8 @@ export default function VoiceIntakePage() {
     setErrorMsg('')
     setWorkItemId(null)
     setElapsed(0)
+    setConfidenceScore(null)
+    setQualityFlags([])
   }
 
   function field(label: string, node: ReactNode) {
@@ -285,6 +287,47 @@ export default function VoiceIntakePage() {
       <div className="max-w-xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold">Voice Intake</h1>
         <p className="text-slate-400 text-sm">Record a voice note to quickly capture a work item.</p>
+
+        {stage === 'idle' && pendingDrafts.length > 0 && draftsVisible && (
+          <div className="p-4 bg-slate-800 border border-slate-600 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-slate-200">
+                You have {pendingDrafts.length} unfinished voice intake{pendingDrafts.length === 1 ? '' : 's'}. Tap to resume.
+              </p>
+              <button
+                onClick={() => setDraftsVisible(false)}
+                className="text-slate-400 hover:text-white text-lg leading-none"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+            <ul className="space-y-2">
+              {pendingDrafts.map((d) => (
+                <li key={d.id}>
+                  <button
+                    className="w-full text-left p-3 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors space-y-0.5"
+                    onClick={() => {
+                      setIntakeId(d.id)
+                      setTranscript(d.transcript ?? '')
+                      setDraft((d.parsedJson as DraftRecord | null) ?? { title: (d.transcript ?? '').slice(0, 120), type: 'InternalTask', owner: 'George' })
+                      setConfidenceScore(d.transcriptConfidence ?? null)
+                      setQualityFlags(d.qualityFlags ?? [])
+                      setStage('review')
+                    }}
+                  >
+                    <p className="text-xs text-slate-400">{relativeTime(d.createdAt)}</p>
+                    {d.transcript ? (
+                      <p className="text-sm text-slate-200 truncate">{d.transcript.slice(0, 60)}</p>
+                    ) : (
+                      <p className="text-sm text-slate-500 italic">No transcript yet</p>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {stage === 'idle' && (
           <div className="space-y-3">
