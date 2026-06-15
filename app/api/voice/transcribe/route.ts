@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     // Never leak server configuration details to the client.
     if (err instanceof TranscriptionConfigError) {
       return NextResponse.json(
-        { error: 'Voice transcription requires an OpenAI API key. Add OPENAI_API_KEY in Vercel → Project → Settings → Environment Variables, then redeploy.' },
+        { error: 'Voice transcription requires a Groq API key. Add GROQ_API_KEY in Vercel → Project → Settings → Environment Variables, then redeploy. Get a free key at console.groq.com' },
         { status: 503 },
       )
     }

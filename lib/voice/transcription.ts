@@ -7,11 +7,14 @@ export class TranscriptionConfigError extends Error {
 }
 
 export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) throw new TranscriptionConfigError('OPENAI_API_KEY not configured')
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) throw new TranscriptionConfigError('GROQ_API_KEY not configured')
 
   const OpenAI = (await import('openai')).default
-  const openai = new OpenAI({ apiKey })
+  const groq = new OpenAI({
+    apiKey,
+    baseURL: 'https://api.groq.com/openai/v1',
+  })
 
   const ext = mimeType.includes('mp4') ? 'mp4'
     : mimeType.includes('mpeg') ? 'mp3'
@@ -23,8 +26,8 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Pr
   const arrayBuffer = audioBuffer.buffer.slice(byteOffset, byteOffset + byteLength) as ArrayBuffer
   const file = new File([arrayBuffer], `audio.${ext}`, { type: mimeType })
 
-  const response = await openai.audio.transcriptions.create({
-    model: 'whisper-1',
+  const response = await groq.audio.transcriptions.create({
+    model: 'whisper-large-v3-turbo',
     file,
     language: 'en',
   })

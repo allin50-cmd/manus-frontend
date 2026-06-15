@@ -92,7 +92,7 @@ public/
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key — server-side only |
 | `RESEND_API_KEY` | Optional | Email delivery (alerts still show on dashboard without it) |
 | `RESEND_FROM_EMAIL` | Optional | Verified sender address |
-| `OPENAI_API_KEY` | Optional | Whisper voice transcription |
+| `GROQ_API_KEY` | Optional | Voice transcription via Groq Whisper — free tier at console.groq.com |
 | `CRON_SECRET` | Optional | Bearer token protecting `/api/alert-escalation-check` |
 
 ---
@@ -148,7 +148,7 @@ UserPassword    ← scrypt-hashed passcodes per person
 | GET | `/api/alert-deliveries/ack` | One-click ack link (no login required) |
 | POST | `/api/alert-escalation-check` | Run escalation sweep (cron or manual) |
 | POST | `/api/voice/upload` | Store audio |
-| POST | `/api/voice/transcribe` | Whisper transcription |
+| POST | `/api/voice/transcribe` | Groq Whisper transcription |
 | POST | `/api/voice/approve` | Approve voice draft → create work item |
 | POST | `/api/voice/reject` | Discard voice draft |
 
