@@ -8,6 +8,28 @@ type Stage = 'idle' | 'recording' | 'uploading' | 'transcribing' | 'review' | 'd
 
 const SUPPORTED_MIME = ['audio/webm', 'audio/ogg', 'audio/mp4']
 
+interface VoiceDraft {
+  id: string
+  createdAt: string
+  status: string
+  transcript: string | null
+  parsedJson: DraftRecord | null
+  mimeType: string
+  transcriptConfidence: number | null
+  qualityFlags: string[]
+}
+
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  const days = Math.floor(hours / 24)
+  return `${days} day${days === 1 ? '' : 's'} ago`
+}
+
 export default function VoiceIntakePage() {
   const [stage, setStage] = useState<Stage>('idle')
   const [intakeId, setIntakeId] = useState<string | null>(null)
@@ -17,10 +39,22 @@ export default function VoiceIntakePage() {
   const [submitting, setSubmitting] = useState(false)
   const [workItemId, setWorkItemId] = useState<string | null>(null)
   const [elapsed, setElapsed] = useState(0)
+  const [confidenceScore, setConfidenceScore] = useState<number | null>(null)
+  const [qualityFlags, setQualityFlags] = useState<string[]>([])
+  const [pendingDrafts, setPendingDrafts] = useState<VoiceDraft[]>([])
+  const [draftsVisible, setDraftsVisible] = useState(true)
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const mimeTypeRef = useRef<string>('audio/mp4')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    // Load pending drafts on mount for recovery banner
+    fetch('/api/voice/drafts')
+      .then((r) => r.ok ? r.json() : { drafts: [] })
+      .then((data) => { if (Array.isArray(data.drafts) && data.drafts.length > 0) setPendingDrafts(data.drafts) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -136,9 +170,11 @@ export default function VoiceIntakePage() {
         return
       }
 
-      const { transcript: tx, parsedJson } = await txRes.json()
+      const { transcript: tx, parsedJson, confidenceScore: cs, qualityFlags: qf } = await txRes.json()
       setTranscript(tx ?? '')
       setDraft(parsedJson ?? { title: (tx ?? '').slice(0, 120), type: 'InternalTask', owner: 'George' })
+      setConfidenceScore(typeof cs === 'number' ? cs : null)
+      setQualityFlags(Array.isArray(qf) ? qf : [])
       setStage('review')
     } catch {
       setErrorMsg('Network error. Please check your connection and try again.')

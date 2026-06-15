@@ -22,15 +22,21 @@ export async function POST(req: NextRequest) {
   if (!intake.audioData) return NextResponse.json({ error: 'No audio data' }, { status: 400 })
 
   try {
-    const transcript = await transcribeAudio(intake.audioData as Buffer, intake.mimeType)
+    const { transcript, confidenceScore, qualityFlags } = await transcribeAudio(intake.audioData as Buffer, intake.mimeType)
     const parsedJson = parseTranscript(transcript)
 
     const updated = await db.voiceIntake.update({
       where: { id },
-      data: { transcript, parsedJson: parsedJson as object, status: 'TRANSCRIBED' },
+      data: {
+        transcript,
+        parsedJson: parsedJson as object,
+        status: 'TRANSCRIBED',
+        transcriptConfidence: confidenceScore,
+        qualityFlags,
+      },
     })
 
-    return NextResponse.json({ transcript, parsedJson, id: updated.id })
+    return NextResponse.json({ transcript, parsedJson, id: updated.id, confidenceScore, qualityFlags })
   } catch (err) {
     await db.voiceIntake.update({ where: { id }, data: { status: 'FAILED' } }).catch(() => {})
     // Never leak server configuration details to the client.
