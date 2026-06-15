@@ -416,11 +416,30 @@ export default function VoiceIntakePage() {
 
         {stage === 'review' && (
           <div className="space-y-5">
-            <div className="p-4 bg-slate-800 rounded-xl">
+            <div className="p-4 bg-slate-800 rounded-xl space-y-2">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Transcript</p>
               <p className="text-sm text-slate-200 whitespace-pre-wrap">
                 {transcript || <span className="text-slate-500 italic">No speech detected — edit the fields below.</span>}
               </p>
+              {confidenceScore !== null && confidenceScore < 0.75 && (
+                <div className="space-y-1 pt-1">
+                  {confidenceScore < 0.50 ? (
+                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-red-900/60 text-red-300 border border-red-700">
+                      Low quality — consider re-recording
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-amber-900/60 text-amber-300 border border-amber-700">
+                      Review carefully
+                    </span>
+                  )}
+                  {qualityFlags.includes('high_silence') && (
+                    <p className="text-xs text-slate-400">Much of this recording was silent.</p>
+                  )}
+                </div>
+              )}
+              {confidenceScore !== null && confidenceScore >= 0.75 && qualityFlags.includes('high_silence') && (
+                <p className="text-xs text-slate-400 pt-1">Much of this recording was silent.</p>
+              )}
             </div>
 
             <div className="space-y-4">

@@ -28,6 +28,7 @@ const MORE_MENU = [
   { href: '/filings',           label: 'Filings' },
   { href: '/teams',             label: 'Teams' },
   { href: '/contacts',          label: 'Contacts' },
+  { href: '/partnerships',      label: 'Pipeline' },
   { href: '/work-items',        label: 'All Work Items' },
   { href: '/alert-recipients',  label: 'Alert Recipients' },
   { href: '/alert-events',      label: 'Alert Audit Log' },
