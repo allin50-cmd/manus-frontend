@@ -1,5 +1,6 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
+import { WorkItemStatus } from '@prisma/client'
 import Link from 'next/link'
 import AddCompanyForm from './AddCompanyForm'
 
@@ -24,25 +25,39 @@ export default async function PortfolioPage() {
     })
 
     const now = new Date(); now.setHours(0, 0, 0, 0)
+    const companyNames = companies.map((c) => c.name)
+    const companyIds   = companies.map((c) => c.id)
+    const nonFinal: WorkItemStatus[] = ['Archived', 'NotFit', 'Completed']
 
-    companiesWithCounts = await Promise.all(
-      companies.map(async (co) => {
-        const [contacts, workItems, overdue] = await Promise.all([
-          db.contact.count({ where: { companyId: co.id, isActive: true } }),
-          db.workItem.count({
-            where: { company: co.name, status: { notIn: ['Archived', 'NotFit', 'Completed'] } },
-          }),
-          db.workItem.count({
-            where: {
-              company: co.name,
-              dueDate: { lt: now },
-              status: { notIn: ['Archived', 'NotFit', 'Completed'] },
-            },
-          }),
-        ])
-        return { id: co.id, name: co.name, contacts, workItems, overdue }
-      })
-    )
+    const [contactGroups, workItemGroups, overdueGroups] = await Promise.all([
+      db.contact.groupBy({
+        by: ['companyId'],
+        _count: { id: true },
+        where: { companyId: { in: companyIds }, isActive: true },
+      }),
+      db.workItem.groupBy({
+        by: ['company'],
+        _count: { id: true },
+        where: { company: { in: companyNames }, status: { notIn: nonFinal } },
+      }),
+      db.workItem.groupBy({
+        by: ['company'],
+        _count: { id: true },
+        where: { company: { in: companyNames }, dueDate: { lt: now }, status: { notIn: nonFinal } },
+      }),
+    ])
+
+    const contactsById   = Object.fromEntries(contactGroups.map((r) => [r.companyId, r._count.id]))
+    const workItemsByName = Object.fromEntries(workItemGroups.map((r) => [r.company ?? '', r._count.id]))
+    const overdueByName  = Object.fromEntries(overdueGroups.map((r) => [r.company ?? '', r._count.id]))
+
+    companiesWithCounts = companies.map((co) => ({
+      id: co.id,
+      name: co.name,
+      contacts:  contactsById[co.id]    ?? 0,
+      workItems: workItemsByName[co.name] ?? 0,
+      overdue:   overdueByName[co.name]  ?? 0,
+    }))
   } catch {
     return (
       <div className="space-y-6">

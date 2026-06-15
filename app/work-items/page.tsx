@@ -14,6 +14,7 @@ interface SearchParams {
   type?: string
   owner?: string
   priority?: string
+  company?: string
 }
 
 export default async function WorkItemsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -27,6 +28,7 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
   if (searchParams.owner && searchParams.owner !== 'all') where.owner = searchParams.owner
   if (searchParams.priority && searchParams.priority !== 'all' && isValidPriority(searchParams.priority))
     where.priority = searchParams.priority as Priority
+  if (searchParams.company) where.company = searchParams.company
 
   const hasFilters = Object.values(searchParams).some((v) => v && v !== 'all')
 
@@ -61,6 +63,16 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
       </div>
 
       <WorkItemFilters current={searchParams} />
+
+      {searchParams.company && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Company:</span>
+          <span className="text-xs font-semibold bg-blue-100 text-blue-700 rounded-full px-3 py-1">
+            {searchParams.company}
+          </span>
+          <a href="/work-items" className="text-xs text-slate-400 hover:text-slate-600 underline">Clear</a>
+        </div>
+      )}
 
       <p className="text-xs text-slate-500">{items.length} item{items.length !== 1 ? 's' : ''}</p>
 

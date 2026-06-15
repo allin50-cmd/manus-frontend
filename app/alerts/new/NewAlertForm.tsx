@@ -26,8 +26,7 @@ const CATEGORY_NOTE_HINTS: Record<string, string> = {
   SystemNotice: 'System notice',
 }
 
-const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
-const OWNERS = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
+import { PRIORITIES, OWNERS } from '../../../lib/work-item-enums'
 
 export default function NewAlertForm({ companies }: { companies: string[] }) {
   const router = useRouter()

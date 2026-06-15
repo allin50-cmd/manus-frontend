@@ -2,6 +2,7 @@ import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
 import CopyButton from '../../components/CopyButton'
 import Link from 'next/link'
+import AddTemplateForm from './AddTemplateForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,8 +26,13 @@ export default async function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Templates</h1>
-      <p className="text-sm text-slate-500">Approved reusable text. Copy and use.</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Templates</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Approved reusable text. Copy and use.</p>
+        </div>
+        <AddTemplateForm />
+      </div>
 
       <div className="space-y-4">
         {templates.map((t) => {

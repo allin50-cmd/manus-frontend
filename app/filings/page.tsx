@@ -44,8 +44,19 @@ function complianceStatus(item: { dueDate: Date | null; status: WorkItemStatus }
   return 'compliant'
 }
 
-export default async function FilingsPage() {
+const VALID_STATUS_FILTERS = ['overdue', 'action', 'risk', 'compliant'] as const
+type StatusFilter = typeof VALID_STATUS_FILTERS[number]
+
+export default async function FilingsPage({
+  searchParams,
+}: {
+  searchParams?: { status?: string }
+}) {
   await requireAuth()
+
+  const activeFilter = VALID_STATUS_FILTERS.includes(searchParams?.status as StatusFilter)
+    ? (searchParams!.status as StatusFilter)
+    : null
 
   let items: Awaited<ReturnType<typeof db.workItem.findMany>> = []
   try {
@@ -66,7 +77,7 @@ export default async function FilingsPage() {
   }
 
   // Annotate with compliance status and sort by urgency
-  const annotated = items
+  const allAnnotated = items
     .map((item) => ({ ...item, compliance: complianceStatus(item) }))
     .sort((a, b) => {
       const urgency: Record<string, number> = { overdue: 0, action: 1, risk: 2, compliant: 3 }
@@ -75,11 +86,13 @@ export default async function FilingsPage() {
       return (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9)
     })
 
+  const annotated = activeFilter ? allAnnotated.filter((i) => i.compliance === activeFilter) : allAnnotated
+
   const counts = {
-    overdue:   annotated.filter((i) => i.compliance === 'overdue').length,
-    action:    annotated.filter((i) => i.compliance === 'action').length,
-    risk:      annotated.filter((i) => i.compliance === 'risk').length,
-    compliant: annotated.filter((i) => i.compliance === 'compliant').length,
+    overdue:   allAnnotated.filter((i) => i.compliance === 'overdue').length,
+    action:    allAnnotated.filter((i) => i.compliance === 'action').length,
+    risk:      allAnnotated.filter((i) => i.compliance === 'risk').length,
+    compliant: allAnnotated.filter((i) => i.compliance === 'compliant').length,
   }
 
   return (
@@ -98,6 +111,19 @@ export default async function FilingsPage() {
           + Add
         </Link>
       </div>
+
+      {/* Active filter chip */}
+      {activeFilter && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Filtered:</span>
+          <span className="text-xs font-semibold bg-blue-100 text-blue-700 rounded-full px-3 py-1 capitalize">
+            {activeFilter}
+          </span>
+          <Link href="/filings" className="text-xs text-slate-400 hover:text-slate-600 underline">
+            Clear
+          </Link>
+        </div>
+      )}
 
       {/* Status summary */}
       <div className="grid grid-cols-4 gap-2">

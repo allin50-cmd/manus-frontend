@@ -8,11 +8,23 @@ export const dynamic = 'force-dynamic'
 export default async function ActivityPage() {
   await requireAuth()
 
-  const logs = await db.activityLog.findMany({
-    include: { workItem: { select: { id: true, title: true } } },
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-  })
+  let logs: Awaited<ReturnType<typeof db.activityLog.findMany<{ include: { workItem: { select: { id: true; title: true } } } }>>> = []
+  try {
+    logs = await db.activityLog.findMany({
+      include: { workItem: { select: { id: true, title: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+  } catch {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-slate-900">Activity Log</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-sm text-red-700">
+          Could not load activity log. Please refresh the page.
+        </div>
+      </div>
+    )
+  }
 
   const eventBadge: Record<string, string> = {
     Created: 'bg-blue-100 text-blue-700',

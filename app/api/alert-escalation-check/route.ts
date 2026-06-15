@@ -2,17 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { runEscalationCheck } from '@/lib/alert-dispatch'
 
-export async function POST(req: NextRequest) {
-  // Accept either a logged-in session or a Vercel Cron bearer token.
+async function checkAuth(req: NextRequest): Promise<boolean> {
   const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
-  const bearerOk = cronSecret && authHeader === `Bearer ${cronSecret}`
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true
+  const session = await getSession()
+  return !!session
+}
 
-  if (!bearerOk) {
-    const session = await getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
-  }
+// GET — called by Vercel Cron Jobs (always GET)
+export async function GET(req: NextRequest) {
+  if (!await checkAuth(req)) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+  const result = await runEscalationCheck()
+  return NextResponse.json({ ok: true, escalated: result.escalated })
+}
 
+// POST — called manually from the UI
+export async function POST(req: NextRequest) {
+  if (!await checkAuth(req)) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
   const result = await runEscalationCheck()
   return NextResponse.json({ ok: true, escalated: result.escalated })
 }
