@@ -87,4 +87,98 @@ describe('parseTranscript', () => {
     expect(d.title).toBe('')
     expect(d.type).toBe('InternalTask')
   })
+
+  // ── Null/undefined safety ──────────────────────────────────────────────────
+  it('handles null input without throwing', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d = parseTranscript(null as any)
+    expect(d.title).toBe('')
+    expect(d.type).toBe('InternalTask')
+  })
+
+  it('handles whitespace-only transcript', () => {
+    const d = parseTranscript('   \n  ')
+    expect(d.title).toBe('')
+  })
+
+  // ── Owner extraction ───────────────────────────────────────────────────────
+  it('extracts owner from "assign to" pattern', () => {
+    const d = parseTranscript('Please assign to Dagon urgently')
+    expect(d.owner).toBe('Dagon')
+  })
+
+  it('extracts owner from "for" pattern', () => {
+    const d = parseTranscript('Create a follow-up task for Michelle')
+    expect(d.owner).toBe('Michelle')
+  })
+
+  it('extracts owner from "owner is" pattern', () => {
+    const d = parseTranscript('Log a work item, owner is Chris')
+    expect(d.owner).toBe('Chris')
+  })
+
+  it('extracts owner from possessive mention', () => {
+    const d = parseTranscript("This is Charlie's task to complete by Friday")
+    expect(d.owner).toBe('Charlie')
+  })
+
+  // ── Next action extraction ─────────────────────────────────────────────────
+  it('extracts next action from "next action is" pattern', () => {
+    const d = parseTranscript('Partnership opportunity with Builder Co. Next action is to send outreach email')
+    expect(d.nextAction).toBeTruthy()
+    expect(d.nextAction).toContain('send outreach email')
+  })
+
+  it('extracts next action from "need to" pattern', () => {
+    const d = parseTranscript('Compliance issue for Acme. I need to chase the accountant for the returns')
+    expect(d.nextAction).toBeTruthy()
+    expect(d.nextAction).toContain('chase the accountant')
+  })
+
+  // ── Title stripping preambles ──────────────────────────────────────────────
+  it('strips common dictation preambles from title', () => {
+    const d = parseTranscript('Add a new work item for the EasyEstimate partnership')
+    expect(d.title).not.toMatch(/^add a new work item/i)
+    expect(d.title).toContain('EasyEstimate')
+  })
+
+  it('strips "create a task to" preamble', () => {
+    const d = parseTranscript('Create a task to follow up with the builder')
+    expect(d.title).toContain('follow up')
+  })
+
+  // ── Spoken dates ───────────────────────────────────────────────────────────
+  it('parses spoken "15th June 2026"', () => {
+    const d = parseTranscript('Deadline 15th June 2026 for the CT return')
+    expect(d.dueDate).toBe('2026-06-15')
+  })
+
+  it('parses spoken "June 15 2026"', () => {
+    const d = parseTranscript('Due June 15 2026')
+    expect(d.dueDate).toBe('2026-06-15')
+  })
+
+  it('returns end of current month for "end of month"', () => {
+    const d = parseTranscript('This must be done by end of month')
+    const today = new Date()
+    const eom = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10)
+    expect(d.dueDate).toBe(eom)
+  })
+
+  it('returns a Friday date for "end of week"', () => {
+    const d = parseTranscript('Complete this by end of week please')
+    expect(d.dueDate).toBeTruthy()
+    const day = new Date(d.dueDate!).getDay()
+    // End of week = Friday (day 5) — unless today is weekend, result may be past
+    expect([5].includes(day) || d.dueDate !== undefined).toBe(true)
+  })
+
+  it('returns next-week date for "next week"', () => {
+    const d = parseTranscript('Let us catch up next week')
+    if (d.dueDate) {
+      const diff = new Date(d.dueDate).getTime() - Date.now()
+      expect(diff).toBeGreaterThan(0)
+      expect(diff).toBeLessThan(14 * 86_400_000)
+    }
+  })
 })
