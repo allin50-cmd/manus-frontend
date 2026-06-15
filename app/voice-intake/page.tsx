@@ -42,7 +42,15 @@ export default function VoiceIntakePage() {
 
     const mimeType = pickMimeType()
     if (mimeType === null) {
-      setErrorMsg('Audio recording is not supported in this browser. Try Chrome, Safari, or Firefox.')
+      setErrorMsg('Audio recording (MediaRecorder) is not available in this browser. Use the “Record / upload an audio file” option below instead.')
+      setStage('error')
+      return
+    }
+
+    // navigator.mediaDevices is undefined on insecure origins and inside some
+    // iOS home-screen (standalone PWA) contexts — the classic silent failure.
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setErrorMsg('Microphone access is unavailable here (needs HTTPS, and on iPhone it may be blocked when launched from the Home Screen icon — open in Safari instead). Use the “Record / upload an audio file” option below.')
       setStage('error')
       return
     }
@@ -50,8 +58,13 @@ export default function VoiceIntakePage() {
     let stream: MediaStream
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    } catch {
-      setErrorMsg('Microphone access was denied. Please allow microphone access and try again.')
+    } catch (err) {
+      const name = err instanceof Error ? err.name : 'Error'
+      const msg =
+        name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your browser settings and try again.'
+        : name === 'NotFoundError' ? 'No microphone was found on this device.'
+        : `Microphone error: ${name}. Use the “Record / upload an audio file” option below.`
+      setErrorMsg(msg)
       setStage('error')
       return
     }
@@ -70,35 +83,25 @@ export default function VoiceIntakePage() {
       mimeTypeRef.current = recorder.mimeType || mimeType || 'audio/mp4'
       mediaRef.current = recorder
       setStage('recording')
-    } catch {
+    } catch (err) {
       stream.getTracks().forEach((t) => t.stop())
-      setErrorMsg('Could not start recording in this browser.')
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : 'unknown error'
+      setErrorMsg(`Could not start recording (${detail}). Use the “Record / upload an audio file” option below.`)
       setStage('error')
     }
   }
 
-  async function stopRecording() {
-    const recorder = mediaRef.current
-    if (!recorder) return
-    setStage('uploading')
-
-    // Build the blob inside onstop, after the final ondataavailable has fired,
-    // so chunks are guaranteed populated (critical on iOS Safari).
-    const mime = mimeTypeRef.current
-    const blob: Blob = await new Promise<Blob>((resolve) => {
-      recorder.onstop = () => resolve(new Blob(chunksRef.current, { type: mime }))
-      try { recorder.requestData() } catch { /* not all browsers support it */ }
-      recorder.stop()
-      recorder.stream.getTracks().forEach((t) => t.stop())
-    })
-    mediaRef.current = null
-
+  // Shared upload → transcribe pipeline, used by both the live recorder and the
+  // native file-input fallback. The mime type is sent so the server can label
+  // the file extension Whisper expects.
+  async function uploadAndTranscribe(blob: Blob, mime: string) {
     if (!blob.size) {
-      setErrorMsg('No audio was captured. Hold the record button a moment longer and try again.')
+      setErrorMsg('No audio was captured (0 bytes). Record a little longer, or try the file upload option.')
       setStage('error')
       return
     }
 
+    setStage('uploading')
     try {
       const uploadRes = await fetch('/api/voice/upload', {
         method: 'POST',
@@ -136,6 +139,36 @@ export default function VoiceIntakePage() {
       setErrorMsg('Network error. Please check your connection and try again.')
       setStage('error')
     }
+  }
+
+  async function stopRecording() {
+    const recorder = mediaRef.current
+    if (!recorder) return
+    setStage('uploading')
+
+    // Build the blob inside onstop, after the final ondataavailable has fired,
+    // so chunks are guaranteed populated (critical on iOS Safari).
+    const mime = mimeTypeRef.current
+    const blob: Blob = await new Promise<Blob>((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunksRef.current, { type: mime }))
+      try { recorder.requestData() } catch { /* not all browsers support it */ }
+      recorder.stop()
+      recorder.stream.getTracks().forEach((t) => t.stop())
+    })
+    mediaRef.current = null
+
+    await uploadAndTranscribe(blob, mime)
+  }
+
+  // Fallback for browsers where MediaRecorder/getUserMedia is blocked (e.g. iOS
+  // home-screen PWA): the OS file picker can record or choose an audio clip.
+  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file) return
+    setErrorMsg('')
+    const mime = file.type || 'audio/mp4'
+    await uploadAndTranscribe(file, mime)
   }
 
   async function approve() {
@@ -205,12 +238,32 @@ export default function VoiceIntakePage() {
         <p className="text-slate-400 text-sm">Record a voice note to quickly capture a work item.</p>
 
         {stage === 'idle' && (
-          <button
-            onClick={startRecording}
-            className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-lg transition-colors"
-          >
-            Start Recording
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={startRecording}
+              className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-lg transition-colors"
+            >
+              Start Recording
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-slate-700" />
+              <span className="text-xs text-slate-500 uppercase tracking-wide">or</span>
+              <div className="flex-1 h-px bg-slate-700" />
+            </div>
+            <label className="block w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-center text-sm cursor-pointer transition-colors">
+              Record / upload an audio file
+              <input
+                type="file"
+                accept="audio/*"
+                capture
+                className="hidden"
+                onChange={handleFilePick}
+              />
+            </label>
+            <p className="text-xs text-slate-500 text-center">
+              On iPhone, if “Start Recording” does nothing, use this to record with the system mic.
+            </p>
+          </div>
         )}
 
         {stage === 'recording' && (
@@ -240,9 +293,21 @@ export default function VoiceIntakePage() {
         {stage === 'error' && (
           <div className="p-4 bg-red-900/40 border border-red-600 rounded-xl space-y-3">
             <p className="text-red-300 text-sm">{errorMsg || 'Something went wrong.'}</p>
-            <button onClick={reset} className="text-sm text-slate-300 hover:text-white underline">
-              Try again
-            </button>
+            <div className="flex flex-wrap items-center gap-4">
+              <button onClick={reset} className="text-sm text-slate-300 hover:text-white underline">
+                Try again
+              </button>
+              <label className="text-sm text-blue-300 hover:text-blue-200 underline cursor-pointer">
+                Record / upload an audio file
+                <input
+                  type="file"
+                  accept="audio/*"
+                  capture
+                  className="hidden"
+                  onChange={handleFilePick}
+                />
+              </label>
+            </div>
           </div>
         )}
 

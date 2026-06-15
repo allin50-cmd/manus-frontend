@@ -16,7 +16,10 @@ export async function transcribeAudio(audioBuffer: Buffer, mimeType: string): Pr
     baseURL: 'https://api.groq.com/openai/v1',
   })
 
-  const ext = mimeType.includes('mp4') ? 'mp4'
+  const ext = mimeType.includes('m4a') ? 'm4a'
+    : mimeType.includes('aac') ? 'm4a'
+    : mimeType.includes('3gpp') ? '3gp'
+    : mimeType.includes('mp4') ? 'mp4'
     : mimeType.includes('mpeg') ? 'mp3'
     : mimeType.includes('ogg') ? 'ogg'
     : mimeType.includes('wav') ? 'wav'

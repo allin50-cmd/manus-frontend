@@ -6,7 +6,11 @@ export const runtime = 'nodejs'
 
 // Whisper accepts up to 25 MB; reject anything larger before buffering/storing.
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
-const ALLOWED_MIME = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/x-wav']
+const ALLOWED_MIME = [
+  'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav', 'audio/x-wav',
+  // iOS file-picker / Voice Memos variants:
+  'audio/x-m4a', 'audio/m4a', 'audio/aac', 'audio/3gpp', 'audio/3gpp2',
+]
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
