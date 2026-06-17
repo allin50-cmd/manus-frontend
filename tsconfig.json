@@ -39,7 +39,10 @@
     "lib/**/*.ts",
     "middleware.ts",
     "prisma/seed.ts",
-    "dist/types/**/*.ts"
+    "dist/types/**/*.ts",
+    "global.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
   ],
   "exclude": [
     "node_modules"
