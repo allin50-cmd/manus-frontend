@@ -35,9 +35,12 @@ export async function GET() {
     )
 
     return NextResponse.json(result)
-  } catch {
-    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
-  }
+} catch (err) {
+  console.error(err)
+  return NextResponse.json(
+    { error: 'Service unavailable', details: String(err) },
+    { status: 503 }
+  )
 }
 
 export async function POST(req: NextRequest) {
