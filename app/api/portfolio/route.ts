@@ -35,12 +35,13 @@ export async function GET() {
     )
 
     return NextResponse.json(result)
-} catch (err) {
-  console.error(err)
-  return NextResponse.json(
-    { error: 'Service unavailable', details: String(err) },
-    { status: 503 }
-  )
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json(
+      { error: 'Service unavailable', details: String(err) },
+      { status: 503 }
+    )
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -48,7 +49,9 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   let body: { name?: unknown }
-  try { body = await req.json() } catch {
+  try {
+    body = await req.json()
+  } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 

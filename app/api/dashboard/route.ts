@@ -60,7 +60,6 @@ export async function GET() {
 
     const actionRequired = escalated + dueToday
     const atRisk = in7DaysDue + in30DaysDue
-    const grandTotal = Math.max(total, 1)
     const compliant = Math.max(0, total - overdue - actionRequired - atRisk)
 
     return NextResponse.json({
@@ -75,10 +74,11 @@ export async function GET() {
       })),
       teamPulse,
     })
-} catch (err) {
-  console.error(err)
-  return NextResponse.json(
-    { error: 'Service unavailable', details: String(err) },
-    { status: 503 }
-  )
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json(
+      { error: 'Service unavailable', details: String(err) },
+      { status: 503 }
+    )
+  }
 }
