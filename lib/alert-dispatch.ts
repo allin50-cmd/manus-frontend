@@ -1,13 +1,13 @@
 import { Resend } from 'resend'
 import { randomUUID } from 'crypto'
-import { db } from '@/lib/db'
+import { db } from './db'
 import {
   selectRecipientsForAlert,
   shouldEscalate,
   type AlertCategory,
   type AlertInput,
-} from '@/lib/alert-recipient-selector'
-import { escHtml } from '@/lib/utils'
+} from './alert-recipient-selector'
+import { escHtml } from './utils'
 import type { WorkItem } from '@prisma/client'
 
 function appUrl(): string {

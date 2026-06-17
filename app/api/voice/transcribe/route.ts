@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '../../../../lib/db'
 import { getSession } from '../../../../lib/auth'
-import { transcribeAudio, TranscriptionConfigError } from '@/lib/voice/transcription'
-import { parseTranscript } from '@/lib/voice/parser'
+import { transcribeAudio, TranscriptionConfigError } from '../../../../lib/voice/transcription'
+import { parseTranscript } from '../../../../lib/voice/parser'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60 // Whisper round-trips can exceed the default timeout.
