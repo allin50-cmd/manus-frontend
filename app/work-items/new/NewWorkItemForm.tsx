@@ -9,7 +9,7 @@ import {
   STATUS_LABELS,
   PRIORITIES,
   OWNERS,
-} from '@/lib/work-item-enums'
+} from '../../../lib/work-item-enums'
 
 interface Initial {
   type?: string

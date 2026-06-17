@@ -8,7 +8,7 @@ import {
   STATUS_LABELS as BASE_STATUS_LABELS,
   PRIORITIES as BASE_PRIORITIES,
   OWNERS as BASE_OWNERS,
-} from '@/lib/work-item-enums'
+} from '../lib/work-item-enums'
 
 interface FilterState {
   status?: string

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import type { DraftRecord } from '@/lib/voice/types'
-import { WORK_ITEM_TYPES, TYPE_LABELS, PRIORITIES } from '@/lib/work-item-enums'
+import { WORK_ITEM_TYPES, TYPE_LABELS, PRIORITIES } from '../../lib/work-item-enums'
 
 type Stage = 'idle' | 'recording' | 'uploading' | 'transcribing' | 'review' | 'done' | 'error'
 
