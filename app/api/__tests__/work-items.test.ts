@@ -9,9 +9,9 @@ const { db } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('@/lib/auth', () => ({ getSession }))
-vi.mock('@/lib/alert-dispatch', () => ({ dispatchAlerts }))
-vi.mock('@/lib/db', () => ({ db }))
+vi.mock('../../../lib/auth', () => ({ getSession }))
+vi.mock('../../../lib/alert-dispatch', () => ({ dispatchAlerts }))
+vi.mock('../../../lib/db', () => ({ db }))
 
 import { POST } from '@/app/api/work-items/route'
 import { PATCH } from '@/app/api/work-items/[id]/route'

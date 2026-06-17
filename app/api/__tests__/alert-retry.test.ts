@@ -10,9 +10,9 @@ const { db } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('@/lib/auth', () => ({ getSession }))
-vi.mock('@/lib/alert-dispatch', () => ({ sendAlertEmail }))
-vi.mock('@/lib/db', () => ({ db }))
+vi.mock('../../../lib/auth', () => ({ getSession }))
+vi.mock('../../../lib/alert-dispatch', () => ({ sendAlertEmail }))
+vi.mock('../../../lib/db', () => ({ db }))
 
 import { POST } from '@/app/api/alert-deliveries/[id]/retry/route'
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
-import { sendAlertEmail } from '@/lib/alert-dispatch'
+import { db } from '../../../../../lib/db'
+import { getSession } from '../../../../../lib/auth'
+import { sendAlertEmail } from '../../../../../lib/alert-dispatch'
 import { randomUUID } from 'crypto'
 
 // Only a delivery that actually failed may be retried. Pending deliveries are still

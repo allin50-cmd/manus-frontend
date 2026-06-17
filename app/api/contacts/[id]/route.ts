@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { requireAuth } from '../../../../lib/auth'
+import { db } from '../../../../lib/db'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   await requireAuth()

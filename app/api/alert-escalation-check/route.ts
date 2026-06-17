@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { runEscalationCheck } from '@/lib/alert-dispatch'
+import { getSession } from '../../../lib/auth'
+import { runEscalationCheck } from '../../../lib/alert-dispatch'
 
 async function checkAuth(req: NextRequest): Promise<boolean> {
   const cronSecret = process.env.CRON_SECRET

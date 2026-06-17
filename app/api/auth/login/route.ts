@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSessionToken, COOKIE_NAME } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { verifyPassword } from '@/lib/password'
-import { safeEqual } from '@/lib/safe-equal'
+import { createSessionToken, COOKIE_NAME } from '../../../../lib/auth'
+import { db } from '../../../../lib/db'
+import { verifyPassword } from '../../../../lib/password'
+import { safeEqual } from '../../../../lib/safe-equal'
 
 const KNOWN_PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
 

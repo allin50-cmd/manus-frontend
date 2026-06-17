@@ -9,8 +9,8 @@ const { db } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('@/lib/auth', () => ({ getSession }))
-vi.mock('@/lib/db', () => ({ db }))
+vi.mock('../../../lib/auth', () => ({ getSession }))
+vi.mock('../../../lib/db', () => ({ db }))
 
 import { PATCH } from '@/app/api/decisions/[id]/route'
 

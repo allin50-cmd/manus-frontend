@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { db } from '../../../lib/db'
+import { getSession } from '../../../lib/auth'
 import { WorkItemStatus, WorkItemType, Priority } from '@prisma/client'
-import { dispatchAlerts } from '@/lib/alert-dispatch'
-import { isValidType, isValidStatus, isValidPriority } from '@/lib/work-item-enums'
+import { dispatchAlerts } from '../../../lib/alert-dispatch'
+import { isValidType, isValidStatus, isValidPriority } from '../../../lib/work-item-enums'
 
 export async function GET(req: NextRequest) {
   const session = await getSession()

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { db } from '../../../../lib/db'
+import { getSession } from '../../../../lib/auth'
 import { DecisionStatus } from '@prisma/client'
 
 const VALID_DECISION_STATUSES: DecisionStatus[] = ['Open', 'Approved', 'Rejected', 'MoreInfoNeeded', 'Paused']

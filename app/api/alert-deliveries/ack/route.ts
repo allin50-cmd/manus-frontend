@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db } from '../../../../lib/db'
 import { escHtml } from '@/lib/utils'
 
 // Public endpoint — no auth required. Token is a UUID, cryptographically unguessable.

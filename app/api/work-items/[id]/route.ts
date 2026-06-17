@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { db } from '../../../../lib/db'
+import { getSession } from '../../../../lib/auth'
 import { WorkItemStatus, Priority, WorkItemType } from '@prisma/client'
-import { isValidType, isValidStatus, isValidPriority } from '@/lib/work-item-enums'
+import { isValidType, isValidStatus, isValidPriority } from '../../../../lib/work-item-enums'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()

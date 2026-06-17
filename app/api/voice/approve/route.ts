@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { db } from '../../../../lib/db'
+import { getSession } from '../../../../lib/auth'
 import type { DraftRecord } from '@/lib/voice/types'
 import { WorkItemType, Priority } from '@prisma/client'
-import { isValidType, isValidPriority } from '@/lib/work-item-enums'
-import { dispatchAlerts } from '@/lib/alert-dispatch'
+import { isValidType, isValidPriority } from '../../../../lib/work-item-enums'
+import { dispatchAlerts } from '../../../../lib/alert-dispatch'
 
 export const runtime = 'nodejs'
 
