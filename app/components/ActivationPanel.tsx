@@ -34,12 +34,42 @@ export function ActivationPanel({ companyNumber, companyName, onContinue }: Acti
     confirmation_statement: true,
     director_changes: true
   });
+  const [activating, setActivating] = useState(false);
+  const [activated, setActivated] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
   const monthlyPrice = selectedCount * 1;
 
   const toggleAlert = (key: AlertKey) => {
     setSelected(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleActivate = async () => {
+    setActivating(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/monitored', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyNumber, companyName }),
+      });
+      if (res.status === 401) {
+        // Not signed in — send the operator to login, returning here after.
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Activation failed. Please try again.');
+      }
+      setActivated(true);
+      onContinue?.();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setActivating(false);
+    }
   };
 
   return (
@@ -104,18 +134,35 @@ export function ActivationPanel({ companyNumber, companyName, onContinue }: Acti
         </div>
       </div>
 
-      <div className="space-y-3">
-        <button
-          onClick={onContinue}
-          disabled={selectedCount === 0}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition"
-        >
-          Activate Alerts · £{monthlyPrice}/month
-        </button>
-        <button className="w-full bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold py-3 px-4 rounded-lg transition">
-          Start Free Trial
-        </button>
-      </div>
+      {error && (
+        <p className="mb-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2">
+          {error}
+        </p>
+      )}
+
+      {activated ? (
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg text-center">
+          <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-2">
+            ✓ Now monitoring {companyName}
+          </p>
+          <a href="/company-portal" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            View in your dashboard →
+          </a>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <button
+            onClick={handleActivate}
+            disabled={selectedCount === 0 || activating}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition"
+          >
+            {activating ? 'Activating…' : `Activate Alerts · £${monthlyPrice}/month`}
+          </button>
+          <button className="w-full bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold py-3 px-4 rounded-lg transition">
+            Start Free Trial
+          </button>
+        </div>
+      )}
     </div>
   );
 }

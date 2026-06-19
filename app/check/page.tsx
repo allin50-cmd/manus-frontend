@@ -11,34 +11,11 @@ interface CompanyResult {
   nextDeadlineType: string;
 }
 
-const MOCK_RESULTS: Record<string, CompanyResult> = {
-  '01234567': {
-    number: '01234567',
-    name: 'Acme Corporation Ltd',
-    status: 'Active',
-    nextDeadline: '2025-06-30',
-    nextDeadlineType: 'Annual Return'
-  },
-  '07654321': {
-    number: '07654321',
-    name: 'TechStart Holdings',
-    status: 'Active',
-    nextDeadline: '2025-07-15',
-    nextDeadlineType: 'Confirmation Statement'
-  },
-  '12345678': {
-    number: '12345678',
-    name: 'Global Industries plc',
-    status: 'Active',
-    nextDeadline: '2025-08-01',
-    nextDeadlineType: 'Accounts Filing'
-  }
-};
-
 export default function CheckPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<CompanyResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<CompanyResult | null>(null);
 
   const handleSearch = async () => {
@@ -48,14 +25,18 @@ export default function CheckPage() {
     }
 
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const query = searchQuery.toLowerCase();
-    const filtered = Object.values(MOCK_RESULTS).filter(
-      r => r.name.toLowerCase().includes(query) || r.number.includes(query)
-    );
-    setResults(filtered);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await fetch(`/api/companies/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!res.ok) throw new Error('Search failed. Please try again.');
+      const data = (await res.json()) as { results: CompanyResult[] };
+      setResults(data.results ?? []);
+    } catch (err) {
+      setError((err as Error).message);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (selectedCompany) {
@@ -104,6 +85,11 @@ export default function CheckPage() {
               {loading ? 'Searching...' : 'Search'}
             </button>
           </div>
+          {error && (
+            <p className="mt-4 text-sm text-white bg-red-500/30 border border-red-300/40 rounded-lg px-4 py-2">
+              {error}
+            </p>
+          )}
         </div>
       </section>
 
@@ -134,15 +120,23 @@ export default function CheckPage() {
                         Status: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{company.status}</span>
                       </p>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Next deadline</p>
-                      <p className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">
-                        {new Date(company.nextDeadline).toLocaleDateString()}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                        {company.nextDeadlineType}
-                      </p>
-                    </div>
+                    {company.nextDeadline ? (
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Next deadline</p>
+                        <p className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">
+                          {new Date(company.nextDeadline).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                          {company.nextDeadlineType}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                          Set up alerts →
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
