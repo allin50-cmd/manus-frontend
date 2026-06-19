@@ -49,6 +49,24 @@ export function ActivationPanel({ companyNumber, companyName, onContinue }: Acti
     setActivating(true);
     setError(null);
     try {
+      // Prefer Stripe checkout when it's configured.
+      const checkout = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyNumber, companyName }),
+      });
+
+      if (checkout.ok) {
+        const data = (await checkout.json()) as { configured?: boolean; url?: string };
+        if (data.configured && data.url) {
+          // Hand off to Stripe-hosted checkout; webhook activates on success.
+          window.location.href = data.url;
+          return;
+        }
+        // Stripe not configured → fall through to direct activation below.
+      }
+
+      // Fallback: persist activation directly (until Stripe is wired up).
       const res = await fetch('/api/monitored', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

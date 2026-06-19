@@ -9,6 +9,9 @@ const PUBLIC = [
   '/landing',
   '/check',
   '/api/companies',
+  // Stripe checkout is initiated from the public /check page; the webhook is
+  // called by Stripe's servers and authenticates via signature, not session.
+  '/api/stripe',
 ]
 
 export async function middleware(req: NextRequest) {

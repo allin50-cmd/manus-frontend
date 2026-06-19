@@ -6,8 +6,14 @@ import { desc } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CompanyPortalPage() {
+export default async function CompanyPortalPage({
+  searchParams,
+}: {
+  searchParams: { activated?: string; company?: string }
+}) {
   await requireAuth()
+
+  const justActivated = searchParams.activated === '1'
 
   const db = await getDb()
   const companies = await db
@@ -25,6 +31,15 @@ export default async function CompanyPortalPage() {
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <div className="px-4 py-12">
         <div className="max-w-6xl mx-auto">
+          {justActivated && (
+            <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                ✓ Payment confirmed — monitoring is now active
+                {searchParams.company ? ` for company ${searchParams.company}` : ''}.
+              </p>
+            </div>
+          )}
+
           {/* Header */}
           <div className="mb-8 flex items-start justify-between gap-4">
             <div>
