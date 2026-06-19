@@ -8,8 +8,8 @@ const url = process.env.DATABASE_URL ?? 'postgres://placeholder/placeholder';
 export default {
   schema: './db/schema.ts',
   out: './db/migrations',
-  dialect: 'postgresql',
-  dbCredentials: { url },
+  driver: 'pg',
+  dbCredentials: { connectionString: url },
   verbose: true,
   strict: true,
 } satisfies Config;
