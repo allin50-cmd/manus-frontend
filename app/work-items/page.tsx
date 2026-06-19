@@ -1,10 +1,11 @@
 import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getDb, workItems } from '@/lib/db'
 import { formatUKDate, statusLabel, typeLabel } from '@/lib/utils'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import WorkItemFilters from '@/components/WorkItemFilters'
-import { WorkItemStatus, WorkItemType, Priority } from '@prisma/client'
+import { eq, asc, desc, and } from 'drizzle-orm'
+import type { WorkItem } from '@/db/schema'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,16 +19,27 @@ interface SearchParams {
 export default async function WorkItemsPage({ searchParams }: { searchParams: SearchParams }) {
   await requireAuth()
 
-  const where: Record<string, unknown> = {}
-  if (searchParams.status && searchParams.status !== 'all') where.status = searchParams.status as WorkItemStatus
-  if (searchParams.type && searchParams.type !== 'all') where.type = searchParams.type as WorkItemType
-  if (searchParams.owner && searchParams.owner !== 'all') where.owner = searchParams.owner
-  if (searchParams.priority && searchParams.priority !== 'all') where.priority = searchParams.priority as Priority
+  const db = await getDb()
 
-  const items = await db.workItem.findMany({
-    where,
-    orderBy: [{ priority: 'asc' }, { dueDate: 'asc' }, { createdAt: 'desc' }],
-  })
+  const conditions = []
+  if (searchParams.status && searchParams.status !== 'all') {
+    conditions.push(eq(workItems.status, searchParams.status as WorkItem['status']))
+  }
+  if (searchParams.type && searchParams.type !== 'all') {
+    conditions.push(eq(workItems.type, searchParams.type as WorkItem['type']))
+  }
+  if (searchParams.owner && searchParams.owner !== 'all') {
+    conditions.push(eq(workItems.owner, searchParams.owner))
+  }
+  if (searchParams.priority && searchParams.priority !== 'all') {
+    conditions.push(eq(workItems.priority, searchParams.priority as WorkItem['priority']))
+  }
+
+  const items = await db
+    .select()
+    .from(workItems)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(asc(workItems.priority), asc(workItems.dueDate), desc(workItems.createdAt))
 
   return (
     <div className="space-y-4">

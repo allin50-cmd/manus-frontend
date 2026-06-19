@@ -1,8 +1,9 @@
 import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getDb, workItems, actions } from '@/lib/db'
 import { formatUKDate, statusLabel, typeLabel } from '@/lib/utils'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
+import { eq, lte, notInArray, asc, and } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,23 +13,44 @@ export default async function TodayPage() {
   const endOfToday = new Date()
   endOfToday.setHours(23, 59, 59, 999)
 
-  const [overdueItems, overdueActions] = await Promise.all([
-    db.workItem.findMany({
-      where: {
-        dueDate: { lte: endOfToday },
-        status: { notIn: ['Completed', 'Archived', 'NotFit'] },
-      },
-      orderBy: { dueDate: 'asc' },
-    }),
-    db.action.findMany({
-      where: {
-        dueDate: { lte: endOfToday },
-        status: 'Open',
-      },
-      include: { workItem: { select: { id: true, title: true } } },
-      orderBy: { dueDate: 'asc' },
-    }),
+  const db = await getDb()
+
+  const [overdueItems, overdueActionRows] = await Promise.all([
+    db.select().from(workItems).where(
+      and(
+        lte(workItems.dueDate, endOfToday),
+        notInArray(workItems.status, ['Completed', 'Archived', 'NotFit'])
+      )
+    ).orderBy(asc(workItems.dueDate)),
+    db
+      .select({
+        id: actions.id,
+        workItemId: actions.workItemId,
+        actionType: actions.actionType,
+        label: actions.label,
+        status: actions.status,
+        assignedTo: actions.assignedTo,
+        dueDate: actions.dueDate,
+        result: actions.result,
+        createdAt: actions.createdAt,
+        completedAt: actions.completedAt,
+        workItemTitle: workItems.title,
+      })
+      .from(actions)
+      .innerJoin(workItems, eq(actions.workItemId, workItems.id))
+      .where(
+        and(
+          lte(actions.dueDate, endOfToday),
+          eq(actions.status, 'Open')
+        )
+      )
+      .orderBy(asc(actions.dueDate)),
   ])
+
+  const overdueActions = overdueActionRows.map((row) => ({
+    ...row,
+    workItem: { id: row.workItemId, title: row.workItemTitle },
+  }))
 
   return (
     <div className="space-y-6">

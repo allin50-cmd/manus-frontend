@@ -3,16 +3,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not set');
-}
+// DATABASE_URL is required for migrate operations but not for generate.
+// Use a placeholder so `db:generate` works in environments without a live database.
+const connectionString = process.env.DATABASE_URL ?? 'postgres://placeholder/placeholder';
 
 export default {
-  schema: './server/db/schema.ts',
-  out: './drizzle',
+  schema: './db/schema.ts',
+  out: './db/migrations',
   driver: 'pg',
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
   },
   verbose: true,
   strict: true,
