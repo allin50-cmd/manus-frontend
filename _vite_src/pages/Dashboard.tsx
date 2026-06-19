@@ -1,315 +1,267 @@
-import ClerkOSLayout from '@/components/layout/ClerkOSLayout';
-import { trpc } from '@/lib/trpc';
-import {
-  Scale,
-  Gavel,
-  ListTodo,
-  TrendingUp,
-  AlertCircle,
-  XCircle,
-  CalendarCheck,
-  ArrowRight,
-  ShieldCheck,
-  ClipboardList,
-  ClipboardCheck,
-  MessageSquare,
-  Mic,
-} from 'lucide-react';
-import { Link } from 'wouter';
+import { useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { PageHeader } from '../components/PageHeader';
+import { NewLeadFAB } from '../components/NewLeadFAB';
+import { useAuth } from '../_core/hooks/useAuth';
 
-function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div className={`animate-pulse bg-slate-200 dark:bg-slate-800 rounded ${className}`} />
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  accent = 'blue',
-  loading = false,
-}: {
-  label: string;
-  value: number | string;
-  icon: React.FC<{ className?: string }>;
-  accent?: 'blue' | 'emerald' | 'amber' | 'violet' | 'slate' | 'rose';
-  loading?: boolean;
-}) {
-  const colours: Record<string, string> = {
-    blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-    emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-    amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
-    violet: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
-    slate: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
-    rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400',
+interface MonitoredCompany {
+  number: string;
+  name: string;
+  addedDate: string;
+  alerts: {
+    accounts_filing: boolean;
+    confirmation_statement: boolean;
+    director_changes: boolean;
   };
-
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-            {label}
-          </p>
-          {loading ? (
-            <Skeleton className="h-8 w-16 mt-2" />
-          ) : (
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1">{value}</p>
-          )}
-        </div>
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colours[accent]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  );
+  lastAlert?: string;
+  status: 'active' | 'inactive';
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  closed: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-  on_hold: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  scheduled: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  completed: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-};
+interface Alert {
+  id: string;
+  company: string;
+  type: string;
+  date: string;
+  message: string;
+}
 
-const LAUNCH_LINKS = [
+const MOCK_COMPANIES: MonitoredCompany[] = [
   {
-    label: 'Company Check',
-    description: 'Run a compliance check and create the handoff pack.',
-    href: '/compliance-bundle',
-    icon: ClipboardCheck,
+    number: '01234567',
+    name: 'Acme Corporation Ltd',
+    addedDate: '2025-01-15',
+    alerts: {
+      accounts_filing: true,
+      confirmation_statement: true,
+      director_changes: true
+    },
+    lastAlert: '2025-06-10',
+    status: 'active'
   },
   {
-    label: 'AI Voice Reception',
-    description: 'Capture calls, classify intent, gate risk, and escalate urgent matters.',
-    href: '/voice-reception',
-    icon: Mic,
+    number: '07654321',
+    name: 'TechStart Holdings',
+    addedDate: '2025-02-20',
+    alerts: {
+      accounts_filing: true,
+      confirmation_statement: false,
+      director_changes: true
+    },
+    lastAlert: '2025-06-05',
+    status: 'active'
   },
   {
-    label: 'Service Intake',
-    description: 'Submit a structured enquiry for compliance or business review.',
-    href: '/intake-sheet',
-    icon: ClipboardList,
+    number: '12345678',
+    name: 'Global Industries plc',
+    addedDate: '2025-03-10',
+    alerts: {
+      accounts_filing: true,
+      confirmation_statement: true,
+      director_changes: false
+    },
+    status: 'active'
+  }
+];
+
+const MOCK_ALERTS: Alert[] = [
+  {
+    id: '1',
+    company: 'Acme Corporation Ltd',
+    type: 'Director Changes',
+    date: '2025-06-10',
+    message: 'Director John Smith has been appointed'
   },
   {
-    label: 'FineGuard Front Door',
-    description: 'Return to the customer-facing service intro screen.',
-    href: '/fineguard',
-    icon: ShieldCheck,
+    id: '2',
+    company: 'TechStart Holdings',
+    type: 'Confirmation Statement',
+    date: '2025-06-05',
+    message: 'Confirmation statement due in 14 days'
   },
   {
-    label: 'Book Demo',
-    description: 'Capture sales interest and route it to admin leads.',
-    href: '/book-demo',
-    icon: MessageSquare,
+    id: '3',
+    company: 'Acme Corporation Ltd',
+    type: 'Annual Return',
+    date: '2025-06-01',
+    message: 'Annual return filing deadline: 30 June 2025'
   },
+  {
+    id: '4',
+    company: 'Global Industries plc',
+    type: 'Accounts Filing',
+    date: '2025-05-28',
+    message: 'Accounts have been filed at Companies House'
+  }
 ];
 
 export default function Dashboard() {
-  const { data: stats, isLoading, error } = trpc.dashboard.stats.useQuery(undefined, {
-    retry: false,
-    refetchInterval: 30_000,
-  });
+  const [, navigate] = useLocation();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-cosmic-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  const totalCompanies = MOCK_COMPANIES.length;
+  const totalAlerts = MOCK_ALERTS.length;
+  const alertsThisMonth = MOCK_ALERTS.filter(a => {
+    const alertDate = new Date(a.date);
+    const now = new Date();
+    return alertDate.getMonth() === now.getMonth() && alertDate.getFullYear() === now.getFullYear();
+  }).length;
 
   return (
-    <ClerkOSLayout>
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-7">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">ClerkOS Control Surface</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            The FineGuard Service operations hub for cases, documents, queues, and escalation work.
-          </p>
-        </div>
+    <div className="min-h-screen bg-white dark:bg-cosmic-bg">
+      <PageHeader />
 
-        {error && (
-          <div className="mb-6 flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              Tenant session not active — sign in or select a tenant to load live court data.
-            </p>
-          </div>
-        )}
-
-        {/* Stat grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-          <StatCard label="Total Cases" value={stats?.totalCases ?? 0} icon={Scale} accent="blue" loading={isLoading} />
-          <StatCard label="Active" value={stats?.activeCases ?? 0} icon={TrendingUp} accent="emerald" loading={isLoading} />
-          <StatCard label="Closed" value={stats?.closedCases ?? 0} icon={XCircle} accent="slate" loading={isLoading} />
-          <StatCard label="Hearings" value={stats?.pendingHearings ?? 0} icon={Gavel} accent="amber" loading={isLoading} />
-          <StatCard label="Today" value={stats?.todayHearings ?? 0} icon={CalendarCheck} accent="violet" loading={isLoading} />
-          <StatCard label="Queue" value={stats?.pendingAllocations ?? 0} icon={ListTodo} accent="rose" loading={isLoading} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Cases */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Recent Cases</h2>
-              <Link href="/cases" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                View all <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="px-5 py-3 flex items-center justify-between gap-4">
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-3.5 w-40" />
-                      <Skeleton className="h-3 w-24" />
-                    </div>
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                  </div>
-                ))
-              ) : !stats?.recentCases?.length ? (
-                <p className="px-5 py-8 text-sm text-center text-slate-400 dark:text-slate-500">
-                  No cases yet
-                </p>
-              ) : (
-                stats.recentCases.map((c) => (
-                  <Link
-                    key={c.id}
-                    href="/cases"
-                    className="px-5 py-3 flex items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                        {c.title}
-                      </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">{c.referenceNumber}</p>
-                    </div>
-                    <span
-                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_BADGE[c.status] ?? ''}`}
-                    >
-                      {c.status.replace('_', ' ')}
-                    </span>
-                  </Link>
-                ))
-              )}
-            </div>
+      <div className="px-4 py-12">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Your Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Monitor your Companies House compliance in one place</p>
           </div>
 
-          {/* Upcoming Hearings */}
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Upcoming Hearings</h2>
-              <Link href="/hearings" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                View all <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="px-5 py-3 flex items-center justify-between gap-4">
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-3.5 w-32" />
-                      <Skeleton className="h-3 w-28" />
-                    </div>
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                  </div>
-                ))
-              ) : !stats?.upcomingHearings?.length ? (
-                <p className="px-5 py-8 text-sm text-center text-slate-400 dark:text-slate-500">
-                  No upcoming hearings
-                </p>
-              ) : (
-                stats.upcomingHearings.map((h) => {
-                  const isToday = h.hearingDate === new Date().toISOString().split('T')[0];
-                  return (
-                    <Link
-                      key={h.id}
-                      href="/hearings"
-                      className="px-5 py-3 flex items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                            {h.courtroom}
-                          </p>
-                          {isToday && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">TODAY</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-400 dark:text-slate-500">
-                          {h.hearingDate} · {h.hearingTime} · {h.judge}
-                        </p>
-                      </div>
-                      <span
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_BADGE[h.status] ?? ''}`}
-                      >
-                        {h.status}
-                      </span>
-                    </Link>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Quick actions */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: 'New Case', href: '/cases', colour: 'bg-blue-600 hover:bg-blue-700' },
-            { label: 'Schedule Hearing', href: '/hearings', colour: 'bg-emerald-600 hover:bg-emerald-700' },
-            { label: 'Upload Document', href: '/documents', colour: 'bg-violet-600 hover:bg-violet-700' },
-            { label: 'View Queue', href: '/queue', colour: 'bg-amber-600 hover:bg-amber-700' },
-          ].map(({ label, href, colour }) => (
-            <Link
-              key={label}
-              href={href}
-              className={`${colour} text-white text-sm font-medium px-4 py-2.5 rounded-lg text-center transition-colors`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-8">
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Service Shortcuts
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Jump into the main FineGuard service workflows from ClerkOS.
-              </p>
-            </div>
-            <Link
-              href="/pricing"
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 flex-shrink-0"
-            >
-              Pricing <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {LAUNCH_LINKS.map(({ label, description, href, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:border-blue-300 dark:hover:border-blue-800 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors"
+          {/* Stats Cards */}
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {[
+              { label: 'Companies Monitored', value: totalCompanies, icon: '📊' },
+              { label: 'Total Alerts', value: totalAlerts, icon: '🔔' },
+              { label: 'This Month', value: alertsThisMonth, icon: '📅' }
+            ].map((stat, idx) => (
+              <div
+                key={idx}
+                className="card-elevated p-6 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-blue-100 group-hover:text-blue-700 dark:group-hover:bg-blue-900/30 dark:group-hover:text-blue-300 transition-colors flex-shrink-0">
-                    <Icon className="w-4 h-4" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{stat.value}</p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {label}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                      {description}
-                    </p>
-                  </div>
+                  <div className="text-4xl">{stat.icon}</div>
                 </div>
-              </Link>
+              </div>
             ))}
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Monitored Companies */}
+            <div className="lg:col-span-2">
+              <div className="card-elevated p-6 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Monitored Companies</h2>
+                  <button
+                    onClick={() => navigate('/check')}
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                  >
+                    + Add company
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-slate-700">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 text-sm">Company</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 text-sm">Added</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 text-sm">Alerts</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 text-sm">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {MOCK_COMPANIES.map((company) => {
+                        const alertCount = Object.values(company.alerts).filter(Boolean).length;
+                        return (
+                          <tr key={company.number} className="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+                            <td className="py-4 px-4">
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">{company.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{company.number}</p>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
+                              {new Date(company.addedDate).toLocaleDateString()}
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex gap-1">
+                                {company.alerts.accounts_filing && <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-1 rounded">Accounts</span>}
+                                {company.alerts.confirmation_statement && <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-1 rounded">Confirmation</span>}
+                                {company.alerts.director_changes && <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1 rounded">Directors</span>}
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                                Active
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Alerts */}
+            <div>
+              <div className="card-elevated p-6 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 h-full">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Recent Alerts</h2>
+
+                <div className="space-y-3">
+                  {MOCK_ALERTS.slice(0, 5).map((alert) => (
+                    <div key={alert.id} className="p-3 bg-gray-50 dark:bg-slate-700 rounded border border-gray-200 dark:border-slate-600">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="font-medium text-sm text-gray-900 dark:text-white">{alert.company}</p>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex-shrink-0">
+                          {alert.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{alert.message}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">{new Date(alert.date).toLocaleDateString()}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {MOCK_ALERTS.length > 5 && (
+                  <button className="w-full mt-4 py-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
+                    View all alerts →
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-8 p-8 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg">
+            <h3 className="text-2xl font-bold mb-2">Need more companies?</h3>
+            <p className="mb-4 opacity-90">Find and monitor additional UK companies with instant alerts</p>
+            <button
+              onClick={() => navigate('/check')}
+              className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition"
+            >
+              Search Companies
+            </button>
           </div>
         </div>
       </div>
-    </ClerkOSLayout>
+
+      <NewLeadFAB />
+    </div>
   );
 }
