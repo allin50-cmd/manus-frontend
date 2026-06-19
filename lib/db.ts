@@ -22,9 +22,7 @@ export async function getDb(): Promise<DrizzleDb> {
   const client = postgres(url, { max: 10 });
   const db = drizzle(client, { schema });
 
-  if (process.env.NODE_ENV !== 'production') {
-    g.__sheetops_db = db;
-  }
+  g.__sheetops_db = db;
 
   return db;
 }
