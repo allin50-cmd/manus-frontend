@@ -1,26 +1,28 @@
 import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getDb, workItems, actions, activityLogs, decisions } from '@/lib/db'
 import { formatUKDate, statusLabel, typeLabel } from '@/lib/utils'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import WorkItemActions from '@/components/WorkItemActions'
+import { eq, desc } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
 export default async function WorkItemDetailPage({ params }: { params: { id: string } }) {
   const session = await requireAuth()
 
-  const item = await db.workItem.findUnique({
-    where: { id: params.id },
-    include: {
-      actions: { orderBy: { createdAt: 'desc' }, take: 20 },
-      activityLogs: { orderBy: { createdAt: 'desc' }, take: 30 },
-      decisions: { orderBy: { createdAt: 'desc' }, take: 10 },
-    },
-  })
+  const db = await getDb()
 
+  const rows = await db.select().from(workItems).where(eq(workItems.id, params.id)).limit(1)
+  const item = rows[0]
   if (!item) notFound()
+
+  const [itemActions, itemLogs, itemDecisions] = await Promise.all([
+    db.select().from(actions).where(eq(actions.workItemId, params.id)).orderBy(desc(actions.createdAt)).limit(20),
+    db.select().from(activityLogs).where(eq(activityLogs.workItemId, params.id)).orderBy(desc(activityLogs.createdAt)).limit(30),
+    db.select().from(decisions).where(eq(decisions.workItemId, params.id)).orderBy(desc(decisions.createdAt)).limit(10),
+  ])
 
   const priorityColors: Record<string, string> = {
     Low: 'text-slate-600',
@@ -80,11 +82,11 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
       />
 
       {/* Open actions */}
-      {item.actions.filter((a) => a.status === 'Open').length > 0 && (
+      {itemActions.filter((a) => a.status === 'Open').length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Open Actions</h2>
           <div className="space-y-2">
-            {item.actions.filter((a) => a.status === 'Open').map((action) => (
+            {itemActions.filter((a) => a.status === 'Open').map((action) => (
               <div key={action.id} className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm">
                 <p className="font-medium text-slate-900">{action.label}</p>
                 <p className="text-xs text-slate-500 mt-1">
@@ -98,11 +100,11 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
       )}
 
       {/* Open decisions */}
-      {item.decisions.filter((d) => d.status === 'Open').length > 0 && (
+      {itemDecisions.filter((d) => d.status === 'Open').length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Open Decisions</h2>
           <div className="space-y-2">
-            {item.decisions.filter((d) => d.status === 'Open').map((dec) => (
+            {itemDecisions.filter((d) => d.status === 'Open').map((dec) => (
               <div key={dec.id} className="bg-purple-50 border border-purple-200 rounded-lg px-4 py-3 text-sm">
                 <p className="font-medium text-slate-900">{dec.question}</p>
                 {dec.recommendation && <p className="text-xs text-slate-600 mt-1">Recommendation: {dec.recommendation}</p>}
@@ -117,7 +119,7 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
       <section>
         <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Activity Log</h2>
         <div className="space-y-1">
-          {item.activityLogs.map((log) => (
+          {itemLogs.map((log) => (
             <div key={log.id} className="flex gap-3 text-sm py-2 border-b border-slate-100 last:border-0">
               <span className="text-xs text-slate-400 whitespace-nowrap shrink-0 pt-0.5">{formatUKDate(log.createdAt)}</span>
               <div>
@@ -133,7 +135,7 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
               </div>
             </div>
           ))}
-          {item.activityLogs.length === 0 && (
+          {itemLogs.length === 0 && (
             <p className="text-sm text-slate-400">No activity yet</p>
           )}
         </div>

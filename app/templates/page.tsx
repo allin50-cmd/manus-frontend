@@ -1,15 +1,18 @@
 import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getDb, templates } from '@/lib/db'
+import { eq, asc } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
 export default async function TemplatesPage() {
   await requireAuth()
 
-  const templates = await db.template.findMany({
-    where: { approved: true },
-    orderBy: { createdAt: 'asc' },
-  })
+  const db = await getDb()
+  const templateList = await db
+    .select()
+    .from(templates)
+    .where(eq(templates.approved, true))
+    .orderBy(asc(templates.createdAt))
 
   return (
     <div className="space-y-6">
@@ -17,7 +20,7 @@ export default async function TemplatesPage() {
       <p className="text-sm text-slate-500">Approved reusable text. Copy and use.</p>
 
       <div className="space-y-4">
-        {templates.map((t) => (
+        {templateList.map((t) => (
           <div key={t.id} className="bg-white rounded-xl border border-slate-200 p-5">
             <div className="flex items-start justify-between gap-2 mb-3">
               <div>
@@ -31,7 +34,7 @@ export default async function TemplatesPage() {
             </pre>
           </div>
         ))}
-        {templates.length === 0 && (
+        {templateList.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             No templates yet. Run <code className="bg-slate-100 px-1 rounded">npm run db:seed</code> to add defaults.
           </div>

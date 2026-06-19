@@ -3,17 +3,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not set');
-}
+const url = process.env.DATABASE_URL ?? 'postgres://placeholder/placeholder';
 
 export default {
-  schema: './server/db/schema.ts',
-  out: './drizzle',
-  driver: 'pg',
-  dbCredentials: {
-    connectionString: process.env.DATABASE_URL,
-  },
+  schema: './db/schema.ts',
+  out: './db/migrations',
+  dialect: 'postgresql',
+  dbCredentials: { url },
   verbose: true,
   strict: true,
 } satisfies Config;

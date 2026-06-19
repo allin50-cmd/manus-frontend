@@ -1,18 +1,39 @@
 import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getDb, activityLogs, workItems } from '@/lib/db'
 import { formatUKDate } from '@/lib/utils'
 import Link from 'next/link'
+import { eq, desc } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ActivityPage() {
   await requireAuth()
 
-  const logs = await db.activityLog.findMany({
-    include: { workItem: { select: { id: true, title: true } } },
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-  })
+  const db = await getDb()
+
+  const rows = await db
+    .select({
+      id: activityLogs.id,
+      workItemId: activityLogs.workItemId,
+      actionId: activityLogs.actionId,
+      person: activityLogs.person,
+      eventType: activityLogs.eventType,
+      summary: activityLogs.summary,
+      oldStatus: activityLogs.oldStatus,
+      newStatus: activityLogs.newStatus,
+      evidenceLink: activityLogs.evidenceLink,
+      createdAt: activityLogs.createdAt,
+      workItemTitle: workItems.title,
+    })
+    .from(activityLogs)
+    .innerJoin(workItems, eq(activityLogs.workItemId, workItems.id))
+    .orderBy(desc(activityLogs.createdAt))
+    .limit(100)
+
+  const logs = rows.map((row) => ({
+    ...row,
+    workItem: { id: row.workItemId, title: row.workItemTitle },
+  }))
 
   const eventColors: Record<string, string> = {
     Created: 'bg-blue-100 text-blue-700',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb, workItems, actions, activityLogs } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { sql } from 'drizzle-orm'
 import type { VoiceDraft } from '@/lib/voice/types'
 
 type ApprovePayload = {
@@ -51,13 +52,14 @@ export async function POST(req: NextRequest) {
   if (!voiceId) return NextResponse.json({ error: 'voice_id is required' }, { status: 400 })
 
   try {
-    const result = await db.$transaction(async (tx) => {
-      const rows = await tx.$queryRawUnsafe<VoiceRow[]>(
-        `SELECT voice_id, transcript, parsed_json, status
-         FROM voice_intake
-         WHERE voice_id = $1
-         FOR UPDATE`,
-        voiceId,
+    const db = await getDb()
+
+    const result = await db.transaction(async (tx) => {
+      const rows = await tx.execute<VoiceRow>(
+        sql`SELECT voice_id, transcript, parsed_json, status
+            FROM voice_intake
+            WHERE voice_id = ${voiceId}
+            FOR UPDATE`
       )
 
       const record = rows[0]
@@ -67,13 +69,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (decision === 'reject') {
-        await tx.$executeRawUnsafe(
-          `UPDATE voice_intake
-           SET status = 'REJECTED', review_notes = $2, approved_at = now(), approved_by = $3
-           WHERE voice_id = $1`,
-          voiceId,
-          body.review_notes ?? null,
-          session.person,
+        await tx.execute(
+          sql`UPDATE voice_intake
+              SET status = 'REJECTED', review_notes = ${body.review_notes ?? null},
+                  approved_at = now(), approved_by = ${session.person}
+              WHERE voice_id = ${voiceId}`
         )
 
         return { ok: true, status: 'REJECTED' as const }
@@ -84,59 +84,47 @@ export async function POST(req: NextRequest) {
       const priority = draft.urgency === 'Urgent' ? 'Urgent' : 'Medium'
       const title = buildTitle(draft)
 
-      const item = await tx.workItem.create({
-        data: {
-          type: 'ConstructionLead',
-          title,
-          company: draft.company || draft.location || null,
-          contactName: draft.contact_name || null,
-          owner: session.person,
-          status: 'Captured',
-          priority,
-          nextAction: draft.next_action || 'Review lead',
-          dueDate,
-          notes: buildNotes(draft, record.transcript),
-        },
+      const [item] = await tx.insert(workItems).values({
+        type: 'ConstructionLead',
+        title,
+        company: draft.company || draft.location || null,
+        contactName: draft.contact_name || null,
+        owner: session.person,
+        status: 'Captured',
+        priority,
+        nextAction: draft.next_action || 'Review lead',
+        dueDate,
+        notes: buildNotes(draft, record.transcript),
+      }).returning()
+
+      const [followUp] = await tx.insert(actions).values({
+        workItemId: item.id,
+        actionType: 'CreateFollowUp',
+        label: draft.next_action || 'Follow up voice lead',
+        assignedTo: session.person,
+        dueDate,
+      }).returning()
+
+      await tx.insert(activityLogs).values({
+        workItemId: item.id,
+        actionId: followUp.id,
+        person: session.person,
+        eventType: 'Created',
+        summary: `Voice Intake approved and created work item "${item.title}"`,
+        evidenceLink: voiceId,
+        newStatus: item.status,
       })
 
-      const followUp = await tx.action.create({
-        data: {
-          workItemId: item.id,
-          actionType: 'CreateFollowUp',
-          label: draft.next_action || 'Follow up voice lead',
-          assignedTo: session.person,
-          dueDate,
-        },
-      })
-
-      await tx.activityLog.create({
-        data: {
-          workItemId: item.id,
-          actionId: followUp.id,
-          person: session.person,
-          eventType: 'Created',
-          summary: `Voice Intake approved and created work item "${item.title}"`,
-          evidenceLink: voiceId,
-          newStatus: item.status,
-        },
-      })
-
-      await tx.$executeRawUnsafe(
-        `UPDATE voice_intake
-         SET parsed_json = $2::jsonb,
-             status = 'APPROVED',
-             linked_task_id = $3,
-             linked_lead_id = $4,
-             review_notes = $5,
-             approved_at = now(),
-             approved_by = $6
-         WHERE voice_id = $1`,
-        voiceId,
-        JSON.stringify(draft),
-        followUp.id,
-        item.id,
-        body.review_notes ?? null,
-        session.person,
+      await tx.execute(
+        sql`UPDATE voice_intake
+            SET parsed_json = ${JSON.stringify(draft)}::jsonb,
+                status = 'APPROVED',
+                linked_task_id = ${followUp.id},
+                linked_lead_id = ${item.id},
+                review_notes = ${body.review_notes ?? null},
+                approved_at = now(),
+                approved_by = ${session.person}
+            WHERE voice_id = ${voiceId}`
       )
 
       return { ok: true, status: 'APPROVED' as const, workItemId: item.id, actionId: followUp.id }
