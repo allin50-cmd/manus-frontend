@@ -223,16 +223,12 @@ export default function HomePage() {
               { n: 2, title: 'See Your Status', desc: 'Green, Amber or Red. Exactly where you stand today.', img: '/illustrations/step-2-status.png', alt: 'View your Green Amber Red compliance status' },
               { n: 3, title: 'Get Protected', desc: 'FineGuard monitors every deadline automatically.', img: '/illustrations/step-3-monitors.png', alt: 'FineGuard monitors your deadlines' },
               { n: 4, title: 'Stay Stress-Free', desc: 'Alerts before anything is due. Zero surprises.', img: '/illustrations/step-4-worry-free.png', alt: 'Peace of mind — no more compliance worry' },
-            ].map(({ n, title, desc, img, alt }) => (
-              <div key={n} className="flex flex-col items-center text-center">
-                <div className="w-full mb-5 drop-shadow-lg">
+            ].map(({ img, alt, desc }) => (
+              <div key={img} className="flex flex-col items-center text-center">
+                <div className="w-full drop-shadow-lg">
                   <Image src={img} alt={alt} width={768} height={512} sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw" loading="lazy" className="w-full h-auto" />
                 </div>
-                <div className="w-10 h-10 rounded-full bg-[#0B1F3A] text-white text-base font-bold flex items-center justify-center mb-3 shrink-0">
-                  {n}
-                </div>
-                <h3 className="font-bold text-slate-900 text-lg mb-2">{title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-[180px]">{desc}</p>
+                <p className="text-slate-500 text-sm leading-relaxed max-w-[180px] mt-4">{desc}</p>
               </div>
             ))}
           </div>
