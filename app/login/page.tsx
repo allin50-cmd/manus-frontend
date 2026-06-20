@@ -20,7 +20,11 @@ export default function LoginPage() {
         body: JSON.stringify({ passcode }),
       })
       if (res.ok) {
-        router.push('/dashboard')
+        // Honour ?next= but only allow relative paths to prevent open-redirect attacks
+        const params = new URLSearchParams(window.location.search)
+        const next = params.get('next') ?? ''
+        const destination = next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+        router.push(destination)
       } else {
         setError('Incorrect passcode. Try again.')
         setPasscode('')

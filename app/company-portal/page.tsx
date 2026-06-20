@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth'
 import { getDb } from '@/lib/db'
 import { monitoredCompanies } from '@/db/schema'
 import { desc } from 'drizzle-orm'
+import PortalNav from '@/components/PortalNav'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ export default async function CompanyPortalPage({
 
   return (
     <div className="min-h-screen bg-white">
+      <PortalNav />
       <div className="px-4 py-12">
         <div className="max-w-6xl mx-auto">
           {justActivated && (

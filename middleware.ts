@@ -31,10 +31,12 @@ export async function middleware(req: NextRequest) {
   // can distinguish "not signed in" from a successful response.
   const isApi = pathname.startsWith('/api/')
 
-  const unauthorized = () =>
-    isApi
-      ? NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      : NextResponse.redirect(new URL('/login', req.url))
+  const unauthorized = () => {
+    if (isApi) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const loginUrl = new URL('/login', req.url)
+    loginUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
 
   const jwtSecret = process.env.JWT_SECRET
   if (!jwtSecret) return unauthorized()
