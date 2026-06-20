@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 const PUBLIC = [
+  '/',
   '/login',
   '/api/auth/login',
   '/api/health/db',
+  '/api/check',
   // FineGuard public-facing surfaces and the company lookup they rely on.
   '/landing',
   '/check',
