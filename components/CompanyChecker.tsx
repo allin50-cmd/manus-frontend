@@ -167,9 +167,9 @@ export default function CompanyChecker() {
                   <p className="font-semibold text-slate-900 text-sm group-hover:text-[#00A86B] transition-colors">{m.name}</p>
                   <p className="text-slate-400 text-xs font-mono mt-0.5">{m.number}</p>
                 </div>
-                <span className="text-[#00A86B] text-sm font-bold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Check →
-                </span>
+                <svg className="w-4 h-4 text-slate-300 group-hover:text-[#00A86B] transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             ))}
           </div>
@@ -177,6 +177,7 @@ export default function CompanyChecker() {
       )}
 
       {result && cfg && (
+        <div>
         <div className={`mt-6 rounded-2xl border-2 text-left shadow-xl overflow-hidden ${cfg.border}`}>
           {/* Status banner */}
           <div className={`${cfg.bannerBg} px-6 py-5 flex items-center justify-between gap-4`}>
@@ -218,7 +219,7 @@ export default function CompanyChecker() {
                   A real member of our team will contact you directly to help resolve this urgently.
                 </p>
                 <a
-                  href="mailto:help@fineguard.co.uk"
+                  href="mailto:hello@fineguard.co.uk"
                   className="inline-block bg-red-600 text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-red-700 transition-colors"
                 >
                   Contact Us Now →
@@ -226,6 +227,14 @@ export default function CompanyChecker() {
               </div>
             )}
           </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => { setResult(null); setQuery('') }}
+          className="mt-3 text-white/30 hover:text-white/60 text-xs transition-colors w-full text-center"
+        >
+          ← Check a different company
+        </button>
         </div>
       )}
     </div>

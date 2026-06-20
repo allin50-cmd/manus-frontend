@@ -54,7 +54,6 @@ function buildResult(
   const cs = c.confirmationStatementStatus
 
   if (status === 'red') {
-    const overdue = accounts.overdue ? accounts : cs
     const type = accounts.overdue ? 'annual accounts' : 'confirmation statement'
     return {
       companyNumber,
@@ -88,7 +87,7 @@ function buildResult(
     companyName,
     status,
     headline: 'Your company is compliant',
-    message: `Everything is up to date. Next ${soonestType.toLowerCase()} is due ${fmt(soonestDate)} — ${soonestDays} days away. FineGuard will remind you with plenty of notice.`,
+    message: `Everything is up to date. Next ${soonestType.toLowerCase()} is due ${fmt(soonestDate)} — ${soonestDays} days away. FineGuard will alert you well in advance.`,
     daysUntilAction: soonestDays,
   }
 }
@@ -101,12 +100,19 @@ const MOCK_COMPANIES = [
   { number: '11223344', name: 'Northern Trade Group Ltd' },
 ]
 
-const MOCK_COMPLIANCE: ComplianceData = {
-  status: 'compliant',
-  riskLevel: 'low',
-  overdueFilings: [],
-  accountsStatus: { nextDue: '2025-11-30', overdue: false, daysUntilDue: 163 },
-  confirmationStatementStatus: { nextDue: '2025-09-15', overdue: false, daysUntilDue: 87 },
+function getMockCompliance(): ComplianceData {
+  const future = (days: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    return d.toISOString().split('T')[0]
+  }
+  return {
+    status: 'compliant',
+    riskLevel: 'low',
+    overdueFilings: [],
+    accountsStatus: { nextDue: future(163), overdue: false, daysUntilDue: 163 },
+    confirmationStatementStatus: { nextDue: future(87), overdue: false, daysUntilDue: 87 },
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -125,7 +131,7 @@ export async function GET(req: NextRequest) {
         number: company,
         name: 'Demo Company Ltd',
       }
-      return NextResponse.json(buildResult(mock.number, mock.name, MOCK_COMPLIANCE))
+      return NextResponse.json(buildResult(mock.number, mock.name, getMockCompliance()))
     }
 
     const lower = company.toLowerCase()
@@ -135,7 +141,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'No companies found matching that name. Try a different search or enter your company number directly.' }, { status: 404 })
     }
     if (matches.length === 1) {
-      return NextResponse.json(buildResult(matches[0].number, matches[0].name, MOCK_COMPLIANCE))
+      return NextResponse.json(buildResult(matches[0].number, matches[0].name, getMockCompliance()))
     }
     return NextResponse.json({ multipleResults: true, companies: matches })
   }

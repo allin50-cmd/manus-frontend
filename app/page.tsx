@@ -45,6 +45,7 @@ export default function HomePage() {
         </a>
 
         <nav className="hidden md:flex items-center gap-6 text-sm">
+          <a href="#pricing" className="text-slate-300 hover:text-white font-medium transition-colors">Pricing</a>
           <a href="#how-it-works" className="text-slate-300 hover:text-white font-medium transition-colors">How It Works</a>
           <a href="#team" className="text-slate-300 hover:text-white font-medium transition-colors">About</a>
           <a href="#faq" className="text-slate-300 hover:text-white font-medium transition-colors">FAQ</a>
@@ -64,7 +65,7 @@ export default function HomePage() {
       ══════════════════════════════════════════════════════ */}
       <section id="checker" className="bg-[#0B1F3A] px-5 pt-14 pb-16 md:pt-20 md:pb-24">
         <div className="max-w-xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight mb-4">
             Stop worrying about Companies House penalties.
           </h1>
           <p className="text-slate-300 text-lg md:text-xl mb-10">
