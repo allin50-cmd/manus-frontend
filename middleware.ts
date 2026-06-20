@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 const PUBLIC = [
+  '/',
   '/login',
   '/api/auth/login',
   '/api/health/db',
+  '/api/check',
   // FineGuard public-facing surfaces and the company lookup they rely on.
   '/landing',
   '/check',
@@ -17,7 +19,9 @@ const PUBLIC = [
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (PUBLIC.some((p) => pathname.startsWith(p))) return NextResponse.next()
+  if (PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next()
+  }
 
   // API routes get a JSON 401 instead of an HTML redirect so client fetches
   // can distinguish "not signed in" from a successful response.
