@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { companyNumber, companyName },
-      success_url: `${appUrl}/company-portal?activated=1&company=${encodeURIComponent(companyNumber)}`,
+      success_url: `${appUrl}/check/success?company=${encodeURIComponent(companyName)}&number=${encodeURIComponent(companyNumber)}`,
       cancel_url: `${appUrl}/check`,
     })
 
