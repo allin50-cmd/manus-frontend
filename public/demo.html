@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FineGuard — Companies House Peace of Mind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:        #0B1F3A;
+    --navy-light:  #152d50;
+    --green:       #00A86B;
+    --green-hover: #009960;
+    --green-light: #E6F7F1;
+    --grey:        #F7F8FA;
+    --amber:       #F59E0B;
+    --amber-light: #FFFBEB;
+    --red:         #EF4444;
+    --red-light:   #FEF2F2;
+    --slate-900:   #0F172A;
+    --slate-700:   #334155;
+    --slate-500:   #64748B;
+    --slate-400:   #94A3B8;
+    --slate-300:   #CBD5E1;
+    --slate-200:   #E2E8F0;
+    --white:       #FFFFFF;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--slate-900);
+    background: var(--white);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--navy);
+    padding: 16px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 24px rgba(0,0,0,.3);
+  }
+  .header-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: var(--green);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-mark svg { width: 16px; height: 16px; color: white; }
+  .logo-text { color: white; font-weight: 700; font-size: 20px; letter-spacing: -.02em; }
+  .header-nav { display: flex; align-items: center; gap: 32px; }
+  .header-nav a { color: var(--slate-300); text-decoration: none; font-size: 14px; transition: color .15s; }
+  .header-nav a:hover { color: white; }
+  .btn-signin {
+    background: var(--green);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .btn-signin:hover { background: var(--green-hover); }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--navy);
+    padding: 112px 24px 144px;
+    text-align: center;
+  }
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,.1);
+    color: rgba(255,255,255,.8);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+  }
+  .hero-pill-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 60px);
+    font-weight: 800;
+    color: white;
+    line-height: 1.1;
+    letter-spacing: -.03em;
+    margin-bottom: 24px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero p {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--slate-300);
+    max-width: 480px;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+  }
+  .checker { max-width: 640px; margin: 0 auto; }
+  .checker-form { display: flex; gap: 12px; flex-wrap: wrap; }
+  .checker-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 18px 20px;
+    border-radius: 12px;
+    border: none;
+    font-size: 18px;
+    font-family: 'Inter', monospace;
+    color: var(--slate-900);
+    background: white;
+    box-shadow: 0 20px 40px rgba(0,0,0,.25);
+    outline: none;
+    transition: box-shadow .15s;
+  }
+  .checker-input:focus { box-shadow: 0 20px 40px rgba(0,0,0,.25), 0 0 0 3px var(--green); }
+  .checker-input::placeholder { color: var(--slate-400); font-family: 'Inter', sans-serif; font-size: 16px; }
+  .checker-btn {
+    padding: 18px 28px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    cursor: pointer;
+    box-shadow: 0 20px 40px rgba(0,0,0,.25);
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .checker-btn:hover { background: var(--green-hover); transform: translateY(-1px); }
+  .checker-btn:active { transform: translateY(0); }
+  .checker-hint { color: var(--slate-500); font-size: 13px; margin-top: 20px; }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    margin-top: 24px;
+    padding: 24px;
+    border-radius: 16px;
+    border-left: 4px solid;
+    text-align: left;
+    box-shadow: 0 20px 40px rgba(0,0,0,.25);
+    display: none;
+  }
+  .result-card.green { background: var(--green-light); border-color: var(--green); }
+  .result-card.amber { background: var(--amber-light); border-color: var(--amber); }
+  .result-card.red   { background: var(--red-light);   border-color: var(--red);   }
+  .result-card.show  { display: block; animation: fadeUp .3s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .result-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+  .result-header-left { display: flex; align-items: center; gap: 12px; }
+  .result-icon svg { width: 24px; height: 24px; }
+  .result-company { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--slate-500); margin-bottom: 2px; }
+  .result-headline { font-size: 22px; font-weight: 800; color: var(--slate-900); line-height: 1.2; }
+  .result-badge {
+    flex-shrink: 0;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 100px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .result-card.green .result-badge { background: var(--green); }
+  .result-card.amber .result-badge { background: var(--amber); }
+  .result-card.red   .result-badge { background: var(--red);   }
+  .result-message { font-size: 15px; color: var(--slate-700); line-height: 1.6; }
+  .result-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,.08); font-size: 13px; }
+  .result-card.green .result-footer, .result-card.amber .result-footer { color: var(--slate-500); }
+  .result-card.red   .result-footer { color: var(--red); }
+  .result-footer a { font-weight: 700; text-decoration: none; }
+  .result-card.green .result-footer a,
+  .result-card.amber .result-footer a { color: var(--green); }
+  .result-card.red   .result-footer a { color: var(--red); }
+
+  .spinner { display: none; }
+  .spinner.show { display: inline-block; width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SECTIONS ── */
+  section { padding: 96px 24px; }
+  .section-grey { background: var(--grey); }
+  .section-navy { background: var(--navy); }
+  .section-white { background: white; }
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+  .section-inner.narrow { max-width: 680px; }
+  .section-inner.mid { max-width: 860px; }
+  .section-header { text-align: center; margin-bottom: 64px; }
+  .section-header h2 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -.02em; margin-bottom: 16px; }
+  .section-header p { color: var(--slate-500); font-size: 16px; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+  .section-header.light h2 { color: white; }
+  .section-header.light p  { color: var(--slate-400); }
+
+  /* ── STATUS CARDS ── */
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+  .status-card { border-radius: 16px; padding: 24px; border-left: 4px solid; }
+  .status-card.green { background: var(--green-light); border-color: var(--green); }
+  .status-card.amber { background: var(--amber-light); border-color: var(--amber); }
+  .status-card.red   { background: var(--red-light);   border-color: var(--red);   }
+  .status-label { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .status-card.green .status-dot, .status-card.green .status-label { color: var(--green); }
+  .status-card.green .status-dot { background: var(--green); }
+  .status-card.amber .status-dot, .status-card.amber .status-label { color: var(--amber); }
+  .status-card.amber .status-dot { background: var(--amber); }
+  .status-card.red   .status-dot, .status-card.red   .status-label { color: var(--red); }
+  .status-card.red   .status-dot { background: var(--red); }
+  .status-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .status-card p  { font-size: 14px; color: var(--slate-700); line-height: 1.5; }
+
+  /* ── STEPS ── */
+  .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 40px; }
+  .step { text-align: center; }
+  .step-num {
+    width: 56px; height: 56px;
+    background: var(--navy);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800;
+    margin: 0 auto 16px;
+    box-shadow: 0 8px 24px rgba(11,31,58,.3);
+  }
+  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .step p  { font-size: 13px; color: var(--slate-500); line-height: 1.5; max-width: 140px; margin: 0 auto; }
+
+  /* ── TIER CARDS ── */
+  .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+  .tier-card { background: white; border-radius: 16px; padding: 24px; border-top: 4px solid; box-shadow: 0 2px 16px rgba(0,0,0,.06); }
+  .tier-card.green    { border-color: var(--green); }
+  .tier-card.amber    { border-color: var(--amber); }
+  .tier-card.red      { border-color: var(--red); }
+  .tier-card.critical { border-color: var(--navy); }
+  .tier-badge {
+    display: inline-block;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 16px;
+  }
+  .tier-card.green    .tier-badge { background: var(--green); }
+  .tier-card.amber    .tier-badge { background: var(--amber); }
+  .tier-card.red      .tier-badge { background: var(--red); }
+  .tier-card.critical .tier-badge { background: var(--navy); }
+  .tier-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .tier-card p  { font-size: 13px; color: var(--slate-500); line-height: 1.5; }
+
+  /* ── TEAM ── */
+  .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 48px; }
+  .team-member { text-align: center; }
+  .team-avatar {
+    width: 96px; height: 96px;
+    background: var(--navy);
+    color: white;
+    font-size: 28px;
+    font-weight: 800;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: 0 8px 24px rgba(11,31,58,.2);
+  }
+  .team-member h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .team-role { font-size: 13px; font-weight: 600; color: var(--green); margin-bottom: 10px; }
+  .team-member p { font-size: 13px; color: var(--slate-500); line-height: 1.6; max-width: 240px; margin: 0 auto; }
+
+  /* ── TRUST BADGES ── */
+  .trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 32px; }
+  .trust-badge { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .trust-icon {
+    width: 48px; height: 48px;
+    background: var(--navy-light);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  }
+  .trust-icon svg { width: 22px; height: 22px; color: var(--green); }
+  .trust-badge span { font-size: 12px; font-weight: 500; color: var(--slate-300); line-height: 1.4; max-width: 100px; }
+  .trust-divider { border-top: 1px solid rgba(255,255,255,.1); margin-top: 48px; padding-top: 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; color: var(--slate-400); font-size: 14px; }
+  .trust-divider a { color: var(--green); text-decoration: none; }
+  .trust-divider a:hover { text-decoration: underline; }
+
+  /* ── PRICING ── */
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 680px; margin: 0 auto; }
+  .pricing-card { border-radius: 20px; padding: 32px; border: 2px solid var(--slate-200); }
+  .pricing-card.featured { border-color: var(--green); background: var(--green-light); position: relative; }
+  .pricing-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--slate-500); margin-bottom: 16px; }
+  .pricing-amount { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+  .pricing-amount .amount { font-size: 48px; font-weight: 800; color: var(--slate-900); letter-spacing: -.03em; }
+  .pricing-amount .period { font-size: 15px; color: var(--slate-400); }
+  .pricing-save { font-size: 13px; font-weight: 600; color: var(--green); margin-bottom: 24px; }
+  .pricing-features { list-style: none; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
+  .pricing-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--slate-700); }
+  .pricing-features li svg { width: 16px; height: 16px; color: var(--green); flex-shrink: 0; margin-top: 2px; }
+  .pricing-cta {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all .15s;
+  }
+  .pricing-cta.outline { border: 2px solid var(--navy); color: var(--navy); }
+  .pricing-cta.outline:hover { background: var(--navy); color: white; }
+  .pricing-cta.filled { background: var(--green); color: white; }
+  .pricing-cta.filled:hover { background: var(--green-hover); }
+  .best-value-badge {
+    position: absolute;
+    top: -14px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--green);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 5px 16px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .pricing-note { text-align: center; font-size: 13px; color: var(--slate-400); margin-top: 32px; }
+  .pricing-note a { color: var(--navy); font-weight: 700; text-decoration: none; }
+  .pricing-note a:hover { text-decoration: underline; }
+
+  /* ── FAQ ── */
+  .faq-list { display: flex; flex-direction: column; }
+  details { border-bottom: 1px solid var(--slate-200); }
+  details:first-child { border-top: 1px solid var(--slate-200); }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    cursor: pointer;
+    list-style: none;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--slate-900);
+    gap: 16px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  .faq-chevron { width: 20px; height: 20px; flex-shrink: 0; color: var(--slate-400); transition: transform .2s; }
+  details[open] .faq-chevron { transform: rotate(180deg); }
+  .faq-answer { font-size: 14px; color: var(--slate-500); line-height: 1.7; padding-bottom: 20px; padding-right: 36px; }
+
+  /* ── FOOTER ── */
+  .footer { background: var(--navy); padding: 48px 24px; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 40px; }
+  .footer-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .footer-brand-mark { width: 28px; height: 28px; background: var(--green); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .footer-brand-mark svg { width: 14px; height: 14px; color: white; }
+  .footer-brand span { color: white; font-weight: 700; font-size: 16px; }
+  .footer-reg  { color: var(--slate-400); font-size: 13px; margin-bottom: 4px; }
+  .footer-copy { color: var(--slate-500); font-size: 12px; }
+  .footer-nav  { display: flex; gap: 48px; flex-wrap: wrap; }
+  .footer-col h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--slate-500); margin-bottom: 16px; }
+  .footer-col a  { display: block; color: var(--slate-400); text-decoration: none; font-size: 14px; margin-bottom: 10px; transition: color .15s; }
+  .footer-col a:hover { color: white; }
+
+  /* ── DEMO CONTROLS ── */
+  .demo-controls {
+    background: #1a2035;
+    border-top: 1px solid rgba(255,255,255,.1);
+    padding: 16px 48px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--slate-400);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .demo-controls span { font-weight: 600; color: var(--slate-300); }
+  .demo-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.05);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .demo-btn:hover { background: rgba(255,255,255,.12); }
+  .demo-btn.green  { border-color: var(--green); color: var(--green); }
+  .demo-btn.amber  { border-color: var(--amber); color: var(--amber); }
+  .demo-btn.red    { border-color: var(--red);   color: var(--red);   }
+
+  @media (max-width: 640px) {
+    .header { padding: 16px 20px; }
+    .header-nav { display: none; }
+    .hero { padding: 72px 20px 96px; }
+    section { padding: 64px 20px; }
+    .trust-grid { grid-template-columns: repeat(3, 1fr); }
+    .footer-inner { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <a href="#" class="header-logo">
+    <div class="logo-mark">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <span class="logo-text">FineGuard</span>
+  </a>
+  <nav class="header-nav">
+    <a href="#how-it-works">How it works</a>
+    <a href="#team">Team</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <a href="#" class="btn-signin">Sign in</a>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="checker">
+    <div class="hero-pill"><span class="hero-pill-dot"></span>UK Company Directors</div>
+    <h1>Check Your Company Status<br>In 30 Seconds</h1>
+    <p>See exactly where your company stands with Companies House and know when action is required.</p>
+
+    <div class="checker-form">
+      <input class="checker-input" id="companyInput" type="text" placeholder="Enter company number (e.g. 12345678)" maxlength="12" autocomplete="off" spellcheck="false">
+      <button class="checker-btn" id="checkBtn" onclick="runCheck()">
+        <span id="btnText">CHECK MY COMPANY</span>
+        <span class="spinner" id="spinner"></span>
+      </button>
+    </div>
+
+    <div class="result-card green" id="resultGreen">
+      <div class="result-header">
+        <div class="result-header-left">
+          <div class="result-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="color:var(--green)"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <div class="result-company" id="greenCompany">ACME TRADING LTD · 12345678</div>
+            <div class="result-headline">You're OK</div>
+          </div>
+        </div>
+        <div class="result-badge">GREEN</div>
+      </div>
+      <div class="result-message" id="greenMsg">172 days until next required action. No action required today.</div>
+      <div class="result-footer">FineGuard can monitor this company and alert you before any deadline. <a href="#pricing">See plans →</a></div>
+    </div>
+
+    <div class="result-card amber" id="resultAmber">
+      <div class="result-header">
+        <div class="result-header-left">
+          <div class="result-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="color:var(--amber)"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          </div>
+          <div>
+            <div class="result-company" id="amberCompany">HIGHFIELD SERVICES LTD · 87654321</div>
+            <div class="result-headline">Action Required Soon</div>
+          </div>
+        </div>
+        <div class="result-badge">AMBER</div>
+      </div>
+      <div class="result-message" id="amberMsg">28 days until confirmation statement.</div>
+      <div class="result-footer">FineGuard can monitor this company and alert you before any deadline. <a href="#pricing">See plans →</a></div>
+    </div>
+
+    <div class="result-card red" id="resultRed">
+      <div class="result-header">
+        <div class="result-header-left">
+          <div class="result-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="color:var(--red)"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <div class="result-company" id="redCompany">BROOKSIDE VENTURES LTD · 11223344</div>
+            <div class="result-headline">Urgent Action Required</div>
+          </div>
+        </div>
+        <div class="result-badge">RED</div>
+      </div>
+      <div class="result-message" id="redMsg">Annual Accounts are overdue. Potential penalties may apply.</div>
+      <div class="result-footer">Our team can help you resolve this urgently. <a href="mailto:help@fineguard.co.uk">Contact us now →</a></div>
+    </div>
+
+    <p class="checker-hint">No sign-up required. No jargon.</p>
+  </div>
+</section>
+
+<!-- DEMO CONTROLS -->
+<div class="demo-controls">
+  <span>Demo:</span>
+  <button class="demo-btn green"  onclick="showDemo('green')">Show GREEN result</button>
+  <button class="demo-btn amber"  onclick="showDemo('amber')">Show AMBER result</button>
+  <button class="demo-btn red"    onclick="showDemo('red')">Show RED result</button>
+  <button class="demo-btn"        onclick="showDemo('none')">Clear</button>
+</div>
+
+<!-- SECTION 2: INSTANT STATUS -->
+<section class="section-grey">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Instant Status</h2>
+      <p>One clear answer. Green, Amber or Red. No interpretation required.</p>
+    </div>
+    <div class="status-grid">
+      <div class="status-card green">
+        <div class="status-label"><span class="status-dot"></span>GREEN</div>
+        <h3>You're OK</h3>
+        <p>172 days until next required action. No action required today.</p>
+      </div>
+      <div class="status-card amber">
+        <div class="status-label"><span class="status-dot"></span>AMBER</div>
+        <h3>Action Required Soon</h3>
+        <p>28 days until confirmation statement.</p>
+      </div>
+      <div class="status-card red">
+        <div class="status-label"><span class="status-dot"></span>RED</div>
+        <h3>Urgent Action Required</h3>
+        <p>Accounts overdue. Potential penalties may apply.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: HOW IT WORKS -->
+<section class="section-white" id="how-it-works">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>What Happens Next</h2>
+      <p>From your first check to complete peace of mind — in four steps.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Check Company</h3>
+        <p>Enter your company number. Results in seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>See Status</h3>
+        <p>Green, Amber or Red. Exactly where you stand.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>FineGuard Monitors</h3>
+        <p>We watch every deadline so you don't have to.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>You Stop Worrying</h3>
+        <p>Notifications before anything requires action.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: NOBODY GETS IGNORED -->
+<section class="section-grey">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Nobody Gets Ignored</h2>
+      <p>Every customer receives the right level of attention — automatically.</p>
+    </div>
+    <div class="tier-grid">
+      <div class="tier-card green">
+        <span class="tier-badge">Green</span>
+        <h3>Regular Reassurance</h3>
+        <p>Monthly status confirmation. You know you're fine without having to check.</p>
+      </div>
+      <div class="tier-card amber">
+        <span class="tier-badge">Amber</span>
+        <h3>Guidance &amp; Reminders</h3>
+        <p>We tell you exactly what's due and when. No guesswork.</p>
+      </div>
+      <div class="tier-card red">
+        <span class="tier-badge">Red</span>
+        <h3>Human Intervention</h3>
+        <p>A real person reviews your situation and contacts you directly.</p>
+      </div>
+      <div class="tier-card critical">
+        <span class="tier-badge">Critical</span>
+        <h3>Priority Attention</h3>
+        <p>Immediate escalation to our senior team. We act on your behalf.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: TEAM -->
+<section class="section-white" id="team">
+  <div class="section-inner mid">
+    <div class="section-header">
+      <h2>Meet The Team</h2>
+      <p>Real people. Real responsibility. We answer to you, not to a dashboard.</p>
+    </div>
+    <div class="team-grid">
+      <div class="team-member">
+        <div class="team-avatar">GT</div>
+        <h3>George Thomas</h3>
+        <div class="team-role">Founder</div>
+        <p>Vision and customer advocacy. George built FineGuard after watching too many directors miss deadlines they didn't know existed.</p>
+      </div>
+      <div class="team-member">
+        <div class="team-avatar">A</div>
+        <h3>Alissa</h3>
+        <div class="team-role">Customer Reassurance Lead</div>
+        <p>Ensures no customer is left wondering. Alissa personally reviews every amber and red status every morning.</p>
+      </div>
+      <div class="team-member">
+        <div class="team-avatar">DW</div>
+        <h3>Daygon White</h3>
+        <div class="team-role">Client Services</div>
+        <p>Supports customers requiring additional help navigating Companies House requirements and filing processes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: TRUST CENTRE -->
+<section class="section-navy">
+  <div class="section-inner">
+    <div class="section-header light">
+      <h2>Trust Centre</h2>
+      <p>FineGuard is built to meet the standards you'd expect from a regulated professional service.</p>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-badge">
+        <div class="trust-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M9 21V9l3-6 3 6v12M9 21H3M21 21h-6"/></svg></div>
+        <span>UK Registered Company</span>
+      </div>
+      <div class="trust-badge">
+        <div class="trust-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>
+        <span>GDPR Compliant</span>
+      </div>
+      <div class="trust-badge">
+        <div class="trust-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></div>
+        <span>Companies House Connected</span>
+      </div>
+      <div class="trust-badge">
+        <div class="trust-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+        <span>Real Human Support</span>
+      </div>
+      <div class="trust-badge">
+        <div class="trust-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <span>Professional Indemnity Cover</span>
+      </div>
+      <div class="trust-badge">
+        <div class="trust-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg></div>
+        <span>Trustpilot Rated</span>
+      </div>
+    </div>
+    <div class="trust-divider">
+      <span>FineGuard Ltd · Registered in England &amp; Wales</span>
+      <a href="mailto:hello@fineguard.co.uk">hello@fineguard.co.uk</a>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: PRICING -->
+<section class="section-white" id="pricing">
+  <div class="section-inner">
+    <div class="section-header">
+      <h2>Compliance Peace Of Mind</h2>
+      <p>One company, one price, one team looking after you.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-label">Monthly Plan</div>
+        <div class="pricing-amount"><span class="amount">£29</span><span class="period">/month</span></div>
+        <ul class="pricing-features">
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Real-time Companies House monitoring</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Green, Amber &amp; Red status alerts</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Email &amp; SMS deadline reminders</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Human support for amber &amp; red statuses</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Up to 3 companies</li>
+        </ul>
+        <a href="#" class="pricing-cta outline">Get started</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="best-value-badge">Best value</div>
+        <div class="pricing-label">Annual Plan</div>
+        <div class="pricing-amount"><span class="amount">£249</span><span class="period">/year</span></div>
+        <div class="pricing-save">Save £99 — two months free</div>
+        <ul class="pricing-features">
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Everything in Monthly</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Priority human support</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Annual compliance review call</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Up to 10 companies</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Accountant access included</li>
+        </ul>
+        <a href="#" class="pricing-cta filled">Get started</a>
+      </div>
+    </div>
+    <p class="pricing-note">Need more than 10 companies? <a href="mailto:hello@fineguard.co.uk">Talk to us →</a></p>
+  </div>
+</section>
+
+<!-- SECTION 8: FAQ -->
+<section class="section-grey" id="faq">
+  <div class="section-inner narrow">
+    <div class="section-header">
+      <h2>Common Questions</h2>
+    </div>
+    <div class="faq-list">
+      <details open>
+        <summary>Am I compliant right now? <svg class="faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></summary>
+        <p class="faq-answer">Enter your company number above and we'll tell you within 30 seconds — no account needed. We pull live data directly from Companies House.</p>
+      </details>
+      <details>
+        <summary>What happens if I miss a deadline? <svg class="faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></summary>
+        <p class="faq-answer">Companies House issues automatic penalties for late accounts — from £150 for up to one month late, rising to £1,500 for more than six months. Confirmation statement failures can lead to prosecution. FineGuard makes sure you never reach that point.</p>
+      </details>
+      <details>
+        <summary>Can you monitor multiple companies? <svg class="faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></summary>
+        <p class="faq-answer">Yes. Monthly plans cover up to 3 companies, Annual plans cover up to 10. If you need more, get in touch and we'll arrange something suitable.</p>
+      </details>
+      <details>
+        <summary>Can my accountant use FineGuard? <svg class="faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></summary>
+        <p class="faq-answer">Absolutely. Annual plan subscribers can add their accountant as an authorised user at no extra cost. Your accountant will see the same status you see and receive the same alerts.</p>
+      </details>
+      <details>
+        <summary>What if my company is already overdue? <svg class="faq-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></summary>
+        <p class="faq-answer">Don't panic. Enter your company number and we'll show you exactly where things stand. If you're overdue, a real member of our team will contact you to help you understand your options and what to do next.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="footer-brand-mark">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <span>FineGuard</span>
+      </div>
+      <p class="footer-reg">Registered in England &amp; Wales</p>
+      <p class="footer-copy">© 2026 FineGuard Ltd. All rights reserved.</p>
+    </div>
+    <nav class="footer-nav">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#how-it-works">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="#team">Team</a>
+        <a href="mailto:hello@fineguard.co.uk">Contact</a>
+        <a href="#">Sign in</a>
+      </div>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const DEMOS = {
+    green: { company: 'ACME TRADING LTD · 12345678', msg: '172 days until next required action. No action required today.' },
+    amber: { company: 'HIGHFIELD SERVICES LTD · 87654321', msg: '28 days until confirmation statement.' },
+    red:   { company: 'BROOKSIDE VENTURES LTD · 11223344', msg: 'Annual Accounts are overdue. Potential penalties may apply.' },
+  }
+
+  function hideAll() {
+    ['resultGreen','resultAmber','resultRed'].forEach(id => {
+      const el = document.getElementById(id)
+      el.classList.remove('show')
+    })
+  }
+
+  function showDemo(type) {
+    hideAll()
+    if (type === 'none') return
+    const cfg = DEMOS[type]
+    document.getElementById(type + 'Company').textContent = cfg.company
+    document.getElementById(type + 'Msg').textContent    = cfg.msg
+    const card = document.getElementById('result' + type.charAt(0).toUpperCase() + type.slice(1))
+    card.classList.add('show')
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  function runCheck() {
+    const val = document.getElementById('companyInput').value.trim()
+    if (!val) return
+
+    const btn     = document.getElementById('checkBtn')
+    const btnText = document.getElementById('btnText')
+    const spinner = document.getElementById('spinner')
+
+    hideAll()
+    btnText.style.display = 'none'
+    spinner.classList.add('show')
+    btn.disabled = true
+
+    setTimeout(() => {
+      btnText.style.display = ''
+      spinner.classList.remove('show')
+      btn.disabled = false
+
+      // Deterministic demo routing based on input
+      const cleaned = val.replace(/\s/g,'').toUpperCase()
+      let type
+      const last = parseInt(cleaned.slice(-1), 10)
+      if (isNaN(last)) { type = 'green' }
+      else if (last <= 3) { type = 'red' }
+      else if (last <= 6) { type = 'amber' }
+      else { type = 'green' }
+
+      const cfg = DEMOS[type]
+      document.getElementById(type + 'Company').textContent = val.toUpperCase() + ' · ' + cleaned.padStart(8,'0')
+      document.getElementById(type + 'Msg').textContent     = cfg.msg
+      const card = document.getElementById('result' + type.charAt(0).toUpperCase() + type.slice(1))
+      card.classList.add('show')
+    }, 1200)
+  }
+
+  document.getElementById('companyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runCheck()
+  })
+</script>
+</body>
+</html>
