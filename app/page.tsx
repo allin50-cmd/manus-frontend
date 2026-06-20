@@ -96,7 +96,7 @@ export default function HomePage() {
 
           {/* Right — Check My Company illustration */}
           <div className="flex items-center justify-center">
-            <div className="relative w-full max-w-md drop-shadow-2xl">
+            <div className="relative w-full drop-shadow-2xl">
               <Image
                 src="/illustrations/check-my-company.png"
                 alt="Check your company status instantly"
