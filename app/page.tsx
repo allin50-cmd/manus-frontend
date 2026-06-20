@@ -120,7 +120,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           <div className="order-2 lg:order-1 flex justify-center">
-            <div className="drop-shadow-lg w-full max-w-md">
+            <div className="drop-shadow-lg w-full">
               <Image
                 src="/illustrations/director-anxiety.png"
                 alt="Director stressed about Companies House deadlines"
@@ -225,8 +225,8 @@ export default function HomePage() {
               { n: 4, title: 'Stay Stress-Free', desc: 'Alerts before anything is due. Zero surprises.', img: '/illustrations/step-4-worry-free.png', alt: 'Peace of mind — no more compliance worry' },
             ].map(({ n, title, desc, img, alt }) => (
               <div key={n} className="flex flex-col items-center text-center">
-                <div className="w-full mb-5 relative aspect-[3/2] drop-shadow-lg">
-                  <Image src={img} alt={alt} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw" loading="lazy" className="object-contain" />
+                <div className="w-full mb-5 drop-shadow-lg">
+                  <Image src={img} alt={alt} width={768} height={512} sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw" loading="lazy" className="w-full h-auto" />
                 </div>
                 <div className="w-10 h-10 rounded-full bg-[#0B1F3A] text-white text-base font-bold flex items-center justify-center mb-3 shrink-0">
                   {n}
@@ -269,7 +269,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex justify-center">
-            <div className="drop-shadow-lg w-full max-w-md">
+            <div className="drop-shadow-lg w-full">
               <Image
                 src="/illustrations/nobody-gets-ignored.png"
                 alt="Every customer status gets the right response — Green, Amber, Red or Critical"
@@ -293,7 +293,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           <div className="flex justify-center">
-            <div className="drop-shadow-lg w-full max-w-md">
+            <div className="drop-shadow-lg w-full">
               <Image
                 src="/illustrations/human-intervention.png"
                 alt="Human support team ready to help"
@@ -455,7 +455,7 @@ export default function HomePage() {
 
           {/* FineGuard Cover illustration */}
           <div className="flex items-center justify-center">
-            <div className="drop-shadow-lg w-full max-w-md">
+            <div className="drop-shadow-lg w-full">
               <Image
                 src="/illustrations/fineguard-cover.png"
                 alt="FineGuard protection covering your company"
@@ -519,7 +519,7 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center justify-center">
-            <div className="drop-shadow-2xl w-full max-w-md">
+            <div className="drop-shadow-2xl w-full">
               <Image
                 src="/illustrations/peace-of-mind.png"
                 alt="We've got it covered — FineGuard peace of mind"
