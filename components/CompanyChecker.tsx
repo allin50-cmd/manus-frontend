@@ -179,54 +179,54 @@ export default function CompanyChecker() {
       {result && cfg && (
         <div>
           <div className={`mt-6 rounded-2xl border-2 text-left shadow-xl overflow-hidden ${cfg.border}`}>
-          {/* Status banner */}
-          <div className={`${cfg.bannerBg} px-6 py-5 flex items-center justify-between gap-4`}>
-            <div className="flex items-center gap-4">
-              <div className="bg-white/20 rounded-full p-2 shrink-0">{cfg.icon}</div>
-              <div>
-                <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-0.5">
-                  {result.companyName} · {result.companyNumber}
-                </p>
-                <p className="text-white text-2xl md:text-3xl font-bold leading-tight">{cfg.simpleMessage}</p>
+            {/* Status banner */}
+            <div className={`${cfg.bannerBg} px-6 py-5 flex items-center justify-between gap-4`}>
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 rounded-full p-2 shrink-0">{cfg.icon}</div>
+                <div>
+                  <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-0.5">
+                    {result.companyName} · {result.companyNumber}
+                  </p>
+                  <p className="text-white text-2xl md:text-3xl font-bold leading-tight">{cfg.simpleMessage}</p>
+                </div>
               </div>
+              <span className="shrink-0 bg-white/25 text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest">
+                {cfg.label}
+              </span>
             </div>
-            <span className="shrink-0 bg-white/25 text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest">
-              {cfg.label}
-            </span>
-          </div>
 
-          {/* Detail body */}
-          <div className={`${cfg.bodyBg} px-6 py-5`}>
-            <p className="text-slate-800 text-base leading-relaxed">{result.message}</p>
+            {/* Detail body */}
+            <div className={`${cfg.bodyBg} px-6 py-5`}>
+              <p className="text-slate-800 text-base leading-relaxed">{result.message}</p>
 
-            {result.status !== 'red' && (
-              <div className={`mt-5 pt-4 border-t ${cfg.divider} flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between`}>
-                <p className="text-sm text-slate-600">
-                  FineGuard monitors this company and alerts you before any deadline.
-                </p>
-                <a
-                  href="#pricing"
-                  className="shrink-0 inline-block bg-[#00A86B] text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#009960] transition-colors whitespace-nowrap shadow-sm"
-                >
-                  Get Protected — £4.99/mo →
-                </a>
-              </div>
-            )}
+              {result.status !== 'red' && (
+                <div className={`mt-5 pt-4 border-t ${cfg.divider} flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between`}>
+                  <p className="text-sm text-slate-600">
+                    FineGuard monitors this company and alerts you before any deadline.
+                  </p>
+                  <a
+                    href="#pricing"
+                    className="shrink-0 inline-block bg-[#00A86B] text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-[#009960] transition-colors whitespace-nowrap shadow-sm"
+                  >
+                    Get Protected — £4.99/mo →
+                  </a>
+                </div>
+              )}
 
-            {result.status === 'red' && (
-              <div className={`mt-5 pt-4 border-t ${cfg.divider}`}>
-                <p className="text-red-800 text-sm font-semibold mb-3">
-                  A real member of our team will contact you directly to help resolve this urgently.
-                </p>
-                <a
-                  href="mailto:hello@fineguard.co.uk"
-                  className="inline-block bg-red-600 text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Contact Us Now →
-                </a>
-              </div>
-            )}
-          </div>
+              {result.status === 'red' && (
+                <div className={`mt-5 pt-4 border-t ${cfg.divider}`}>
+                  <p className="text-red-800 text-sm font-semibold mb-3">
+                    A real member of our team will contact you directly to help resolve this urgently.
+                  </p>
+                  <a
+                    href="mailto:hello@fineguard.co.uk"
+                    className="inline-block bg-red-600 text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Contact Us Now →
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
           <button
             type="button"

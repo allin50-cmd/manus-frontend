@@ -33,19 +33,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0B1F3A] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
+        {/* Brand mark */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18M3 14h18M3 18h18" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">UltraCore SheetOps</h1>
-          <p className="text-slate-400 text-sm mt-1">Spreadsheets that do the work</p>
+          <a href="/" className="inline-flex flex-col items-center gap-3">
+            <div className="w-16 h-16 bg-[#00A86B] rounded-2xl flex items-center justify-center shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">FineGuard</h1>
+              <p className="text-slate-400 text-sm mt-0.5">Companies House compliance, simplified</p>
+            </div>
+          </a>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Passcode</label>
             <input
@@ -55,7 +60,7 @@ export default function LoginPage() {
               placeholder="Enter passcode"
               required
               autoFocus
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg tracking-widest"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#00A86B] text-lg tracking-widest"
             />
           </div>
 
@@ -66,11 +71,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || !passcode}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
+            className="w-full py-3 bg-[#00A86B] hover:bg-[#009960] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
+
+        <p className="text-center text-slate-600 text-xs mt-6">
+          <a href="/" className="hover:text-slate-400 transition-colors">← Back to FineGuard</a>
+        </p>
       </div>
     </div>
   )

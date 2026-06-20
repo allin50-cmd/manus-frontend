@@ -153,7 +153,7 @@ export default function HomePage() {
           SCREEN 4 — HUMAN REASSURANCE
           "Nobody Gets Ignored"
       ══════════════════════════════════════════════════════ */}
-      <section className="bg-[#F7F8FA] px-5 py-16 md:py-24">
+      <section className="bg-white px-5 py-16 md:py-24">
         <div className="max-w-md mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-[#0B1F3A] mb-8">Nobody Gets Ignored</h2>
 
