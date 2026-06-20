@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 /**
  * Companies House API Service
  * Real-time integration with Companies House API

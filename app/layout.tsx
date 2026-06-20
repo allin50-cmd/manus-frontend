@@ -1,15 +1,21 @@
 import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
-import NavBar from '@/components/NavBar'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
-  title: 'UltraCore SheetOps',
-  description: 'Spreadsheets that do the work, not just store the work.',
+  title: 'FineGuard — Companies House Peace of Mind',
+  description: 'Know exactly where your company stands with Companies House. FineGuard monitors your obligations so UK directors never miss a deadline.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'SheetOps',
+    title: 'FineGuard',
   },
   icons: {
     apple: '/icons/icon-192.svg',
@@ -22,16 +28,13 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#1e293b',
+  themeColor: '#0B1F3A',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
-        <NavBar />
-        <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
-      </body>
+    <html lang="en" className={inter.variable}>
+      <body>{children}</body>
     </html>
   )
 }

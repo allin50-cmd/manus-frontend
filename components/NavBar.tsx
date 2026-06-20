@@ -31,10 +31,15 @@ export default function NavBar() {
   return (
     <>
       {/* Desktop top bar */}
-      <nav className="hidden sm:flex items-center justify-between bg-slate-900 text-white px-6 py-3 sticky top-0 z-50">
+      <nav className="hidden sm:flex items-center justify-between bg-[#0B1F3A] text-white px-6 py-3 sticky top-0 z-50">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="font-bold text-white text-sm tracking-wide">
-            SheetOps
+          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-white text-sm tracking-wide">
+            <span className="w-6 h-6 bg-[#00A86B] rounded-md flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </span>
+            FineGuard
           </Link>
           {NAV.map((n) => (
             <Link
@@ -65,7 +70,7 @@ export default function NavBar() {
       </nav>
 
       {/* Mobile bottom bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-50 flex items-center">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-[#0B1F3A] border-t border-white/10 z-50 flex items-center">
         {NAV.map((n) => (
           <Link
             key={n.href}
@@ -94,7 +99,7 @@ export default function NavBar() {
           onClick={() => setMenuOpen(false)}
         >
           <div
-            className="absolute bottom-16 right-4 left-4 bg-slate-800 rounded-xl p-4 space-y-1"
+            className="absolute bottom-16 right-4 left-4 bg-[#0B1F3A] border border-white/10 rounded-xl p-4 space-y-1"
             onClick={(e) => e.stopPropagation()}
           >
             {MORE.map((n) => (
@@ -102,14 +107,14 @@ export default function NavBar() {
                 key={n.href}
                 href={n.href}
                 onClick={() => setMenuOpen(false)}
-                className="block px-4 py-3 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                className="block px-4 py-3 text-white rounded-lg hover:bg-white/10 transition-colors"
               >
                 {n.label}
               </Link>
             ))}
             <button
               onClick={handleLogout}
-              className="block w-full text-left px-4 py-3 text-red-400 rounded-lg hover:bg-slate-700 transition-colors"
+              className="block w-full text-left px-4 py-3 text-red-400 rounded-lg hover:bg-white/10 transition-colors"
             >
               Log out
             </button>

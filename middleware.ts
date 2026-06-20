@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const PUBLIC = ['/login', '/api/auth/login', '/api/health/db']
+const PUBLIC = [
+  '/',
+  '/login',
+  '/api/auth/login',
+  '/api/health/db',
+  '/api/check',
+]
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (PUBLIC.some((p) => pathname.startsWith(p))) return NextResponse.next()
+  if (PUBLIC.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next()
+  }
 
   const jwtSecret = process.env.JWT_SECRET
   if (!jwtSecret) return NextResponse.redirect(new URL('/login', req.url))
