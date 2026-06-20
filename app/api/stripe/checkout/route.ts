@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const companyNumber = String(body.companyNumber ?? '').trim()
   const companyName = String(body.companyName ?? '').trim()
+  const alertCount = Math.max(1, Math.min(10, parseInt(body.alertCount, 10) || 1))
 
   if (!companyNumber || !companyName) {
     return NextResponse.json(
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: alertCount }],
       metadata: { companyNumber, companyName },
       success_url: `${appUrl}/company-portal?activated=1&company=${encodeURIComponent(companyNumber)}`,
       cancel_url: `${appUrl}/check`,

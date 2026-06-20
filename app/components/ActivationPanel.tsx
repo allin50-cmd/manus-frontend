@@ -53,7 +53,7 @@ export function ActivationPanel({ companyNumber, companyName, onContinue }: Acti
       const checkout = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyNumber, companyName }),
+        body: JSON.stringify({ companyNumber, companyName, alertCount: selectedCount }),
       });
 
       if (checkout.ok) {
