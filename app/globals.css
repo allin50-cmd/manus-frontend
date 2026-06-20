@@ -12,13 +12,3 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-/* Internal app base styles */
-.internal-body {
-  @apply bg-slate-50;
-}
-
-/* Ensure bottom nav doesn't cover content on mobile in internal app */
-.internal-main {
-  @apply pb-20 sm:pb-0;
-}

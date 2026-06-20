@@ -1,16 +1,10 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-})
+import ConditionalLayout from '@/components/ConditionalLayout'
 
 export const metadata: Metadata = {
-  title: 'FineGuard — Companies House Peace of Mind',
-  description: 'Know exactly where your company stands with Companies House. FineGuard monitors your obligations so UK directors never miss a deadline.',
+  title: 'FineGuard',
+  description: 'UK Companies House compliance monitoring — know your status in 30 seconds.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -26,15 +20,15 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: '#0B1F3A',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body>{children}</body>
+    <html lang="en">
+      <body>
+        <ConditionalLayout>{children}</ConditionalLayout>
+      </body>
     </html>
   )
 }

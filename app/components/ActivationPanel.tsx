@@ -14,42 +14,40 @@ const ALERT_TYPES: { key: AlertKey; label: string; description: string }[] = [
   {
     key: 'accounts_filing',
     label: 'Accounts Filing',
-    description: 'Get notified when annual accounts are filed'
+    description: 'Alerts before annual accounts are due',
   },
   {
     key: 'confirmation_statement',
     label: 'Confirmation Statement',
-    description: 'Alerts for confirmation statement filings'
+    description: 'Alerts before confirmation statement deadline',
   },
   {
     key: 'director_changes',
     label: 'Director Changes',
-    description: 'Notifications about director appointments/resignations'
-  }
+    description: 'Notifications about director appointments and resignations',
+  },
 ];
 
 export function ActivationPanel({ companyNumber, companyName, onContinue }: ActivationPanelProps) {
   const [selected, setSelected] = useState<Record<AlertKey, boolean>>({
     accounts_filing: true,
     confirmation_statement: true,
-    director_changes: true
+    director_changes: true,
   });
   const [activating, setActivating] = useState(false);
   const [activated, setActivated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
-  const monthlyPrice = selectedCount * 1;
 
   const toggleAlert = (key: AlertKey) => {
-    setSelected(prev => ({ ...prev, [key]: !prev[key] }));
+    setSelected((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleActivate = async () => {
     setActivating(true);
     setError(null);
     try {
-      // Prefer Stripe checkout when it's configured.
       const checkout = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,21 +57,17 @@ export function ActivationPanel({ companyNumber, companyName, onContinue }: Acti
       if (checkout.ok) {
         const data = (await checkout.json()) as { configured?: boolean; url?: string };
         if (data.configured && data.url) {
-          // Hand off to Stripe-hosted checkout; webhook activates on success.
           window.location.href = data.url;
           return;
         }
-        // Stripe not configured → fall through to direct activation below.
       }
 
-      // Fallback: persist activation directly (until Stripe is wired up).
       const res = await fetch('/api/monitored', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyNumber, companyName }),
       });
       if (res.status === 401) {
-        // Not signed in — send the operator to login, returning here after.
         window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
         return;
       }
@@ -90,97 +84,98 @@ export function ActivationPanel({ companyNumber, companyName, onContinue }: Acti
     }
   };
 
-  return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Set up alerts</h2>
-        <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            <span className="font-semibold text-gray-900 dark:text-white">{companyName}</span>
-            <br />
-            <span className="font-mono text-gray-500 dark:text-gray-400">Company number: {companyNumber}</span>
-          </p>
+  if (activated) {
+    return (
+      <div className="w-full max-w-lg mx-auto p-8 bg-white rounded-2xl border border-slate-100 shadow-sm text-center">
+        <div className="w-14 h-14 bg-[#E6F7F1] rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-7 h-7 text-[#00A86B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
         </div>
+        <h3 className="font-bold text-slate-900 text-xl mb-1">Now monitoring {companyName}</h3>
+        <p className="text-slate-500 text-sm mb-5">You&apos;ll receive alerts before any deadline.</p>
+        <a href="/company-portal" className="inline-block bg-[#00A86B] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#009960] transition-colors">
+          View dashboard →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-lg mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      {/* Company header */}
+      <div className="bg-[#0B1F3A] px-6 py-5">
+        <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-0.5">Setting up alerts for</p>
+        <p className="text-white font-bold text-lg leading-tight">{companyName}</p>
+        <p className="text-white/50 text-xs font-mono mt-0.5">{companyNumber}</p>
       </div>
 
-      <div className="mb-8">
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Choose which alerts you want:</p>
-        <div className="space-y-3">
+      <div className="p-6">
+        {/* Alert selection */}
+        <p className="text-slate-500 text-xs font-semibold uppercase tracking-widest mb-3">Choose your alerts</p>
+        <div className="space-y-2 mb-6">
           {ALERT_TYPES.map(({ key, label, description }) => (
-            <label key={key} className="flex items-start gap-3 p-4 border-2 border-gray-200 dark:border-slate-700 rounded-lg cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition">
+            <label
+              key={key}
+              className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                selected[key]
+                  ? 'border-[#00A86B] bg-[#E6F7F1]'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={selected[key]}
                 onChange={() => toggleAlert(key)}
-                className="w-5 h-5 mt-0.5 accent-blue-600"
+                className="w-4 h-4 mt-0.5 accent-[#00A86B] shrink-0"
               />
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900 dark:text-white text-sm">{label}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{description}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-slate-900 text-sm">{label}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{description}</p>
               </div>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">£1/mo</span>
             </label>
           ))}
         </div>
-      </div>
 
-      <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Total: {selectedCount} alert{selectedCount !== 1 ? 's' : ''}
-          </span>
-          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">£{monthlyPrice}/month</span>
+        {/* Price */}
+        <div className="bg-[#F7F8FA] rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-slate-500 text-xs">Monthly protection</p>
+            <p className="text-slate-400 text-xs mt-0.5">{selectedCount} alert type{selectedCount !== 1 ? 's' : ''} selected</p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-[#0B1F3A]">£4.99</p>
+            <p className="text-slate-400 text-xs">per month</p>
+          </div>
         </div>
-      </div>
 
-      <div className="mb-8 space-y-2 text-xs text-gray-600 dark:text-gray-400">
-        <div className="flex items-center gap-2">
-          <span>✓</span>
-          <span>No contract required</span>
+        {/* Trust */}
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          {['Cancel any time', 'No contracts', 'Email & dashboard alerts', 'Avoid fines from £150+'].map((t) => (
+            <div key={t} className="flex items-center gap-1.5 text-xs text-slate-500">
+              <svg className="w-3.5 h-3.5 text-[#00A86B] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              {t}
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <span>✓</span>
-          <span>Cancel anytime</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span>✓</span>
-          <span>Instant email & dashboard alerts</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span>✓</span>
-          <span>Avoid fines from £150+</span>
-        </div>
-      </div>
 
-      {error && (
-        <p className="mb-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2">
-          {error}
-        </p>
-      )}
-
-      {activated ? (
-        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg text-center">
-          <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-2">
-            ✓ Now monitoring {companyName}
+        {error && (
+          <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+            {error}
           </p>
-          <a href="/company-portal" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            View in your dashboard →
-          </a>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <button
-            onClick={handleActivate}
-            disabled={selectedCount === 0 || activating}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition"
-          >
-            {activating ? 'Activating…' : `Activate Alerts · £${monthlyPrice}/month`}
-          </button>
-          <button className="w-full bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold py-3 px-4 rounded-lg transition">
-            Start Free Trial
-          </button>
-        </div>
-      )}
+        )}
+
+        <button
+          onClick={handleActivate}
+          disabled={selectedCount === 0 || activating}
+          className="w-full bg-[#00A86B] hover:bg-[#009960] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-xl transition-colors text-base"
+        >
+          {activating ? 'Activating…' : 'Protect My Company · £4.99/month'}
+        </button>
+        <p className="text-center text-slate-400 text-xs mt-2">No setup fee. Cancel any time.</p>
+      </div>
     </div>
   );
 }
