@@ -36,14 +36,15 @@ export async function POST(req: NextRequest) {
     const companyName = session.metadata?.companyName
 
     if (companyNumber && companyName) {
+      const email = session.customer_details?.email ?? (session.customer_email ?? null)
       try {
         const db = await getDb()
         await db
           .insert(monitoredCompanies)
-          .values({ companyNumber, companyName, stripeSessionId: session.id })
+          .values({ companyNumber, companyName, email, stripeSessionId: session.id })
           .onConflictDoUpdate({
             target: monitoredCompanies.companyNumber,
-            set: { stripeSessionId: session.id },
+            set: { stripeSessionId: session.id, ...(email ? { email } : {}) },
           })
       } catch (err) {
         console.error('Stripe monitoring activation failed:', String(err))

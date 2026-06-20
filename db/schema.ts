@@ -284,11 +284,39 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   id: uuid('id').primaryKey().defaultRandom(),
   companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
   companyName: varchar('company_name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }),
   stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
-});
+})
+
+/**
+ * Alert History Table
+ * Prevents duplicate deadline alerts from being sent.
+ * One row per (company, deadline type, due date, days-before threshold).
+ */
+export const alertHistory = pgTable(
+  'alert_history',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyNumber: varchar('company_number', { length: 50 }).notNull(),
+    deadlineType: varchar('deadline_type', { length: 50 }).notNull(),
+    dueDate: varchar('due_date', { length: 10 }).notNull(),
+    daysBefore: integer('days_before').notNull(),
+    sentAt: timestamp('sent_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    uniqueAlert: uniqueIndex('alert_history_unique_idx').on(
+      t.companyNumber,
+      t.deadlineType,
+      t.dueDate,
+      t.daysBefore,
+    ),
+  }),
+);
 
 // Brand-suite inferred types
+export type AlertHistory = typeof alertHistory.$inferSelect;
+export type NewAlertHistory = typeof alertHistory.$inferInsert;
 export type DeploymentStatus = typeof deploymentStatus.$inferSelect;
 export type NewDeploymentStatus = typeof deploymentStatus.$inferInsert;
 export type Lead = typeof leads.$inferSelect;

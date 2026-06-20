@@ -1,0 +1,35 @@
+name: FineGuard Deadline Alerts
+
+on:
+  schedule:
+    # Run every day at 08:00 UTC (9am BST in summer, 8am GMT in winter)
+    - cron: '0 8 * * *'
+  # Allow manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  send-alerts:
+    name: Check deadlines and send email alerts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Send deadline alerts
+        run: npx tsx scripts/send-deadline-alerts.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ vars.RESEND_FROM || 'FineGuard Alerts <alerts@fineguard.co.uk>' }}
