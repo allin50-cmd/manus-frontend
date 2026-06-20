@@ -15,6 +15,9 @@ const PUBLIC = [
   // Stripe checkout is initiated from the public /check page; the webhook is
   // called by Stripe's servers and authenticates via signature, not session.
   '/api/stripe',
+  // Legal pages — publicly accessible, no auth required.
+  '/privacy',
+  '/terms',
 ]
 
 // The homepage is public but '/' would prefix-match every path, so we check

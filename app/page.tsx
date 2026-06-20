@@ -53,8 +53,8 @@ export default function HomePage() {
 
         <div className="flex items-center gap-3">
           <a href="/login" className="text-slate-300 hover:text-white text-sm font-medium transition-colors hidden sm:block">Login</a>
-          <a href="/login" className="bg-[#00A86B] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#009960] transition-colors whitespace-nowrap">
-            Get Protected
+          <a href="/check" className="bg-[#00A86B] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#009960] transition-colors whitespace-nowrap">
+            Check My Company
           </a>
         </div>
       </header>
@@ -111,9 +111,9 @@ export default function HomePage() {
             <ul className="text-left space-y-3 mb-8">
               {[
                 'Companies House monitoring — live',
-                'Deadline alerts via email',
-                'Green / Amber / Red status updates',
-                'Human support when required',
+                'Email alerts 30, 14 and 7 days before every deadline',
+                'Green / Amber / Red status — always know where you stand',
+                'Human review of every Amber and Red case',
               ].map((f) => (
                 <li key={f} className="flex items-center gap-3 text-sm text-slate-700 font-medium">
                   <div className="w-5 h-5 bg-[#00A86B] rounded-full flex items-center justify-center shrink-0">
@@ -127,10 +127,10 @@ export default function HomePage() {
             </ul>
 
             <a
-              href="/login"
+              href="/check"
               className="block w-full text-center py-4 bg-[#00A86B] text-white font-bold rounded-xl text-lg hover:bg-[#009960] transition-colors shadow-lg"
             >
-              Protect My Company
+              Check My Company — Free
             </a>
             <p className="text-slate-400 text-xs mt-3">Cancel any time. No setup fees. No contracts.</p>
 
@@ -178,10 +178,10 @@ export default function HomePage() {
           <p className="text-slate-400 text-xs mb-8">— George Thomas, Founder</p>
 
           <a
-            href="/login"
+            href="/check"
             className="inline-block bg-[#0B1F3A] text-white font-bold px-8 py-4 rounded-xl hover:bg-[#1a3a6b] transition-colors"
           >
-            Get Protected →
+            Check My Company →
           </a>
         </div>
       </section>
@@ -298,6 +298,11 @@ export default function HomePage() {
               <a href="#team" className="text-slate-400 hover:text-white transition-colors text-xs">About</a>
               <a href="mailto:hello@fineguard.co.uk" className="text-slate-400 hover:text-white transition-colors text-xs">Contact</a>
               <a href="/login" className="text-slate-400 hover:text-white transition-colors text-xs">Login</a>
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="text-slate-500 text-xs uppercase tracking-widest font-semibold mb-1">Legal</p>
+              <a href="/privacy" className="text-slate-400 hover:text-white transition-colors text-xs">Privacy Policy</a>
+              <a href="/terms" className="text-slate-400 hover:text-white transition-colors text-xs">Terms of Service</a>
             </div>
           </div>
         </div>

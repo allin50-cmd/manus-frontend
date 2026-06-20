@@ -6,7 +6,7 @@ import NavBar from './NavBar'
 // Routes that render their own full-page layout — skip Business Hub NavBar + container.
 // /company-portal is a FineGuard customer page with its own PortalNav.
 // /hub redirects immediately so it never needs a shell.
-const PUBLIC_PATHS = ['/', '/check', '/landing', '/company-portal', '/hub']
+const PUBLIC_PATHS = ['/', '/check', '/landing', '/company-portal', '/hub', '/privacy', '/terms']
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
