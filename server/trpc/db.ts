@@ -1,17 +1,17 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import type { InsertAuditEvent, InsertUser } from '../drizzle/schema.js';
+import type { InsertClerkAuditEvent, InsertClerkUser } from '../../db/schema.js';
 import {
-  auditEvents,
-  cases,
+  clerkAuditEvents,
+  clerkCases,
   clerkAllocations,
   clerkDiaries,
-  documents,
-  hearings,
+  clerkDocuments,
+  clerkHearings,
   tenants,
-  users,
-} from '../drizzle/schema.js';
+  clerkUsers,
+} from '../../db/schema.js';
 import { ENV } from './_core/env.js';
 
 // ─── Lazy DB connection ───────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ export async function getTenantById(id: string) {
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+export async function upsertUser(user: InsertClerkUser): Promise<void> {
   if (!user.openId) throw new Error('User openId is required for upsert');
   if (!user.tenantId) throw new Error('User tenantId is required for upsert');
   const db = await getDb();
@@ -85,7 +85,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     return;
   }
 
-  const values: InsertUser = { openId: user.openId, tenantId: user.tenantId };
+  const values: InsertClerkUser = { openId: user.openId, tenantId: user.tenantId };
   const updateSet: Record<string, unknown> = {};
 
   const textFields = ['name', 'email', 'loginMethod'] as const;
@@ -115,9 +115,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   // Unique on (tenantId, openId) — use manual insert + update
   await db
-    .insert(users)
+    .insert(clerkUsers)
     .values(values)
-    .onConflictDoUpdate({ target: [users.tenantId, users.openId], set: updateSet });
+    .onConflictDoUpdate({ target: [clerkUsers.tenantId, clerkUsers.openId], set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string, tenantId?: string) {
@@ -125,9 +125,9 @@ export async function getUserByOpenId(openId: string, tenantId?: string) {
   if (!db) return undefined;
   const where =
     tenantId
-      ? and(eq(users.openId, openId), eq(users.tenantId, tenantId))
-      : eq(users.openId, openId);
-  const rows = await db.select().from(users).where(where).limit(1);
+      ? and(eq(clerkUsers.openId, openId), eq(clerkUsers.tenantId, tenantId))
+      : eq(clerkUsers.openId, openId);
+  const rows = await db.select().from(clerkUsers).where(where).limit(1);
   return rows[0];
 }
 
@@ -138,8 +138,8 @@ export async function getCaseById(id: number, tenantId: string) {
   if (!db) return undefined;
   const rows = await db
     .select()
-    .from(cases)
-    .where(and(eq(cases.id, id), eq(cases.tenantId, tenantId)))
+    .from(clerkCases)
+    .where(and(eq(clerkCases.id, id), eq(clerkCases.tenantId, tenantId)))
     .limit(1);
   return rows[0];
 }
@@ -147,7 +147,7 @@ export async function getCaseById(id: number, tenantId: string) {
 export async function getAllCases(tenantId: string) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(cases).where(eq(cases.tenantId, tenantId));
+  return db.select().from(clerkCases).where(eq(clerkCases.tenantId, tenantId));
 }
 
 export async function searchCases(query: string, tenantId: string) {
@@ -167,7 +167,7 @@ export async function searchCases(query: string, tenantId: string) {
 export async function getAllHearings(tenantId: string) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(hearings).where(eq(hearings.tenantId, tenantId));
+  return db.select().from(clerkHearings).where(eq(clerkHearings.tenantId, tenantId));
 }
 
 export async function getHearingsByCase(caseId: number, tenantId: string) {
@@ -175,8 +175,8 @@ export async function getHearingsByCase(caseId: number, tenantId: string) {
   if (!db) return [];
   return db
     .select()
-    .from(hearings)
-    .where(and(eq(hearings.caseId, caseId), eq(hearings.tenantId, tenantId)));
+    .from(clerkHearings)
+    .where(and(eq(clerkHearings.caseId, caseId), eq(clerkHearings.tenantId, tenantId)));
 }
 
 // ─── Documents ───────────────────────────────────────────────────────────────
@@ -186,8 +186,8 @@ export async function getDocumentsByCase(caseId: number, tenantId: string) {
   if (!db) return [];
   return db
     .select()
-    .from(documents)
-    .where(and(eq(documents.caseId, caseId), eq(documents.tenantId, tenantId)));
+    .from(clerkDocuments)
+    .where(and(eq(clerkDocuments.caseId, caseId), eq(clerkDocuments.tenantId, tenantId)));
 }
 
 // ─── Allocations ─────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ export async function getClerkDiaryByDate(clerkId: number, date: string, tenantI
 
 // ─── Audit ───────────────────────────────────────────────────────────────────
 
-export async function writeAuditEvent(event: InsertAuditEvent): Promise<void> {
+export async function writeAuditEvent(event: InsertClerkAuditEvent): Promise<void> {
   if (event.entityId == null && event.entityUuid == null) {
     throw new Error(
       `writeAuditEvent: one of entityId or entityUuid is required (entityType=${event.entityType}, action=${event.action})`
@@ -237,5 +237,5 @@ export async function writeAuditEvent(event: InsertAuditEvent): Promise<void> {
   }
   const db = await getDb();
   if (!db) return;
-  await db.insert(auditEvents).values(event);
+  await db.insert(clerkAuditEvents).values(event);
 }

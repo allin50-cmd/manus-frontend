@@ -1,91 +1,95 @@
-import { PrismaClient, WorkItemType, WorkItemStatus, Priority } from '@prisma/client'
-
-const db = new PrismaClient()
+import { drizzle } from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
+import * as schema from '../db/schema'
+import { workItems, activityLogs, templates } from '../db/schema'
 
 async function main() {
+  const url = process.env.DATABASE_URL
+  if (!url) throw new Error('DATABASE_URL is not configured')
+  const client = postgres(url)
+  const db = drizzle(client, { schema })
+
   console.log('Seeding work items...')
 
   const items = [
     {
-      type: WorkItemType.Partnership,
+      type: 'Partnership' as const,
       title: 'EasyEstimate partnership target',
       company: 'EasyEstimate',
       contactName: 'Paul Gosden',
       owner: 'Dagon',
-      status: WorkItemStatus.Captured,
-      priority: Priority.High,
+      status: 'Captured' as const,
+      priority: 'High' as const,
       nextAction: 'Send soft partnership outreach',
       decisionNeeded: false,
     },
     {
-      type: WorkItemType.Partnership,
+      type: 'Partnership' as const,
       title: 'Price A Job partnership target',
       company: 'Price A Job',
       contactName: 'Vasyl Mateychuk',
       owner: 'Dagon',
-      status: WorkItemStatus.Captured,
-      priority: Priority.High,
+      status: 'Captured' as const,
+      priority: 'High' as const,
       nextAction: 'Send soft integration pilot outreach',
       decisionNeeded: false,
     },
     {
-      type: WorkItemType.Partnership,
+      type: 'Partnership' as const,
       title: 'HBXL benchmark trial',
       company: 'HBXL',
       owner: 'George',
-      status: WorkItemStatus.Controlled,
-      priority: Priority.Medium,
+      status: 'Controlled' as const,
+      priority: 'Medium' as const,
       nextAction: 'Run one Accuracy quote through HBXL trial',
       decisionNeeded: false,
     },
     {
-      type: WorkItemType.ConstructionLead,
+      type: 'ConstructionLead' as const,
       title: 'Local builder test',
       company: 'Local Builder Example',
       owner: 'Dagon',
-      status: WorkItemStatus.Captured,
-      priority: Priority.Medium,
+      status: 'Captured' as const,
+      priority: 'Medium' as const,
       nextAction: 'Ask how many quotes they produce per month',
       decisionNeeded: false,
     },
     {
-      type: WorkItemType.ConstructionLead,
+      type: 'ConstructionLead' as const,
       title: 'Accuracy Havelock Walk quote',
       company: 'Accuracy Developments Ltd',
       owner: 'Alissa',
-      status: WorkItemStatus.Controlled,
-      priority: Priority.High,
+      status: 'Controlled' as const,
+      priority: 'High' as const,
       nextAction: 'Clean quote figures and prepare review',
       decisionNeeded: false,
     },
     {
-      type: WorkItemType.ComplianceAlert,
+      type: 'ComplianceAlert' as const,
       title: 'FineGuard alert workflow',
       company: 'FineGuard',
       owner: 'George',
-      status: WorkItemStatus.Captured,
-      priority: Priority.High,
+      status: 'Captured' as const,
+      priority: 'High' as const,
       nextAction: 'Define alert recipient workflow',
       decisionNeeded: false,
     },
   ]
 
   for (const item of items) {
-    const created = await db.workItem.create({ data: item })
-    await db.activityLog.create({
-      data: {
-        workItemId: created.id,
-        person: 'System',
-        eventType: 'Created',
-        summary: `Work item "${created.title}" created`,
-        newStatus: created.status,
-      },
+    const [created] = await db.insert(workItems).values(item).returning()
+    await db.insert(activityLogs).values({
+      workItemId: created.id,
+      person: 'System',
+      eventType: 'Created',
+      summary: `Work item "${created.title}" created`,
+      newStatus: created.status,
     })
   }
 
   console.log('Seeding templates...')
 
-  const templates = [
+  const templateRows = [
     {
       name: 'EasyEstimate outreach',
       useCase: 'Partnership outreach',
@@ -114,27 +118,12 @@ async function main() {
     {
       name: 'Handoff to George',
       useCase: 'Internal escalation',
-      body: `Company:
-Contact:
-What happened:
-What they need:
-Commercial opportunity:
-Risk:
-Recommended next step:
-Decision needed:
-Follow-up date:`,
+      body: `Company:\nContact:\nWhat happened:\nWhat they need:\nCommercial opportunity:\nRisk:\nRecommended next step:\nDecision needed:\nFollow-up date:`,
     },
     {
       name: 'No-go checklist',
       useCase: 'Qualification',
-      body: `- unclear IP ownership
-- no export/API path
-- founder unwilling to support integration
-- high support burden
-- pricing data cannot be verified
-- customer contracts prohibit resale/embedding
-- unresolved shareholder dispute
-- no GDPR/data-processing clarity`,
+      body: `- unclear IP ownership\n- no export/API path\n- founder unwilling to support integration\n- high support burden\n- pricing data cannot be verified\n- customer contracts prohibit resale/embedding\n- unresolved shareholder dispute\n- no GDPR/data-processing clarity`,
     },
     {
       name: 'Follow-up message',
@@ -144,28 +133,17 @@ Follow-up date:`,
     {
       name: 'Call note format',
       useCase: 'Note taking',
-      body: `Date:
-Called:
-Duration:
-What they said:
-What we said:
-Their concern:
-Our response:
-Agreed next step:
-Follow-up date:`,
+      body: `Date:\nCalled:\nDuration:\nWhat they said:\nWhat we said:\nTheir concern:\nOur response:\nAgreed next step:\nFollow-up date:`,
     },
   ]
 
-  for (const template of templates) {
-    await db.template.create({ data: template })
-  }
+  await db.insert(templates).values(templateRows)
 
-  console.log(`Seeded ${items.length} work items and ${templates.length} templates.`)
+  console.log(`Seeded ${items.length} work items and ${templateRows.length} templates.`)
+  await client.end()
 }
 
-main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(() => db.$disconnect())
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})

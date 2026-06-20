@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getDb, workItems, actions } from '@/lib/db'
 import Link from 'next/link'
+import { count, eq, notInArray, lte, gte, and } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,25 +16,40 @@ async function getStats() {
   startOfWeek.setDate(now.getDate() - now.getDay())
   startOfWeek.setHours(0, 0, 0, 0)
 
-  const [total, dueToday, decisionNeeded, openActions, completedThisWeek] = await Promise.all([
-    db.workItem.count({ where: { status: { notIn: ['Archived'] } } }),
-    db.workItem.count({
-      where: {
-        dueDate: { lte: endOfToday },
-        status: { notIn: ['Completed', 'Archived', 'NotFit'] },
-      },
-    }),
-    db.workItem.count({ where: { decisionNeeded: true, status: { notIn: ['Completed', 'Archived'] } } }),
-    db.action.count({ where: { status: 'Open' } }),
-    db.workItem.count({
-      where: {
-        status: 'Completed',
-        updatedAt: { gte: startOfWeek },
-      },
-    }),
+  const db = await getDb()
+
+  const [totalRes, dueTodayRes, decisionNeededRes, openActionsRes, completedThisWeekRes] = await Promise.all([
+    db.select({ count: count() }).from(workItems).where(
+      notInArray(workItems.status, ['Archived'])
+    ),
+    db.select({ count: count() }).from(workItems).where(
+      and(
+        lte(workItems.dueDate, endOfToday),
+        notInArray(workItems.status, ['Completed', 'Archived', 'NotFit'])
+      )
+    ),
+    db.select({ count: count() }).from(workItems).where(
+      and(
+        eq(workItems.decisionNeeded, true),
+        notInArray(workItems.status, ['Completed', 'Archived'])
+      )
+    ),
+    db.select({ count: count() }).from(actions).where(eq(actions.status, 'Open')),
+    db.select({ count: count() }).from(workItems).where(
+      and(
+        eq(workItems.status, 'Completed'),
+        gte(workItems.updatedAt, startOfWeek)
+      )
+    ),
   ])
 
-  return { total, dueToday, decisionNeeded, openActions, completedThisWeek }
+  return {
+    total: Number(totalRes[0]?.count ?? 0),
+    dueToday: Number(dueTodayRes[0]?.count ?? 0),
+    decisionNeeded: Number(decisionNeededRes[0]?.count ?? 0),
+    openActions: Number(openActionsRes[0]?.count ?? 0),
+    completedThisWeek: Number(completedThisWeekRes[0]?.count ?? 0),
+  }
 }
 
 export default async function DashboardPage() {
