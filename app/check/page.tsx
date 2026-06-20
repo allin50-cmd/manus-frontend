@@ -45,7 +45,7 @@ export default function CheckPage() {
         <div className="max-w-2xl mx-auto px-4 py-12">
           <button
             onClick={() => setSelectedCompany(null)}
-            className="text-blue-600 dark:text-blue-400 hover:underline mb-6 text-sm font-medium"
+            className="text-[#00A86B] hover:underline mb-6 text-sm font-medium"
           >
             ← Back to search
           </button>
@@ -61,11 +61,11 @@ export default function CheckPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       {/* Search Section */}
-      <section className="px-4 py-16 bg-blue-600">
+      <section className="px-4 py-16 bg-[#0B1F3A]">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold text-white mb-4">Check a Company</h1>
-          <p className="text-lg text-blue-100 mb-8">
-            Find any UK company and set up instant alerts for compliance changes
+          <p className="text-lg text-slate-300 mb-8">
+            Find any UK company and set up instant compliance monitoring
           </p>
 
           <div className="flex gap-2">
@@ -75,12 +75,12 @@ export default function CheckPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1 px-4 py-3 rounded-lg border-0 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-400 dark:bg-slate-800 dark:text-white dark:placeholder-gray-400"
+              className="flex-1 px-4 py-3 rounded-lg border-0 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#00A86B] dark:bg-slate-800 dark:text-white dark:placeholder-gray-400"
             />
             <button
               onClick={handleSearch}
               disabled={loading}
-              className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 disabled:opacity-50 transition"
+              className="bg-[#00A86B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#009960] disabled:opacity-50 transition"
             >
               {loading ? 'Searching...' : 'Search'}
             </button>
@@ -106,7 +106,7 @@ export default function CheckPage() {
                 <div
                   key={company.number}
                   onClick={() => setSelectedCompany(company)}
-                  className="p-6 rounded-lg bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 cursor-pointer hover:border-blue-500 transition"
+                  className="p-6 rounded-lg bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 cursor-pointer hover:border-[#00A86B] transition"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
@@ -132,7 +132,7 @@ export default function CheckPage() {
                       </div>
                     ) : (
                       <div className="text-right flex-shrink-0">
-                        <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                        <span className="text-sm text-[#00A86B] font-medium">
                           Set up alerts →
                         </span>
                       </div>
@@ -158,7 +158,7 @@ export default function CheckPage() {
                 },
                 {
                   title: 'Select Alerts',
-                  description: 'Choose which compliance changes you want to monitor (£1/month per alert)'
+                  description: 'Choose which compliance changes you want to monitor'
                 },
                 {
                   title: 'Get Notified',
@@ -166,7 +166,7 @@ export default function CheckPage() {
                 }
               ].map((step, idx) => (
                 <div key={idx} className="text-center">
-                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+                  <div className="text-4xl font-bold text-[#00A86B] mb-4">
                     {idx + 1}
                   </div>
                   <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">{step.title}</h3>
