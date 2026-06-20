@@ -1,15 +1,15 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import NavBar from '@/components/NavBar'
+import ConditionalLayout from '@/components/ConditionalLayout'
 
 export const metadata: Metadata = {
-  title: 'UltraCore SheetOps',
-  description: 'Spreadsheets that do the work, not just store the work.',
+  title: 'FineGuard',
+  description: 'UK Companies House compliance monitoring — know your status in 30 seconds.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'SheetOps',
+    title: 'FineGuard',
   },
   icons: {
     apple: '/icons/icon-192.svg',
@@ -20,17 +20,14 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#1e293b',
+  themeColor: '#0B1F3A',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <NavBar />
-        <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
+        <ConditionalLayout>{children}</ConditionalLayout>
       </body>
     </html>
   )

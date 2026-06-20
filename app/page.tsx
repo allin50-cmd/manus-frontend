@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   return (
-    <details className="border-b border-slate-200 py-5 group">
+    <details className="border-b border-slate-200 first:border-t py-5 group">
       <summary className="flex items-center justify-between cursor-pointer list-none text-slate-900 font-semibold text-base pr-1 gap-4">
         <span>{q}</span>
         <svg
@@ -29,8 +29,8 @@ export default function HomePage() {
     <div className="min-h-screen bg-white font-sans">
 
       {/* ── ANNOUNCEMENT BANNER ── */}
-      <div className="bg-amber-400 text-[#0B1F3A] text-center text-xs font-bold uppercase tracking-widest py-2 px-4">
-        UK directors: avoid £150–£1,500 penalties · FineGuard from just £4.99/month
+      <div className="bg-amber-400 text-[#0B1F3A] text-center text-sm font-semibold py-2.5 px-4">
+        UK directors: avoid £150–£1,500 in penalties · FineGuard protection from just £4.99/month
       </div>
 
       {/* ── HEADER ── */}
@@ -63,8 +63,8 @@ export default function HomePage() {
           SCREEN 1 — STATUS CHECK
           Core question: "Am I OK?"
       ══════════════════════════════════════════════════════ */}
-      <section id="checker" className="bg-[#0B1F3A] px-5 pt-14 pb-16 md:pt-20 md:pb-24">
-        <div className="max-w-xl mx-auto text-center">
+      <section id="checker" className="bg-[#0B1F3A] px-5 pt-14 pb-16 md:pt-24 md:pb-28">
+        <div className="max-w-2xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight mb-4">
             Stop worrying about Companies House penalties.
           </h1>
@@ -85,7 +85,7 @@ export default function HomePage() {
           "Would you like us to keep watching this?"
       ══════════════════════════════════════════════════════ */}
       <section id="pricing" className="bg-white px-5 py-16 md:py-24">
-        <div className="max-w-sm mx-auto text-center">
+        <div className="max-w-md mx-auto text-center">
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">
             Would you like us to keep watching this?
           </p>
@@ -141,7 +141,7 @@ export default function HomePage() {
           "Nobody Gets Ignored"
       ══════════════════════════════════════════════════════ */}
       <section className="bg-[#F7F8FA] px-5 py-16 md:py-24">
-        <div className="max-w-sm mx-auto text-center">
+        <div className="max-w-md mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-[#0B1F3A] mb-8">Nobody Gets Ignored</h2>
 
           <div className="space-y-4 text-left mb-8">
@@ -186,7 +186,7 @@ export default function HomePage() {
               { n: 4, title: 'Stay Stress-Free', desc: 'Alerts before anything is due. Zero surprises. Zero penalties.' },
             ].map(({ n, title, desc }) => (
               <div key={n} className="text-center">
-                <div className="w-12 h-12 bg-[#0B1F3A] text-white rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-4">
+                <div className="w-12 h-12 bg-[#00A86B] text-white rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-4">
                   {n}
                 </div>
                 <h3 className="font-bold text-slate-900 text-base mb-2">{title}</h3>
@@ -218,12 +218,14 @@ export default function HomePage() {
             ].map(({ name, title, bio, bg }) => (
               <div key={name} className="text-center">
                 <div
-                  className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md ring-4 ring-white overflow-hidden"
+                  className="w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg ring-4 ring-white overflow-hidden"
                   style={{ background: bg }}
                 >
-                  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                    <circle cx="50" cy="37" r="20" fill="rgba(255,255,255,0.75)" />
-                    <path d="M6 90 Q6 62 50 62 Q94 62 94 90 Z" fill="rgba(255,255,255,0.75)" />
+                  <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                    {/* head */}
+                    <circle cx="50" cy="38" r="22" fill="rgba(255,255,255,0.80)" />
+                    {/* shoulders / torso */}
+                    <path d="M4 120 C4 80 20 68 50 68 C80 68 96 80 96 120 Z" fill="rgba(255,255,255,0.80)" />
                   </svg>
                 </div>
                 <h3 className="font-bold text-slate-900 text-base">{name}</h3>
