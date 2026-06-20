@@ -79,16 +79,18 @@ export default function HomePage() {
             <CompanyChecker />
 
             {/* Trust signals */}
-            <div className="mt-6 flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-[#00B67A]" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                ))}
+            <div className="mt-6 flex flex-col gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-[#00A86B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                  <span className="text-slate-300 text-sm">No contracts · Cancel any time</span>
+                </div>
+                <span className="text-slate-600">·</span>
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-[#00A86B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  <span className="text-slate-300 text-sm">Secure · UK-based team</span>
+                </div>
               </div>
-              <span className="text-white font-semibold text-sm">Excellent</span>
-              <span className="text-slate-400 text-sm">4.8 out of 5 · 5 stars on Trustpilot</span>
             </div>
           </div>
 
@@ -341,16 +343,19 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {[
-              { initials: 'GT', name: 'George', title: 'Founder & CEO', bio: 'Built FineGuard after watching too many directors face avoidable penalties. George personally oversees every customer relationship.', color: 'bg-[#0B1F3A]' },
-              { initials: 'A', name: 'Alissa', title: 'Head of Customer Success', bio: 'Reviews every amber and red status every morning. No customer is ever left wondering what to do next.', color: 'bg-[#00A86B]' },
-              { initials: 'D', name: 'Dagnar', title: 'Head of Technology', bio: 'Keeps the Companies House data connection live and the alerts flowing. Your deadlines are never missed on his watch.', color: 'bg-slate-600' },
-            ].map(({ initials, name, title, bio, color }) => (
+              { initials: 'GT', name: 'George Throup', title: 'Founder & CEO', bio: 'Built FineGuard after watching too many directors face avoidable penalties. George personally oversees every customer relationship.', from: '#0B1F3A', to: '#1a3a6b' },
+              { initials: 'AK', name: 'Alissa Kwan', title: 'Head of Customer Success', bio: 'Reviews every amber and red status every morning. No customer is ever left wondering what to do next.', from: '#00A86B', to: '#00c47c' },
+              { initials: 'DB', name: 'Dagnar Björk', title: 'Head of Technology', bio: 'Keeps the Companies House data connection live and the alerts flowing. Your deadlines are never missed on his watch.', from: '#334155', to: '#475569' },
+            ].map(({ initials, name, title, bio, from, to }) => (
               <div key={name} className="text-center">
-                <div className={`w-28 h-28 rounded-full ${color} text-white text-2xl font-bold flex items-center justify-center mx-auto mb-4 shadow-md`}>
+                <div
+                  className="w-28 h-28 rounded-full text-white text-2xl font-bold flex items-center justify-center mx-auto mb-5 shadow-lg ring-4 ring-white"
+                  style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
+                >
                   {initials}
                 </div>
                 <h3 className="font-bold text-slate-900 text-lg">{name}</h3>
-                <p className="text-[#00A86B] text-sm font-semibold mb-2">{title}</p>
+                <p className="text-[#00A86B] text-sm font-semibold mb-3">{title}</p>
                 <p className="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">{bio}</p>
               </div>
             ))}
@@ -367,18 +372,21 @@ export default function HomePage() {
           SECTION 8 — STATS
       ═══════════════════════════════════════════════════════════ */}
       <section className="bg-[#0B1F3A] px-6 lg:px-12 py-16">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {[
-            { value: '450+', label: 'Companies Monitored' },
-            { value: '98.7%', label: 'On-Time Filing Rate' },
-            { value: '£1.2M+', label: 'In Penalties Avoided' },
-            { value: '5/5', label: 'Customer Satisfaction' },
-          ].map(({ value, label }) => (
-            <div key={label}>
-              <p className="text-3xl md:text-4xl font-bold text-white mb-1">{value}</p>
-              <p className="text-slate-400 text-sm">{label}</p>
-            </div>
-          ))}
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { value: '450+', label: 'Companies Monitored', sub: 'and growing' },
+              { value: '98.7%', label: 'On-Time Filing Rate', sub: 'across all customers' },
+              { value: '£1.2M+', label: 'In Penalties Avoided', sub: 'since launch' },
+              { value: '100%', label: 'Human Reviewed', sub: 'every red & amber status' },
+            ].map(({ value, label, sub }) => (
+              <div key={label}>
+                <p className="text-3xl md:text-4xl font-bold text-white mb-1">{value}</p>
+                <p className="text-[#00A86B] text-sm font-semibold">{label}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{sub}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -486,18 +494,28 @@ export default function HomePage() {
       <section className="bg-[#0B1F3A] px-6 lg:px-12 py-24">
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
+            <p className="text-[#00A86B] text-sm font-bold uppercase tracking-widest mb-4">Peace of mind. Guaranteed.</p>
             <h2 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-5">
               We&apos;ve got it covered.
             </h2>
             <p className="text-slate-300 text-lg leading-relaxed mb-8">
-              Check your company status in 30 seconds. Then let FineGuard handle everything that comes next.
+              Check your company status in 30 seconds. Then let FineGuard handle everything that comes next — deadlines, alerts, and a real person when you need one.
             </p>
-            <a
-              href="#checker"
-              className="inline-block bg-[#00A86B] text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-[#009960] transition-colors shadow-xl"
-            >
-              Check My Company
-            </a>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a
+                href="#checker"
+                className="inline-block bg-[#00A86B] text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-[#009960] transition-colors shadow-xl text-center"
+              >
+                Check My Company — Free
+              </a>
+              <a
+                href="/login"
+                className="inline-block bg-white/10 text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-white/20 transition-colors text-center"
+              >
+                Get Protected — £4.99/mo
+              </a>
+            </div>
+            <p className="text-slate-500 text-xs mt-4">No credit card required to check your status. Cancel any time.</p>
           </div>
 
           <div className="flex items-center justify-center">
