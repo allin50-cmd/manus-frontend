@@ -178,7 +178,7 @@ export default function CompanyChecker() {
 
       {result && cfg && (
         <div>
-        <div className={`mt-6 rounded-2xl border-2 text-left shadow-xl overflow-hidden ${cfg.border}`}>
+          <div className={`mt-6 rounded-2xl border-2 text-left shadow-xl overflow-hidden ${cfg.border}`}>
           {/* Status banner */}
           <div className={`${cfg.bannerBg} px-6 py-5 flex items-center justify-between gap-4`}>
             <div className="flex items-center gap-4">
@@ -227,14 +227,14 @@ export default function CompanyChecker() {
               </div>
             )}
           </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => { setResult(null); setQuery('') }}
-          className="mt-3 text-white/30 hover:text-white/60 text-xs transition-colors w-full text-center"
-        >
-          ← Check a different company
-        </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setResult(null); setQuery('') }}
+            className="mt-3 text-white/50 hover:text-white/80 text-xs transition-colors w-full text-center"
+          >
+            ← Check a different company
+          </button>
         </div>
       )}
     </div>

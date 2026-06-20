@@ -85,52 +85,54 @@ export default function HomePage() {
           "Would you like us to keep watching this?"
       ══════════════════════════════════════════════════════ */}
       <section id="pricing" className="bg-white px-5 py-16 md:py-24">
-        <div className="max-w-md mx-auto text-center">
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">
-            Would you like us to keep watching this?
-          </p>
+        <div className="max-w-md mx-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-md px-8 py-10 text-center">
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">
+              Would you like us to keep watching this?
+            </p>
 
-          <div className="mb-2">
-            <span className="text-5xl font-bold text-[#0B1F3A]">£4.99</span>
-            <span className="text-slate-400 text-lg font-normal ml-1">/ month</span>
-          </div>
-          <p className="text-slate-400 text-sm mb-8">Less than a coffee. More than worth it.</p>
-
-          <ul className="text-left space-y-3 mb-8">
-            {[
-              'Companies House monitoring — live',
-              'Deadline alerts via email',
-              'Green / Amber / Red status updates',
-              'Human support when required',
-            ].map((f) => (
-              <li key={f} className="flex items-center gap-3 text-sm text-slate-700 font-medium">
-                <div className="w-5 h-5 bg-[#00A86B] rounded-full flex items-center justify-center shrink-0">
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          <a
-            href="/login"
-            className="block w-full text-center py-4 bg-[#00A86B] text-white font-bold rounded-xl text-lg hover:bg-[#009960] transition-colors shadow-lg"
-          >
-            Protect My Company
-          </a>
-          <p className="text-slate-400 text-xs mt-3">Cancel any time. No setup fees. No contracts.</p>
-
-          <div className="mt-10 flex items-center justify-center gap-6">
-            <div className="text-center">
-              <p className="text-red-500 font-bold text-2xl">£150–£1,500</p>
-              <p className="text-slate-500 text-xs mt-0.5">Companies House penalty</p>
+            <div className="mb-2">
+              <span className="text-5xl font-bold text-[#0B1F3A]">£4.99</span>
+              <span className="text-slate-400 text-lg font-normal ml-1">/ month</span>
             </div>
-            <p className="text-slate-300 font-bold text-xl">vs</p>
-            <div className="text-center">
-              <p className="text-[#00A86B] font-bold text-2xl">£4.99</p>
-              <p className="text-slate-500 text-xs mt-0.5">FineGuard per month</p>
+            <p className="text-slate-400 text-sm mb-8">Less than a coffee. More than worth it.</p>
+
+            <ul className="text-left space-y-3 mb-8">
+              {[
+                'Companies House monitoring — live',
+                'Deadline alerts via email',
+                'Green / Amber / Red status updates',
+                'Human support when required',
+              ].map((f) => (
+                <li key={f} className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                  <div className="w-5 h-5 bg-[#00A86B] rounded-full flex items-center justify-center shrink-0">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href="/login"
+              className="block w-full text-center py-4 bg-[#00A86B] text-white font-bold rounded-xl text-lg hover:bg-[#009960] transition-colors shadow-lg"
+            >
+              Protect My Company
+            </a>
+            <p className="text-slate-400 text-xs mt-3">Cancel any time. No setup fees. No contracts.</p>
+
+            <div className="mt-10 flex items-center justify-center gap-6">
+              <div className="text-center">
+                <p className="text-red-500 font-bold text-2xl">£150–£1,500</p>
+                <p className="text-slate-500 text-xs mt-0.5">Companies House penalty</p>
+              </div>
+              <p className="text-slate-400 font-bold text-xl">vs</p>
+              <div className="text-center">
+                <p className="text-[#00A86B] font-bold text-2xl">£4.99</p>
+                <p className="text-slate-500 text-xs mt-0.5">FineGuard per month</p>
+              </div>
             </div>
           </div>
         </div>
@@ -202,7 +204,7 @@ export default function HomePage() {
       ══════════════════════════════════════════════════════ */}
       <section id="team" className="bg-[#F7F8FA] px-5 py-16 md:py-24">
         <div className="max-w-4xl mx-auto">
-          <div className="max-w-xl mb-12">
+          <div className="max-w-xl mx-auto text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3 leading-tight">
               We built FineGuard because our name is your peace of mind.
             </h2>
