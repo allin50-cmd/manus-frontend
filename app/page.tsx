@@ -28,7 +28,7 @@ export default function HomePage() {
 
       {/* ── ANNOUNCEMENT BANNER ── */}
       <div className="bg-amber-400 text-[#0B1F3A] text-center text-xs font-bold uppercase tracking-widest py-2 px-4">
-        Stop worrying about Companies House penalties
+        UK directors: protect your company from penalties for less than a coffee per week
       </div>
 
       {/* ── HEADER ── */}
@@ -94,13 +94,14 @@ export default function HomePage() {
 
           {/* Right — Check My Company illustration */}
           <div className="flex items-center justify-center">
-            <div className="relative w-full max-w-md">
+            <div className="relative w-full max-w-md drop-shadow-2xl">
               <Image
                 src="/illustrations/check-my-company.png"
                 alt="Check your company status instantly"
                 width={768}
                 height={512}
-                className="w-full h-auto drop-shadow-2xl rounded-2xl"
+                sizes="(max-width: 1024px) 100vw, 448px"
+                className="w-full h-auto rounded-2xl"
                 priority
               />
             </div>
@@ -117,13 +118,17 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           <div className="order-2 lg:order-1 flex justify-center">
-            <Image
-              src="/illustrations/director-anxiety.png"
-              alt="Director stressed about Companies House deadlines"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="drop-shadow-lg w-full max-w-md">
+              <Image
+                src="/illustrations/director-anxiety.png"
+                alt="Director stressed about Companies House deadlines"
+                width={768}
+                height={512}
+                sizes="(max-width: 1024px) 100vw, 448px"
+                loading="lazy"
+                className="w-full h-auto"
+              />
+            </div>
           </div>
 
           <div className="order-1 lg:order-2">
@@ -218,8 +223,8 @@ export default function HomePage() {
               { n: 4, title: 'Stay Stress-Free', desc: 'Alerts before anything is due. Zero surprises.', img: '/illustrations/step-4-worry-free.png', alt: 'Peace of mind — no more compliance worry' },
             ].map(({ n, title, desc, img, alt }) => (
               <div key={n} className="flex flex-col items-center text-center">
-                <div className="w-full mb-5 relative aspect-[3/2]">
-                  <Image src={img} alt={alt} fill className="object-contain drop-shadow-lg" />
+                <div className="w-full mb-5 relative aspect-[3/2] drop-shadow-lg">
+                  <Image src={img} alt={alt} fill sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw" loading="lazy" className="object-contain" />
                 </div>
                 <div className="w-10 h-10 rounded-full bg-[#0B1F3A] text-white text-base font-bold flex items-center justify-center mb-3 shrink-0">
                   {n}
@@ -262,13 +267,17 @@ export default function HomePage() {
           </div>
 
           <div className="flex justify-center">
-            <Image
-              src="/illustrations/nobody-gets-ignored.png"
-              alt="Every customer status gets the right response — Green, Amber, Red or Critical"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="drop-shadow-lg w-full max-w-md">
+              <Image
+                src="/illustrations/nobody-gets-ignored.png"
+                alt="Every customer status gets the right response — Green, Amber, Red or Critical"
+                width={768}
+                height={512}
+                sizes="(max-width: 1024px) 100vw, 448px"
+                loading="lazy"
+                className="w-full h-auto"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -282,13 +291,17 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           <div className="flex justify-center">
-            <Image
-              src="/illustrations/human-intervention.png"
-              alt="Human support team ready to help"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="drop-shadow-lg w-full max-w-md">
+              <Image
+                src="/illustrations/human-intervention.png"
+                alt="Human support team ready to help"
+                width={768}
+                height={512}
+                sizes="(max-width: 1024px) 100vw, 448px"
+                loading="lazy"
+                className="w-full h-auto"
+              />
+            </div>
           </div>
 
           <div>
@@ -434,13 +447,17 @@ export default function HomePage() {
 
           {/* FineGuard Cover illustration */}
           <div className="flex items-center justify-center">
-            <Image
-              src="/illustrations/fineguard-cover.png"
-              alt="FineGuard protection covering your company"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="drop-shadow-lg w-full max-w-md">
+              <Image
+                src="/illustrations/fineguard-cover.png"
+                alt="FineGuard protection covering your company"
+                width={768}
+                height={512}
+                sizes="(max-width: 1024px) 100vw, 448px"
+                loading="lazy"
+                className="w-full h-auto"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -484,13 +501,17 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center justify-center">
-            <Image
-              src="/illustrations/peace-of-mind.png"
-              alt="We've got it covered — FineGuard peace of mind"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-2xl"
-            />
+            <div className="drop-shadow-2xl w-full max-w-md">
+              <Image
+                src="/illustrations/peace-of-mind.png"
+                alt="We've got it covered — FineGuard peace of mind"
+                width={768}
+                height={512}
+                sizes="(max-width: 1024px) 100vw, 448px"
+                loading="lazy"
+                className="w-full h-auto"
+              />
+            </div>
           </div>
         </div>
       </section>
