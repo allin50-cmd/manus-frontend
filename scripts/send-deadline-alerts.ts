@@ -46,9 +46,12 @@ async function getDeadlines(
   companyNumber: string,
   apiKey: string,
 ): Promise<{ type: string; dueDate: string; label: string }[]> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15_000)
   const res = await fetch(`${CH_API_BASE}/company/${companyNumber.toUpperCase()}`, {
     headers: { Authorization: chAuthHeader(apiKey) },
-  })
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout))
   if (!res.ok) {
     console.warn(`  CH API ${res.status} for ${companyNumber}`)
     return []
@@ -85,7 +88,13 @@ async function sendEmail(opts: {
       Authorization: `Bearer ${opts.resendKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ from: opts.from, to: opts.to, subject: opts.subject, html: opts.html }),
+    body: JSON.stringify({
+      from: opts.from,
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      reply_to: 'hello@fineguard.co.uk',
+    }),
   })
   if (!res.ok) {
     const body = await res.text()
@@ -217,7 +226,11 @@ async function main() {
       console.log(`  ${deadline.label}: due ${deadline.dueDate} (${days} days)`)
 
       for (const threshold of ALERT_DAYS) {
-        if (days !== threshold) continue
+        // Window logic: fire if we're AT or PAST the threshold but not yet overdue.
+        // This ensures a missed cron still sends the alert on the next successful run.
+        // The unique index on alert_history prevents duplicate sends.
+        if (days > threshold) continue  // too early
+        if (days < 0) continue          // already overdue — alert is irrelevant
 
         // Check if this alert was already sent
         const existing = await db

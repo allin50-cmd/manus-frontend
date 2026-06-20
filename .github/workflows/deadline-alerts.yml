@@ -33,3 +33,13 @@ jobs:
           COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM: ${{ vars.RESEND_FROM || 'FineGuard Alerts <alerts@fineguard.co.uk>' }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -s -X POST 'https://api.resend.com/emails' \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"from\":\"FineGuard System <alerts@fineguard.co.uk>\",\"to\":\"hello@fineguard.co.uk\",\"subject\":\"ALERT: FineGuard deadline alert workflow failed\",\"html\":\"<p>The daily deadline alert GitHub Actions workflow failed. Check the run at https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</p>\"}"
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
