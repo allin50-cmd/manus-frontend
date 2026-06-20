@@ -74,9 +74,20 @@ export default function HomePage() {
 
           <CompanyChecker />
 
-          <p className="mt-5 text-slate-500 text-sm">
-            No sign-up required. Free check. Instant results.
-          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            {[
+              { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', label: 'No sign-up required' },
+              { icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', label: '30-second check' },
+              { icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', label: 'Free forever' },
+            ].map(({ icon, label }) => (
+              <span key={label} className="flex items-center gap-1.5 bg-white/10 text-slate-300 text-xs px-3 py-1.5 rounded-full">
+                <svg className="w-3 h-3 text-[#00A86B] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+                </svg>
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -84,7 +95,7 @@ export default function HomePage() {
           SCREEN 3 — CONVERSION
           "Would you like us to keep watching this?"
       ══════════════════════════════════════════════════════ */}
-      <section id="pricing" className="bg-white px-5 py-16 md:py-24">
+      <section id="pricing" className="bg-[#F7F8FA] px-5 py-16 md:py-24">
         <div className="max-w-md mx-auto">
           <div className="bg-white border border-slate-200 rounded-2xl shadow-md px-8 py-10 text-center">
             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">
@@ -161,9 +172,10 @@ export default function HomePage() {
             </div>
           </div>
 
-          <p className="text-slate-400 text-sm italic mb-8">
+          <p className="text-slate-500 text-sm italic mb-1">
             &ldquo;Alissa reviews every Amber and Red case, every morning. No customer is ever left wondering what to do.&rdquo;
           </p>
+          <p className="text-slate-400 text-xs mb-8">— George Thomas, Founder</p>
 
           <a
             href="/login"

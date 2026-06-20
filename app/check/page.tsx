@@ -41,7 +41,7 @@ export default function CheckPage() {
 
   if (selectedCompany) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-950">
+      <div className="min-h-screen bg-white">
         <div className="max-w-2xl mx-auto px-4 py-12">
           <button
             onClick={() => setSelectedCompany(null)}
@@ -59,7 +59,7 @@ export default function CheckPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <div className="min-h-screen bg-white">
       {/* Search Section */}
       <section className="px-4 py-16 bg-[#0B1F3A]">
         <div className="max-w-3xl mx-auto">
@@ -75,14 +75,14 @@ export default function CheckPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1 px-4 py-3 rounded-lg border-0 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#00A86B] dark:bg-slate-800 dark:text-white dark:placeholder-gray-400"
+              className="flex-1 px-4 py-3 rounded-lg border-0 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00A86B] bg-white"
             />
             <button
               onClick={handleSearch}
               disabled={loading}
-              className="bg-[#00A86B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#009960] disabled:opacity-50 transition"
+              className="bg-[#00A86B] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#009960] disabled:opacity-50 transition-colors whitespace-nowrap"
             >
-              {loading ? 'Searching...' : 'Search'}
+              {loading ? 'Searching…' : 'Search'}
             </button>
           </div>
           {error && (
@@ -97,8 +97,8 @@ export default function CheckPage() {
       {results.length > 0 && (
         <section className="px-4 py-12">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-              Found {results.length} company{results.length !== 1 ? 'ies' : ''}
+            <h2 className="text-2xl font-bold mb-6 text-slate-900">
+              Found {results.length} compan{results.length !== 1 ? 'ies' : 'y'}
             </h2>
 
             <div className="space-y-4">
@@ -106,34 +106,34 @@ export default function CheckPage() {
                 <div
                   key={company.number}
                   onClick={() => setSelectedCompany(company)}
-                  className="p-6 rounded-lg bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 cursor-pointer hover:border-[#00A86B] transition"
+                  className="p-6 rounded-xl bg-white border-2 border-slate-200 cursor-pointer hover:border-[#00A86B] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <h3 className="text-lg font-semibold text-slate-900">
                         {company.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 font-mono mt-1">
-                        Company number: {company.number}
+                      <p className="text-sm text-slate-500 font-mono mt-1">
+                        {company.number}
                       </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                        Status: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{company.status}</span>
+                      <p className="text-sm text-slate-600 mt-2">
+                        Status: <span className="font-semibold text-[#00A86B]">{company.status}</span>
                       </p>
                     </div>
                     {company.nextDeadline ? (
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Next deadline</p>
-                        <p className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">
-                          {new Date(company.nextDeadline).toLocaleDateString()}
+                      <div className="text-right shrink-0">
+                        <p className="text-sm text-slate-500">Next deadline</p>
+                        <p className="text-lg font-bold text-amber-600 mt-1">
+                          {new Date(company.nextDeadline).toLocaleDateString('en-GB')}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-xs text-slate-400 mt-1">
                           {company.nextDeadlineType}
                         </p>
                       </div>
                     ) : (
-                      <div className="text-right flex-shrink-0">
+                      <div className="text-right shrink-0">
                         <span className="text-sm text-[#00A86B] font-medium">
-                          Set up alerts →
+                          Check Status →
                         </span>
                       </div>
                     )}
@@ -147,30 +147,21 @@ export default function CheckPage() {
 
       {/* Info Section */}
       {!searchQuery && results.length === 0 && (
-        <section className="px-4 py-12 bg-gray-50 dark:bg-slate-900">
+        <section className="px-4 py-12 bg-[#F7F8FA]">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">How to monitor companies</h2>
+            <h2 className="text-2xl font-bold mb-8 text-slate-900">How to monitor companies</h2>
             <div className="grid md:grid-cols-3 gap-8">
               {[
-                {
-                  title: 'Search',
-                  description: 'Find any UK company by name or Companies House number'
-                },
-                {
-                  title: 'Select Alerts',
-                  description: 'Choose which compliance changes you want to monitor'
-                },
-                {
-                  title: 'Get Notified',
-                  description: 'Receive instant alerts via email and your dashboard'
-                }
+                { title: 'Search', description: 'Find any UK company by name or Companies House number' },
+                { title: 'Select Alerts', description: 'Choose which compliance changes you want to monitor' },
+                { title: 'Get Notified', description: 'Receive alerts via email and your dashboard' },
               ].map((step, idx) => (
                 <div key={idx} className="text-center">
-                  <div className="text-4xl font-bold text-[#00A86B] mb-4">
+                  <div className="w-12 h-12 bg-[#00A86B] text-white rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-4">
                     {idx + 1}
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">{step.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400">{step.description}</p>
+                  <h3 className="text-lg font-semibold mb-2 text-slate-900">{step.title}</h3>
+                  <p className="text-slate-500">{step.description}</p>
                 </div>
               ))}
             </div>
