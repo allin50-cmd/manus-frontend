@@ -20,7 +20,7 @@ export default function LoginPage() {
         body: JSON.stringify({ passcode }),
       })
       if (res.ok) {
-        router.push('/dashboard')
+        router.push('/today')
       } else {
         setError('Incorrect passcode. Try again.')
         setPasscode('')
