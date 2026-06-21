@@ -60,7 +60,7 @@ export default async function BuilderBigJobsLeadsPage() {
           <p className="text-slate-500 text-sm mt-1">{leads.length} total · owner: Dagon</p>
         </div>
         <Link
-          href="/builder-big-jobs"
+          href="/intake/accuracy"
           target="_blank"
           className="text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-3 py-1.5 transition-colors"
         >
@@ -89,8 +89,8 @@ export default async function BuilderBigJobsLeadsPage() {
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-12 text-center text-slate-400">
           No leads yet. Share the intake form to get started.
           <div className="mt-3">
-            <Link href="/intake/builder-big-jobs" className="text-blue-600 text-sm hover:underline">
-              /intake/builder-big-jobs
+            <Link href="/intake/accuracy" className="text-blue-600 text-sm hover:underline">
+              /intake/accuracy
             </Link>
           </div>
         </div>
