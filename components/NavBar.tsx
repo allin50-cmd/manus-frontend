@@ -2,24 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
 
 const NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: '⊞' },
-  { href: '/work-items', label: 'Work Items', icon: '≡' },
   { href: '/today', label: 'Today', icon: '◎' },
-  { href: '/decisions', label: 'Decisions', icon: '✓' },
-]
-
-const MORE = [
-  { href: '/activity', label: 'Activity Log' },
-  { href: '/templates', label: 'Templates' },
+  { href: '/companies', label: 'Companies', icon: '▣' },
+  { href: '/contacts', label: 'Contacts', icon: '☎' },
+  { href: '/voice-intake', label: 'Voice', icon: '◉' },
 ]
 
 export default function NavBar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   if (pathname === '/login') return null
 
@@ -30,92 +23,57 @@ export default function NavBar() {
 
   return (
     <>
-      {/* Desktop top bar */}
-      <nav className="hidden sm:flex items-center justify-between bg-slate-900 text-white px-6 py-3 sticky top-0 z-50">
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="font-bold text-white text-sm tracking-wide">
-            SheetOps
-          </Link>
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className={`text-sm transition-colors ${
-                pathname.startsWith(n.href) ? 'text-white font-medium' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {n.label}
-            </Link>
-          ))}
-          {MORE.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className={`text-sm transition-colors ${
-                pathname.startsWith(n.href) ? 'text-white font-medium' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {n.label}
-            </Link>
-          ))}
-        </div>
-        <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-white transition-colors">
-          Log out
-        </button>
-      </nav>
+      <header className="hidden md:flex sticky top-0 z-40 items-center justify-between border-b border-slate-800 bg-slate-950/95 px-6 py-3 backdrop-blur">
+        <Link href="/today" className="font-semibold text-white">
+          Business Hub
+        </Link>
 
-      {/* Mobile bottom bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-50 flex items-center">
-        {NAV.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${
-              pathname.startsWith(n.href) ? 'text-white' : 'text-slate-400'
-            }`}
-          >
-            <span className="text-base leading-none mb-0.5">{n.icon}</span>
-            <span className="leading-none">{n.label}</span>
-          </Link>
-        ))}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="flex-1 flex flex-col items-center py-2 text-xs text-slate-400"
-        >
-          <span className="text-base leading-none mb-0.5">⋯</span>
-          <span className="leading-none">More</span>
-        </button>
-      </nav>
+        <nav className="flex items-center gap-2">
+          {NAV.map((n) => {
+            const active = pathname === n.href
 
-      {/* Mobile overflow menu */}
-      {menuOpen && (
-        <div
-          className="sm:hidden fixed inset-0 z-40 bg-black/50"
-          onClick={() => setMenuOpen(false)}
-        >
-          <div
-            className="absolute bottom-16 right-4 left-4 bg-slate-800 rounded-xl p-4 space-y-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {MORE.map((n) => (
+            return (
               <Link
                 key={n.href}
                 href={n.href}
-                onClick={() => setMenuOpen(false)}
-                className="block px-4 py-3 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+                  active
+                    ? 'bg-emerald-500 text-slate-950'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
               >
                 {n.label}
               </Link>
-            ))}
-            <button
-              onClick={handleLogout}
-              className="block w-full text-left px-4 py-3 text-red-400 rounded-lg hover:bg-slate-700 transition-colors"
+            )
+          })}
+        </nav>
+
+        <button
+          onClick={handleLogout}
+          className="rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
+        >
+          Log out
+        </button>
+      </header>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-4 border-t border-slate-800 bg-slate-950 md:hidden">
+        {NAV.map((n) => {
+          const active = pathname === n.href
+
+          return (
+            <Link
+              key={n.href}
+              href={n.href}
+              className={`flex flex-col items-center gap-1 py-2 text-xs ${
+                active ? 'text-emerald-400' : 'text-slate-400'
+              }`}
             >
-              Log out
-            </button>
-          </div>
-        </div>
-      )}
+              <span className="text-lg leading-none">{n.icon}</span>
+              <span>{n.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
     </>
   )
 }
