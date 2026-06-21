@@ -13,11 +13,18 @@
 --    SQL Editor or any postgres client connected to the production database.
 
 -- ─── Constraint ───────────────────────────────────────────────────────────────
+-- Wrapped in DO block so re-running the migration is safe (idempotent).
+-- PostgreSQL raises duplicate_object if the constraint already exists;
+-- we catch that and continue rather than erroring.
 
-ALTER TABLE monitored_companies
-  ADD CONSTRAINT active_company_requires_email
-  CHECK (cancelled_at IS NOT NULL OR email IS NOT NULL)
-  NOT VALID;
+DO $$ BEGIN
+  ALTER TABLE monitored_companies
+    ADD CONSTRAINT active_company_requires_email
+    CHECK (cancelled_at IS NOT NULL OR email IS NOT NULL)
+    NOT VALID;
+EXCEPTION WHEN duplicate_object THEN
+  RAISE NOTICE 'Constraint active_company_requires_email already exists — skipping.';
+END $$;
 
 -- ─── Ops visibility view ──────────────────────────────────────────────────────
 
