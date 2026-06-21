@@ -18,10 +18,12 @@ export async function POST(req: NextRequest) {
   const secretKey = process.env.STRIPE_SECRET_KEY
   const priceId = process.env.STRIPE_PRICE_ID
 
-  // When Stripe is not configured, return a clear signal (200, configured:false)
-  // so the client can fall back to direct activation instead of erroring.
   if (!secretKey || !priceId) {
-    return NextResponse.json({ configured: false })
+    console.error('FINEGUARD OPS: Stripe is not configured. STRIPE_SECRET_KEY and STRIPE_PRICE_ID must be set. No monitoring can be activated without payment.')
+    return NextResponse.json(
+      { error: 'Payment service is not available. Please contact hello@fineguard.co.uk' },
+      { status: 503 },
+    )
   }
 
   const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' })
@@ -36,6 +38,9 @@ export async function POST(req: NextRequest) {
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { companyNumber, companyName },
+      // customer_creation: 'always' ensures Stripe creates a customer record,
+      // which guarantees an email address is collected and passed to the webhook.
+      customer_creation: 'always',
       success_url: `${appUrl}/check/success?company=${encodeURIComponent(companyName)}&number=${encodeURIComponent(companyNumber)}`,
       cancel_url: `${appUrl}/check`,
     })
