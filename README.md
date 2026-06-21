@@ -1,17 +1,17 @@
-# UltraCore SheetOps
+# UltraCore Ops
 
-Simple operator UI for work items, actions, decisions, templates and activity logs.
+Mobile-first business operating system for work items, actions, decisions, templates and activity logs.
 
 ## Current architecture
 
 ```text
-UltraCore SheetOps app = operator interface
+UltraCore Ops app = operator interface
 Supabase Postgres = database and source of truth
 Prisma = existing database client
 Vercel = app hosting
 ```
 
-No Google Sheets. No Neon. No AI. No agents. No unnecessary infrastructure.
+No Google Sheets. No Neon. No AI. No unnecessary complexity.
 
 ## Deploy to Vercel + Supabase
 
