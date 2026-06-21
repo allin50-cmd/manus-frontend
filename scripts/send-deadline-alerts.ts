@@ -225,14 +225,23 @@ async function main() {
       const days = daysUntil(deadline.dueDate)
       console.log(`  ${deadline.label}: due ${deadline.dueDate} (${days} days)`)
 
-      for (const threshold of ALERT_DAYS) {
-        // Window logic: fire if we're AT or PAST the threshold but not yet overdue.
-        // This ensures a missed cron still sends the alert on the next successful run.
-        // The unique index on alert_history prevents duplicate sends.
-        if (days > threshold) continue  // too early
-        if (days < 0) continue          // already overdue — alert is irrelevant
+      if (days < 0) {
+        console.log(`  ⏭ Deadline overdue — skipping`)
+        continue
+      }
 
-        // Check if this alert was already sent
+      // Sort thresholds ascending so the smallest (most urgent) comes first.
+      // We send ONE email per deadline per cron run, using the actual days
+      // remaining. All applicable thresholds are recorded in alert_history so
+      // they don't fire in future runs — this prevents a newly-monitored company
+      // from receiving 3 simultaneous emails with wrong day counts.
+      const sortedThresholds = [...ALERT_DAYS].sort((a, b) => a - b)
+      let emailThreshold: number | null = null
+      const thresholdsToRecord: number[] = []
+
+      for (const threshold of sortedThresholds) {
+        if (days > threshold) continue // not yet within this window
+
         const existing = await db
           .select({ id: alertHistory.id })
           .from(alertHistory)
@@ -246,37 +255,44 @@ async function main() {
           )
           .limit(1)
 
-        const alreadySent = existing.length > 0
-
-        if (alreadySent) {
-          console.log(`  ✓ ${threshold}-day alert for ${deadline.label} already sent`)
+        if (existing.length > 0) {
+          console.log(`  ✓ ${threshold}-day window for ${deadline.label} already handled`)
           alertsSkipped++
           continue
         }
 
-        const subject = `${threshold === 7 ? '⚠️ URGENT: ' : ''}${deadline.label} due in ${threshold} days — ${company.companyName}`
-        const html = alertEmailHtml({
-          companyName: company.companyName,
-          companyNumber: company.companyNumber,
-          deadlineLabel: deadline.label,
-          dueDate: deadline.dueDate,
-          daysBefore: threshold,
-        })
+        if (emailThreshold === null) emailThreshold = threshold // most urgent unsent
+        thresholdsToRecord.push(threshold)
+      }
 
-        const sent = await sendEmail({ to: company.email, subject, html, resendKey, from })
+      if (emailThreshold === null) continue // all applicable alerts already handled
 
-        if (sent) {
+      const subject = `${days <= 7 ? '⚠️ URGENT: ' : ''}${deadline.label} due in ${days} days — ${company.companyName}`
+      const html = alertEmailHtml({
+        companyName: company.companyName,
+        companyNumber: company.companyNumber,
+        deadlineLabel: deadline.label,
+        dueDate: deadline.dueDate,
+        daysBefore: days,
+      })
+
+      const sent = await sendEmail({ to: company.email, subject, html, resendKey, from })
+
+      if (sent) {
+        for (const threshold of thresholdsToRecord) {
           await db.insert(alertHistory).values({
             companyNumber: company.companyNumber,
             deadlineType: deadline.type,
             dueDate: deadline.dueDate,
             daysBefore: threshold,
           })
-          console.log(`  ✉ Sent ${threshold}-day alert to ${company.email}`)
-          alertsSent++
-        } else {
-          errors++
         }
+        console.log(
+          `  ✉ Sent alert to ${company.email} (${days} days remaining; windows marked: ${thresholdsToRecord.join(', ')})`,
+        )
+        alertsSent++
+      } else {
+        errors++
       }
     }
   }
