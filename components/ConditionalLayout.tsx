@@ -3,9 +3,11 @@
 import { usePathname } from 'next/navigation'
 import NavBar from './NavBar'
 
-// Routes that render their own full-page layout — skip Business Hub NavBar + container.
-// /company-portal is a FineGuard customer page with its own PortalNav.
-// /hub redirects immediately so it never needs a shell.
+// Routes that manage their own layout — skip the Ultratech OS NavBar shell.
+// FineGuard public routes: /, /check, /landing, /privacy, /terms
+// FineGuard customer portal: /company-portal (has its own PortalNav)
+// Future Platform Lab (isolated — not linked from any FineGuard or Ultratech OS navigation):
+//   /hub, /ultai
 const PUBLIC_PATHS = ['/', '/check', '/landing', '/company-portal', '/hub', '/privacy', '/terms']
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {

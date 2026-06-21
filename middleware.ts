@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 const PUBLIC = [
+  // ── Shared auth ──────────────────────────────────────────────────────────
+  // /login is the entry point for both Ultratech OS staff and, temporarily,
+  // the FineGuard customer portal (until customer-specific auth is added).
   '/login',
   '/api/auth/login',
   '/api/health/db',
-  // FineGuard public-facing surfaces and the APIs they rely on.
+
+  // ── FineGuard — public customer-facing routes ─────────────────────────
   // '/' must be an exact match — handled separately below so it doesn't
   // accidentally prefix-match every route.
   '/landing',
@@ -16,9 +20,17 @@ const PUBLIC = [
   // called by Stripe's servers and authenticates via signature, not session.
   '/api/stripe',
   '/api/fineguard-leads',
-  // Legal pages — publicly accessible, no auth required.
+  // Legal pages
   '/privacy',
   '/terms',
+
+  // ── FineGuard — customer portal ───────────────────────────────────────
+  // /company-portal is the FineGuard customer portal showing monitored companies,
+  // subscription status, and deadline alerts. Classified: A (FineGuard).
+  // Currently uses the shared staff session; customer-specific auth is a
+  // future requirement before this can be linked from marketing.
+  // Do NOT add /hub or /ultai here — those are Future Platform Lab (C),
+  // not linked from FineGuard or Ultratech OS navigation.
 ]
 
 // The homepage is public but '/' would prefix-match every path, so we check

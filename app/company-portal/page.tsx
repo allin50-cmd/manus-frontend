@@ -45,7 +45,7 @@ export default async function CompanyPortalPage({
           {/* Header */}
           <div className="mb-8 flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Your Dashboard</h1>
+              <h1 className="text-3xl font-bold text-slate-900">FineGuard Customer Portal</h1>
               <p className="text-slate-500 mt-2">
                 Monitor your Companies House compliance in one place
               </p>
