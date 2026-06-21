@@ -7,7 +7,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const companyNumber = String(body.companyNumber ?? '').trim()
   const companyName = String(body.companyName ?? '').trim()
-  const alertCount = Math.max(1, Math.min(10, parseInt(body.alertCount, 10) || 1)) // metadata only — billing is always flat £4.99
 
   if (!companyNumber || !companyName) {
     return NextResponse.json(
@@ -36,8 +35,8 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { companyNumber, companyName, alertCount: String(alertCount) },
-      success_url: `${appUrl}/company-portal?activated=1&company=${encodeURIComponent(companyNumber)}`,
+      metadata: { companyNumber, companyName },
+      success_url: `${appUrl}/check/success?company=${encodeURIComponent(companyName)}&number=${encodeURIComponent(companyNumber)}`,
       cancel_url: `${appUrl}/check`,
     })
 
