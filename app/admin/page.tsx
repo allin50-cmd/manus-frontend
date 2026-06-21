@@ -58,6 +58,15 @@ export default async function AdminPage() {
       </section>
 
       <section>
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Builder Big Jobs</h2>
+        <div className="flex gap-4 flex-wrap">
+          <Link href="/builder-big-jobs" className="text-sm text-blue-600 hover:underline">Public page →</Link>
+          <Link href="/intake/builder-big-jobs" className="text-sm text-blue-600 hover:underline">Intake form →</Link>
+          <Link href="/os/leads/builder-big-jobs" className="text-sm text-blue-600 hover:underline">Leads dashboard →</Link>
+        </div>
+      </section>
+
+      <section>
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Intake</h2>
         <div className="flex gap-4 flex-wrap">
           <Link href="/intake" className="text-sm text-blue-600 hover:underline">UltAi intake →</Link>

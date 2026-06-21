@@ -8,7 +8,7 @@ import NavBar from './NavBar'
 // FineGuard customer portal: /company-portal (has its own PortalNav)
 // Future Platform Lab (isolated — not linked from any FineGuard or Ultratech OS navigation):
 //   /hub, /ultai
-const PUBLIC_PATHS = ['/', '/check', '/landing', '/portal', '/intake/fineguard', '/intake/accuracy', '/hub', '/privacy', '/terms']
+const PUBLIC_PATHS = ['/', '/check', '/landing', '/portal', '/intake/fineguard', '/intake/accuracy', '/intake/builder-big-jobs', '/builder-big-jobs', '/hub', '/privacy', '/terms']
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

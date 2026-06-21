@@ -25,10 +25,14 @@ const PUBLIC = [
   '/terms',
 
   // ── Intake — public lead-capture forms ───────────────────────────────
-  // /intake/fineguard and /intake/accuracy are public-facing.
+  // /intake/fineguard, /intake/accuracy, /intake/builder-big-jobs are public.
   // /intake (UltAi voice intake) is auth-protected — not listed here.
   '/intake/fineguard',
   '/intake/accuracy',
+  '/intake/builder-big-jobs',
+
+  // ── Builder Big Jobs — public landing page ────────────────────────────
+  '/builder-big-jobs',
 ]
 
 // The homepage is public but '/' would prefix-match every path, so we check

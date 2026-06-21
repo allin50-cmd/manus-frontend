@@ -34,4 +34,5 @@ export {
   activityLogs,
   decisions,
   templates,
+  builderBigJobsLeads,
 } from '@/db/schema';
