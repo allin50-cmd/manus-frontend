@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { companiesHouseService } from '@/server/services/companiesHouse'
+import { companiesHouseService } from '@/lib/companiesHouse'
 
 export const dynamic = 'force-dynamic'
 
