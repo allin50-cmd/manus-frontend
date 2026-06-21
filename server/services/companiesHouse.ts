@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 /**
  * Companies House API Service
  * Real-time integration with Companies House API
@@ -57,6 +55,14 @@ interface CompanyProfile {
     officers?: string;
     charges?: string;
   };
+}
+
+interface CompanySearchResult {
+  companyNumber: string;
+  companyName: string;
+  companyStatus: string;
+  dateOfCreation?: string;
+  addressSnippet?: string;
 }
 
 interface FilingHistoryItem {
@@ -127,6 +133,44 @@ export class CompaniesHouseService {
       'Authorization': `Basic ${Buffer.from(this.apiKey + ':').toString('base64')}`,
       'Content-Type': 'application/json',
     };
+  }
+
+  /**
+   * Search companies by name or number.
+   * Wraps GET /search/companies?q= and normalises the snake_case payload.
+   */
+  async searchCompanies(query: string, limit: number = 20): Promise<CompanySearchResult[]> {
+    const q = query.trim();
+    if (!q) return [];
+
+    const response = await fetch(
+      `${CH_API_BASE}/search/companies?q=${encodeURIComponent(q)}&items_per_page=${limit}`,
+      { headers: this.getAuthHeaders() }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('Invalid Companies House API key');
+      if (response.status === 429) throw new Error('Companies House API rate limit exceeded');
+      throw new Error(`Companies House search error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as any;
+    const items = (data.items || []) as any[];
+    return items.map((item) => ({
+      companyNumber: item.company_number,
+      companyName: item.title,
+      companyStatus: item.company_status ?? 'unknown',
+      dateOfCreation: item.date_of_creation,
+      addressSnippet: item.address_snippet,
+    }));
+  }
+
+  /**
+   * Whether a live API key is configured. Lets route handlers decide between
+   * the live service and a demo/mock fallback without throwing.
+   */
+  hasApiKey(): boolean {
+    return Boolean(this.apiKey);
   }
 
   /**

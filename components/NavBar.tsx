@@ -33,8 +33,13 @@ export default function NavBar() {
       {/* Desktop top bar */}
       <nav className="hidden sm:flex items-center justify-between bg-slate-900 text-white px-6 py-3 sticky top-0 z-50">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="font-bold text-white text-sm tracking-wide">
-            SheetOps
+          <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
+            <div className="w-6 h-6 bg-slate-600 rounded-md flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h8" />
+              </svg>
+            </div>
+            <span className="font-bold text-white text-sm tracking-wide">Business Hub</span>
           </Link>
           {NAV.map((n) => (
             <Link

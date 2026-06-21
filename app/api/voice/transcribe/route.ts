@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { toFile } from 'openai/uploads'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { draftNeedsReview, parseTranscriptToDraft } from '@/lib/voice/parser'
+import { sql } from 'drizzle-orm'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -70,15 +71,11 @@ export async function POST(req: NextRequest) {
     const draft = parseTranscriptToDraft(transcript)
     const status = draftNeedsReview(draft) ? 'NEEDS_REVIEW' : 'PARSED'
 
-    const rows = await db.$queryRawUnsafe<Array<{ voice_id: string }>>(
-      `INSERT INTO voice_intake (created_by, audio_url, transcript, parsed_json, status)
-       VALUES ($1, $2, $3, $4::jsonb, $5)
-       RETURNING voice_id`,
-      session.person,
-      audioUrl,
-      transcript,
-      JSON.stringify(draft),
-      status,
+    const db = await getDb()
+    const rows = await db.execute<{ voice_id: string }>(
+      sql`INSERT INTO voice_intake (created_by, audio_url, transcript, parsed_json, status)
+          VALUES (${session.person}, ${audioUrl}, ${transcript}, ${JSON.stringify(draft)}::jsonb, ${status})
+          RETURNING voice_id`
     )
 
     return NextResponse.json({ voice_id: rows[0]?.voice_id, voiceId: rows[0]?.voice_id, transcript, draft, status }, { status: 201 })

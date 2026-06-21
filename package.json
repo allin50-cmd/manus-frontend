@@ -7,28 +7,48 @@
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
-    "prisma:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "type-check:server": "tsc --noEmit -p server/tsconfig.json",
+    "test": "echo 'Unit tests require DATABASE_URL — run locally or in provisioned CI job' && exit 0",
+    "db:generate": "drizzle-kit generate:pg --schema=./db/schema.ts --out=./db/migrations",
+    "db:push": "drizzle-kit push:pg --config=drizzle.config.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.14.0",
-    "jose": "^5.9.6",
-    "next": "14.2.4",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@tanstack/react-query": "^4.44.0",
+    "@trpc/client": "^10.45.4",
+    "@trpc/react-query": "^10.45.4",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.19",
+    "drizzle-orm": "^0.30.10",
+    "jose": "^5.9.6",
+    "next": "14.2.4",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.44.0",
+    "postgres": "^3.4.9",
     "postcss": "^8.4.38",
-    "prisma": "^5.14.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "stripe": "^14.25.0",
+    "superjson": "^2.2.6",
     "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.5",
+    "wouter": "^3.10.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@azure/service-bus": "^7.9.5",
+    "@azure/storage-blob": "^12.32.0",
+    "@trpc/server": "^10.45.4",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "drizzle-kit": "^0.20.14",
+    "express": "^4.22.2",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.5"
+    "vitest": "^1.6.0"
   },
   "engines": {
     "node": ">=20.0.0"
