@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useRef } from 'react'
 
 interface CheckResult {
   companyNumber: string
@@ -64,12 +64,34 @@ export default function CompanyChecker() {
   const [result, setResult] = useState<CheckResult | null>(null)
   const [matches, setMatches] = useState<SearchMatch[]>([])
   const [error, setError] = useState('')
+  const [leadEmail, setLeadEmail] = useState('')
+  const [leadState, setLeadState] = useState<'idle' | 'submitting' | 'done'>('idle')
+  const emailInputRef = useRef<HTMLInputElement>(null)
+
+  async function submitLead(e: FormEvent) {
+    e.preventDefault()
+    if (!leadEmail.trim() || !result) return
+    setLeadState('submitting')
+    await fetch('/api/fineguard-leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: leadEmail.trim(),
+        companyName: result.companyName,
+        companyNumber: result.companyNumber,
+        status: result.status,
+      }),
+    }).catch(() => null)
+    setLeadState('done')
+  }
 
   async function fetchStatus(company: string) {
     setLoading(true)
     setError('')
     setResult(null)
     setMatches([])
+    setLeadEmail('')
+    setLeadState('idle')
 
     try {
       const res = await fetch(`/api/check?company=${encodeURIComponent(company)}`)
@@ -228,9 +250,42 @@ export default function CompanyChecker() {
               )}
             </div>
           </div>
+          {/* Email capture — shown below status card for non-paying visitors */}
+          <div className="mt-4 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm px-5 py-4">
+            {leadState === 'done' ? (
+              <p className="text-white text-sm font-semibold text-center py-1">
+                ✓ Got it — we'll alert you before any deadline is due.
+              </p>
+            ) : (
+              <form onSubmit={submitLead} className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1">
+                  <p className="text-white/70 text-xs mb-1.5">
+                    Get email alerts before any deadline for {result.companyName}
+                  </p>
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    value={leadEmail}
+                    onChange={(e) => setLeadEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    required
+                    className="w-full px-3 py-2 rounded-lg text-slate-900 text-sm bg-white border-0 focus:outline-none focus:ring-2 focus:ring-[#00A86B] placeholder:text-slate-400"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={leadState === 'submitting' || !leadEmail.trim()}
+                  className="sm:self-end px-4 py-2 bg-[#00A86B] text-white text-sm font-bold rounded-lg hover:bg-[#009960] disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                >
+                  {leadState === 'submitting' ? 'Saving…' : 'Alert Me Free'}
+                </button>
+              </form>
+            )}
+          </div>
+
           <button
             type="button"
-            onClick={() => { setResult(null); setQuery('') }}
+            onClick={() => { setResult(null); setQuery(''); setLeadEmail(''); setLeadState('idle') }}
             className="mt-3 text-white/50 hover:text-white/80 text-xs transition-colors w-full text-center"
           >
             ← Check a different company

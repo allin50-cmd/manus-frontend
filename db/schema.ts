@@ -290,6 +290,22 @@ export const monitoredCompanies = pgTable('monitored_companies', {
 })
 
 /**
+ * FineGuard Leads Table
+ * Captures emails from visitors who checked a company but haven't paid yet.
+ */
+export const fineguardLeads = pgTable('fineguard_leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull(),
+  companyName: varchar('company_name', { length: 255 }),
+  companyNumber: varchar('company_number', { length: 50 }),
+  status: varchar('status', { length: 10 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export type FineguardLead = typeof fineguardLeads.$inferSelect;
+export type NewFineguardLead = typeof fineguardLeads.$inferInsert;
+
+/**
  * Alert History Table
  * Prevents duplicate deadline alerts from being sent.
  * One row per (company, deadline type, due date, days-before threshold).
