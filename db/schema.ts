@@ -1,6 +1,6 @@
 /**
  * db/schema.ts — Unified Drizzle schema for all three domains:
- *   1. SheetOps (work_items, actions, activity_logs, decisions, templates)
+ *   1. Ultratech OS (work_items, actions, activity_logs, decisions, templates)
  *   2. Brand-suite (leads, contacts, compliance_bundles, intake_forms,
  *                   deployment_status, monitored_companies)
  *   3. ClerkOS (tenants, clerk_users, clerk_cases, clerk_hearings,
@@ -26,7 +26,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
-// ─── SheetOps Enums ───────────────────────────────────────────────────────────
+// ─── Ultratech OS Enums ───────────────────────────────────────────────────────
 
 export const workItemTypeEnum = pgEnum('WorkItemType', [
   'Partnership',
@@ -99,7 +99,7 @@ export const decisionStatusEnum = pgEnum('DecisionStatus', [
   'Paused',
 ]);
 
-// ─── SheetOps Tables ──────────────────────────────────────────────────────────
+// ─── Ultratech OS Tables ──────────────────────────────────────────────────────
 
 export const workItems = pgTable('work_items', {
   id: text('id')
@@ -184,7 +184,7 @@ export const templates = pgTable('templates', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-// SheetOps inferred types
+// Ultratech OS inferred types
 export type WorkItem = typeof workItems.$inferSelect;
 export type NewWorkItem = typeof workItems.$inferInsert;
 export type Action = typeof actions.$inferSelect;

@@ -39,7 +39,7 @@ export default function NavBar() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h8" />
               </svg>
             </div>
-            <span className="font-bold text-white text-sm tracking-wide">Business Hub</span>
+            <span className="font-bold text-white text-sm tracking-wide">Ultratech OS</span>
           </Link>
           {NAV.map((n) => (
             <Link

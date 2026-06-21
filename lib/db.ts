@@ -11,10 +11,10 @@ import * as schema from '@/db/schema';
 
 type DrizzleDb = ReturnType<typeof drizzle<typeof schema>>;
 
-const g = globalThis as unknown as { __sheetops_db?: DrizzleDb };
+const g = globalThis as unknown as { __ultratech_db?: DrizzleDb };
 
 export async function getDb(): Promise<DrizzleDb> {
-  if (g.__sheetops_db) return g.__sheetops_db;
+  if (g.__ultratech_db) return g.__ultratech_db;
 
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not configured');
@@ -22,7 +22,7 @@ export async function getDb(): Promise<DrizzleDb> {
   const client = postgres(url, { max: 10 });
   const db = drizzle(client, { schema });
 
-  g.__sheetops_db = db;
+  g.__ultratech_db = db;
 
   return db;
 }

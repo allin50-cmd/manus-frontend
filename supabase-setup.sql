@@ -1,6 +1,6 @@
 -- =============================================================================
 -- supabase-setup.sql — Combined schema for ALL tables across all three domains:
---   1. SheetOps (work_items, actions, activity_logs, decisions, templates)
+--   1. Ultratech OS (work_items, actions, activity_logs, decisions, templates)
 --   2. Brand-suite (leads, contacts, compliance_bundles, intake_forms,
 --                   deployment_status, monitored_companies)
 --   3. ClerkOS (tenants, clerk_users, clerk_cases, clerk_hearings,
@@ -12,7 +12,7 @@
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
--- SheetOps Enums
+-- Ultratech OS Enums
 -- ---------------------------------------------------------------------------
 
 DO $$ BEGIN
@@ -108,7 +108,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ---------------------------------------------------------------------------
--- SheetOps Tables
+-- Ultratech OS Tables
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS work_items (

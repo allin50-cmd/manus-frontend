@@ -1,11 +1,11 @@
-# UltraCore SheetOps
+# Ultratech OS
 
 Simple operator UI for work items, actions, decisions, templates and activity logs.
 
 ## Current architecture
 
 ```text
-UltraCore SheetOps app = operator interface
+Ultratech OS app = operator interface
 Supabase Postgres = database and source of truth
 Prisma = existing database client
 Vercel = app hosting
