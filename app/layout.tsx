@@ -3,13 +3,13 @@ import './globals.css'
 import NavBar from '@/components/NavBar'
 
 export const metadata: Metadata = {
-  title: 'UltraCore Ops',
-  description: 'Mobile-first business operating system for simple daily operations.',
+  title: 'UltraTechOS',
+  description: 'Business. Simplified.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'UltraCore Ops',
+    title: 'UltraTechOS',
   },
   icons: {
     apple: '/icons/icon-192.svg',
