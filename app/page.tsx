@@ -88,13 +88,13 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center justify-center">
-            <div className="relative w-full max-w-md">
+            <div className="relative w-full max-w-md rounded-2xl border-2 border-white shadow-2xl overflow-hidden">
               <Image
                 src="/illustrations/check-my-company.png"
                 alt="Check your company status instantly"
                 width={768}
                 height={512}
-                className="w-full h-auto drop-shadow-2xl rounded-2xl"
+                className="w-full h-auto block"
                 priority
               />
             </div>
@@ -108,13 +108,15 @@ export default function HomePage() {
       <section className="bg-white px-6 lg:px-12 py-20">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="order-2 lg:order-1 flex justify-center">
-            <Image
-              src="/illustrations/director-anxiety.png"
-              alt="Director stressed about Companies House deadlines"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="w-full max-w-md rounded-2xl border-2 border-white shadow-xl overflow-hidden">
+              <Image
+                src="/illustrations/director-anxiety.png"
+                alt="Director stressed about Companies House deadlines"
+                width={768}
+                height={512}
+                className="w-full h-auto block"
+              />
+            </div>
           </div>
 
           <div className="order-1 lg:order-2">
@@ -206,8 +208,8 @@ export default function HomePage() {
               { n: 4, title: 'Stay Stress-Free', desc: 'Alerts before anything is due. Zero surprises.', img: '/illustrations/step-4-worry-free.png', alt: 'Peace of mind — no more compliance worry' },
             ].map(({ n, title, desc, img, alt }) => (
               <div key={n} className="flex flex-col items-center text-center">
-                <div className="w-full mb-5 relative aspect-[3/2]">
-                  <Image src={img} alt={alt} fill className="object-contain drop-shadow-lg" />
+                <div className="w-full mb-5 rounded-2xl border-2 border-white shadow-xl overflow-hidden">
+                  <Image src={img} alt={alt} width={480} height={320} className="w-full h-auto block" />
                 </div>
                 <div className="w-10 h-10 rounded-full bg-[#0B1F3A] text-white text-base font-bold flex items-center justify-center mb-3 shrink-0">
                   {n}
@@ -248,13 +250,15 @@ export default function HomePage() {
           </div>
 
           <div className="flex justify-center">
-            <Image
-              src="/illustrations/nobody-gets-ignored.png"
-              alt="Every customer status gets the right response — Green, Amber, Red or Critical"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="w-full max-w-md rounded-2xl border-2 border-white shadow-xl overflow-hidden">
+              <Image
+                src="/illustrations/nobody-gets-ignored.png"
+                alt="Every customer status gets the right response — Green, Amber, Red or Critical"
+                width={768}
+                height={512}
+                className="w-full h-auto block"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -265,13 +269,15 @@ export default function HomePage() {
       <section className="bg-white px-6 lg:px-12 py-20">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="flex justify-center">
-            <Image
-              src="/illustrations/human-intervention.png"
-              alt="Human support team ready to help"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="w-full max-w-md rounded-2xl border-2 border-white shadow-xl overflow-hidden">
+              <Image
+                src="/illustrations/human-intervention.png"
+                alt="Human support team ready to help"
+                width={768}
+                height={512}
+                className="w-full h-auto block"
+              />
+            </div>
           </div>
 
           <div>
@@ -414,13 +420,15 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center justify-center">
-            <Image
-              src="/illustrations/fineguard-cover.png"
-              alt="FineGuard protection covering your company"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-lg"
-            />
+            <div className="w-full max-w-md rounded-2xl border-2 border-white shadow-xl overflow-hidden">
+              <Image
+                src="/illustrations/fineguard-cover.png"
+                alt="FineGuard protection covering your company"
+                width={768}
+                height={512}
+                className="w-full h-auto block"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -462,13 +470,15 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center justify-center">
-            <Image
-              src="/illustrations/peace-of-mind.png"
-              alt="We've got it covered — FineGuard peace of mind"
-              width={768}
-              height={512}
-              className="w-full max-w-md h-auto drop-shadow-2xl"
-            />
+            <div className="w-full max-w-md rounded-2xl border-2 border-white shadow-2xl overflow-hidden">
+              <Image
+                src="/illustrations/peace-of-mind.png"
+                alt="We've got it covered — FineGuard peace of mind"
+                width={768}
+                height={512}
+                className="w-full h-auto block"
+              />
+            </div>
           </div>
         </div>
       </section>
