@@ -25,7 +25,7 @@ export default function NavBar() {
     <>
       <header className="hidden md:flex sticky top-0 z-40 items-center justify-between border-b border-slate-800 bg-slate-950/95 px-6 py-3 backdrop-blur">
         <Link href="/today" className="font-semibold text-white">
-          UltraCore Ops
+          UltraTechOS
         </Link>
 
         <nav className="flex items-center gap-2">
