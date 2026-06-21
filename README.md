@@ -1,11 +1,11 @@
-# UltraCore Ops
+# UltraTechOS
 
 Mobile-first business operating system for work items, actions, decisions, templates and activity logs.
 
 ## Current architecture
 
 ```text
-UltraCore Ops app = operator interface
+UltraTechOS app = operator interface
 Supabase Postgres = database and source of truth
 Prisma = existing database client
 Vercel = app hosting
