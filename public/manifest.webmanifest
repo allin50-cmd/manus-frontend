@@ -2,7 +2,7 @@
   "name": "UltraTechOS",
   "short_name": "UltraTechOS",
   "description": "Business. Simplified.",
-  "start_url": "/dashboard",
+  "start_url": "/today",
   "display": "standalone",
   "background_color": "#1e293b",
   "theme_color": "#1e293b",
