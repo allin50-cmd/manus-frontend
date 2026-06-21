@@ -92,29 +92,6 @@ function buildResult(
   }
 }
 
-const MOCK_COMPANIES = [
-  { number: '01234567', name: 'Acme Corporation Ltd' },
-  { number: '07654321', name: 'TechStart Holdings Ltd' },
-  { number: '12345678', name: 'Global Industries plc' },
-  { number: '09876543', name: 'Bright Future Ventures Ltd' },
-  { number: '11223344', name: 'Northern Trade Group Ltd' },
-]
-
-function getMockCompliance(): ComplianceData {
-  const future = (days: number) => {
-    const d = new Date()
-    d.setDate(d.getDate() + days)
-    return d.toISOString().split('T')[0]
-  }
-  return {
-    status: 'compliant',
-    riskLevel: 'low',
-    overdueFilings: [],
-    accountsStatus: { nextDue: future(163), overdue: false, daysUntilDue: 163 },
-    confirmationStatementStatus: { nextDue: future(87), overdue: false, daysUntilDue: 87 },
-  }
-}
-
 export async function GET(req: NextRequest) {
   const company = req.nextUrl.searchParams.get('company')?.trim() ?? ''
 
@@ -124,26 +101,12 @@ export async function GET(req: NextRequest) {
 
   const isNumber = looksLikeCompanyNumber(company)
 
-  // ── No API key → mock path ─────────────────────────────────────────────
   if (!companiesHouseService.hasApiKey()) {
-    if (isNumber) {
-      const mock = MOCK_COMPANIES.find((m) => m.number === company) ?? {
-        number: company,
-        name: 'Demo Company Ltd',
-      }
-      return NextResponse.json(buildResult(mock.number, mock.name, getMockCompliance()))
-    }
-
-    const lower = company.toLowerCase()
-    const matches = MOCK_COMPANIES.filter((m) => m.name.toLowerCase().includes(lower))
-
-    if (matches.length === 0) {
-      return NextResponse.json({ error: 'No companies found matching that name. Try a different search or enter your company number directly.' }, { status: 404 })
-    }
-    if (matches.length === 1) {
-      return NextResponse.json(buildResult(matches[0].number, matches[0].name, getMockCompliance()))
-    }
-    return NextResponse.json({ multipleResults: true, companies: matches })
+    console.error('FINEGUARD OPS: COMPANIES_HOUSE_API_KEY is not configured. Company lookup is unavailable.')
+    return NextResponse.json(
+      { error: 'Company lookup service is temporarily unavailable. Please contact hello@fineguard.co.uk' },
+      { status: 503 },
+    )
   }
 
   // ── Live path ──────────────────────────────────────────────────────────

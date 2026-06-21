@@ -13,19 +13,11 @@ export async function GET(
   }
 
   if (!companiesHouseService.hasApiKey()) {
-    return NextResponse.json({
-      source: 'mock',
-      compliance: {
-        companyNumber: number,
-        companyName: 'Demo Company Ltd',
-        status: 'compliant',
-        riskLevel: 'low',
-        accountsStatus: { nextDue: '2025-08-01', overdue: false, daysUntilDue: 43 },
-        confirmationStatementStatus: { nextDue: '2025-07-15', overdue: false, daysUntilDue: 26 },
-        overdueFilings: [],
-        upcomingDeadlines: [],
-      },
-    })
+    console.error('FINEGUARD OPS: COMPANIES_HOUSE_API_KEY is not configured. Company lookup is unavailable.')
+    return NextResponse.json(
+      { source: 'error', error: 'Company lookup service is temporarily unavailable' },
+      { status: 503 },
+    )
   }
 
   try {
