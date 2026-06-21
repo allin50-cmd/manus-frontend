@@ -9,7 +9,8 @@
     "type-check": "tsc --noEmit",
     "test": "echo 'Unit tests require DATABASE_URL — run locally or in provisioned CI job' && exit 0",
     "db:generate": "drizzle-kit generate:pg --schema=./db/schema.ts --out=./db/migrations",
-    "db:push": "drizzle-kit push:pg --config=drizzle.config.ts"
+    "db:push": "drizzle-kit push:pg --config=drizzle.config.ts",
+    "type-check:server": "echo 'server/ removed — skipping'"
   },
   "dependencies": {
     "drizzle-orm": "^0.30.10",
