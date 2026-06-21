@@ -12,7 +12,6 @@ export default async function DecisionsPage() {
 
   const db = await getDb()
 
-  // Join decisions with work_items to get the workItem fields inline
   const rows = await db
     .select({
       id: decisions.id,
@@ -68,7 +67,7 @@ export default async function DecisionsPage() {
           <div key={dec.id} className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <Link href={`/work-items/${dec.workItem.id}`} className="text-xs text-blue-600 hover:underline">
+                <Link href={`/os/work-items/${dec.workItem.id}`} className="text-xs text-blue-600 hover:underline">
                   {dec.workItem.title}{dec.workItem.company ? ` · ${dec.workItem.company}` : ''}
                 </Link>
                 <p className="font-semibold text-slate-900 mt-1">{dec.question}</p>

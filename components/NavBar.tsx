@@ -5,15 +5,17 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: '⊞' },
-  { href: '/work-items', label: 'Work Items', icon: '≡' },
-  { href: '/today', label: 'Today', icon: '◎' },
-  { href: '/decisions', label: 'Decisions', icon: '✓' },
+  { href: '/os', label: 'Dashboard', icon: '⊞' },
+  { href: '/os/work-items', label: 'Work Items', icon: '≡' },
+  { href: '/os/today', label: 'Today', icon: '◎' },
+  { href: '/os/decisions', label: 'Decisions', icon: '✓' },
 ]
 
 const MORE = [
-  { href: '/activity', label: 'Activity Log' },
-  { href: '/templates', label: 'Templates' },
+  { href: '/os/activity', label: 'Activity Log' },
+  { href: '/os/templates', label: 'Templates' },
+  { href: '/intake', label: 'Intake' },
+  { href: '/admin', label: 'Admin' },
 ]
 
 export default function NavBar() {
@@ -22,6 +24,9 @@ export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   if (pathname === '/login') return null
+
+  const isActive = (href: string) =>
+    href === '/os' ? pathname === '/os' : pathname === href || pathname.startsWith(href + '/')
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -33,7 +38,7 @@ export default function NavBar() {
       {/* Desktop top bar */}
       <nav className="hidden sm:flex items-center justify-between bg-slate-900 text-white px-6 py-3 sticky top-0 z-50">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
+          <Link href="/os" className="flex items-center gap-2 shrink-0">
             <div className="w-6 h-6 bg-slate-600 rounded-md flex items-center justify-center">
               <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h8" />
@@ -46,7 +51,7 @@ export default function NavBar() {
               key={n.href}
               href={n.href}
               className={`text-sm transition-colors ${
-                pathname.startsWith(n.href) ? 'text-white font-medium' : 'text-slate-400 hover:text-white'
+                isActive(n.href) ? 'text-white font-medium' : 'text-slate-400 hover:text-white'
               }`}
             >
               {n.label}
@@ -57,7 +62,7 @@ export default function NavBar() {
               key={n.href}
               href={n.href}
               className={`text-sm transition-colors ${
-                pathname.startsWith(n.href) ? 'text-white font-medium' : 'text-slate-400 hover:text-white'
+                isActive(n.href) ? 'text-white font-medium' : 'text-slate-400 hover:text-white'
               }`}
             >
               {n.label}
@@ -76,7 +81,7 @@ export default function NavBar() {
             key={n.href}
             href={n.href}
             className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${
-              pathname.startsWith(n.href) ? 'text-white' : 'text-slate-400'
+              isActive(n.href) ? 'text-white' : 'text-slate-400'
             }`}
           >
             <span className="text-base leading-none mb-0.5">{n.icon}</span>

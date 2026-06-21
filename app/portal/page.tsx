@@ -7,7 +7,7 @@ import PortalNav from '@/components/PortalNav'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CompanyPortalPage({
+export default async function PortalPage({
   searchParams,
 }: {
   searchParams: { activated?: string; company?: string }
@@ -42,7 +42,6 @@ export default async function CompanyPortalPage({
             </div>
           )}
 
-          {/* Header */}
           <div className="mb-8 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-slate-900">FineGuard Customer Portal</h1>
@@ -58,7 +57,6 @@ export default async function CompanyPortalPage({
             </Link>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             {[
               {
@@ -106,7 +104,6 @@ export default async function CompanyPortalPage({
             ))}
           </div>
 
-          {/* Monitored Companies */}
           <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm">
             <h2 className="text-xl font-bold text-slate-900 mb-6">Monitored Companies</h2>
 
@@ -165,7 +162,6 @@ export default async function CompanyPortalPage({
             )}
           </div>
 
-          {/* CTA */}
           <div className="mt-8 p-8 bg-[#0B1F3A] rounded-xl text-white">
             <h3 className="text-xl font-bold mb-2">Need more companies?</h3>
             <p className="mb-4 text-slate-300 text-sm">Find and monitor additional UK companies with instant deadline alerts.</p>

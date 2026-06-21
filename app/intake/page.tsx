@@ -11,7 +11,7 @@ type DraftResponse = {
   error?: string
 }
 
-export default function VoiceIntakePage() {
+export default function IntakePage() {
   const router = useRouter()
   const [transcript, setTranscript] = useState('')
   const [voiceId, setVoiceId] = useState('')
@@ -64,7 +64,7 @@ export default function VoiceIntakePage() {
       if (!res.ok) throw new Error(data.error || 'Decision failed')
 
       if (action === 'approve' && data.workItemId) {
-        router.push(`/work-items/${data.workItemId}`)
+        router.push(`/os/work-items/${data.workItemId}`)
         return
       }
 

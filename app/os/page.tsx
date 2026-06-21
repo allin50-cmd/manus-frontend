@@ -52,7 +52,7 @@ async function getStats() {
   }
 }
 
-export default async function DashboardPage() {
+export default async function OsDashboardPage() {
   const session = await requireAuth()
   const stats = await getStats()
 
@@ -63,7 +63,6 @@ export default async function DashboardPage() {
         <p className="text-slate-500 text-sm mt-1">Welcome back, {session.person}</p>
       </div>
 
-      {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard label="Total Items" value={stats.total} color="blue" />
         <StatCard label="Due / Overdue" value={stats.dueToday} color={stats.dueToday > 0 ? 'orange' : 'green'} />
@@ -72,18 +71,17 @@ export default async function DashboardPage() {
         <StatCard label="Done This Week" value={stats.completedThisWeek} color="green" />
       </div>
 
-      {/* Big action buttons */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <BigButton href="/work-items/new" label="+ Add Work Item" color="blue" />
-        <BigButton href="/voice-intake" label="Voice Intake" color="green" />
-        <BigButton href="/today" label="Today's Actions" color="orange" />
-        <BigButton href="/decisions" label="Decision Queue" color="purple" />
-        <BigButton href="/activity" label="Activity Log" color="slate" />
+        <BigButton href="/os/work-items/new" label="+ Add Work Item" color="blue" />
+        <BigButton href="/intake" label="Voice Intake" color="green" />
+        <BigButton href="/os/today" label="Today's Actions" color="orange" />
+        <BigButton href="/os/decisions" label="Decision Queue" color="purple" />
+        <BigButton href="/os/activity" label="Activity Log" color="slate" />
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-        <BigButton href="/work-items" label="All Work Items" color="slate" />
-        <BigButton href="/templates" label="Templates" color="slate" />
+        <BigButton href="/os/work-items" label="All Work Items" color="slate" />
+        <BigButton href="/os/templates" label="Templates" color="slate" />
       </div>
     </div>
   )

@@ -59,7 +59,7 @@ export default function NewWorkItemPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        router.push(`/work-items/${data.id}`)
+        router.push(`/os/work-items/${data.id}`)
       } else {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'Failed to create work item')

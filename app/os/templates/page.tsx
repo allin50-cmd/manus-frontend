@@ -45,8 +45,6 @@ export default async function TemplatesPage() {
 }
 
 function CopyButton({ text }: { text: string }) {
-  // Client component for copy functionality would go here.
-  // For MVP, render a static label — copy is done manually.
   return (
     <span className="text-xs bg-slate-100 text-slate-500 rounded px-2 py-1">Copy manually</span>
   )

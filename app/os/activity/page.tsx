@@ -60,7 +60,7 @@ export default async function ActivityPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <Link href={`/work-items/${log.workItem.id}`} className="text-xs font-medium text-blue-600 hover:underline truncate max-w-[200px]">
+                <Link href={`/os/work-items/${log.workItem.id}`} className="text-xs font-medium text-blue-600 hover:underline truncate max-w-[200px]">
                   {log.workItem.title}
                 </Link>
                 <span className={`text-xs font-medium rounded px-2 py-0.5 ${eventColors[log.eventType] ?? 'bg-slate-100 text-slate-600'}`}>

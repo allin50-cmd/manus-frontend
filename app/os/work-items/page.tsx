@@ -46,7 +46,7 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">Work Items</h1>
         <Link
-          href="/work-items/new"
+          href="/os/work-items/new"
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
           + Add
@@ -74,7 +74,7 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
               <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-3 py-3 text-xs text-slate-500 whitespace-nowrap">{typeLabel(item.type)}</td>
                 <td className="px-3 py-3">
-                  <Link href={`/work-items/${item.id}`} className="font-medium text-blue-700 hover:underline">
+                  <Link href={`/os/work-items/${item.id}`} className="font-medium text-blue-700 hover:underline">
                     {item.title}
                   </Link>
                 </td>
@@ -105,7 +105,7 @@ export default async function WorkItemsPage({ searchParams }: { searchParams: Se
       {/* Mobile cards */}
       <div className="sm:hidden space-y-3">
         {items.map((item) => (
-          <Link key={item.id} href={`/work-items/${item.id}`} className="block bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+          <Link key={item.id} href={`/os/work-items/${item.id}`} className="block bg-white rounded-xl border border-slate-200 p-4 space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap gap-1">
                 <span className="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">{typeLabel(item.type)}</span>

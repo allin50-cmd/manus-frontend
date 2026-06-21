@@ -34,7 +34,7 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-start gap-3">
-        <Link href="/work-items" className="text-slate-400 hover:text-slate-600 mt-1 shrink-0">←</Link>
+        <Link href="/os/work-items" className="text-slate-400 hover:text-slate-600 mt-1 shrink-0">←</Link>
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="text-xs bg-slate-100 text-slate-600 rounded px-2 py-0.5">{typeLabel(item.type)}</span>
@@ -48,7 +48,6 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
         </div>
       </div>
 
-      {/* Detail grid */}
       <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
         {[
           { label: 'Company', value: item.company },
@@ -74,14 +73,12 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
         )}
       </div>
 
-      {/* Action buttons */}
       <WorkItemActions
         workItemId={item.id}
         currentStatus={item.status}
         person={session.person}
       />
 
-      {/* Open actions */}
       {itemActions.filter((a) => a.status === 'Open').length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Open Actions</h2>
@@ -99,7 +96,6 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
         </section>
       )}
 
-      {/* Open decisions */}
       {itemDecisions.filter((d) => d.status === 'Open').length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Open Decisions</h2>
@@ -115,7 +111,6 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
         </section>
       )}
 
-      {/* Activity log */}
       <section>
         <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">Activity Log</h2>
         <div className="space-y-1">

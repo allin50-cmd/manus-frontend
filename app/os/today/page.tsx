@@ -73,7 +73,7 @@ export default async function TodayPage() {
               return (
                 <Link
                   key={item.id}
-                  href={`/work-items/${item.id}`}
+                  href={`/os/work-items/${item.id}`}
                   className="block bg-white rounded-xl border border-slate-200 hover:border-blue-300 px-4 py-3 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -111,7 +111,7 @@ export default async function TodayPage() {
               return (
                 <Link
                   key={action.id}
-                  href={`/work-items/${action.workItem.id}`}
+                  href={`/os/work-items/${action.workItem.id}`}
                   className="block bg-yellow-50 rounded-xl border border-yellow-200 px-4 py-3 hover:border-yellow-400 transition-colors"
                 >
                   <p className="font-medium text-slate-900">{action.label}</p>
