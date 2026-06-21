@@ -16,7 +16,7 @@
 
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { monitoredCompanies, alertHistory } from '../db/schema'
 
 const ALERT_DAYS = [30, 14, 7]
@@ -200,7 +200,7 @@ async function main() {
   const companies = await db
     .select()
     .from(monitoredCompanies)
-    .where(isNotNull(monitoredCompanies.email))
+    .where(and(isNotNull(monitoredCompanies.email), isNull(monitoredCompanies.cancelledAt)))
 
   console.log(`Checking deadlines for ${companies.length} monitored companies...`)
 

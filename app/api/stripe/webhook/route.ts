@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { and, eq, isNull } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
 import { monitoredCompanies } from '@/db/schema'
 
@@ -37,19 +38,66 @@ export async function POST(req: NextRequest) {
 
     if (companyNumber && companyName) {
       const email = session.customer_details?.email ?? (session.customer_email ?? null)
+      const subscriptionId =
+        session.subscription != null
+          ? typeof session.subscription === 'string'
+            ? session.subscription
+            : session.subscription.id
+          : null
       try {
         const db = await getDb()
         await db
           .insert(monitoredCompanies)
-          .values({ companyNumber, companyName, email, stripeSessionId: session.id })
+          .values({
+            companyNumber,
+            companyName,
+            email,
+            stripeSessionId: session.id,
+            stripeSubscriptionId: subscriptionId,
+            cancelledAt: null,
+          })
           .onConflictDoUpdate({
             target: monitoredCompanies.companyNumber,
-            set: { stripeSessionId: session.id, ...(email ? { email } : {}) },
+            set: {
+              stripeSessionId: session.id,
+              stripeSubscriptionId: subscriptionId,
+              cancelledAt: null,
+              ...(email ? { email } : {}),
+            },
           })
+        console.log(`FineGuard activated for ${companyName} (${companyNumber}), sub=${subscriptionId}`)
       } catch (err) {
         console.error('Stripe monitoring activation failed:', String(err))
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
       }
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object as Stripe.Subscription
+    try {
+      const db = await getDb()
+      const updated = await db
+        .update(monitoredCompanies)
+        .set({ cancelledAt: new Date() })
+        .where(
+          and(
+            eq(monitoredCompanies.stripeSubscriptionId, sub.id),
+            isNull(monitoredCompanies.cancelledAt),
+          ),
+        )
+        .returning({ companyNumber: monitoredCompanies.companyNumber, companyName: monitoredCompanies.companyName })
+
+      if (updated.length === 0) {
+        console.log(`Stripe cancellation: no active company found for subscription ${sub.id} — already cancelled or not found`)
+      } else {
+        for (const row of updated) {
+          console.log(`FineGuard monitoring cancelled for ${row.companyName} (${row.companyNumber}), sub=${sub.id}`)
+        }
+      }
+    } catch (err) {
+      console.error('Stripe cancellation handler failed:', String(err))
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
   }
 

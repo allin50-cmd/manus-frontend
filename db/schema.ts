@@ -286,7 +286,9 @@ export const monitoredCompanies = pgTable('monitored_companies', {
   companyName: varchar('company_name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }),
   stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull(),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
   activatedAt: timestamp('activated_at').defaultNow().notNull(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
 })
 
 /**
