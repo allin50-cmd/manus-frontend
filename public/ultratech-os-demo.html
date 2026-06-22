@@ -1,1266 +1,919 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Ultratech OS — Demo</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Ultratech OS — Mobile Demo</title>
 <style>
 :root {
-  --bg: #050816;
-  --bg2: #071120;
-  --sidebar: #060C1C;
-  --border: rgba(255,255,255,0.07);
-  --text: rgba(255,255,255,0.92);
-  --text-dim: rgba(255,255,255,0.32);
-  --text-muted: rgba(255,255,255,0.18);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bg:#050816; --sidebar:#060C1C; --border:rgba(255,255,255,0.07);
+  --safe-b:env(safe-area-inset-bottom,0px);
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; color: var(--text); overflow: hidden; }
-button { font-family: inherit; border: none; cursor: pointer; background: none; color: inherit; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;color:white;overflow:hidden}
+button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit}
 
-/* ── Base layer: home ── */
-#home {
-  position: fixed; inset: 0; z-index: 0;
-  display: flex; flex-direction: row;
-  background: linear-gradient(160deg, #050816 0%, #071120 55%, #0B1830 100%);
-}
+/* ── Home base ── */
+#home{position:fixed;inset:0;z-index:0;display:flex;background:linear-gradient(160deg,#050816 0%,#071120 55%,#0B1830 100%)}
 
-/* ── Sidebar (desktop only) ── */
-.sidebar {
-  display: none; flex-direction: column; width: 220px; flex-shrink: 0;
-  background: var(--sidebar); border-right: 1px solid var(--border);
-  height: 100vh; overflow-y: auto;
-}
-@media (min-width: 1024px) { .sidebar { display: flex; } }
-
-.sidebar-logo { padding: 18px 16px; border-bottom: 1px solid var(--border); }
-.sidebar-logo-inner { display: flex; align-items: center; gap: 10px; }
-.logo-icon {
-  width: 24px; height: 24px; border-radius: 8px;
-  background: linear-gradient(135deg, #7A5AF8, #3D8BFF);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.logo-text { font-size: 11px; font-weight: 700; letter-spacing: -0.2px; color: rgba(255,255,255,0.8); }
-
-.sidebar-section { padding: 12px 8px 4px; }
-.sidebar-section-label {
-  font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(255,255,255,0.2); padding: 0 10px; margin-bottom: 6px;
-}
-.sidebar-section + .sidebar-section { border-top: 1px solid var(--border); padding-top: 16px; }
-
-.sb-link {
-  display: flex; align-items: center; gap: 10px;
-  padding: 6px 10px; border-radius: 8px;
-  font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,0.38);
-  transition: background 0.15s, color 0.15s;
-  cursor: pointer; width: 100%; text-align: left;
-}
-.sb-link:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.05); }
-.sb-link.active { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.07); }
-.sb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-.sidebar-user {
-  margin-top: auto; padding: 16px; border-top: 1px solid var(--border);
-}
-.sidebar-avatar {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: linear-gradient(135deg, #7A5AF8, #A855F7);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: white; flex-shrink: 0;
-}
-.sidebar-user-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.sidebar-user-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.75); }
-.sidebar-logout { font-size: 10px; color: rgba(255,255,255,0.22); cursor: pointer; }
-.sidebar-logout:hover { color: rgba(255,255,255,0.5); }
+/* ── Sidebar ── */
+.sidebar{display:none;flex-direction:column;width:220px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);height:100vh;overflow-y:auto}
+@media(min-width:1024px){.sidebar{display:flex}}
+.sb-logo{padding:18px 16px;border-bottom:1px solid var(--border)}
+.sb-logo-row{display:flex;align-items:center;gap:10px}
+.sb-logo-icon{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#7A5AF8,#3D8BFF);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-logo-text{font-size:11px;font-weight:700;letter-spacing:-0.2px;color:rgba(255,255,255,0.8)}
+.sb-section{padding:10px 8px 4px}
+.sb-section+.sb-section{border-top:1px solid var(--border);padding-top:14px}
+.sb-label{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:0 10px;margin-bottom:6px}
+.sb-link{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.38);transition:background .15s,color .15s;cursor:pointer;width:100%;text-align:left}
+.sb-link:hover,.sb-link.active{color:rgba(255,255,255,0.9);background:rgba(255,255,255,0.07)}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sb-user{margin-top:auto;padding:16px;border-top:1px solid var(--border)}
+.sb-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7A5AF8,#A855F7);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;box-shadow:0 2px 8px rgba(122,90,248,0.4)}
+.sb-user-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sb-user-name{font-size:12px;font-weight:600;color:rgba(255,255,255,0.8)}
+.sb-user-role{font-size:10px;color:rgba(255,255,255,0.28)}
+.sb-logout{font-size:10px;color:rgba(255,255,255,0.22);cursor:pointer}
+.sb-logout:hover{color:rgba(255,255,255,0.5)}
 
 /* ── Home content ── */
-.home-content {
-  flex: 1; overflow-y: auto; padding: 28px 20px 100px;
-  -webkit-overflow-scrolling: touch;
-}
-@media (min-width: 1024px) { .home-content { padding: 40px 40px 60px; } }
+.home-scroll{flex:1;overflow-y:auto;padding:28px 16px 120px;-webkit-overflow-scrolling:touch}
+@media(min-width:1024px){.home-scroll{padding:36px 36px 60px}}
+.greeting-sub{font-size:12px;color:rgba(255,255,255,0.32);margin-bottom:4px}
+.greeting-name{font-size:28px;font-weight:700;letter-spacing:-.5px;color:rgba(255,255,255,0.95);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+@media(min-width:640px){.greeting-name{font-size:36px}}
 
-.home-greeting { margin-bottom: 32px; }
-.home-greeting-time { font-size: 13px; color: rgba(255,255,255,0.38); margin-bottom: 4px; }
-.home-greeting-name { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: rgba(255,255,255,0.92); }
-@media (min-width: 640px) { .home-greeting-name { font-size: 36px; } }
+/* ── Module grid ── */
+.mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:1024px){.mod-grid{grid-template-columns:repeat(4,1fr);gap:14px}}
+.mod-card{border-radius:18px;padding:14px;background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.09);cursor:pointer;transition:transform .15s,background .2s;display:flex;flex-direction:column;min-height:150px;-webkit-tap-highlight-color:transparent}
+.mod-card:hover{background:rgba(255,255,255,0.085);transform:translateY(-1px)}
+.mod-card:active{transform:scale(.97)}
+.mod-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:auto}
 
-.module-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
-}
-@media (min-width: 640px) { .module-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
-@media (min-width: 1024px) { .module-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+/* ── Icon box ── */
+.icon-box{width:60px;height:60px;border-radius:20px;position:relative;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.icon-gloss{position:absolute;inset-x:0;top:0;height:55%;background:linear-gradient(180deg,rgba(255,255,255,0.35) 0%,rgba(255,255,255,0.08) 60%,transparent 100%);pointer-events:none;z-index:1;border-radius:20px 20px 0 0}
+.icon-spec{position:absolute;inset-y:0;left:0;width:28%;background:linear-gradient(90deg,rgba(255,255,255,0.14) 0%,transparent 100%);pointer-events:none;z-index:1}
+.icon-emoji{font-size:32px;line-height:1;display:block;user-select:none;position:relative;z-index:2;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))}
 
-.module-card {
-  border-radius: 18px; padding: 16px 14px 14px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
-  cursor: pointer; transition: background 0.2s, transform 0.15s;
-  display: flex; flex-direction: column; gap: 10px;
-  -webkit-tap-highlight-color: transparent;
-  min-height: 110px;
-}
-.module-card:hover { background: rgba(255,255,255,0.07); transform: translateY(-1px); }
-.module-card:active { transform: scale(0.97); }
+.notif-badge{font-size:10px;font-weight:700;min-width:20px;height:20px;padding:0 5px;border-radius:99px;display:flex;align-items:center;justify-content:center;background:#FF3B30;color:white;box-shadow:0 2px 8px rgba(255,59,48,0.5)}
+.mod-bottom{display:flex;align-items:flex-end;justify-content:space-between;margin-top:12px;gap:6px}
+.mod-label{font-size:13px;font-weight:600;color:rgba(255,255,255,0.92)}
+.mod-desc{font-size:10px;color:rgba(255,255,255,0.32);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mod-chevron{color:rgba(255,255,255,0.3);flex-shrink:0;font-size:12px}
 
-.icon-box {
-  width: 64px; height: 64px; border-radius: 20px;
-  position: relative; overflow: hidden; flex-shrink: 0;
-}
-.icon-gloss {
-  position: absolute; inset-x: 0; top: 0; height: 55%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 60%, transparent 100%);
-  pointer-events: none; z-index: 1; border-radius: 20px 20px 0 0;
-}
-.icon-specular {
-  position: absolute; inset-y: 0; left: 0; width: 28%;
-  background: linear-gradient(90deg, rgba(255,255,255,0.14) 0%, transparent 100%);
-  pointer-events: none; z-index: 1;
-}
-.icon-inner {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2;
-}
-.icon-emoji {
-  font-size: 36px; line-height: 1; display: block; user-select: none;
-  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-}
+/* ── Focus bar ── */
+.focus-bar{margin-top:14px;border-radius:16px;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.focus-left{display:flex;align-items:center;gap:10px;min-width:0}
+.focus-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:.06em;text-transform:uppercase}
+.focus-text{font-size:13px;font-weight:500;color:rgba(255,255,255,0.85)}
+.focus-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.focus-meeting{font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:.06em;text-transform:uppercase;text-align:right}
+.focus-meeting-name{font-size:12px;color:rgba(255,255,255,0.8);text-align:right}
+.focus-time{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;background:rgba(61,139,255,0.2);color:#3D8BFF;border:1px solid rgba(61,139,255,0.3)}
 
-.module-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); }
-.module-sub { font-size: 10px; color: rgba(255,255,255,0.32); margin-top: 1px; line-height: 1.4; }
+/* ── Persona bar ── */
+.persona-bar{display:flex;gap:8px;padding:16px 16px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0}
+.persona-bar::-webkit-scrollbar{display:none}
+.pchip{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);font-size:13px;font-weight:500;color:rgba(255,255,255,0.5);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.pchip.active{background:rgba(255,255,255,0.15);color:white;border-color:rgba(255,255,255,0.25)}
+.pavatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
 
-/* ── Mobile bottom nav ── */
-.bottom-nav {
-  display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-  background: #060C1C; border-top: 1px solid var(--border);
-  padding-bottom: var(--safe-bottom);
-}
-@media (min-width: 1024px) { .bottom-nav { display: none; } }
-.bottom-nav-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: 10px 4px; font-size: 10px; color: rgba(255,255,255,0.28);
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
-}
-.bottom-nav-item.active { color: white; }
-.bottom-nav-icon { font-size: 18px; line-height: 1; margin-bottom: 2px; }
+/* ── Bottom nav ── */
+.bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;background:#060C1C;border-top:1px solid var(--border);padding-bottom:var(--safe-b)}
+@media(min-width:1024px){.bottom-nav{display:none}}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;font-size:10px;color:rgba(255,255,255,0.28);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .15s}
+.bn-item.active{color:white}
+.bn-icon{font-size:18px;line-height:1;margin-bottom:2px}
 
 /* ── Overlay screens ── */
-.screen {
-  position: fixed; inset: 0; z-index: 10;
-  display: none; flex-direction: column;
-  background: #F1F5F9;
-  transform: translateX(100%);
-  will-change: transform;
-}
-.screen.visible { display: flex; }
+.screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;background:#F1F5F9;transform:translateX(100%);will-change:transform}
 
-/* ── Screen topbar ── */
-.screen-topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  height: 56px; padding: 0 16px;
-  background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  flex-shrink: 0; position: sticky; top: 0; z-index: 5;
-}
-.topbar-back {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 14px; font-weight: 500; color: #64748B;
-  cursor: pointer; padding: 8px 0; min-width: 44px;
-  -webkit-tap-highlight-color: transparent;
-}
-.topbar-back:hover { color: #1e293b; }
-.topbar-back svg { width: 16px; height: 16px; }
-.topbar-title { font-size: 15px; font-weight: 600; color: #0F172A; }
-.topbar-action { font-size: 13px; color: #3D8BFF; cursor: pointer; min-width: 44px; text-align: right; padding: 8px 0; }
+/* ── Topbar ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0;position:sticky;top:0;z-index:5}
+.tb-back{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:500;color:#64748B;cursor:pointer;padding:8px 0;min-width:44px;-webkit-tap-highlight-color:transparent}
+.tb-back:hover{color:#1e293b}
+.tb-back svg{width:16px;height:16px}
+.tb-title{font-size:15px;font-weight:600;color:#0F172A}
+.tb-action{font-size:13px;color:#3D8BFF;cursor:pointer;min-width:44px;text-align:right;padding:8px 0}
 
 /* ── Screen body ── */
-.screen-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.sbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
-/* ── List items ── */
-.list-section { padding: 16px 16px 0; }
-.list-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 8px; }
-.list-card {
-  background: white; border-radius: 14px; overflow: hidden; margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 8px rgba(0,0,0,0.04);
-}
-.list-row {
-  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
-  border-bottom: 1px solid #F1F5F9; cursor: pointer;
-  -webkit-tap-highlight-color: transparent; transition: background 0.15s;
-}
-.list-row:last-child { border-bottom: none; }
-.list-row:hover { background: #F8FAFC; }
-.list-row:active { background: #F1F5F9; }
+/* ── Cards ── */
+.sec{padding:16px 16px 0}
+.sec-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#94A3B8;margin-bottom:8px}
+.card{background:white;border-radius:14px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 8px rgba(0,0,0,0.04)}
+.row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #F1F5F9;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+.row:last-child{border-bottom:none}
+.row:hover{background:#F8FAFC}
+.row:active{background:#F1F5F9}
+.ri{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.rm{flex:1;min-width:0}
+.rt{font-size:14px;font-weight:600;color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs{font-size:12px;color:#64748B;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rr{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.rd{font-size:11px;color:#94A3B8}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;display:inline-block}
+.bg{background:#D1FAE5;color:#065F46}
+.bb{background:#DBEAFE;color:#1D4ED8}
+.ba{background:#FEF3C7;color:#92400E}
+.br{background:#FEE2E2;color:#991B1B}
+.bgr{background:#F1F5F9;color:#475569}
+.bp{background:#EDE9FE;color:#5B21B6}
 
-.row-icon {
-  width: 40px; height: 40px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  font-size: 18px;
-}
-.row-main { flex: 1; min-width: 0; }
-.row-title { font-size: 14px; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row-sub { font-size: 12px; color: #64748B; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-.row-date { font-size: 11px; color: #94A3B8; }
-.badge {
-  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px;
-  display: inline-block;
-}
-.badge-green { background: #D1FAE5; color: #065F46; }
-.badge-blue { background: #DBEAFE; color: #1D4ED8; }
-.badge-amber { background: #FEF3C7; color: #92400E; }
-.badge-red { background: #FEE2E2; color: #991B1B; }
-.badge-gray { background: #F1F5F9; color: #475569; }
-.badge-purple { background: #EDE9FE; color: #5B21B6; }
+/* ── Stats ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 16px 0}
+.stat{background:white;border-radius:14px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.slabel{font-size:11px;color:#94A3B8;margin-bottom:3px}
+.sval{font-size:22px;font-weight:700;color:#0F172A}
+.schg{font-size:11px;margin-top:2px}
+.schg.up{color:#16A34A}
+.schg.dn{color:#DC2626}
 
-/* ── Detail screens ── */
-.detail-hero {
-  background: linear-gradient(135deg, #0F172A, #1E293B);
-  padding: 24px 20px; color: white;
-}
-.detail-hero-label { font-size: 11px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
-.detail-hero-title { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 6px; }
-.detail-hero-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+/* ── Detail hero ── */
+.hero{padding:22px 20px;color:white}
+.hero-tag{font-size:11px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.hero-title{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:5px}
+.hero-sub{font-size:13px;color:rgba(255,255,255,0.5)}
+.dcard{background:white;border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.drow{display:flex;justify-content:space-between;align-items:flex-start;padding:13px 16px;border-bottom:1px solid #F1F5F9;gap:12px}
+.drow:last-child{border-bottom:none}
+.dlabel{font-size:13px;color:#64748B;flex-shrink:0}
+.dval{font-size:13px;font-weight:500;color:#0F172A;text-align:right}
 
-.detail-section { padding: 20px 16px 0; }
-.detail-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 10px; }
+/* ── Score bar ── */
+.score-wrap{flex:1;display:flex;align-items:center;gap:8px}
+.score-bg{flex:1;height:6px;background:#E2E8F0;border-radius:99px;overflow:hidden}
+.score-fill{height:100%;border-radius:99px}
+.score-num{font-size:13px;font-weight:700}
 
-.detail-card { background: white; border-radius: 14px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-.detail-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 13px 16px; border-bottom: 1px solid #F1F5F9; gap: 12px; }
-.detail-row:last-child { border-bottom: none; }
-.detail-row-label { font-size: 13px; color: #64748B; flex-shrink: 0; }
-.detail-row-value { font-size: 13px; font-weight: 500; color: #0F172A; text-align: right; }
+/* ── Buttons ── */
+.btn{display:block;width:calc(100% - 32px);margin:10px 16px;padding:14px;border-radius:12px;font-size:14px;font-weight:600;text-align:center;cursor:pointer;transition:opacity .15s;-webkit-tap-highlight-color:transparent}
+.btn:active{opacity:.8}
+.btn-p{background:#3D8BFF;color:white}
+.btn-s{background:#F1F5F9;color:#0F172A}
+.btn-r{background:#FEE2E2;color:#991B1B}
 
-.score-bar-wrap { flex: 1; display: flex; align-items: center; gap: 8px; }
-.score-bar-bg { flex: 1; height: 6px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
-.score-bar-fill { height: 100%; border-radius: 99px; }
-.score-num { font-size: 13px; font-weight: 700; }
+/* ── Tab bar inside screen ── */
+.tab-bar{display:flex;border-bottom:1px solid rgba(0,0,0,0.06);background:white;flex-shrink:0;overflow-x:auto}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-item{flex:1;padding:12px 8px;text-align:center;font-size:12px;font-weight:500;color:#94A3B8;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;-webkit-tap-highlight-color:transparent;transition:color .15s}
+.tab-item.active{color:#0F172A;border-bottom-color:#3D8BFF}
 
-.action-btn {
-  display: block; width: calc(100% - 32px); margin: 12px 16px;
-  padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 600;
-  text-align: center; cursor: pointer; transition: opacity 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.action-btn:active { opacity: 0.8; }
-.action-btn-primary { background: #3D8BFF; color: white; }
-.action-btn-secondary { background: #F1F5F9; color: #0F172A; }
+/* ── Persona section ── */
+.persona-section{display:none}
+.persona-section.active{display:block}
 
-/* ── Stat cards ── */
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 16px 0; }
-.stat-card { background: white; border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-.stat-label { font-size: 11px; color: #94A3B8; margin-bottom: 4px; }
-.stat-value { font-size: 24px; font-weight: 700; color: #0F172A; }
-.stat-change { font-size: 11px; margin-top: 2px; }
-.stat-change.up { color: #16A34A; }
-.stat-change.down { color: #DC2626; }
+/* ── Work view (dark alert) ── */
+.alert-card{background:white;border-radius:16px;margin:12px 16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.alert-card-header{padding:14px 16px 10px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #F1F5F9}
+.alert-icon-lg{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.alert-card-body{padding:14px 16px}
+.alert-amount{font-size:28px;font-weight:700;color:#0F172A;margin-bottom:2px}
+.alert-context{font-size:13px;color:#64748B}
 
-/* ── Persona switcher ── */
-.persona-bar {
-  display: flex; gap: 8px; padding: 12px 16px;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  flex-shrink: 0;
-}
-.persona-bar::-webkit-scrollbar { display: none; }
-.persona-chip {
-  display: flex; align-items: center; gap: 8px; padding: 8px 14px;
-  border-radius: 99px; border: 1px solid #E2E8F0; background: white;
-  font-size: 13px; font-weight: 500; color: #475569;
-  white-space: nowrap; cursor: pointer; flex-shrink: 0;
-  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
-}
-.persona-chip.active { background: #0F172A; color: white; border-color: #0F172A; }
-.persona-avatar {
-  width: 24px; height: 24px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: white; flex-shrink: 0;
-}
+/* ── Timeline ── */
+.timeline-item{display:flex;gap:12px;padding:10px 16px}
+.tl-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.tl-line{width:1px;background:#E2E8F0;margin:0 3.5px}
+.tl-content{flex:1}
+.tl-title{font-size:13px;font-weight:600;color:#0F172A}
+.tl-sub{font-size:12px;color:#64748B;margin-top:1px}
+.tl-time{font-size:11px;color:#94A3B8;margin-top:2px}
 
-/* ── Empty state ── */
-.empty-state { padding: 60px 20px; text-align: center; }
-.empty-state-icon { font-size: 40px; margin-bottom: 12px; }
-.empty-state-title { font-size: 16px; font-weight: 600; color: #334155; margin-bottom: 4px; }
-.empty-state-sub { font-size: 13px; color: #94A3B8; }
+/* ── Money workspace chart mock ── */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:4px;height:80px;padding:0 16px}
+.chart-bar{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(0deg,#3D8BFF,#80BFFF);min-width:8px}
+.chart-labels{display:flex;gap:4px;padding:4px 16px 0;justify-content:space-between}
+.chart-label{flex:1;text-align:center;font-size:9px;color:#94A3B8}
 
-/* ── Ambient glows (home) ── */
-.glow-blob {
-  position: absolute; border-radius: 50%; filter: blur(80px);
-  pointer-events: none; z-index: 0;
-}
-
-/* ── Persona view ── */
-.persona-view { display: none; }
-.persona-view.active { display: block; }
+/* ── pb safety ── */
+.pb-safe{height:calc(24px + var(--safe-b))}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════
-     HOME SCREEN (base layer, always present)
-═══════════════════════════════════════════════ -->
+<!-- ═══════════ HOME ═══════════ -->
 <div id="home">
-
-  <!-- Sidebar -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-inner">
-        <div class="logo-icon">
-          <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-        </div>
-        <span class="logo-text">Ultratech OS</span>
-      </div>
-    </div>
-
-    <div class="sidebar-section">
+    <div class="sb-logo"><div class="sb-logo-row"><div class="sb-logo-icon"><svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3" style="width:12px;height:12px"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div><span class="sb-logo-text">Ultratech OS</span></div></div>
+    <div class="sb-section">
       <button class="sb-link active" onclick="showHome()">Home</button>
-      <button class="sb-link" onclick="push('screen-activity')">Activity</button>
+      <button class="sb-link" onclick="push('sc-activity')">Activity</button>
+      <button class="sb-link" onclick="">Calendar</button>
+      <button class="sb-link" onclick="">Favourites</button>
     </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Modules</div>
-      <button class="sb-link" onclick="push('screen-money')"><span class="sb-dot" style="background:#FFC145"></span>Money</button>
-      <button class="sb-link" onclick="push('screen-messages')"><span class="sb-dot" style="background:#20AFFF"></span>Messages</button>
-      <button class="sb-link" onclick="push('screen-calls')"><span class="sb-dot" style="background:#28C76F"></span>Calls</button>
-      <button class="sb-link" onclick="push('screen-companies')"><span class="sb-dot" style="background:#7A5AF8"></span>Companies</button>
-      <button class="sb-link" onclick="push('screen-alerts')"><span class="sb-dot" style="background:#FF8A34"></span>Alerts</button>
-      <button class="sb-link" onclick="push('screen-tasks')"><span class="sb-dot" style="background:#3D8BFF"></span>Tasks</button>
-      <button class="sb-link" onclick="push('screen-documents')"><span class="sb-dot" style="background:#818CF8"></span>Documents</button>
-      <button class="sb-link" onclick="push('screen-contacts')"><span class="sb-dot" style="background:#A855F7"></span>Contacts</button>
+    <div class="sb-section">
+      <div class="sb-label">Modules</div>
+      <button class="sb-link" onclick="push('sc-money')"><span class="sb-dot" style="background:#FFC145"></span>Money</button>
+      <button class="sb-link" onclick="push('sc-messages')"><span class="sb-dot" style="background:#20AFFF"></span>Messages</button>
+      <button class="sb-link" onclick="push('sc-calls')"><span class="sb-dot" style="background:#28C76F"></span>Calls</button>
+      <button class="sb-link" onclick="push('sc-contacts')"><span class="sb-dot" style="background:#A855F7"></span>Contacts</button>
+      <button class="sb-link" onclick="push('sc-alerts')"><span class="sb-dot" style="background:#FF8A34"></span>Alerts</button>
+      <button class="sb-link" onclick="push('sc-tasks')"><span class="sb-dot" style="background:#3D8BFF"></span>Tasks</button>
+      <button class="sb-link" onclick="push('sc-companies')"><span class="sb-dot" style="background:#7A5AF8"></span>Companies</button>
+      <button class="sb-link" onclick="push('sc-documents')"><span class="sb-dot" style="background:#818CF8"></span>Documents</button>
     </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Companies</div>
-      <button class="sb-link" onclick="push('screen-fineguard')"><span class="sb-dot" style="background:#00A86B"></span>FineGuard</button>
-      <button class="sb-link" onclick="push('screen-bbj')"><span class="sb-dot" style="background:#F97316"></span>Builder Big Jobs</button>
-      <button class="sb-link" onclick="push('screen-ultratech')"><span class="sb-dot" style="background:#3B82F6"></span>Ultratech</button>
-      <button class="sb-link" onclick="push('screen-accuracy')"><span class="sb-dot" style="background:#8B5CF6"></span>Accuracy Ltd</button>
+    <div class="sb-section">
+      <div class="sb-label">Companies</div>
+      <button class="sb-link" onclick="push('sc-fg')"><span class="sb-dot" style="background:#00A86B"></span>FineGuard</button>
+      <button class="sb-link" onclick="push('sc-bbj')"><span class="sb-dot" style="background:#F97316"></span>Builder Big Jobs</button>
+      <button class="sb-link" onclick="push('sc-ultratech')"><span class="sb-dot" style="background:#3B82F6"></span>Ultratech</button>
+      <button class="sb-link" onclick="push('sc-accuracy')"><span class="sb-dot" style="background:#8B5CF6"></span>Accuracy Ltd</button>
     </div>
-
-    <div class="sidebar-user">
-      <div class="sidebar-user-row">
-        <div class="sidebar-avatar">G</div>
-        <span class="sidebar-user-name">George</span>
-      </div>
-      <button class="sidebar-logout">Log out</button>
+    <div class="sb-section">
+      <button class="sb-link" onclick="">Settings</button>
+    </div>
+    <div class="sb-user">
+      <div class="sb-user-row"><div class="sb-avatar">G</div><div><div class="sb-user-name">George Thomas</div><div class="sb-user-role">Founder</div></div></div>
+      <button class="sb-logout">Log out</button>
     </div>
   </aside>
 
-  <!-- Home content -->
-  <div class="home-content" style="position:relative; z-index:1;">
-    <!-- Ambient blobs -->
-    <div class="glow-blob" style="width:400px;height:400px;background:rgba(122,90,248,0.12);top:-100px;right:-80px;position:fixed;"></div>
-    <div class="glow-blob" style="width:300px;height:300px;background:rgba(61,139,255,0.09);bottom:100px;left:20%;position:fixed;"></div>
-
+  <div class="home-scroll">
     <!-- Greeting -->
-    <div class="home-greeting">
-      <div class="home-greeting-time" id="greeting-time">Good morning.</div>
-      <div class="home-greeting-name">George</div>
+    <div class="greeting-sub" id="greeting-time">Good morning.</div>
+    <div class="greeting-name">George <span>👋</span></div>
+
+    <!-- Persona switcher -->
+    <div class="persona-bar">
+      <div class="pchip active" onclick="switchPersona('george',this)">
+        <div class="pavatar" style="background:linear-gradient(135deg,#FFC145,#FF8A34)">G</div>George
+      </div>
+      <div class="pchip" onclick="switchPersona('dagon',this)">
+        <div class="pavatar" style="background:linear-gradient(135deg,#20AFFF,#7A5AF8)">D</div>Dagon
+      </div>
+      <div class="pchip" onclick="switchPersona('alissa',this)">
+        <div class="pavatar" style="background:linear-gradient(135deg,#28C76F,#00A86B)">A</div>Alissa
+      </div>
     </div>
 
-    <!-- Module grid -->
-    <div class="module-grid">
-
-      <!-- Money -->
-      <div class="module-card" onclick="push('screen-money')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #FFF0A0 0%, #FFD000 50%, #A85C00 100%); box-shadow:0 16px 48px -8px rgba(255,193,69,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">🪙</span></div>
+    <!-- George view -->
+    <div class="persona-section active" id="pv-george">
+      <div class="mod-grid">
+        <div class="mod-card" onclick="push('sc-money')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#FFF0A0 0%,#FFD000 50%,#A85C00 100%);box-shadow:0 12px 36px -6px rgba(255,193,69,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">🪙</span></div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Money</div><div class="mod-desc">Find your financial summary</div></div><span class="mod-chevron">›</span></div>
         </div>
-        <div>
-          <div class="module-label">Money</div>
-          <div class="module-sub">Revenue · Invoices</div>
+        <div class="mod-card" onclick="push('sc-messages')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#A8E8FF 0%,#20AFFF 50%,#003A8C 100%);box-shadow:0 12px 36px -6px rgba(32,175,255,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">✉️</span></div><div class="notif-badge">8</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Messages</div><div class="mod-desc">8 unread messages</div></div><span class="mod-chevron">›</span></div>
         </div>
-      </div>
-
-      <!-- Messages -->
-      <div class="module-card" onclick="push('screen-messages')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #A8E8FF 0%, #20AFFF 50%, #003A8C 100%); box-shadow:0 16px 48px -8px rgba(32,175,255,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">✉️</span></div>
+        <div class="mod-card" onclick="push('sc-calls')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#90F5C0 0%,#28C76F 50%,#065E30 100%);box-shadow:0 12px 36px -6px rgba(40,199,111,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📞</span></div><div class="notif-badge">4</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Calls</div><div class="mod-desc">4 tasks today</div></div><span class="mod-chevron">›</span></div>
         </div>
-        <div>
-          <div class="module-label">Messages</div>
-          <div class="module-sub">Inbox · Threads</div>
+        <div class="mod-card" onclick="push('sc-contacts')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#E0A8FF 0%,#A855F7 50%,#550090 100%);box-shadow:0 12px 36px -6px rgba(168,85,247,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">👥</span></div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Contacts</div><div class="mod-desc">Manage your contacts</div></div><span class="mod-chevron">›</span></div>
         </div>
-      </div>
-
-      <!-- Calls -->
-      <div class="module-card" onclick="push('screen-calls')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #90F5C0 0%, #28C76F 50%, #065E30 100%); box-shadow:0 16px 48px -8px rgba(40,199,111,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">📞</span></div>
+        <div class="mod-card" onclick="push('sc-alerts')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#FFD090 0%,#FF8A34 50%,#8C2800 100%);box-shadow:0 12px 36px -6px rgba(255,138,52,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">🔔</span></div><div class="notif-badge">3</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Alerts</div><div class="mod-desc">3 things need your attention</div></div><span class="mod-chevron">›</span></div>
         </div>
-        <div>
-          <div class="module-label">Calls</div>
-          <div class="module-sub">Log · Recordings</div>
+        <div class="mod-card" onclick="push('sc-tasks')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#A0C8FF 0%,#3D8BFF 50%,#002880 100%);box-shadow:0 12px 36px -6px rgba(61,139,255,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📋</span></div><div class="notif-badge">4</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Tasks</div><div class="mod-desc">4 tasks due today</div></div><span class="mod-chevron">›</span></div>
+        </div>
+        <div class="mod-card" onclick="push('sc-companies')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#C8A8FF 0%,#7A5AF8 50%,#2E0EA0 100%);box-shadow:0 12px 36px -6px rgba(122,90,248,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">🏢</span></div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Companies</div><div class="mod-desc">Your companies</div></div><span class="mod-chevron">›</span></div>
+        </div>
+        <div class="mod-card" onclick="push('sc-documents')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#D0D4FF 0%,#818CF8 50%,#2C2CA8 100%);box-shadow:0 12px 36px -6px rgba(129,140,248,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📁</span></div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Documents</div><div class="mod-desc">Your important documents</div></div><span class="mod-chevron">›</span></div>
         </div>
       </div>
+      <div class="focus-bar">
+        <div class="focus-left"><span style="font-size:18px">⭐</span><div><div class="focus-label">Today's Focus</div><div class="focus-text">3 things need your attention</div></div></div>
+        <div class="focus-right"><div><div class="focus-meeting">Next Meeting</div><div class="focus-meeting-name">Sales Review</div></div><span class="focus-time">14:00</span></div>
+      </div>
+    </div>
 
-      <!-- Companies -->
-      <div class="module-card" onclick="push('screen-companies')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #C8A8FF 0%, #7A5AF8 50%, #2E0EA0 100%); box-shadow:0 16px 48px -8px rgba(122,90,248,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">🏢</span></div>
+    <!-- Dagon view -->
+    <div class="persona-section" id="pv-dagon">
+      <div class="mod-grid">
+        <div class="mod-card" onclick="push('sc-calls')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#90F5C0 0%,#28C76F 50%,#065E30 100%);box-shadow:0 12px 36px -6px rgba(40,199,111,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📞</span></div><div class="notif-badge">6</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Calls</div><div class="mod-desc">6 calls today</div></div><span class="mod-chevron">›</span></div>
         </div>
-        <div>
-          <div class="module-label">Companies</div>
-          <div class="module-sub">Clients · Pipeline</div>
+        <div class="mod-card" onclick="push('sc-bbj')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#FFD090 0%,#F97316 50%,#7C2D12 100%);box-shadow:0 12px 36px -6px rgba(249,115,22,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">🏗️</span></div><div class="notif-badge">2</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">BBJ Leads</div><div class="mod-desc">2 leads to follow up</div></div><span class="mod-chevron">›</span></div>
+        </div>
+        <div class="mod-card" onclick="push('sc-tasks')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#A0C8FF 0%,#3D8BFF 50%,#002880 100%);box-shadow:0 12px 36px -6px rgba(61,139,255,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📋</span></div><div class="notif-badge">2</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">My Tasks</div><div class="mod-desc">2 tasks assigned to you</div></div><span class="mod-chevron">›</span></div>
+        </div>
+        <div class="mod-card" onclick="push('sc-messages')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#A8E8FF 0%,#20AFFF 50%,#003A8C 100%);box-shadow:0 12px 36px -6px rgba(32,175,255,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">✉️</span></div><div class="notif-badge">3</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Messages</div><div class="mod-desc">3 unread</div></div><span class="mod-chevron">›</span></div>
         </div>
       </div>
+      <div class="focus-bar">
+        <div class="focus-left"><span style="font-size:18px">🎯</span><div><div class="focus-label">Your Focus</div><div class="focus-text">Hawk Construction call — 11:30</div></div></div>
+        <div class="focus-right"><span class="focus-time">11:30</span></div>
+      </div>
+    </div>
 
-      <!-- Alerts -->
-      <div class="module-card" onclick="push('screen-alerts')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #FFD090 0%, #FF8A34 50%, #8C2800 100%); box-shadow:0 16px 48px -8px rgba(255,138,52,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">🔔</span></div>
+    <!-- Alissa view -->
+    <div class="persona-section" id="pv-alissa">
+      <div class="mod-grid">
+        <div class="mod-card" onclick="push('sc-tasks')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#A0C8FF 0%,#3D8BFF 50%,#002880 100%);box-shadow:0 12px 36px -6px rgba(61,139,255,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📋</span></div><div class="notif-badge">1</div></div>
+          <div class="mod-bottom"><div><div class="mod-label">My Tasks</div><div class="mod-desc">1 task captured</div></div><span class="mod-chevron">›</span></div>
         </div>
-        <div>
-          <div class="module-label">Alerts</div>
-          <div class="module-sub">Notifications · Rules</div>
+        <div class="mod-card" onclick="push('sc-accuracy')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#D0C0FF 0%,#8B5CF6 50%,#4C1D95 100%);box-shadow:0 12px 36px -6px rgba(139,92,246,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">🎯</span></div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Accuracy Ltd</div><div class="mod-desc">Proposal pending</div></div><span class="mod-chevron">›</span></div>
+        </div>
+        <div class="mod-card" onclick="push('sc-messages')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#A8E8FF 0%,#20AFFF 50%,#003A8C 100%);box-shadow:0 12px 36px -6px rgba(32,175,255,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">✉️</span></div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Messages</div><div class="mod-desc">Inbox</div></div><span class="mod-chevron">›</span></div>
+        </div>
+        <div class="mod-card" onclick="push('sc-documents')">
+          <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#D0D4FF 0%,#818CF8 50%,#2C2CA8 100%);box-shadow:0 12px 36px -6px rgba(129,140,248,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📁</span></div></div>
+          <div class="mod-bottom"><div><div class="mod-label">Documents</div><div class="mod-desc">SOW drafts</div></div><span class="mod-chevron">›</span></div>
         </div>
       </div>
-
-      <!-- Tasks -->
-      <div class="module-card" onclick="push('screen-tasks')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #A0C8FF 0%, #3D8BFF 50%, #002880 100%); box-shadow:0 16px 48px -8px rgba(61,139,255,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">📋</span></div>
-        </div>
-        <div>
-          <div class="module-label">Tasks</div>
-          <div class="module-sub">Actions · Decisions</div>
-        </div>
+      <div class="focus-bar">
+        <div class="focus-left"><span style="font-size:18px">📌</span><div><div class="focus-label">Your Focus</div><div class="focus-text">Accuracy Ltd SOW — send today</div></div></div>
+        <div class="focus-right"><span class="focus-time" style="background:rgba(139,92,246,0.2);color:#8B5CF6;border-color:rgba(139,92,246,0.3)">EOD</span></div>
       </div>
+    </div>
 
-      <!-- Documents -->
-      <div class="module-card" onclick="push('screen-documents')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #D0D4FF 0%, #818CF8 50%, #2C2CA8 100%); box-shadow:0 16px 48px -8px rgba(129,140,248,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">📁</span></div>
-        </div>
-        <div>
-          <div class="module-label">Documents</div>
-          <div class="module-sub">Files · Templates</div>
-        </div>
-      </div>
-
-      <!-- Contacts -->
-      <div class="module-card" onclick="push('screen-contacts')">
-        <div class="icon-box" style="background:radial-gradient(circle at 30% 20%, #E0A8FF 0%, #A855F7 50%, #550090 100%); box-shadow:0 16px 48px -8px rgba(168,85,247,0.45),0 4px 16px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45);">
-          <div class="icon-gloss"></div><div class="icon-specular"></div>
-          <div class="icon-inner"><span class="icon-emoji">👥</span></div>
-        </div>
-        <div>
-          <div class="module-label">Contacts</div>
-          <div class="module-sub">People · Directory</div>
-        </div>
-      </div>
-
-    </div><!-- /module-grid -->
-  </div><!-- /home-content -->
+  </div><!-- /home-scroll -->
 </div><!-- /home -->
 
-<!-- Mobile bottom nav (home base layer) -->
-<nav class="bottom-nav" id="home-bottom-nav">
-  <button class="bottom-nav-item active" onclick="showHome()">
-    <span class="bottom-nav-icon">⊞</span>Home
-  </button>
-  <button class="bottom-nav-item" onclick="push('screen-tasks')">
-    <span class="bottom-nav-icon">≡</span>Tasks
-  </button>
-  <button class="bottom-nav-item" onclick="push('screen-alerts')">
-    <span class="bottom-nav-icon">◎</span>Alerts
-  </button>
-  <button class="bottom-nav-item" onclick="push('screen-companies')">
-    <span class="bottom-nav-icon">▦</span>Companies
-  </button>
+<!-- Bottom nav -->
+<nav class="bottom-nav" id="home-bnav">
+  <button class="bn-item active" onclick="showHome()"><span class="bn-icon">⊞</span>Home</button>
+  <button class="bn-item" onclick="push('sc-tasks')"><span class="bn-icon">≡</span>Tasks</button>
+  <button class="bn-item" onclick="push('sc-alerts')"><span class="bn-icon">◎</span>Alerts</button>
+  <button class="bn-item" onclick="push('sc-companies')"><span class="bn-icon">▦</span>Companies</button>
 </nav>
 
 
-<!-- ═══════════════════════════════════════════════
-     SCREEN: MONEY
-═══════════════════════════════════════════════ -->
-<div id="screen-money" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
-      Home
-    </button>
-    <span class="topbar-title">Money</span>
-    <span class="topbar-action">Filter</span>
-  </div>
-  <div class="screen-body">
+<!-- ═══════════ MONEY ═══════════ -->
+<div id="sc-money" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Money</span><span class="tb-action">Filter</span></div>
+  <div class="sbody">
     <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">Monthly Revenue</div>
-        <div class="stat-value">£42K</div>
-        <div class="stat-change up">↑ 12% vs last month</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Outstanding</div>
-        <div class="stat-value">£8.4K</div>
-        <div class="stat-change down">3 overdue invoices</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Collected YTD</div>
-        <div class="stat-value">£218K</div>
-        <div class="stat-change up">↑ 8% vs last year</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Avg. Payment</div>
-        <div class="stat-value">18d</div>
-        <div class="stat-change down">Target: 14 days</div>
+      <div class="stat"><div class="slabel">Monthly Revenue</div><div class="sval">£42K</div><div class="schg up">↑ 12% vs last month</div></div>
+      <div class="stat"><div class="slabel">Outstanding</div><div class="sval">£8.4K</div><div class="schg dn">3 overdue invoices</div></div>
+      <div class="stat"><div class="slabel">Collected YTD</div><div class="sval">£218K</div><div class="schg up">↑ 8% vs last year</div></div>
+      <div class="stat"><div class="slabel">Avg. Payment</div><div class="sval">18d</div><div class="schg dn">Target: 14 days</div></div>
+    </div>
+    <!-- Revenue chart mock -->
+    <div class="sec"><div class="sec-label">Revenue — Last 6 Months</div>
+      <div style="background:white;border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div class="chart-bar-wrap">
+          <div class="chart-bar" style="height:45%"></div>
+          <div class="chart-bar" style="height:60%"></div>
+          <div class="chart-bar" style="height:55%"></div>
+          <div class="chart-bar" style="height:72%"></div>
+          <div class="chart-bar" style="height:85%"></div>
+          <div class="chart-bar" style="height:95%;background:linear-gradient(0deg,#FFC145,#FFE080)"></div>
+        </div>
+        <div class="chart-labels"><span class="chart-label">Jan</span><span class="chart-label">Feb</span><span class="chart-label">Mar</span><span class="chart-label">Apr</span><span class="chart-label">May</span><span class="chart-label" style="color:#FFC145;font-weight:600">Jun</span></div>
       </div>
     </div>
-    <div class="list-section">
-      <div class="list-section-label">Recent Invoices</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#FEF3C7;font-size:20px;">🧾</div><div class="row-main"><div class="row-title">INV-2024-041</div><div class="row-sub">FineGuard Ltd · £4,800</div></div><div class="row-right"><div class="row-date">Jun 18</div><span class="badge badge-amber">Overdue</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:20px;">🧾</div><div class="row-main"><div class="row-title">INV-2024-040</div><div class="row-sub">Ultratech Ltd · £12,000</div></div><div class="row-right"><div class="row-date">Jun 15</div><span class="badge badge-green">Paid</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#DBEAFE;font-size:20px;">🧾</div><div class="row-main"><div class="row-title">INV-2024-039</div><div class="row-sub">Accuracy Ltd · £3,200</div></div><div class="row-right"><div class="row-date">Jun 12</div><span class="badge badge-blue">Sent</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:20px;">🧾</div><div class="row-main"><div class="row-title">INV-2024-038</div><div class="row-sub">Builder Big Jobs · £7,500</div></div><div class="row-right"><div class="row-date">Jun 8</div><span class="badge badge-green">Paid</span></div></div>
+    <div class="sec"><div class="sec-label">Invoices</div>
+      <div class="card">
+        <div class="row" onclick=""><div class="ri" style="background:#FEF3C7">🧾</div><div class="rm"><div class="rt">INV-2024-041</div><div class="rs">FineGuard Ltd · £4,800</div></div><div class="rr"><div class="rd">Jun 18</div><span class="badge ba">Overdue</span></div></div>
+        <div class="row"><div class="ri" style="background:#D1FAE5">🧾</div><div class="rm"><div class="rt">INV-2024-040</div><div class="rs">Ultratech Ltd · £12,000</div></div><div class="rr"><div class="rd">Jun 15</div><span class="badge bg">Paid</span></div></div>
+        <div class="row"><div class="ri" style="background:#DBEAFE">🧾</div><div class="rm"><div class="rt">INV-2024-039</div><div class="rs">Accuracy Ltd · £3,200</div></div><div class="rr"><div class="rd">Jun 12</div><span class="badge bb">Sent</span></div></div>
+        <div class="row"><div class="ri" style="background:#D1FAE5">🧾</div><div class="rm"><div class="rt">INV-2024-038</div><div class="rs">Builder Big Jobs · £7,500</div></div><div class="rr"><div class="rd">Jun 8</div><span class="badge bg">Paid</span></div></div>
       </div>
     </div>
+    <div class="pb-safe"></div>
   </div>
 </div>
 
 
-<!-- ═══════════════════════════════════════════════
-     SCREEN: MESSAGES
-═══════════════════════════════════════════════ -->
-<div id="screen-messages" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Messages</span>
-    <span class="topbar-action">New</span>
-  </div>
-  <div class="screen-body">
-    <div class="list-section">
-      <div class="list-section-label">Recent Threads</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#EDE9FE;border-radius:50%;font-size:16px;font-weight:700;color:#6D28D9;">D</div><div class="row-main"><div class="row-title">Dagon Kalev</div><div class="row-sub">BBJ pipeline update attached...</div></div><div class="row-right"><div class="row-date">10:42</div><span class="badge badge-purple" style="font-size:9px;">2</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#DBEAFE;border-radius:50%;font-size:16px;font-weight:700;color:#1D4ED8;">A</div><div class="row-main"><div class="row-title">Alissa Marsh</div><div class="row-sub">Accuracy call booked for Thu</div></div><div class="row-right"><div class="row-date">9:15</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;border-radius:50%;font-size:16px;font-weight:700;color:#065F46;">F</div><div class="row-main"><div class="row-title">FineGuard Support</div><div class="row-sub">Customer escalation resolved ✓</div></div><div class="row-right"><div class="row-date">Yesterday</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#FEF3C7;border-radius:50%;font-size:16px;font-weight:700;color:#92400E;">G</div><div class="row-main"><div class="row-title">George Morris</div><div class="row-sub">Pricing decision needed by EOD</div></div><div class="row-right"><div class="row-date">Jun 20</div></div></div>
+<!-- ═══════════ MESSAGES ═══════════ -->
+<div id="sc-messages" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Messages</span><span class="tb-action">New</span></div>
+  <div class="sbody">
+    <div class="tab-bar">
+      <div class="tab-item active">All</div>
+      <div class="tab-item">Email</div>
+      <div class="tab-item">WhatsApp</div>
+      <div class="tab-item">SMS</div>
+    </div>
+    <div class="sec"><div class="sec-label">Recent</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#EDE9FE;border-radius:50%;font-weight:700;color:#6D28D9">D</div><div class="rm"><div class="rt">Dagon Kalev</div><div class="rs">BBJ pipeline update attached...</div></div><div class="rr"><div class="rd">10:42</div><span class="badge bp">2</span></div></div>
+        <div class="row"><div class="ri" style="background:#DBEAFE;border-radius:50%;font-weight:700;color:#1D4ED8">A</div><div class="rm"><div class="rt">Alissa Marsh</div><div class="rs">Accuracy call booked for Thu</div></div><div class="rr"><div class="rd">9:15</div></div></div>
+        <div class="row"><div class="ri" style="background:#D1FAE5;border-radius:50%;font-weight:700;color:#065F46">F</div><div class="rm"><div class="rt">FineGuard Support</div><div class="rs">Customer escalation resolved ✓</div></div><div class="rr"><div class="rd">Yesterday</div></div></div>
+        <div class="row"><div class="ri" style="background:#FEF3C7;border-radius:50%;font-weight:700;color:#92400E">G</div><div class="rm"><div class="rt">George Morris</div><div class="rs">Pricing decision needed by EOD</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
       </div>
     </div>
+    <div class="pb-safe"></div>
   </div>
 </div>
 
 
-<!-- ═══════════════════════════════════════════════
-     SCREEN: CALLS
-═══════════════════════════════════════════════ -->
-<div id="screen-calls" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Calls</span>
-    <span class="topbar-action">Log</span>
-  </div>
-  <div class="screen-body">
+<!-- ═══════════ CALLS ═══════════ -->
+<div id="sc-calls" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Calls</span><span class="tb-action">Log</span></div>
+  <div class="sbody">
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">This Week</div><div class="stat-value">14</div><div class="stat-change up">↑ 3 vs last week</div></div>
-      <div class="stat-card"><div class="stat-label">Avg. Duration</div><div class="stat-value">8m</div><div class="stat-change">Normal range</div></div>
+      <div class="stat"><div class="slabel">This Week</div><div class="sval">14</div><div class="schg up">↑ 3 vs last week</div></div>
+      <div class="stat"><div class="slabel">Avg. Duration</div><div class="sval">8m</div></div>
     </div>
-    <div class="list-section">
-      <div class="list-section-label">Recent Calls</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;">📞</div><div class="row-main"><div class="row-title">Hawk Construction Ltd</div><div class="row-sub">Dagon · 12 min</div></div><div class="row-right"><div class="row-date">Today 11:20</div><span class="badge badge-green">Done</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#FEE2E2;">📞</div><div class="row-main"><div class="row-title">Premier Build Co</div><div class="row-sub">George · Missed</div></div><div class="row-right"><div class="row-date">Today 9:05</div><span class="badge badge-red">Missed</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;">📞</div><div class="row-main"><div class="row-title">FineGuard Renewal</div><div class="row-sub">Alissa · 24 min</div></div><div class="row-right"><div class="row-date">Yesterday</div><span class="badge badge-green">Done</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;">📞</div><div class="row-main"><div class="row-title">Accuracy Planning</div><div class="row-sub">George · 18 min</div></div><div class="row-right"><div class="row-date">Jun 20</div><span class="badge badge-green">Done</span></div></div>
+    <div class="sec"><div class="sec-label">Today</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">Hawk Construction Ltd</div><div class="rs">Dagon · 12 min</div></div><div class="rr"><div class="rd">11:20</div><span class="badge bg">Done</span></div></div>
+        <div class="row"><div class="ri" style="background:#FEE2E2">📞</div><div class="rm"><div class="rt">Premier Build Co</div><div class="rs">George · Missed</div></div><div class="rr"><div class="rd">9:05</div><span class="badge br">Missed</span></div></div>
       </div>
     </div>
+    <div class="sec"><div class="sec-label">Recent Calls</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">FineGuard Renewal</div><div class="rs">Alissa · 24 min</div></div><div class="rr"><div class="rd">Yesterday</div><span class="badge bg">Done</span></div></div>
+        <div class="row"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">Accuracy Planning</div><div class="rs">George · 18 min</div></div><div class="rr"><div class="rd">Jun 20</div><span class="badge bg">Done</span></div></div>
+        <div class="row"><div class="ri" style="background:#FEE2E2">📞</div><div class="rm"><div class="rt">Meridian Builders</div><div class="rs">Dagon · No answer</div></div><div class="rr"><div class="rd">Jun 20</div><span class="badge br">Missed</span></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
   </div>
 </div>
 
 
-<!-- ═══════════════════════════════════════════════
-     SCREEN: COMPANIES (list)
-═══════════════════════════════════════════════ -->
-<div id="screen-companies" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Companies</span>
-    <span class="topbar-action">Add</span>
-  </div>
-  <div class="screen-body">
-    <div class="list-section">
-      <div class="list-section-label">Managed Companies</div>
-      <div class="list-card">
-        <div class="list-row" onclick="push('screen-fineguard')"><div class="row-icon" style="background:#D1FAE5;font-size:22px;">🛡️</div><div class="row-main"><div class="row-title">FineGuard</div><div class="row-sub">Compliance monitoring SaaS</div></div><div class="row-right"><span class="badge badge-green">Active</span><svg style="width:14px;height:14px;color:#94A3B8;margin-top:4px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg></div></div>
-        <div class="list-row" onclick="push('screen-bbj')"><div class="row-icon" style="background:#FEF3C7;font-size:22px;">🏗️</div><div class="row-main"><div class="row-title">Builder Big Jobs</div><div class="row-sub">Construction lead generation</div></div><div class="row-right"><span class="badge badge-green">Active</span><svg style="width:14px;height:14px;color:#94A3B8;margin-top:4px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg></div></div>
-        <div class="list-row" onclick="push('screen-ultratech')"><div class="row-icon" style="background:#DBEAFE;font-size:22px;">⚡</div><div class="row-main"><div class="row-title">Ultratech</div><div class="row-sub">Internal operations platform</div></div><div class="row-right"><span class="badge badge-blue">Internal</span><svg style="width:14px;height:14px;color:#94A3B8;margin-top:4px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg></div></div>
-        <div class="list-row" onclick="push('screen-accuracy')"><div class="row-icon" style="background:#EDE9FE;font-size:22px;">🎯</div><div class="row-main"><div class="row-title">Accuracy Ltd</div><div class="row-sub">Data analytics consultancy</div></div><div class="row-right"><span class="badge badge-amber">Pipeline</span><svg style="width:14px;height:14px;color:#94A3B8;margin-top:4px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: ALERTS
-═══════════════════════════════════════════════ -->
-<div id="screen-alerts" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Alerts</span>
-    <span class="topbar-action">Mark All</span>
-  </div>
-  <div class="screen-body">
-    <div class="list-section">
-      <div class="list-section-label">Unread · 3</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#FEE2E2;font-size:20px;">🔴</div><div class="row-main"><div class="row-title">Invoice Overdue</div><div class="row-sub">INV-2024-041 — FineGuard — 4 days late</div></div><div class="row-right"><div class="row-date">Today</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#FEF3C7;font-size:20px;">🟡</div><div class="row-main"><div class="row-title">Lead Score Drop</div><div class="row-sub">Premier Build Co dropped from 78→74</div></div><div class="row-right"><div class="row-date">2h ago</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#DBEAFE;font-size:20px;">🔵</div><div class="row-main"><div class="row-title">New BBJ Lead</div><div class="row-sub">Sovereign Structures — score 38</div></div><div class="row-right"><div class="row-date">4h ago</div></div></div>
-      </div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Earlier</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:20px;">🟢</div><div class="row-main"><div class="row-title">Payment Received</div><div class="row-sub">Builder Big Jobs paid INV-2024-038</div></div><div class="row-right"><div class="row-date">Jun 20</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:20px;">🟢</div><div class="row-main"><div class="row-title">Task Completed</div><div class="row-sub">Accuracy planning call — Alissa</div></div><div class="row-right"><div class="row-date">Jun 20</div></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: TASKS (list)
-═══════════════════════════════════════════════ -->
-<div id="screen-tasks" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Tasks</span>
-    <span class="topbar-action">New</span>
-  </div>
-  <div class="screen-body">
-    <!-- Persona switcher -->
-    <div class="persona-bar">
-      <div class="persona-chip active" onclick="filterTasks('all',this)">All Tasks</div>
-      <div class="persona-chip" onclick="filterTasks('george',this)"><div class="persona-avatar" style="background:linear-gradient(135deg,#FFC145,#FF8A34)">G</div>George</div>
-      <div class="persona-chip" onclick="filterTasks('dagon',this)"><div class="persona-avatar" style="background:linear-gradient(135deg,#20AFFF,#7A5AF8)">D</div>Dagon</div>
-      <div class="persona-chip" onclick="filterTasks('alissa',this)"><div class="persona-avatar" style="background:linear-gradient(135deg,#28C76F,#00A86B)">A</div>Alissa</div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Active</div>
-      <div class="list-card" id="tasks-list">
-        <div class="list-row task-row" data-owner="dagon" onclick="push('screen-task-detail');loadTaskDetail(0)"><div class="row-icon" style="background:#FEE2E2;">🔴</div><div class="row-main"><div class="row-title">FineGuard renewal call</div><div class="row-sub">Owner: Dagon · Due Jun 24</div></div><div class="row-right"><span class="badge badge-red">Urgent</span></div></div>
-        <div class="list-row task-row" data-owner="george" onclick="push('screen-task-detail');loadTaskDetail(1)"><div class="row-icon" style="background:#FEF3C7;">🟡</div><div class="row-main"><div class="row-title">Review BBJ pipeline</div><div class="row-sub">Owner: George · Due Jun 25</div></div><div class="row-right"><span class="badge badge-amber">In Progress</span></div></div>
-        <div class="list-row task-row" data-owner="george" onclick="push('screen-task-detail');loadTaskDetail(3)"><div class="row-icon" style="background:#DBEAFE;">🔵</div><div class="row-main"><div class="row-title">FineGuard pricing decision</div><div class="row-sub">Owner: George · Due Jun 23</div></div><div class="row-right"><span class="badge badge-blue">Decision</span></div></div>
-        <div class="list-row task-row" data-owner="dagon" onclick="push('screen-task-detail');loadTaskDetail(4)"><div class="row-icon" style="background:#D1FAE5;">🟢</div><div class="row-main"><div class="row-title">BBJ lead follow-up</div><div class="row-sub">Owner: Dagon · Due Jun 27</div></div><div class="row-right"><span class="badge badge-gray">Waiting</span></div></div>
-      </div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Captured</div>
-      <div class="list-card">
-        <div class="list-row task-row" data-owner="alissa" onclick="push('screen-task-detail');loadTaskDetail(2)"><div class="row-icon" style="background:#EDE9FE;">🟣</div><div class="row-main"><div class="row-title">Accuracy planning lead</div><div class="row-sub">Owner: Alissa · Due Jun 30</div></div><div class="row-right"><span class="badge badge-gray">Captured</span></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: TASK DETAIL
-═══════════════════════════════════════════════ -->
-<div id="screen-task-detail" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Tasks</button>
-    <span class="topbar-title" id="task-detail-title">Task</span>
-    <span class="topbar-action">Edit</span>
-  </div>
-  <div class="screen-body">
-    <div class="detail-hero" id="task-hero">
-      <div class="detail-hero-label" id="task-hero-type">Task</div>
-      <div class="detail-hero-title" id="task-hero-title">Task Title</div>
-      <div class="detail-hero-sub" id="task-hero-sub">Owner · Due date</div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-label">Details</div>
-      <div class="detail-card" id="task-detail-card">
-        <div class="detail-row"><span class="detail-row-label">Status</span><span class="detail-row-value" id="task-status">—</span></div>
-        <div class="detail-row"><span class="detail-row-label">Priority</span><span class="detail-row-value" id="task-priority">—</span></div>
-        <div class="detail-row"><span class="detail-row-label">Owner</span><span class="detail-row-value" id="task-owner">—</span></div>
-        <div class="detail-row"><span class="detail-row-label">Company</span><span class="detail-row-value" id="task-company">—</span></div>
-        <div class="detail-row"><span class="detail-row-label">Due</span><span class="detail-row-value" id="task-due">—</span></div>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-label">Notes</div>
-      <div class="detail-card">
-        <div class="detail-row"><span class="detail-row-value" id="task-notes" style="text-align:left;font-weight:400;color:#475569;font-size:13px;line-height:1.6;">—</span></div>
-      </div>
-    </div>
-    <button class="action-btn action-btn-primary" style="margin-top:16px;">Mark Complete</button>
-    <button class="action-btn action-btn-secondary">Reassign Task</button>
-    <div style="height:40px"></div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: DOCUMENTS
-═══════════════════════════════════════════════ -->
-<div id="screen-documents" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Documents</span>
-    <span class="topbar-action">Upload</span>
-  </div>
-  <div class="screen-body">
-    <div class="list-section">
-      <div class="list-section-label">Recent Files</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#FEE2E2;font-size:20px;">📄</div><div class="row-main"><div class="row-title">FineGuard_Proposal_v3.pdf</div><div class="row-sub">Shared with Dagon · 2.4 MB</div></div><div class="row-right"><div class="row-date">Today</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#DBEAFE;font-size:20px;">📊</div><div class="row-main"><div class="row-title">BBJ_Pipeline_June.xlsx</div><div class="row-sub">George · 340 KB</div></div><div class="row-right"><div class="row-date">Jun 20</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:20px;">📝</div><div class="row-main"><div class="row-title">Accuracy_SOW_Draft.docx</div><div class="row-sub">Alissa · 128 KB</div></div><div class="row-right"><div class="row-date">Jun 18</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#FEF3C7;font-size:20px;">📋</div><div class="row-main"><div class="row-title">Q2_Revenue_Summary.pdf</div><div class="row-sub">George · 1.1 MB</div></div><div class="row-right"><div class="row-date">Jun 15</div></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: CONTACTS
-═══════════════════════════════════════════════ -->
-<div id="screen-contacts" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Contacts</span>
-    <span class="topbar-action">New</span>
-  </div>
-  <div class="screen-body">
-    <div class="list-section">
-      <div class="list-section-label">Team</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:linear-gradient(135deg,#FFC145,#FF8A34);border-radius:50%;color:white;font-weight:700;font-size:16px;">G</div><div class="row-main"><div class="row-title">George Morris</div><div class="row-sub">Director · george@ultratech.co.uk</div></div><div class="row-right"><div class="row-date">Lead</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:linear-gradient(135deg,#20AFFF,#7A5AF8);border-radius:50%;color:white;font-weight:700;font-size:16px;">D</div><div class="row-main"><div class="row-title">Dagon Kalev</div><div class="row-sub">Sales · dagon@ultratech.co.uk</div></div><div class="row-right"><div class="row-date">Sales</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:linear-gradient(135deg,#28C76F,#00A86B);border-radius:50%;color:white;font-weight:700;font-size:16px;">A</div><div class="row-main"><div class="row-title">Alissa Marsh</div><div class="row-sub">Ops · alissa@ultratech.co.uk</div></div><div class="row-right"><div class="row-date">Ops</div></div></div>
-      </div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Key Clients</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:18px;">🛡️</div><div class="row-main"><div class="row-title">FineGuard Ltd</div><div class="row-sub">compliance@fineguard.co.uk</div></div><div class="row-right"><span class="badge badge-green">Active</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#FEF3C7;font-size:18px;">🏗️</div><div class="row-main"><div class="row-title">Hawk Construction</div><div class="row-sub">info@hawkbuild.co.uk</div></div><div class="row-right"><span class="badge badge-amber">Lead</span></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: ACTIVITY
-═══════════════════════════════════════════════ -->
-<div id="screen-activity" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button>
-    <span class="topbar-title">Activity</span>
-    <span></span>
-  </div>
-  <div class="screen-body">
-    <div class="list-section">
-      <div class="list-section-label">Today</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:18px;">✅</div><div class="row-main"><div class="row-title">Task completed</div><div class="row-sub">FineGuard renewal call — Dagon</div></div><div class="row-right"><div class="row-date">11:20</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#FEE2E2;font-size:18px;">🔴</div><div class="row-main"><div class="row-title">Alert triggered</div><div class="row-sub">Invoice overdue — FineGuard</div></div><div class="row-right"><div class="row-date">9:00</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#DBEAFE;font-size:18px;">📥</div><div class="row-main"><div class="row-title">New lead captured</div><div class="row-sub">Sovereign Structures — BBJ</div></div><div class="row-right"><div class="row-date">8:45</div></div></div>
-      </div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Yesterday</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:18px;">💰</div><div class="row-main"><div class="row-title">Payment received</div><div class="row-sub">BBJ — £7,500 — INV-2024-038</div></div><div class="row-right"><div class="row-date">16:30</div></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#EDE9FE;font-size:18px;">📞</div><div class="row-main"><div class="row-title">Call logged</div><div class="row-sub">FineGuard renewal — 24 min — Alissa</div></div><div class="row-right"><div class="row-date">14:00</div></div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: FINEGUARD (company workspace)
-═══════════════════════════════════════════════ -->
-<div id="screen-fineguard" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button>
-    <span class="topbar-title">FineGuard</span>
-    <span class="topbar-action">Edit</span>
-  </div>
-  <div class="screen-body">
-    <div class="detail-hero" style="background:linear-gradient(135deg,#064E3B,#065F46);">
-      <div class="detail-hero-label">Company Workspace</div>
-      <div class="detail-hero-title">FineGuard Ltd</div>
-      <div class="detail-hero-sub">Compliance monitoring SaaS · Est. 2021</div>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">MRR</div><div class="stat-value">£4.8K</div><div class="stat-change up">↑ 5%</div></div>
-      <div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value">124</div><div class="stat-change up">↑ 8 this month</div></div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Open Tasks</div>
-      <div class="list-card">
-        <div class="list-row" onclick="push('screen-task-detail');loadTaskDetail(0)"><div class="row-icon" style="background:#FEE2E2;font-size:18px;">🔴</div><div class="row-main"><div class="row-title">Renewal call</div><div class="row-sub">Dagon · Due Jun 24</div></div><div class="row-right"><span class="badge badge-red">Urgent</span></div></div>
-        <div class="list-row" onclick="push('screen-task-detail');loadTaskDetail(3)"><div class="row-icon" style="background:#DBEAFE;font-size:18px;">🔵</div><div class="row-main"><div class="row-title">Pricing decision</div><div class="row-sub">George · Due Jun 23</div></div><div class="row-right"><span class="badge badge-blue">Decision</span></div></div>
-      </div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Recent Alerts</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#FEE2E2;font-size:18px;">🔴</div><div class="row-main"><div class="row-title">Invoice Overdue</div><div class="row-sub">INV-2024-041 · 4 days late</div></div><div class="row-right"><div class="row-date">Today</div></div></div>
-      </div>
-    </div>
-    <button class="action-btn action-btn-primary" style="margin-top:16px;">Open Portal</button>
-    <div style="height:40px"></div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: BUILDER BIG JOBS (company workspace)
-═══════════════════════════════════════════════ -->
-<div id="screen-bbj" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button>
-    <span class="topbar-title">Builder Big Jobs</span>
-    <span class="topbar-action">Filter</span>
-  </div>
-  <div class="screen-body">
-    <div class="detail-hero" style="background:linear-gradient(135deg,#7C2D12,#C2410C);">
-      <div class="detail-hero-label">Company Workspace</div>
-      <div class="detail-hero-title">Builder Big Jobs</div>
-      <div class="detail-hero-sub">Construction lead generation · 5 active leads</div>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">Total Leads</div><div class="stat-value">5</div><div class="stat-change">This month</div></div>
-      <div class="stat-card"><div class="stat-label">Qualified</div><div class="stat-value">2</div><div class="stat-change up">Score ≥ 70</div></div>
-      <div class="stat-card"><div class="stat-label">Avg. Score</div><div class="stat-value">60</div><div class="stat-change">Pipeline health</div></div>
-      <div class="stat-card"><div class="stat-label">Contacted</div><div class="stat-value">1</div><div class="stat-change">Awaiting reply</div></div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Lead Pipeline</div>
-      <div class="list-card">
-        <div class="list-row" onclick="push('screen-bbj-leads')">
-          <div class="row-icon" style="background:#FEF3C7;font-size:20px;">📋</div>
-          <div class="row-main"><div class="row-title">View All Leads</div><div class="row-sub">5 leads · 2 qualified</div></div>
-          <div class="row-right"><svg style="width:14px;height:14px;color:#94A3B8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg></div>
+<!-- ═══════════ ALERTS ═══════════ -->
+<div id="sc-alerts" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Alerts</span><span class="tb-action">Mark All</span></div>
+  <div class="sbody">
+    <div class="sec"><div class="sec-label">Unread · 3</div>
+      <!-- Alert card — red -->
+      <div class="alert-card" onclick="push('sc-alert-detail')">
+        <div class="alert-card-header">
+          <div class="alert-icon-lg" style="background:#FEE2E2">🔴</div>
+          <div><div class="rt">Accounts Overdue</div><div class="rs">Invoice INV-2024-041 — FineGuard Ltd</div></div>
+          <div class="rr" style="margin-left:auto"><span class="badge br">Urgent</span></div>
         </div>
-      </div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Top Leads</div>
-      <div class="list-card">
-        <div class="list-row" onclick="push('screen-bbj-lead-detail');loadLeadDetail(0)"><div class="row-icon" style="background:#D1FAE5;font-size:18px;">🏗️</div><div class="row-main"><div class="row-title">Hawk Construction Ltd</div><div class="row-sub">East Midlands · Residential</div></div><div class="row-right"><span class="badge badge-green">82</span></div></div>
-        <div class="list-row" onclick="push('screen-bbj-lead-detail');loadLeadDetail(1)"><div class="row-icon" style="background:#DBEAFE;font-size:18px;">🏗️</div><div class="row-main"><div class="row-title">Premier Build Co</div><div class="row-sub">West Midlands · Commercial</div></div><div class="row-right"><span class="badge badge-blue">74</span></div></div>
-      </div>
-    </div>
-    <div style="height:40px"></div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: BBJ LEADS LIST
-═══════════════════════════════════════════════ -->
-<div id="screen-bbj-leads" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>BBJ</button>
-    <span class="topbar-title">All Leads</span>
-    <span class="topbar-action">Sort</span>
-  </div>
-  <div class="screen-body">
-    <div class="list-section">
-      <div class="list-section-label">5 Leads</div>
-      <div class="list-card">
-        <div class="list-row" onclick="push('screen-bbj-lead-detail');loadLeadDetail(0)">
-          <div class="row-main"><div class="row-title">Hawk Construction Ltd</div><div class="row-sub">NG1 · Residential & Extensions</div></div>
-          <div class="row-right"><span class="badge badge-green" style="font-size:11px;font-weight:700;">82</span><div class="row-date" style="margin-top:3px;">Qualified</div></div>
-        </div>
-        <div class="list-row" onclick="push('screen-bbj-lead-detail');loadLeadDetail(1)">
-          <div class="row-main"><div class="row-title">Premier Build Co</div><div class="row-sub">B1 · Commercial & Industrial</div></div>
-          <div class="row-right"><span class="badge badge-blue" style="font-size:11px;font-weight:700;">74</span><div class="row-date" style="margin-top:3px;">Contacted</div></div>
-        </div>
-        <div class="list-row" onclick="push('screen-bbj-lead-detail');loadLeadDetail(2)">
-          <div class="row-main"><div class="row-title">Fortis Developments</div><div class="row-sub">LS2 · New Build & Conversions</div></div>
-          <div class="row-right"><span class="badge badge-amber" style="font-size:11px;font-weight:700;">61</span><div class="row-date" style="margin-top:3px;">New</div></div>
-        </div>
-        <div class="list-row" onclick="push('screen-bbj-lead-detail');loadLeadDetail(3)">
-          <div class="row-main"><div class="row-title">Meridian Builders</div><div class="row-sub">M1 · Refurb & Renovation</div></div>
-          <div class="row-right"><span class="badge badge-gray" style="font-size:11px;font-weight:700;">45</span><div class="row-date" style="margin-top:3px;">New</div></div>
-        </div>
-        <div class="list-row" onclick="push('screen-bbj-lead-detail');loadLeadDetail(4)">
-          <div class="row-main"><div class="row-title">Sovereign Structures</div><div class="row-sub">SW1 · Commercial</div></div>
-          <div class="row-right"><span class="badge badge-gray" style="font-size:11px;font-weight:700;">38</span><div class="row-date" style="margin-top:3px;">New</div></div>
-        </div>
-      </div>
-    </div>
-    <div style="height:40px"></div>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN: BBJ LEAD DETAIL
-═══════════════════════════════════════════════ -->
-<div id="screen-bbj-lead-detail" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Leads</button>
-    <span class="topbar-title" id="lead-detail-name">Lead</span>
-    <span class="topbar-action">Edit</span>
-  </div>
-  <div class="screen-body">
-    <div class="detail-hero" id="lead-hero" style="background:linear-gradient(135deg,#7C2D12,#C2410C);">
-      <div class="detail-hero-label">BBJ Lead</div>
-      <div class="detail-hero-title" id="lead-hero-title">Company Name</div>
-      <div class="detail-hero-sub" id="lead-hero-sub">Contact · Postcode</div>
-    </div>
-    <!-- Score bar -->
-    <div class="detail-section">
-      <div class="detail-section-label">Lead Score</div>
-      <div class="detail-card">
-        <div class="detail-row" style="align-items:center;">
-          <span class="detail-row-label">Score</span>
-          <div class="score-bar-wrap">
-            <div class="score-bar-bg"><div class="score-bar-fill" id="lead-score-fill" style="width:0%;background:#16A34A;"></div></div>
-            <span class="score-num" id="lead-score-num">—</span>
+        <div class="alert-card-body">
+          <div class="alert-amount">£4,800</div>
+          <div class="alert-context">4 days overdue · Contact: Clare Webb</div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-p" style="width:auto;margin:0;padding:10px 18px;font-size:13px">Call Customer</button>
+            <button class="btn btn-s" style="width:auto;margin:0;padding:10px 18px;font-size:13px">Send Reminder</button>
           </div>
         </div>
       </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-label">Contact Info</div>
-      <div class="detail-card">
-        <div class="detail-row"><span class="detail-row-label">Contact</span><span class="detail-row-value" id="lead-contact">—</span></div>
-        <div class="detail-row"><span class="detail-row-label">Email</span><span class="detail-row-value" id="lead-email" style="font-size:12px;color:#3D8BFF;">—</span></div>
-        <div class="detail-row"><span class="detail-row-label">Phone</span><span class="detail-row-value" id="lead-phone" style="color:#3D8BFF;">—</span></div>
-        <div class="detail-row"><span class="detail-row-label">Postcode</span><span class="detail-row-value" id="lead-postcode">—</span></div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#FEF3C7">🟡</div><div class="rm"><div class="rt">Lead Score Drop</div><div class="rs">Premier Build Co — 78→74</div></div><div class="rr"><div class="rd">2h ago</div></div></div>
+        <div class="row"><div class="ri" style="background:#DBEAFE">🔵</div><div class="rm"><div class="rt">New BBJ Lead</div><div class="rs">Sovereign Structures — score 38</div></div><div class="rr"><div class="rd">4h ago</div></div></div>
       </div>
     </div>
-    <div class="detail-section">
-      <div class="detail-section-label">Job Types</div>
-      <div class="detail-card">
-        <div class="detail-row"><span class="detail-row-value" id="lead-job-types" style="text-align:left;font-weight:400;color:#475569;">—</span></div>
+    <div class="sec"><div class="sec-label">Earlier</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#D1FAE5">🟢</div><div class="rm"><div class="rt">Payment Received</div><div class="rs">BBJ paid INV-2024-038 · £7,500</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
+        <div class="row"><div class="ri" style="background:#D1FAE5">🟢</div><div class="rm"><div class="rt">Task Completed</div><div class="rs">Accuracy planning call — Alissa</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
       </div>
     </div>
-    <div class="detail-section">
-      <div class="detail-section-label">Notes</div>
-      <div class="detail-card">
-        <div class="detail-row"><span class="detail-row-value" id="lead-notes" style="text-align:left;font-weight:400;color:#475569;font-size:13px;line-height:1.6;">—</span></div>
-      </div>
-    </div>
-    <button class="action-btn action-btn-primary" style="margin-top:16px;">Log Call</button>
-    <button class="action-btn action-btn-secondary">Send Email</button>
-    <div style="height:40px"></div>
+    <div class="pb-safe"></div>
   </div>
 </div>
 
 
-<!-- ═══════════════════════════════════════════════
-     SCREEN: ULTRATECH (company workspace)
-═══════════════════════════════════════════════ -->
-<div id="screen-ultratech" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button>
-    <span class="topbar-title">Ultratech</span>
-    <span></span>
-  </div>
-  <div class="screen-body">
-    <div class="detail-hero" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8);">
-      <div class="detail-hero-label">Company Workspace</div>
-      <div class="detail-hero-title">Ultratech Ltd</div>
-      <div class="detail-hero-sub">Internal operations platform</div>
+<!-- ═══════════ ALERT DETAIL ═══════════ -->
+<div id="sc-alert-detail" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Alerts</button><span class="tb-title">Alert Detail</span><span></span></div>
+  <div class="sbody">
+    <div class="hero" style="background:linear-gradient(135deg,#7F1D1D,#991B1B)">
+      <div class="hero-tag">🔴 Urgent — Accounts Overdue</div>
+      <div class="hero-title">FineGuard Ltd</div>
+      <div class="hero-sub">Invoice INV-2024-041 · 4 days overdue</div>
     </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">Active Products</div><div class="stat-value">4</div></div>
-      <div class="stat-card"><div class="stat-label">Team Members</div><div class="stat-value">3</div></div>
-    </div>
-    <div class="list-section">
-      <div class="list-section-label">Products</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#D1FAE5;font-size:18px;">🛡️</div><div class="row-main"><div class="row-title">FineGuard</div><div class="row-sub">Compliance SaaS</div></div><div class="row-right"><span class="badge badge-green">Live</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#FEF3C7;font-size:18px;">🏗️</div><div class="row-main"><div class="row-title">Builder Big Jobs</div><div class="row-sub">Lead gen platform</div></div><div class="row-right"><span class="badge badge-green">Live</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#EDE9FE;font-size:18px;">🎯</div><div class="row-main"><div class="row-title">Accuracy Ltd</div><div class="row-sub">Data analytics</div></div><div class="row-right"><span class="badge badge-amber">Pipeline</span></div></div>
-        <div class="list-row"><div class="row-icon" style="background:#DBEAFE;font-size:18px;">⚡</div><div class="row-main"><div class="row-title">Ultratech OS</div><div class="row-sub">This platform</div></div><div class="row-right"><span class="badge badge-blue">Internal</span></div></div>
+    <div class="sec">
+      <div class="dcard">
+        <div class="drow"><span class="dlabel">Amount</span><span class="dval" style="font-size:20px;font-weight:700;color:#DC2626">£4,800</span></div>
+        <div class="drow"><span class="dlabel">Invoice</span><span class="dval">INV-2024-041</span></div>
+        <div class="drow"><span class="dlabel">Due Date</span><span class="dval">Jun 18, 2024</span></div>
+        <div class="drow"><span class="dlabel">Days Overdue</span><span class="dval" style="color:#DC2626;font-weight:600">4 days</span></div>
+        <div class="drow"><span class="dlabel">Contact</span><span class="dval">Clare Webb</span></div>
+        <div class="drow"><span class="dlabel">Phone</span><span class="dval" style="color:#3D8BFF">07712 000123</span></div>
       </div>
     </div>
-    <div style="height:40px"></div>
+    <div class="sec"><div class="sec-label">History</div>
+      <div class="dcard">
+        <div class="drow" style="flex-direction:column;gap:4px"><div class="tl-title">Invoice sent</div><div class="tl-sub">Sent to accounts@fineguard.co.uk</div><div class="tl-time">Jun 18, 2024</div></div>
+        <div class="drow" style="flex-direction:column;gap:4px"><div class="tl-title">Auto-reminder sent</div><div class="tl-sub">3 days after due date</div><div class="tl-time">Jun 21, 2024</div></div>
+        <div class="drow" style="flex-direction:column;gap:4px"><div class="tl-title">Alert triggered</div><div class="tl-sub">4 days overdue threshold</div><div class="tl-time">Today</div></div>
+      </div>
+    </div>
+    <button class="btn btn-p" style="margin-top:16px">📞 Call Customer Now</button>
+    <button class="btn btn-s">✉️ Send Chase Email</button>
+    <button class="btn btn-r">Mark as Escalated</button>
+    <div class="pb-safe"></div>
   </div>
 </div>
 
 
-<!-- ═══════════════════════════════════════════════
-     SCREEN: ACCURACY LTD (company workspace)
-═══════════════════════════════════════════════ -->
-<div id="screen-accuracy" class="screen">
-  <div class="screen-topbar">
-    <button class="topbar-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button>
-    <span class="topbar-title">Accuracy Ltd</span>
-    <span class="topbar-action">Edit</span>
+<!-- ═══════════ TASKS ═══════════ -->
+<div id="sc-tasks" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Tasks</span><span class="tb-action">New</span></div>
+  <div class="sbody">
+    <div class="persona-bar">
+      <div class="pchip active" onclick="filterTasks('all',this)">All Tasks</div>
+      <div class="pchip" onclick="filterTasks('george',this)"><div class="pavatar" style="background:linear-gradient(135deg,#FFC145,#FF8A34)">G</div>George</div>
+      <div class="pchip" onclick="filterTasks('dagon',this)"><div class="pavatar" style="background:linear-gradient(135deg,#20AFFF,#7A5AF8)">D</div>Dagon</div>
+      <div class="pchip" onclick="filterTasks('alissa',this)"><div class="pavatar" style="background:linear-gradient(135deg,#28C76F,#00A86B)">A</div>Alissa</div>
+    </div>
+    <div class="sec"><div class="sec-label">Active</div>
+      <div class="card">
+        <div class="row task-row" data-owner="dagon" onclick="push('sc-task-detail');loadTask(0)"><div class="ri" style="background:#FEE2E2">🔴</div><div class="rm"><div class="rt">FineGuard renewal call</div><div class="rs">Dagon · Due Jun 24</div></div><div class="rr"><span class="badge br">Urgent</span></div></div>
+        <div class="row task-row" data-owner="george" onclick="push('sc-task-detail');loadTask(1)"><div class="ri" style="background:#FEF3C7">🟡</div><div class="rm"><div class="rt">Review BBJ pipeline</div><div class="rs">George · Due Jun 25</div></div><div class="rr"><span class="badge ba">In Progress</span></div></div>
+        <div class="row task-row" data-owner="george" onclick="push('sc-task-detail');loadTask(3)"><div class="ri" style="background:#DBEAFE">🔵</div><div class="rm"><div class="rt">FineGuard pricing decision</div><div class="rs">George · Due Jun 23</div></div><div class="rr"><span class="badge bb">Decision</span></div></div>
+        <div class="row task-row" data-owner="dagon" onclick="push('sc-task-detail');loadTask(4)"><div class="ri" style="background:#D1FAE5">🟢</div><div class="rm"><div class="rt">BBJ lead follow-up</div><div class="rs">Dagon · Due Jun 27</div></div><div class="rr"><span class="badge bgr">Waiting</span></div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-label">Captured</div>
+      <div class="card">
+        <div class="row task-row" data-owner="alissa" onclick="push('sc-task-detail');loadTask(2)"><div class="ri" style="background:#EDE9FE">🟣</div><div class="rm"><div class="rt">Accuracy planning lead</div><div class="rs">Alissa · Due Jun 30</div></div><div class="rr"><span class="badge bgr">Captured</span></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
   </div>
-  <div class="screen-body">
-    <div class="detail-hero" style="background:linear-gradient(135deg,#4C1D95,#6D28D9);">
-      <div class="detail-hero-label">Company Workspace</div>
-      <div class="detail-hero-title">Accuracy Ltd</div>
-      <div class="detail-hero-sub">Data analytics consultancy · Pipeline</div>
+</div>
+
+
+<!-- ═══════════ TASK DETAIL ═══════════ -->
+<div id="sc-task-detail" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Tasks</button><span class="tb-title" id="td-title">Task</span><span class="tb-action">Edit</span></div>
+  <div class="sbody">
+    <div class="hero" id="td-hero" style="background:linear-gradient(135deg,#0F172A,#1E293B)">
+      <div class="hero-tag" id="td-type">Task</div>
+      <div class="hero-title" id="td-h-title">—</div>
+      <div class="hero-sub" id="td-sub">—</div>
+    </div>
+    <div class="sec"><div class="dcard">
+      <div class="drow"><span class="dlabel">Status</span><span class="dval" id="td-status">—</span></div>
+      <div class="drow"><span class="dlabel">Priority</span><span class="dval" id="td-priority">—</span></div>
+      <div class="drow"><span class="dlabel">Owner</span><span class="dval" id="td-owner">—</span></div>
+      <div class="drow"><span class="dlabel">Company</span><span class="dval" id="td-company">—</span></div>
+      <div class="drow"><span class="dlabel">Due</span><span class="dval" id="td-due">—</span></div>
+    </div></div>
+    <div class="sec"><div class="sec-label">Notes</div><div class="dcard"><div class="drow"><span id="td-notes" style="font-size:13px;color:#475569;line-height:1.6;font-weight:400">—</span></div></div></div>
+    <button class="btn btn-p" style="margin-top:16px">Mark Complete</button>
+    <button class="btn btn-s">Reassign Task</button>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ COMPANIES ═══════════ -->
+<div id="sc-companies" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Companies</span><span></span></div>
+  <div class="sbody">
+    <div class="sec"><div class="sec-label">Managed Companies</div>
+      <div class="card">
+        <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:#D1FAE5">🛡️</div><div class="rm"><div class="rt">FineGuard</div><div class="rs">Compliance monitoring SaaS</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row" onclick="push('sc-bbj')"><div class="ri" style="background:#FEF3C7">🏗️</div><div class="rm"><div class="rt">Builder Big Jobs</div><div class="rs">Construction lead generation</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row" onclick="push('sc-ultratech')"><div class="ri" style="background:#DBEAFE">⚡</div><div class="rm"><div class="rt">Ultratech</div><div class="rs">Internal operations platform</div></div><div class="rr"><span class="badge bb">Internal</span></div></div>
+        <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:#EDE9FE">🎯</div><div class="rm"><div class="rt">Accuracy Ltd</div><div class="rs">Data analytics consultancy</div></div><div class="rr"><span class="badge ba">Pipeline</span></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ CONTACTS ═══════════ -->
+<div id="sc-contacts" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Contacts</span><span class="tb-action">New</span></div>
+  <div class="sbody">
+    <div class="sec"><div class="sec-label">Team</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:linear-gradient(135deg,#FFC145,#FF8A34);border-radius:50%;color:white;font-weight:700">G</div><div class="rm"><div class="rt">George Thomas</div><div class="rs">Founder · george@ultratech.co.uk</div></div></div>
+        <div class="row"><div class="ri" style="background:linear-gradient(135deg,#20AFFF,#7A5AF8);border-radius:50%;color:white;font-weight:700">D</div><div class="rm"><div class="rt">Dagon Kalev</div><div class="rs">Sales · dagon@ultratech.co.uk</div></div></div>
+        <div class="row"><div class="ri" style="background:linear-gradient(135deg,#28C76F,#00A86B);border-radius:50%;color:white;font-weight:700">A</div><div class="rm"><div class="rt">Alissa Marsh</div><div class="rs">Ops · alissa@ultratech.co.uk</div></div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-label">Key Clients</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#D1FAE5">🛡️</div><div class="rm"><div class="rt">Clare Webb — FineGuard</div><div class="rs">accounts@fineguard.co.uk</div></div><div class="rr"><span class="badge bg">Client</span></div></div>
+        <div class="row"><div class="ri" style="background:#FEF3C7">🏗️</div><div class="rm"><div class="rt">James Hawkins — Hawk Const.</div><div class="rs">j.hawkins@hawkconstruction.co.uk</div></div><div class="rr"><span class="badge ba">Lead</span></div></div>
+        <div class="row"><div class="ri" style="background:#EDE9FE">🎯</div><div class="rm"><div class="rt">Sarah Thornton — Accuracy</div><div class="rs">sarah@accuracy.co.uk</div></div><div class="rr"><span class="badge ba">Pipeline</span></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ DOCUMENTS ═══════════ -->
+<div id="sc-documents" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Documents</span><span class="tb-action">Upload</span></div>
+  <div class="sbody">
+    <div class="sec"><div class="sec-label">Recent Files</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#FEE2E2">📄</div><div class="rm"><div class="rt">FineGuard_Proposal_v3.pdf</div><div class="rs">Shared · 2.4 MB</div></div><div class="rr"><div class="rd">Today</div></div></div>
+        <div class="row"><div class="ri" style="background:#DBEAFE">📊</div><div class="rm"><div class="rt">BBJ_Pipeline_June.xlsx</div><div class="rs">George · 340 KB</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
+        <div class="row"><div class="ri" style="background:#D1FAE5">📝</div><div class="rm"><div class="rt">Accuracy_SOW_Draft.docx</div><div class="rs">Alissa · 128 KB</div></div><div class="rr"><div class="rd">Jun 18</div></div></div>
+        <div class="row"><div class="ri" style="background:#FEF3C7">📋</div><div class="rm"><div class="rt">Q2_Revenue_Summary.pdf</div><div class="rs">George · 1.1 MB</div></div><div class="rr"><div class="rd">Jun 15</div></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ ACTIVITY ═══════════ -->
+<div id="sc-activity" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Activity</span><span></span></div>
+  <div class="sbody">
+    <div class="sec"><div class="sec-label">Today</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#D1FAE5">✅</div><div class="rm"><div class="rt">Task completed</div><div class="rs">FineGuard renewal call — Dagon</div></div><div class="rr"><div class="rd">11:20</div></div></div>
+        <div class="row"><div class="ri" style="background:#FEE2E2">🔴</div><div class="rm"><div class="rt">Alert triggered</div><div class="rs">Invoice overdue — FineGuard</div></div><div class="rr"><div class="rd">9:00</div></div></div>
+        <div class="row"><div class="ri" style="background:#DBEAFE">📥</div><div class="rm"><div class="rt">New lead captured</div><div class="rs">Sovereign Structures — BBJ</div></div><div class="rr"><div class="rd">8:45</div></div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-label">Yesterday</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#D1FAE5">💰</div><div class="rm"><div class="rt">Payment received</div><div class="rs">BBJ — £7,500 — INV-2024-038</div></div><div class="rr"><div class="rd">16:30</div></div></div>
+        <div class="row"><div class="ri" style="background:#EDE9FE">📞</div><div class="rm"><div class="rt">Call logged</div><div class="rs">FineGuard renewal · 24 min · Alissa</div></div><div class="rr"><div class="rd">14:00</div></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ FINEGUARD ═══════════ -->
+<div id="sc-fg" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button><span class="tb-title">FineGuard</span><span></span></div>
+  <div class="sbody">
+    <div class="hero" style="background:linear-gradient(135deg,#064E3B,#065F46)">
+      <div class="hero-tag">Company Workspace</div>
+      <div class="hero-title">FineGuard Ltd 🛡️</div>
+      <div class="hero-sub">Compliance monitoring SaaS · Est. 2021</div>
     </div>
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">Stage</div><div class="stat-value" style="font-size:18px;">Proposal</div></div>
-      <div class="stat-card"><div class="stat-label">Est. Value</div><div class="stat-value">£24K</div><div class="stat-change">Annual retainer</div></div>
+      <div class="stat"><div class="slabel">MRR</div><div class="sval">£4.8K</div><div class="schg up">↑ 5%</div></div>
+      <div class="stat"><div class="slabel">Customers</div><div class="sval">124</div><div class="schg up">↑ 8 this month</div></div>
+      <div class="stat"><div class="slabel">Churn Rate</div><div class="sval">1.8%</div><div class="schg up">↓ vs 2.4% target</div></div>
+      <div class="stat"><div class="slabel">Support Tickets</div><div class="sval">3</div><div class="schg">2 open</div></div>
     </div>
-    <div class="list-section">
-      <div class="list-section-label">Open Tasks</div>
-      <div class="list-card">
-        <div class="list-row" onclick="push('screen-task-detail');loadTaskDetail(2)"><div class="row-icon" style="background:#EDE9FE;font-size:18px;">🟣</div><div class="row-main"><div class="row-title">Planning lead follow-up</div><div class="row-sub">Alissa · Due Jun 30</div></div><div class="row-right"><span class="badge badge-gray">Captured</span></div></div>
+    <div class="sec"><div class="sec-label">Open Tasks</div>
+      <div class="card">
+        <div class="row" onclick="push('sc-task-detail');loadTask(0)"><div class="ri" style="background:#FEE2E2">🔴</div><div class="rm"><div class="rt">Renewal call</div><div class="rs">Dagon · Due Jun 24</div></div><div class="rr"><span class="badge br">Urgent</span></div></div>
+        <div class="row" onclick="push('sc-task-detail');loadTask(3)"><div class="ri" style="background:#DBEAFE">🔵</div><div class="rm"><div class="rt">Pricing decision</div><div class="rs">George · Due Jun 23</div></div><div class="rr"><span class="badge bb">Decision</span></div></div>
       </div>
     </div>
-    <div class="list-section">
-      <div class="list-section-label">Key Contacts</div>
-      <div class="list-card">
-        <div class="list-row"><div class="row-icon" style="background:#EDE9FE;border-radius:50%;color:#6D28D9;font-weight:700;font-size:16px;">S</div><div class="row-main"><div class="row-title">Sarah Thornton</div><div class="row-sub">CEO · sarah@accuracy.co.uk</div></div></div>
+    <div class="sec"><div class="sec-label">Alerts</div>
+      <div class="card">
+        <div class="row" onclick="push('sc-alert-detail')"><div class="ri" style="background:#FEE2E2">🔴</div><div class="rm"><div class="rt">Invoice Overdue</div><div class="rs">INV-2024-041 · £4,800 · 4 days</div></div><div class="rr"><span class="badge br">Urgent</span></div></div>
       </div>
     </div>
-    <button class="action-btn action-btn-primary" style="margin-top:16px;">Send Proposal</button>
-    <div style="height:40px"></div>
+    <button class="btn btn-p" style="margin-top:16px">Open Customer Portal</button>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ BUILDER BIG JOBS ═══════════ -->
+<div id="sc-bbj" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button><span class="tb-title">Builder Big Jobs</span><span class="tb-action">Filter</span></div>
+  <div class="sbody">
+    <div class="hero" style="background:linear-gradient(135deg,#7C2D12,#C2410C)">
+      <div class="hero-tag">Company Workspace</div>
+      <div class="hero-title">Builder Big Jobs 🏗️</div>
+      <div class="hero-sub">Construction lead generation · 5 active leads</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="slabel">Total Leads</div><div class="sval">5</div></div>
+      <div class="stat"><div class="slabel">Qualified</div><div class="sval">2</div><div class="schg up">Score ≥ 70</div></div>
+      <div class="stat"><div class="slabel">Avg. Score</div><div class="sval">60</div></div>
+      <div class="stat"><div class="slabel">Contacted</div><div class="sval">1</div></div>
+    </div>
+    <div class="sec"><div class="sec-label">Lead Pipeline</div>
+      <div class="card">
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(0)"><div class="rm"><div class="rt">Hawk Construction Ltd</div><div class="rs">NG1 · Residential & Extensions</div></div><div class="rr"><span class="badge bg" style="font-size:12px;font-weight:700">82</span><div class="rd">Qualified</div></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(1)"><div class="rm"><div class="rt">Premier Build Co</div><div class="rs">B1 · Commercial & Industrial</div></div><div class="rr"><span class="badge bb" style="font-size:12px;font-weight:700">74</span><div class="rd">Contacted</div></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(2)"><div class="rm"><div class="rt">Fortis Developments</div><div class="rs">LS2 · New Build & Conversions</div></div><div class="rr"><span class="badge ba" style="font-size:12px;font-weight:700">61</span><div class="rd">New</div></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(3)"><div class="rm"><div class="rt">Meridian Builders</div><div class="rs">M1 · Refurb & Renovation</div></div><div class="rr"><span class="badge bgr" style="font-size:12px;font-weight:700">45</span><div class="rd">New</div></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(4)"><div class="rm"><div class="rt">Sovereign Structures</div><div class="rs">SW1 · Commercial</div></div><div class="rr"><span class="badge bgr" style="font-size:12px;font-weight:700">38</span><div class="rd">New</div></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ BBJ LEAD DETAIL ═══════════ -->
+<div id="sc-bbj-lead" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>BBJ</button><span class="tb-title" id="ld-name">Lead</span><span></span></div>
+  <div class="sbody">
+    <div class="hero" id="ld-hero" style="background:linear-gradient(135deg,#7C2D12,#C2410C)">
+      <div class="hero-tag">BBJ Lead</div>
+      <div class="hero-title" id="ld-title">—</div>
+      <div class="hero-sub" id="ld-sub">—</div>
+    </div>
+    <div class="sec"><div class="sec-label">Lead Score</div>
+      <div class="dcard"><div class="drow" style="align-items:center"><span class="dlabel">Score</span><div class="score-wrap"><div class="score-bg"><div class="score-fill" id="ld-bar" style="width:0%"></div></div><span class="score-num" id="ld-score">—</span></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-label">Contact Info</div>
+      <div class="dcard">
+        <div class="drow"><span class="dlabel">Contact</span><span class="dval" id="ld-contact">—</span></div>
+        <div class="drow"><span class="dlabel">Email</span><span class="dval" id="ld-email" style="color:#3D8BFF;font-size:12px">—</span></div>
+        <div class="drow"><span class="dlabel">Phone</span><span class="dval" id="ld-phone" style="color:#3D8BFF">—</span></div>
+        <div class="drow"><span class="dlabel">Postcode</span><span class="dval" id="ld-post">—</span></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-label">Job Types</div><div class="dcard"><div class="drow"><span id="ld-jobs" style="font-size:13px;color:#475569;font-weight:400">—</span></div></div></div>
+    <div class="sec"><div class="sec-label">Notes</div><div class="dcard"><div class="drow"><span id="ld-notes" style="font-size:13px;color:#475569;line-height:1.6;font-weight:400">—</span></div></div></div>
+    <button class="btn btn-p" style="margin-top:16px">📞 Log Call</button>
+    <button class="btn btn-s">✉️ Send Email</button>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ ULTRATECH ═══════════ -->
+<div id="sc-ultratech" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button><span class="tb-title">Ultratech</span><span></span></div>
+  <div class="sbody">
+    <div class="hero" style="background:linear-gradient(135deg,#1E3A5F,#1D4ED8)">
+      <div class="hero-tag">Company Workspace</div>
+      <div class="hero-title">Ultratech Ltd ⚡</div>
+      <div class="hero-sub">Internal operations platform</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="slabel">Active Products</div><div class="sval">4</div></div>
+      <div class="stat"><div class="slabel">Team Members</div><div class="sval">3</div></div>
+    </div>
+    <div class="sec"><div class="sec-label">Products</div>
+      <div class="card">
+        <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:#D1FAE5">🛡️</div><div class="rm"><div class="rt">FineGuard</div><div class="rs">Compliance SaaS</div></div><div class="rr"><span class="badge bg">Live</span></div></div>
+        <div class="row" onclick="push('sc-bbj')"><div class="ri" style="background:#FEF3C7">🏗️</div><div class="rm"><div class="rt">Builder Big Jobs</div><div class="rs">Lead gen platform</div></div><div class="rr"><span class="badge bg">Live</span></div></div>
+        <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:#EDE9FE">🎯</div><div class="rm"><div class="rt">Accuracy Ltd</div><div class="rs">Data analytics</div></div><div class="rr"><span class="badge ba">Pipeline</span></div></div>
+      </div>
+    </div>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ ACCURACY ═══════════ -->
+<div id="sc-accuracy" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button><span class="tb-title">Accuracy Ltd</span><span></span></div>
+  <div class="sbody">
+    <div class="hero" style="background:linear-gradient(135deg,#4C1D95,#6D28D9)">
+      <div class="hero-tag">Company Workspace</div>
+      <div class="hero-title">Accuracy Ltd 🎯</div>
+      <div class="hero-sub">Data analytics consultancy · Pipeline</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="slabel">Stage</div><div class="sval" style="font-size:16px;margin-top:4px">Proposal</div></div>
+      <div class="stat"><div class="slabel">Est. Value</div><div class="sval">£24K</div><div class="schg">Annual retainer</div></div>
+    </div>
+    <div class="sec"><div class="sec-label">Open Tasks</div>
+      <div class="card">
+        <div class="row" onclick="push('sc-task-detail');loadTask(2)"><div class="ri" style="background:#EDE9FE">🟣</div><div class="rm"><div class="rt">Planning lead follow-up</div><div class="rs">Alissa · Due Jun 30</div></div><div class="rr"><span class="badge bgr">Captured</span></div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-label">Key Contacts</div>
+      <div class="card">
+        <div class="row"><div class="ri" style="background:#EDE9FE;border-radius:50%;color:#6D28D9;font-weight:700">S</div><div class="rm"><div class="rt">Sarah Thornton</div><div class="rs">CEO · sarah@accuracy.co.uk</div></div></div>
+      </div>
+    </div>
+    <button class="btn btn-p" style="margin-top:16px">Send Proposal</button>
+    <div class="pb-safe"></div>
   </div>
 </div>
 
 
 <script>
-// ── Navigation stack ──────────────────────────────────────────────────────
-
-let navStack = [];
-
-function push(screenId) {
-  const screen = document.getElementById(screenId);
-  if (!screen) return;
-
-  // Prepare
-  screen.style.display = 'flex';
-  screen.style.zIndex = 10 + navStack.length;
-  screen.style.transition = 'none';
-  screen.style.transform = 'translateX(100%)';
-
-  navStack.push(screenId);
-
-  // Animate on next frame
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      screen.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-      screen.style.transform = 'translateX(0)';
-    });
-  });
-
-  // Hide mobile bottom nav when in workspace
-  document.getElementById('home-bottom-nav').style.display = 'none';
+// ── Nav stack ──────────────────────────────────────────
+let stack=[];
+function push(id){
+  const s=document.getElementById(id);
+  if(!s)return;
+  s.style.display='flex';
+  s.style.zIndex=10+stack.length;
+  s.style.transition='none';
+  s.style.transform='translateX(100%)';
+  stack.push(id);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    s.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+    s.style.transform='translateX(0)';
+  }));
+  document.getElementById('home-bnav').style.display='none';
 }
-
-function pop() {
-  if (navStack.length === 0) return;
-  const currentId = navStack[navStack.length - 1];
-  const screen = document.getElementById(currentId);
-
-  screen.style.transition = 'transform 0.3s cubic-bezier(0.32,0.72,0,1)';
-  screen.style.transform = 'translateX(100%)';
-
-  navStack.pop();
-
-  setTimeout(() => {
-    screen.style.display = 'none';
-    screen.style.transform = 'translateX(100%)';
-    screen.style.zIndex = '';
-    screen.style.transition = '';
-  }, 300);
-
-  // Show mobile bottom nav when back at home
-  if (navStack.length === 0) {
-    document.getElementById('home-bottom-nav').style.display = 'flex';
+function pop(){
+  if(!stack.length)return;
+  const id=stack[stack.length-1];
+  const s=document.getElementById(id);
+  s.style.transition='transform 0.3s cubic-bezier(0.32,0.72,0,1)';
+  s.style.transform='translateX(100%)';
+  stack.pop();
+  setTimeout(()=>{s.style.display='none';s.style.transform='translateX(100%)';s.style.zIndex='';s.style.transition='';},300);
+  if(!stack.length)document.getElementById('home-bnav').style.display='flex';
+}
+function showHome(){
+  while(stack.length){
+    const id=stack.pop();
+    const s=document.getElementById(id);
+    if(s){s.style.display='none';s.style.transform='translateX(100%)';s.style.zIndex='';s.style.transition='';}
   }
+  document.getElementById('home-bnav').style.display='flex';
 }
 
-function showHome() {
-  // Pop all screens
-  while (navStack.length > 0) {
-    const id = navStack.pop();
-    const screen = document.getElementById(id);
-    if (screen) {
-      screen.style.display = 'none';
-      screen.style.transform = 'translateX(100%)';
-      screen.style.zIndex = '';
-      screen.style.transition = '';
-    }
-  }
-  document.getElementById('home-bottom-nav').style.display = 'flex';
-}
-
-// ── Mock data ─────────────────────────────────────────────────────────────
-
-const BBJ_LEADS = [
-  {
-    id: 1, name: 'Hawk Construction Ltd', contact: 'James Hawkins',
-    email: 'j.hawkins@hawkconstruction.co.uk', phone: '07712 345678',
-    postcode: 'NG1 4AA', score: 82, status: 'Qualified',
-    jobTypes: 'Residential extensions, loft conversions, new build',
-    notes: 'Strong online presence, 4.8★ reviews. Expressed interest in large job leads over £50K. Preferred contact: phone in mornings.'
-  },
-  {
-    id: 2, name: 'Premier Build Co', contact: 'Lee Cartwright',
-    email: 'l.cartwright@premierbuild.co.uk', phone: '07823 456789',
-    postcode: 'B1 1AA', score: 74, status: 'Contacted',
-    jobTypes: 'Commercial fit-outs, industrial units, office refurb',
-    notes: 'Responded to outreach on Jun 15. Follow-up call scheduled Jun 26. Looking for consistent pipeline of £20-80K commercial jobs.'
-  },
-  {
-    id: 3, name: 'Fortis Developments', contact: 'Rachel Fortis',
-    email: 'r.fortis@fortisdev.co.uk', phone: '07934 567890',
-    postcode: 'LS2 8PQ', score: 61, status: 'New',
-    jobTypes: 'New build residential, barn conversions, planning applications',
-    notes: 'Found via intake form Jun 18. No contact made yet. Good company size indicator. Score drag: no verified reviews.'
-  },
-  {
-    id: 4, name: 'Meridian Builders', contact: 'Paul Meridian',
-    email: 'p.meridian@meridianbuilders.co.uk', phone: '07745 678901',
-    postcode: 'M1 7AP', score: 45, status: 'New',
-    jobTypes: 'Refurbishment, renovation, kitchen & bathroom',
-    notes: 'Intake form submitted Jun 20. Smaller operation — 3 employees listed. May need nurturing before qualifying.'
-  },
-  {
-    id: 5, name: 'Sovereign Structures', contact: 'Thomas King',
-    email: 't.king@sovereignstructures.co.uk', phone: '07856 789012',
-    postcode: 'SW1A 1AA', score: 38, status: 'New',
-    jobTypes: 'Commercial, office builds, structural steel',
-    notes: 'Very new intake (today). London-based. Premium postcode but low score — insufficient data. Monitor and rescore in 7 days.'
-  },
-];
-
-const TASKS = [
-  {
-    id: 1, title: 'FineGuard renewal call', type: 'Call', status: 'In Progress',
-    priority: 'Urgent', owner: 'Dagon Kalev', company: 'FineGuard Ltd', due: 'Jun 24, 2024',
-    notes: 'Key renewal — customer on month-to-month since April. Decision maker is Clare Webb. Emphasise new monitoring dashboard and the 2 resolved alerts. Target: annual plan at £58/mo.'
-  },
-  {
-    id: 2, title: 'Review BBJ pipeline', type: 'Review', status: 'In Progress',
-    priority: 'High', owner: 'George Morris', company: 'Builder Big Jobs', due: 'Jun 25, 2024',
-    notes: 'Review the June leads from the intake form. Qualify Hawk, Premier, Fortis. Decide on outreach priority for Meridian and Sovereign. Update pipeline scores if any new data.'
-  },
-  {
-    id: 3, title: 'Accuracy planning lead', type: 'Follow-up', status: 'Captured',
-    priority: 'Medium', owner: 'Alissa Marsh', company: 'Accuracy Ltd', due: 'Jun 30, 2024',
-    notes: 'Sarah Thornton expressed interest in a data pipeline project. Waiting on internal budget approval. Draft SOW ready. Estimated £24K annual retainer if closed.'
-  },
-  {
-    id: 4, title: 'FineGuard pricing decision', type: 'Decision', status: 'Decision Needed',
-    priority: 'High', owner: 'George Morris', company: 'FineGuard Ltd', due: 'Jun 23, 2024',
-    notes: 'Three options on the table: (A) hold at £49/mo, (B) move to £58/mo with feature unlock, (C) introduce tiered plan. Need decision before the Dagon renewal call. George to confirm by EOD today.'
-  },
-  {
-    id: 5, title: 'BBJ lead follow-up', type: 'Follow-up', status: 'Waiting',
-    priority: 'Medium', owner: 'Dagon Kalev', company: 'Builder Big Jobs', due: 'Jun 27, 2024',
-    notes: 'Premier Build Co called on Jun 15. Waiting for their internal sign-off. If no response by Jun 27, send follow-up email. Template in Documents > BBJ_Follow_Up_Email.docx.'
-  },
-];
-
-function loadLeadDetail(idx) {
-  const lead = BBJ_LEADS[idx];
-  if (!lead) return;
-
-  document.getElementById('lead-detail-name').textContent = lead.name;
-  document.getElementById('lead-hero-title').textContent = lead.name;
-  document.getElementById('lead-hero-sub').textContent = lead.contact + ' · ' + lead.postcode;
-  document.getElementById('lead-contact').textContent = lead.contact;
-  document.getElementById('lead-email').textContent = lead.email;
-  document.getElementById('lead-phone').textContent = lead.phone;
-  document.getElementById('lead-postcode').textContent = lead.postcode;
-  document.getElementById('lead-job-types').textContent = lead.jobTypes;
-  document.getElementById('lead-notes').textContent = lead.notes;
-
-  const scoreEl = document.getElementById('lead-score-num');
-  const barEl = document.getElementById('lead-score-fill');
-  scoreEl.textContent = lead.score;
-  barEl.style.width = lead.score + '%';
-  barEl.style.background = lead.score >= 70 ? '#16A34A' : lead.score >= 50 ? '#D97706' : '#DC2626';
-  scoreEl.style.color = lead.score >= 70 ? '#16A34A' : lead.score >= 50 ? '#D97706' : '#DC2626';
-}
-
-function loadTaskDetail(idx) {
-  const task = TASKS[idx];
-  if (!task) return;
-
-  document.getElementById('task-detail-title').textContent = task.title;
-  document.getElementById('task-hero-type').textContent = task.type;
-  document.getElementById('task-hero-title').textContent = task.title;
-  document.getElementById('task-hero-sub').textContent = task.owner + ' · Due ' + task.due;
-  document.getElementById('task-status').textContent = task.status;
-  document.getElementById('task-priority').textContent = task.priority;
-  document.getElementById('task-owner').textContent = task.owner;
-  document.getElementById('task-company').textContent = task.company;
-  document.getElementById('task-due').textContent = task.due;
-  document.getElementById('task-notes').textContent = task.notes;
-}
-
-// ── Task filtering ────────────────────────────────────────────────────────
-
-function filterTasks(owner, el) {
-  // Update active chip
-  document.querySelectorAll('.persona-chip').forEach(c => c.classList.remove('active'));
+// ── Persona switcher ───────────────────────────────────
+function switchPersona(p,el){
+  document.querySelectorAll('.pchip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
+  document.querySelectorAll('.persona-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('pv-'+p).classList.add('active');
+  document.querySelector('.greeting-name').innerHTML=
+    p==='george'?'George <span>👋</span>':
+    p==='dagon'?'Dagon <span>👋</span>':
+    'Alissa <span>👋</span>';
+}
 
-  // Show/hide rows
-  document.querySelectorAll('.task-row').forEach(row => {
-    if (owner === 'all' || row.dataset.owner === owner) {
-      row.style.display = 'flex';
-    } else {
-      row.style.display = 'none';
-    }
+// ── Task filter ────────────────────────────────────────
+function filterTasks(owner,el){
+  document.querySelectorAll('.pchip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.task-row').forEach(r=>{
+    r.style.display=(owner==='all'||r.dataset.owner===owner)?'flex':'none';
   });
 }
 
-// ── Greeting time ─────────────────────────────────────────────────────────
-
-function updateGreeting() {
-  const h = new Date().getHours();
-  const label = h < 12 ? 'Good morning.' : h < 17 ? 'Good afternoon.' : 'Good evening.';
-  const el = document.getElementById('greeting-time');
-  if (el) el.textContent = label;
+// ── Task data ──────────────────────────────────────────
+const TASKS=[
+  {title:'FineGuard renewal call',type:'Call',status:'In Progress',priority:'Urgent',owner:'Dagon Kalev',company:'FineGuard Ltd',due:'Jun 24, 2024',notes:'Key renewal — customer on month-to-month since April. Decision maker is Clare Webb. Emphasise new monitoring dashboard and the 2 resolved alerts. Target: annual plan at £58/mo.'},
+  {title:'Review BBJ pipeline',type:'Review',status:'In Progress',priority:'High',owner:'George Morris',company:'Builder Big Jobs',due:'Jun 25, 2024',notes:'Review the June leads from the intake form. Qualify Hawk, Premier, Fortis. Decide on outreach priority for Meridian and Sovereign. Update pipeline scores if any new data.'},
+  {title:'Accuracy planning lead',type:'Follow-up',status:'Captured',priority:'Medium',owner:'Alissa Marsh',company:'Accuracy Ltd',due:'Jun 30, 2024',notes:'Sarah Thornton expressed interest in a data pipeline project. Waiting on internal budget approval. Draft SOW ready. Estimated £24K annual retainer if closed.'},
+  {title:'FineGuard pricing decision',type:'Decision',status:'Decision Needed',priority:'High',owner:'George Morris',company:'FineGuard Ltd',due:'Jun 23, 2024',notes:'Three options: (A) hold at £49/mo, (B) move to £58/mo with feature unlock, (C) introduce tiered plan. Need decision before the Dagon renewal call.'},
+  {title:'BBJ lead follow-up',type:'Follow-up',status:'Waiting',priority:'Medium',owner:'Dagon Kalev',company:'Builder Big Jobs',due:'Jun 27, 2024',notes:'Premier Build Co called Jun 15. Waiting for their internal sign-off. If no response by Jun 27, send follow-up email.'},
+];
+function loadTask(i){
+  const t=TASKS[i];if(!t)return;
+  document.getElementById('td-title').textContent=t.title;
+  document.getElementById('td-type').textContent=t.type;
+  document.getElementById('td-h-title').textContent=t.title;
+  document.getElementById('td-sub').textContent=t.owner+' · Due '+t.due;
+  document.getElementById('td-status').textContent=t.status;
+  document.getElementById('td-priority').textContent=t.priority;
+  document.getElementById('td-owner').textContent=t.owner;
+  document.getElementById('td-company').textContent=t.company;
+  document.getElementById('td-due').textContent=t.due;
+  document.getElementById('td-notes').textContent=t.notes;
 }
-updateGreeting();
 
-// ── iOS-style swipe-back ──────────────────────────────────────────────────
+// ── Lead data ──────────────────────────────────────────
+const LEADS=[
+  {name:'Hawk Construction Ltd',contact:'James Hawkins',email:'j.hawkins@hawkconstruction.co.uk',phone:'07712 345678',post:'NG1 4AA',score:82,jobs:'Residential extensions, loft conversions, new build',notes:'Strong online presence, 4.8★ reviews. Expressed interest in large job leads over £50K. Preferred contact: phone in mornings.'},
+  {name:'Premier Build Co',contact:'Lee Cartwright',email:'l.cartwright@premierbuild.co.uk',phone:'07823 456789',post:'B1 1AA',score:74,jobs:'Commercial fit-outs, industrial units, office refurb',notes:'Responded to outreach Jun 15. Follow-up call scheduled Jun 26. Looking for consistent pipeline of £20-80K commercial jobs.'},
+  {name:'Fortis Developments',contact:'Rachel Fortis',email:'r.fortis@fortisdev.co.uk',phone:'07934 567890',post:'LS2 8PQ',score:61,jobs:'New build residential, barn conversions, planning applications',notes:'Found via intake form Jun 18. No contact made yet. Good company size indicator. Score drag: no verified reviews.'},
+  {name:'Meridian Builders',contact:'Paul Meridian',email:'p.meridian@meridianbuilders.co.uk',phone:'07745 678901',post:'M1 7AP',score:45,jobs:'Refurbishment, renovation, kitchen & bathroom',notes:'Intake form Jun 20. Smaller operation — 3 employees. May need nurturing before qualifying.'},
+  {name:'Sovereign Structures',contact:'Thomas King',email:'t.king@sovereignstructures.co.uk',phone:'07856 789012',post:'SW1A 1AA',score:38,jobs:'Commercial, office builds, structural steel',notes:'New intake (today). London-based. Premium postcode but low score — insufficient data. Monitor and rescore in 7 days.'},
+];
+function loadLead(i){
+  const l=LEADS[i];if(!l)return;
+  document.getElementById('ld-name').textContent=l.name;
+  document.getElementById('ld-title').textContent=l.name;
+  document.getElementById('ld-sub').textContent=l.contact+' · '+l.post;
+  document.getElementById('ld-contact').textContent=l.contact;
+  document.getElementById('ld-email').textContent=l.email;
+  document.getElementById('ld-phone').textContent=l.phone;
+  document.getElementById('ld-post').textContent=l.post;
+  document.getElementById('ld-jobs').textContent=l.jobs;
+  document.getElementById('ld-notes').textContent=l.notes;
+  const fill=document.getElementById('ld-bar');
+  const num=document.getElementById('ld-score');
+  fill.style.width=l.score+'%';
+  fill.style.background=l.score>=70?'#16A34A':l.score>=50?'#D97706':'#DC2626';
+  num.textContent=l.score;
+  num.style.color=l.score>=70?'#16A34A':l.score>=50?'#D97706':'#DC2626';
+}
 
-let touchStartX = 0;
-let touchStartY = 0;
-let swiping = false;
+// ── Greeting time ──────────────────────────────────────
+(function(){
+  const h=new Date().getHours();
+  document.getElementById('greeting-time').textContent=
+    h<12?'Good morning.':h<17?'Good afternoon.':'Good evening.';
+})();
 
-document.addEventListener('touchstart', (e) => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  swiping = false;
-}, { passive: true });
-
-document.addEventListener('touchmove', (e) => {
-  if (navStack.length === 0) return;
-  const dx = e.touches[0].clientX - touchStartX;
-  const dy = e.touches[0].clientY - touchStartY;
-  if (!swiping && Math.abs(dx) > Math.abs(dy) && dx > 0 && touchStartX < 40) {
-    swiping = true;
-  }
-}, { passive: true });
-
-document.addEventListener('touchend', (e) => {
-  if (!swiping) return;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  if (dx > 80) pop();
-  swiping = false;
-}, { passive: true });
+// ── Swipe back ─────────────────────────────────────────
+let tx=0,ty=0,sw=false;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;sw=false;},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!stack.length)return;
+  const dx=e.touches[0].clientX-tx,dy=e.touches[0].clientY-ty;
+  if(!sw&&Math.abs(dx)>Math.abs(dy)&&dx>0&&tx<44)sw=true;
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(sw&&e.changedTouches[0].clientX-tx>80)pop();
+  sw=false;
+},{passive:true});
 </script>
 </body>
 </html>
