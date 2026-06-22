@@ -7,11 +7,11 @@ const MODULE_LINKS = [
   { href: '/os/money',     label: 'Money',     color: '#FFC145' },
   { href: '/os/messages',  label: 'Messages',  color: '#20AFFF' },
   { href: '/os/calls',     label: 'Calls',     color: '#28C76F' },
-  { href: '/os/companies', label: 'Companies', color: '#7A5AF8' },
+  { href: '/os/contacts',  label: 'Contacts',  color: '#A855F7' },
   { href: '/os/alerts',    label: 'Alerts',    color: '#FF8A34' },
   { href: '/os/tasks',     label: 'Tasks',     color: '#3D8BFF' },
+  { href: '/os/companies', label: 'Companies', color: '#7A5AF8' },
   { href: '/os/documents', label: 'Documents', color: '#818CF8' },
-  { href: '/os/contacts',  label: 'Contacts',  color: '#A855F7' },
 ]
 
 const COMPANY_LINKS = [
@@ -98,6 +98,8 @@ export default function OsShell({
       <div className="px-2 pt-3 pb-1">
         <SidebarLink href="/os" label="Home" active={isHome} />
         <SidebarLink href="/os/activity" label="Activity" active={pathname === '/os/activity'} />
+        <SidebarLink href="/os/calendar" label="Calendar" active={pathname === '/os/calendar'} />
+        <SidebarLink href="/os/favourites" label="Favourites" active={pathname === '/os/favourites'} />
       </div>
 
       {/* Modules */}
@@ -132,18 +134,28 @@ export default function OsShell({
         ))}
       </div>
 
+      {/* Settings */}
+      <div className="px-2 pb-1" style={{ borderTop: BORDER, paddingTop: '12px' }}>
+        <SidebarLink href="/os/settings" label="Settings" active={pathname === '/os/settings'} />
+      </div>
+
       {/* User */}
-      <div className="mt-auto p-4" style={{ borderTop: BORDER }}>
+      <div className="p-4" style={{ borderTop: BORDER }}>
         <div className="flex items-center gap-2.5 mb-3">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-            style={{ background: 'linear-gradient(135deg, #7A5AF8, #A855F7)' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold text-white shrink-0"
+            style={{ background: 'linear-gradient(135deg, #7A5AF8, #A855F7)', boxShadow: '0 2px 8px rgba(122,90,248,0.4)' }}
           >
             {initial}
           </div>
-          <p className="text-xs font-semibold truncate" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            {person ?? 'Admin'}
-          </p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold truncate leading-tight" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              {person ?? 'Admin'}
+            </p>
+            <p className="text-[10px] truncate leading-tight" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              Founder
+            </p>
+          </div>
         </div>
         <button
           onClick={handleLogout}
