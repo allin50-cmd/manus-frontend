@@ -85,7 +85,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 @media(min-width:1024px){.bottom-nav{display:none}}
 .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;font-size:10px;color:rgba(255,255,255,0.28);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .15s}
 .bn-item.active{color:white}
-.bn-icon{font-size:18px;line-height:1;margin-bottom:2px}
+.bn-icon{width:22px;height:22px;margin-bottom:3px;display:flex;align-items:center;justify-content:center}
 
 /* ── Overlay screens ── */
 .screen{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;background:#F1F5F9;transform:translateX(110%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);pointer-events:none}
@@ -135,6 +135,8 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 
 /* ── Detail hero ── */
 .hero{padding:22px 20px;color:white}
+.hero-brand{display:flex;align-items:center;gap:14px;padding:20px;color:white}
+.hero-icon{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,0.3)}
 .hero-tag{font-size:11px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
 .hero-title{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:5px}
 .hero-sub{font-size:13px;color:rgba(255,255,255,0.5)}
@@ -367,10 +369,10 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 
 <!-- Bottom nav -->
 <nav class="bottom-nav" id="home-bnav">
-  <button class="bn-item active" onclick="showHome()"><span class="bn-icon">⊞</span>Home</button>
-  <button class="bn-item" onclick="push('sc-tasks')"><span class="bn-icon">≡</span>Tasks</button>
-  <button class="bn-item" onclick="push('sc-alerts')"><span class="bn-icon">◎</span>Alerts</button>
-  <button class="bn-item" onclick="push('sc-companies')"><span class="bn-icon">▦</span>Companies</button>
+  <button class="bn-item active" onclick="showHome()"><span class="bn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>Home</button>
+  <button class="bn-item" onclick="push('sc-tasks')"><span class="bn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></span>Tasks</button>
+  <button class="bn-item" onclick="push('sc-alerts')"><span class="bn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></span>Alerts</button>
+  <button class="bn-item" onclick="push('sc-companies')"><span class="bn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg></span>Companies</button>
 </nav>
 
 
@@ -666,10 +668,9 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 <div id="sc-fg" class="screen">
   <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button><span class="tb-title">FineGuard</span><span></span></div>
   <div class="sbody">
-    <div class="hero" style="background:linear-gradient(135deg,#064E3B,#065F46)">
-      <div class="hero-tag">Company Workspace</div>
-      <div class="hero-title">FineGuard Ltd 🛡️</div>
-      <div class="hero-sub">Compliance monitoring SaaS · Est. 2021</div>
+    <div class="hero-brand" style="background:linear-gradient(135deg,#064E3B,#065F46)">
+      <div class="hero-icon"><svg viewBox="0 0 36 36" fill="none" width="32" height="32"><path d="M18 3L5 8.5V19C5 25.5 10.8 31 18 33C25.2 31 31 25.5 31 19V8.5L18 3Z" fill="url(#ig-fg)"/><path d="M12.5 18L16.5 22.5L24 14.5" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><div class="hero-tag">Company Workspace</div><div class="hero-title">FineGuard Ltd</div><div class="hero-sub">Compliance monitoring SaaS · Est. 2021</div></div>
     </div>
     <div class="stat-grid">
       <div class="stat"><div class="slabel">MRR</div><div class="sval">£4.8K</div><div class="schg up">↑ 5%</div></div>
