@@ -265,34 +265,6 @@ export default function OsHomePage() {
         </div>
       </main>
 
-      {/* Quick Actions */}
-      <div className="relative z-10 px-4 sm:px-6 mt-5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: 'rgba(255,255,255,0.22)' }}>
-          Quick Actions
-        </p>
-        <div className="flex gap-2 flex-wrap">
-          {[
-            { label: 'New Invoice', color: '#FFC145', href: '/os/money'     },
-            { label: 'Log Call',    color: '#28C76F', href: '/os/calls'     },
-            { label: 'Add Task',    color: '#3D8BFF', href: '/os/tasks'     },
-            { label: 'Upload Doc',  color: '#818CF8', href: '/os/documents' },
-          ].map((a) => (
-            <Link
-              key={a.label}
-              href={a.href}
-              className="text-[11px] font-semibold px-3.5 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: `${a.color}14`,
-                border: `1px solid ${a.color}28`,
-                color: a.color,
-              }}
-            >
-              {a.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
       {/* Today's Focus bar */}
       <div
         className="relative z-10 mx-4 sm:mx-6 mt-4 rounded-2xl px-4 py-3.5 flex items-center justify-between gap-4"

@@ -5,13 +5,6 @@ const GRAD_FROM = '#93BBFC'
 const GRAD_TO = '#1D4ED8'
 const GLOW = 'rgba(59,130,246,0.45)'
 
-const STATS = [
-  { label: 'Revenue YTD', value: '£84,200', urgent: false, accent: '#FFC145' },
-  { label: 'Active Projects', value: '6', urgent: false, accent: null },
-  { label: 'Team', value: '4', urgent: false, accent: null },
-  { label: 'Tasks', value: '14', urgent: false, accent: null },
-]
-
 const SECTIONS = [
   {
     label: 'Revenue',
@@ -88,7 +81,7 @@ export default function UltraTechPage() {
     <div className="space-y-6">
       {/* Company header card */}
       <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}>
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4">
           {/* Company icon */}
           <div
             className="relative w-[56px] h-[56px] rounded-[18px] overflow-hidden flex items-center justify-center shrink-0"
@@ -125,24 +118,6 @@ export default function UltraTechPage() {
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {STATS.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl p-3"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
-            >
-              <div
-                className="font-bold text-lg"
-                style={{ color: stat.accent ? stat.accent : stat.urgent ? '#FF3B30' : 'rgba(255,255,255,0.9)' }}
-              >
-                {stat.value}
-              </div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Workspace sections */}

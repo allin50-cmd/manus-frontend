@@ -103,19 +103,15 @@ export default async function MessagesPage() {
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {[
-            { label: 'Unread', value: String(Number(s.totalUnread)) },
-            { label: 'Threads', value: String(Number(s.threadCount)) },
-            { label: 'Pinned', value: String(Number(s.pinnedCount)) },
-          ].map((st) => (
-            <div key={st.label} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}>
-              <div className="text-2xl font-bold" style={{ color: 'rgba(255,255,255,0.92)' }}>{st.value}</div>
-              <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{st.label}</div>
-            </div>
-          ))}
-        </div>
+        {/* Unread banner */}
+        {Number(s.totalUnread) > 0 && (
+          <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(32,175,255,0.07)', border: '1px solid rgba(32,175,255,0.14)' }}>
+            <p className="text-xs font-bold mb-0.5" style={{ color: '#20AFFF' }}>{s.totalUnread} UNREAD</p>
+            <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              You have unread messages waiting
+            </p>
+          </div>
+        )}
 
         {/* Sub-sections */}
         <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>

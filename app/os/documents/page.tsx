@@ -57,12 +57,6 @@ export default async function DocumentsPage() {
   const approvedCount = Number(s.approved)
   const storageStr = fmtBytes(Number(s.totalSizeBytes))
 
-  const stats = [
-    { label: 'Total Files', value: String(totalDocs), urgent: false },
-    { label: 'Pending Review', value: String(pendingCount), urgent: pendingCount > 0 },
-    { label: 'Storage', value: storageStr, urgent: false },
-  ]
-
   const sectionsWithCounts = [
     { label: 'Contracts', count: 0, color: '#818CF8' },
     { label: 'Invoices', count: approvedCount, color: '#FFC145' },
@@ -115,24 +109,15 @@ export default async function DocumentsPage() {
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
-        {stats.map((st) => (
-          <div
-            key={st.label}
-            className="rounded-xl p-4 text-center"
-            style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}
-          >
-            <div
-              className="font-bold text-2xl"
-              style={{ color: st.urgent ? '#FF9F0A' : 'rgba(255,255,255,0.92)' }}
-            >
-              {st.value}
-            </div>
-            <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.38)' }}>{st.label}</div>
-          </div>
-        ))}
-      </div>
+      {/* Pending review banner */}
+      {Number(s.pendingReview) > 0 && (
+        <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(255,159,10,0.07)', border: '1px solid rgba(255,159,10,0.14)' }}>
+          <p className="text-xs font-bold mb-0.5" style={{ color: '#FF9F0A' }}>{s.pendingReview} PENDING REVIEW</p>
+          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            {s.pendingReview} document{Number(s.pendingReview) !== 1 ? 's' : ''} waiting for approval
+          </p>
+        </div>
+      )}
 
       {/* Sub-sections */}
       <div>

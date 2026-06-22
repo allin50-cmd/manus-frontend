@@ -100,20 +100,23 @@ export default async function MoneyPage() {
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Revenue (Paid)', value: pence(Number(stats.totalPaid)), urgent: false },
-            { label: 'Outstanding', value: pence(Number(stats.totalOutstanding)), urgent: false },
-            { label: 'Due This Week', value: pence(Number(stats.dueThisWeek)), urgent: false },
-            { label: 'Overdue', value: String(Number(stats.countOverdue)), urgent: Number(stats.countOverdue) > 0 },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}>
-              <div className="text-2xl font-bold" style={{ color: s.urgent ? '#FF3B30' : 'rgba(255,255,255,0.92)' }}>{s.value}</div>
-              <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.label}</div>
+        {/* Overdue banner */}
+        {Number(stats.countOverdue) > 0 && (
+          <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(255,59,48,0.07)', border: '1px solid rgba(255,59,48,0.14)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold" style={{ color: '#FF3B30' }}>{stats.countOverdue} OVERDUE</p>
+                <p className="text-sm font-medium mt-0.5" style={{ color: 'rgba(255,255,255,0.8)' }}>
+                  {pence(stats.totalOutstanding)} outstanding
+                </p>
+              </div>
+              <button className="text-xs font-semibold px-4 py-2 rounded-xl transition-colors"
+                style={{ background: 'rgba(255,59,48,0.15)', color: '#FF3B30', border: '1px solid rgba(255,59,48,0.25)' }}>
+                Chase All
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
         {/* Sub-sections */}
         <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -154,13 +157,16 @@ export default async function MoneyPage() {
             </div>
           ) : (
             <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              {invoices.map((inv, i) => {
+              {(() => {
+                const order: Record<string, number> = { Overdue: 0, Sent: 1, Draft: 2, Paid: 3, Cancelled: 4 }
+                const sorted = [...invoices].sort((a, b) => (order[a.status] ?? 5) - (order[b.status] ?? 5))
+                return sorted.map((inv, i) => {
                 const badge = statusBadge(inv.status)
                 return (
                   <div
                     key={inv.id}
                     className="flex items-center gap-3 px-4 py-3.5"
-                    style={{ borderBottom: i < invoices.length - 1 ? '1px solid rgba(255,255,255,0.06)' : undefined }}
+                    style={{ borderBottom: i < sorted.length - 1 ? '1px solid rgba(255,255,255,0.06)' : undefined }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold truncate" style={{ color: 'rgba(255,255,255,0.92)' }}>{inv.clientName}</div>
@@ -176,7 +182,8 @@ export default async function MoneyPage() {
                     </div>
                   </div>
                 )
-              })}
+              })
+              })()}
             </div>
           )}
         </div>

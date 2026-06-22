@@ -207,21 +207,9 @@ export default function OsShell({
         </Link>
       </div>
 
-      {/* Primary nav */}
+      {/* Home link */}
       <div className="px-2 pt-3 pb-1">
-        {[
-          { href: '/os',            label: 'Home'       },
-          { href: '/os/activity',   label: 'Activity'   },
-          { href: '/os/today',      label: 'Calendar'   },
-          { href: '/os/favourites', label: 'Favourites' },
-        ].map((n) => (
-          <SidebarLink
-            key={n.href}
-            href={n.href}
-            label={n.label}
-            active={n.href === '/os' ? pathname === '/os' : pathname === n.href || pathname.startsWith(n.href + '/')}
-          />
-        ))}
+        <SidebarLink href="/os" label="Home" active={pathname === '/os'} />
       </div>
 
       {/* Modules */}
@@ -256,9 +244,9 @@ export default function OsShell({
         ))}
       </div>
 
-      {/* Settings */}
+      {/* More */}
       <div className="px-2 py-2" style={{ borderTop: BORDER }}>
-        <SidebarLink href="/os/settings" label="Settings" active={pathname === '/os/settings'} />
+        <SidebarLink href="/os/more" label="More" active={pathname === '/os/more'} />
       </div>
 
       {/* Spacer */}

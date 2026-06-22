@@ -38,12 +38,6 @@ export default async function ContactsPage() {
 
   const s = agg[0] ?? { total: 0, clients: 0, partners: 0, suppliers: 0, team: 0, prospects: 0 }
 
-  const stats = [
-    { label: 'Total', value: Number(s.total) },
-    { label: 'Clients', value: Number(s.clients) },
-    { label: 'Partners', value: Number(s.partners) },
-  ]
-
   const sections = [
     { label: 'Customers', count: Number(s.clients), color: '#A855F7' },
     { label: 'Suppliers', count: Number(s.suppliers), color: '#818CF8' },
@@ -96,27 +90,6 @@ export default async function ContactsPage() {
             People, clients &amp; partners
           </p>
         </div>
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-2xl p-4"
-            style={{
-              background: 'rgba(255,255,255,0.055)',
-              border: '1px solid rgba(255,255,255,0.09)',
-            }}
-          >
-            <div className="text-2xl font-bold" style={{ color: 'rgba(255,255,255,0.92)' }}>
-              {stat.value}
-            </div>
-            <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              {stat.label}
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* Sub-sections */}

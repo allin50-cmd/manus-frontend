@@ -5,13 +5,6 @@ const GRAD_FROM = '#FDB97A'
 const GRAD_TO = '#C2410C'
 const GLOW = 'rgba(249,115,22,0.45)'
 
-const STATS = [
-  { label: 'New Leads', value: '18', urgent: false, accent: COLOR },
-  { label: 'Qualified', value: '7', urgent: false, accent: null },
-  { label: 'Pipeline Value', value: '£124,000', urgent: false, accent: null },
-  { label: 'Closed', value: '3', urgent: false, accent: null },
-]
-
 const SECTIONS = [
   {
     label: 'Leads',
@@ -88,7 +81,7 @@ export default function BuilderBigJobsPage() {
     <div className="space-y-6">
       {/* Company header card */}
       <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}>
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4">
           {/* Company icon */}
           <div
             className="relative w-[56px] h-[56px] rounded-[18px] overflow-hidden flex items-center justify-center shrink-0"
@@ -125,24 +118,6 @@ export default function BuilderBigJobsPage() {
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {STATS.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl p-3"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
-            >
-              <div
-                className="font-bold text-lg"
-                style={{ color: stat.accent ? stat.accent : stat.urgent ? '#FF3B30' : 'rgba(255,255,255,0.9)' }}
-              >
-                {stat.value}
-              </div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Workspace sections */}

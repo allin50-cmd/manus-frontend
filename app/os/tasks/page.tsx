@@ -17,24 +17,6 @@ function priorityStyle(priority: string | null) {
   }
 }
 
-function statusStyle(status: string | null) {
-  switch (status) {
-    case 'InProgress':
-      return { bg: 'rgba(40,199,111,0.15)', color: '#28C76F' }
-    case 'Done':
-      return { bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }
-    case 'Cancelled':
-      return { bg: 'rgba(255,59,48,0.10)', color: '#FF3B30' }
-    default:
-      return { bg: 'rgba(61,139,255,0.12)', color: '#3D8BFF' }
-  }
-}
-
-function statusLabel(status: string | null): string {
-  if (status === 'InProgress') return 'In Progress'
-  return status ?? 'Open'
-}
-
 function dueDateLabel(d: Date, now: Date): string {
   const diffMs = d.getTime() - now.getTime()
   const diffDays = Math.floor(diffMs / 86_400_000)
@@ -76,13 +58,8 @@ export default async function TasksPage() {
   ])
 
   const s = agg[0] ?? { total: 0, today: 0, overdue: 0, done: 0, inProgress: 0 }
-
-  const stats = [
-    { label: 'Total Open', value: Number(s.total), urgent: false },
-    { label: 'Due Today', value: Number(s.today), urgent: false },
-    { label: 'In Progress', value: Number(s.inProgress), urgent: false },
-    { label: 'Overdue', value: Number(s.overdue), urgent: Number(s.overdue) > 0 },
-  ]
+  const overdueCount = Number(s.overdue)
+  const todayCount = Number(s.today)
 
   const sections = [
     { label: 'Today', count: Number(s.today), color: '#3D8BFF' },
@@ -92,7 +69,12 @@ export default async function TasksPage() {
     { label: 'Overdue', count: Number(s.overdue), color: '#FF3B30' },
   ]
 
-  const displayTasks = tasks.slice(0, 15)
+  // Split tasks client-side for banners
+  const overdueTasks = tasks.filter((t) => t.dueAt && new Date(t.dueAt) < now)
+  const todayTasks = tasks.filter(
+    (t) => t.dueAt && new Date(t.dueAt) >= todayStart && new Date(t.dueAt) < todayEnd
+  )
+  const otherTasks = tasks.filter((t) => !t.dueAt || new Date(t.dueAt) >= todayEnd)
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -133,34 +115,104 @@ export default async function TasksPage() {
             Tasks
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            Actions, to-dos &amp; follow-ups
+            {Number(s.total)} open
           </p>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-2xl p-4"
-            style={{
-              background: 'rgba(255,255,255,0.055)',
-              border: '1px solid rgba(255,255,255,0.09)',
-            }}
-          >
-            <div
-              className="text-2xl font-bold"
-              style={{ color: stat.urgent ? '#FF3B30' : 'rgba(255,255,255,0.92)' }}
-            >
-              {stat.value}
-            </div>
-            <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              {stat.label}
-            </div>
+      {/* Overdue Banner — only when overdue > 0 */}
+      {overdueCount > 0 && (
+        <div
+          className="rounded-2xl px-4 py-4 mb-4"
+          style={{
+            background: 'rgba(255,59,48,0.08)',
+            border: '1px solid rgba(255,59,48,0.15)',
+          }}
+        >
+          <p className="text-sm font-semibold mb-3" style={{ color: '#FF3B30' }}>
+            {overdueCount} task{overdueCount !== 1 ? 's' : ''} overdue
+          </p>
+          <div className="flex flex-col gap-2">
+            {overdueTasks.map((task) => {
+              const pri = priorityStyle(task.priority)
+              const dueAt = task.dueAt ? new Date(task.dueAt) : null
+              const dueLabelText = dueAt ? dueDateLabel(dueAt, now) : null
+              return (
+                <div key={task.id} className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: pri.dot }} />
+                  <span
+                    className="flex-1 text-sm font-medium truncate"
+                    style={{ color: 'rgba(255,255,255,0.92)' }}
+                  >
+                    {task.title}
+                  </span>
+                  {dueLabelText && (
+                    <span className="text-xs font-medium shrink-0" style={{ color: '#FF3B30' }}>
+                      {dueLabelText}
+                    </span>
+                  )}
+                  <button
+                    className="shrink-0 text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{
+                      background: 'rgba(255,59,48,0.15)',
+                      color: '#FF3B30',
+                      border: '1px solid rgba(255,59,48,0.25)',
+                    }}
+                  >
+                    Complete →
+                  </button>
+                </div>
+              )
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Due Today Banner — only when today tasks exist */}
+      {todayCount > 0 && (
+        <div
+          className="rounded-2xl px-4 py-4 mb-4"
+          style={{
+            background: 'rgba(255,159,10,0.06)',
+            border: '1px solid rgba(255,159,10,0.12)',
+          }}
+        >
+          <p className="text-sm font-semibold mb-3" style={{ color: '#FF9F0A' }}>
+            {todayCount} due today
+          </p>
+          <div className="flex flex-col gap-2">
+            {todayTasks.map((task) => {
+              const pri = priorityStyle(task.priority)
+              return (
+                <div key={task.id} className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: pri.dot }} />
+                  <span
+                    className="flex-1 text-sm font-medium truncate"
+                    style={{ color: 'rgba(255,255,255,0.92)' }}
+                  >
+                    {task.title}
+                  </span>
+                  {task.assignedTo && (
+                    <span className="text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                      {task.assignedTo}
+                    </span>
+                  )}
+                  <button
+                    className="shrink-0 text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{
+                      background: 'rgba(255,159,10,0.15)',
+                      color: '#FF9F0A',
+                      border: '1px solid rgba(255,159,10,0.25)',
+                    }}
+                  >
+                    Complete →
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Sub-sections */}
       <div
@@ -201,112 +253,78 @@ export default async function TasksPage() {
         ))}
       </div>
 
-      {/* Task List */}
-      <div
-        className="rounded-2xl overflow-hidden mb-6"
-        style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.07)',
-        }}
-      >
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <span
-            className="text-xs font-semibold uppercase tracking-wider"
-            style={{ color: 'rgba(255,255,255,0.32)' }}
-          >
-            Open Tasks
-          </span>
-        </div>
+      {/* Remaining open tasks (not overdue, not due today) */}
+      {otherTasks.length > 0 && (
+        <div
+          className="rounded-2xl overflow-hidden mb-6"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+          }}
+        >
+          {otherTasks.map((task, i) => {
+            const pri = priorityStyle(task.priority)
+            const dueAt = task.dueAt ? new Date(task.dueAt) : null
+            const dueLabelText = dueAt ? dueDateLabel(dueAt, now) : null
 
-        {displayTasks.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm" style={{ color: 'rgba(255,255,255,0.32)' }}>
-            No open tasks
-          </div>
-        )}
-
-        {displayTasks.map((task, i) => {
-          const pri = priorityStyle(task.priority)
-          const stat = statusStyle(task.status)
-          const dueAt = task.dueAt ? new Date(task.dueAt) : null
-          const isOverdue = dueAt ? dueAt.getTime() < now.getTime() : false
-          const dueLabelText = dueAt ? dueDateLabel(dueAt, now) : null
-
-          return (
-            <div
-              key={task.id}
-              className="flex items-start gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
-              style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
-            >
-              {/* Priority dot */}
+            return (
               <div
-                className="w-2 h-2 rounded-full mt-1.5 shrink-0"
-                style={{ background: pri.dot }}
-              />
+                key={task.id}
+                className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
+              >
+                {/* Priority dot */}
+                <div
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ background: pri.dot }}
+                />
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
+                {/* Title */}
+                <span
+                  className="flex-1 text-sm font-semibold truncate"
+                  style={{ color: 'rgba(255,255,255,0.92)' }}
+                >
+                  {task.title}
+                </span>
+
+                {/* Due date label */}
+                {dueLabelText && (
                   <span
-                    className="text-sm font-semibold"
-                    style={{ color: 'rgba(255,255,255,0.92)' }}
+                    className="text-xs shrink-0"
+                    style={{ color: 'rgba(255,255,255,0.45)' }}
                   >
-                    {task.title}
+                    {dueLabelText}
                   </span>
-                  {/* Priority chip */}
-                  {task.priority && (
-                    <span
-                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
-                      style={{ background: pri.bg, color: pri.color }}
-                    >
-                      {task.priority}
-                    </span>
-                  )}
-                  {/* Status badge */}
+                )}
+
+                {/* Priority badge */}
+                {task.priority && (
                   <span
                     className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
-                    style={{ background: stat.bg, color: stat.color }}
+                    style={{ background: pri.bg, color: pri.color }}
                   >
-                    {statusLabel(task.status)}
+                    {task.priority}
                   </span>
-                </div>
-
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {task.assignedTo && (
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                      {task.assignedTo}
-                    </span>
-                  )}
-                  {dueLabelText && (
-                    <>
-                      {task.assignedTo && (
-                        <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
-                      )}
-                      <span
-                        className="text-xs font-medium"
-                        style={{ color: isOverdue ? '#FF3B30' : 'rgba(255,255,255,0.45)' }}
-                      >
-                        {dueLabelText}
-                      </span>
-                    </>
-                  )}
-                </div>
+                )}
               </div>
+            )
+          })}
+        </div>
+      )}
 
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="2.5"
-                className="shrink-0 mt-1"
-              >
-                <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          )
-        })}
-      </div>
+      {/* Empty state when no tasks at all */}
+      {tasks.length === 0 && (
+        <div
+          className="rounded-2xl px-4 py-8 text-center text-sm mb-6"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            color: 'rgba(255,255,255,0.32)',
+          }}
+        >
+          No open tasks
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="flex gap-3">

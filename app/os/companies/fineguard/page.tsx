@@ -5,13 +5,6 @@ const GRAD_FROM = '#6EE7B7'
 const GRAD_TO = '#059669'
 const GLOW = 'rgba(0,168,107,0.45)'
 
-const STATS = [
-  { label: 'Monitored', value: '152', urgent: false },
-  { label: 'New Alerts', value: '7', urgent: true },
-  { label: 'Open Issues', value: '3', urgent: false },
-  { label: 'Revenue', value: '£4,200/mo', urgent: false },
-]
-
 const SECTIONS = [
   {
     label: 'Customers',
@@ -88,7 +81,7 @@ export default function FineGuardPage() {
     <div className="space-y-6">
       {/* Company header card */}
       <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}>
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4">
           {/* Company icon */}
           <div
             className="relative w-[56px] h-[56px] rounded-[18px] overflow-hidden flex items-center justify-center shrink-0"
@@ -126,19 +119,6 @@ export default function FineGuardPage() {
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {STATS.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl p-3"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
-            >
-              <div className="font-bold text-lg" style={{ color: stat.urgent ? '#FF3B30' : 'rgba(255,255,255,0.9)' }}>{stat.value}</div>
-              <div className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Workspace sections */}

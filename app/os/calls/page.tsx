@@ -8,13 +8,6 @@ function fmtDur(s: number) {
   return m ? `${m}m ${String(sec).padStart(2, '0')}s` : `${sec}s`
 }
 
-function fmtTotalDur(totalSecs: number) {
-  const h = Math.floor(totalSecs / 3600)
-  const m = Math.floor((totalSecs % 3600) / 60)
-  if (h > 0) return `${h}h ${m}m`
-  return `${m}m`
-}
-
 function timeLabel(d: Date) {
   const diff = Date.now() - d.getTime()
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
@@ -121,19 +114,15 @@ export default async function CallsPage() {
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {[
-            { label: "Today's Calls", value: String(todayCount) },
-            { label: 'Missed', value: String(missedCount), urgent: missedCount > 0 },
-            { label: 'Total Duration', value: fmtTotalDur(Number(s.totalDuration)) },
-          ].map((st) => (
-            <div key={st.label} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}>
-              <div className="text-2xl font-bold" style={{ color: st.urgent ? '#FF3B30' : 'rgba(255,255,255,0.92)' }}>{st.value}</div>
-              <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{st.label}</div>
-            </div>
-          ))}
-        </div>
+        {/* Missed calls banner */}
+        {missedCount > 0 && (
+          <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(255,59,48,0.07)', border: '1px solid rgba(255,59,48,0.14)' }}>
+            <p className="text-xs font-bold mb-0.5" style={{ color: '#FF3B30' }}>{missedCount} MISSED</p>
+            <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              {missedCount} missed call{missedCount !== 1 ? 's' : ''} need a callback
+            </p>
+          </div>
+        )}
 
         {/* Sub-sections */}
         <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -174,7 +163,11 @@ export default async function CallsPage() {
             </div>
           ) : (
             <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              {recent.map((c, i) => {
+              {[...recent].sort((a, b) => {
+                if (a.outcome === 'Missed' && b.outcome !== 'Missed') return -1
+                if (b.outcome === 'Missed' && a.outcome !== 'Missed') return 1
+                return 0
+              }).map((c, i, arr) => {
                 const badge = outcomeBadge(c.outcome)
                 const isInbound = c.direction === 'Inbound'
                 return (
@@ -214,6 +207,14 @@ export default async function CallsPage() {
                       </span>
                       <span className="text-xs" style={{ color: 'rgba(255,255,255,0.32)' }}>{timeLabel(new Date(c.calledAt))}</span>
                     </div>
+
+                    {/* Call Back chip for missed calls */}
+                    {c.outcome === 'Missed' && (
+                      <button className="text-[11px] font-semibold px-3 py-1 rounded-full shrink-0"
+                        style={{ background: 'rgba(255,59,48,0.12)', color: '#FF3B30', border: '1px solid rgba(255,59,48,0.2)' }}>
+                        Call Back
+                      </button>
+                    )}
                   </div>
                 )
               })}

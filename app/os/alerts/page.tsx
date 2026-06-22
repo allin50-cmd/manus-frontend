@@ -66,12 +66,7 @@ export default async function AlertsPage() {
 
   const s = agg[0] ?? { critical: 0, warning: 0, info: 0 }
   const total = Number(s.critical) + Number(s.warning) + Number(s.info)
-
-  const stats = [
-    { label: 'Critical', value: Number(s.critical), urgent: true },
-    { label: 'Warning', value: Number(s.warning), urgent: false },
-    { label: 'Info', value: Number(s.info), urgent: false },
-  ]
+  const criticalCount = Number(s.critical)
 
   const sections = [
     { label: 'Red / Critical', count: Number(s.critical), color: '#FF3B30' },
@@ -80,6 +75,8 @@ export default async function AlertsPage() {
     { label: 'Compliance', count: 0, color: '#818CF8' },
     { label: 'System', count: 0, color: '#3D8BFF' },
   ]
+
+  const criticalAlerts = alerts.filter((a) => a.severity === 'Critical')
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -125,29 +122,50 @@ export default async function AlertsPage() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-2xl p-4"
-            style={{
-              background: 'rgba(255,255,255,0.055)',
-              border: '1px solid rgba(255,255,255,0.09)',
-            }}
-          >
-            <div
-              className="text-2xl font-bold"
-              style={{ color: stat.urgent ? '#FF3B30' : 'rgba(255,255,255,0.92)' }}
-            >
-              {stat.value}
-            </div>
-            <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              {stat.label}
-            </div>
+      {/* Urgent Banner — only when critical > 0 */}
+      {criticalCount > 0 && (
+        <div
+          className="rounded-2xl px-4 py-4 mb-6"
+          style={{
+            background: 'rgba(255,59,48,0.08)',
+            border: '1px solid rgba(255,59,48,0.15)',
+          }}
+        >
+          <p className="text-sm font-semibold mb-3" style={{ color: '#FF3B30' }}>
+            {criticalCount} critical alert{criticalCount !== 1 ? 's' : ''} need your attention
+          </p>
+          <div className="flex flex-col gap-2">
+            {criticalAlerts.map((alert) => {
+              const created = alert.createdAt ? new Date(alert.createdAt) : new Date()
+              const label = timeLabel(created)
+              return (
+                <div key={alert.id} className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: '#FF3B30' }} />
+                  <span
+                    className="flex-1 text-sm font-medium truncate"
+                    style={{ color: 'rgba(255,255,255,0.92)' }}
+                  >
+                    {alert.title}
+                  </span>
+                  <span className="text-[11px] shrink-0" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    {label}
+                  </span>
+                  <button
+                    className="shrink-0 text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{
+                      background: 'rgba(255,59,48,0.15)',
+                      color: '#FF3B30',
+                      border: '1px solid rgba(255,59,48,0.25)',
+                    }}
+                  >
+                    Resolve →
+                  </button>
+                </div>
+              )
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Sub-sections */}
       <div
@@ -188,22 +206,24 @@ export default async function AlertsPage() {
         ))}
       </div>
 
-      {/* Alert List */}
-      <div className="flex flex-col gap-2 mb-6">
+      {/* All Unread Alerts */}
+      <div
+        className="rounded-2xl overflow-hidden mb-6"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+        }}
+      >
         {alerts.length === 0 && (
           <div
-            className="rounded-2xl px-4 py-8 text-center text-sm"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              color: 'rgba(255,255,255,0.32)',
-            }}
+            className="px-4 py-8 text-center text-sm"
+            style={{ color: 'rgba(255,255,255,0.32)' }}
           >
             No unread alerts
           </div>
         )}
 
-        {alerts.map((alert) => {
+        {alerts.map((alert, i) => {
           const sev = severityStyle(alert.severity)
           const created = alert.createdAt ? new Date(alert.createdAt) : new Date()
           const label = timeLabel(created)
@@ -211,67 +231,52 @@ export default async function AlertsPage() {
           return (
             <div
               key={alert.id}
-              className="rounded-2xl px-4 py-3.5 cursor-pointer transition-colors"
-              style={{
-                background: sev.bg,
-                border: `1px solid ${sev.border}`,
-              }}
+              className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+              style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
             >
-              <div className="flex items-start gap-3">
-                {/* Severity dot */}
-                <div
-                  className="w-2 h-2 rounded-full mt-1.5 shrink-0"
-                  style={{ background: sev.dot }}
-                />
+              {/* Severity dot */}
+              <div
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ background: sev.dot }}
+              />
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: 'rgba(255,255,255,0.92)' }}
-                    >
-                      {alert.title}
-                    </span>
-                    <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
-                      style={{
-                        background: `${sev.badge}18`,
-                        color: sev.badge,
-                        border: `1px solid ${sev.badge}30`,
-                      }}
-                    >
-                      {alert.severity ?? 'Info'}
-                    </span>
-                  </div>
-
-                  {alert.body && (
-                    <p
-                      className="text-xs mt-1 line-clamp-2"
-                      style={{ color: 'rgba(255,255,255,0.5)' }}
-                    >
-                      {alert.body}
-                    </p>
-                  )}
-
-                  {alert.source && (
-                    <p
-                      className="text-[10px] mt-1 italic"
-                      style={{ color: 'rgba(255,255,255,0.32)' }}
-                    >
-                      {alert.source}
-                    </p>
-                  )}
-                </div>
-
-                {/* Time */}
+              {/* Title + body */}
+              <div className="flex-1 min-w-0">
                 <span
-                  className="text-[11px] shrink-0 mt-0.5"
-                  style={{ color: 'rgba(255,255,255,0.35)' }}
+                  className="text-sm font-semibold block truncate"
+                  style={{ color: 'rgba(255,255,255,0.92)' }}
                 >
-                  {label}
+                  {alert.title}
                 </span>
+                {alert.body && (
+                  <span
+                    className="text-xs block truncate"
+                    style={{ color: 'rgba(255,255,255,0.32)' }}
+                  >
+                    {alert.body}
+                  </span>
+                )}
               </div>
+
+              {/* Time */}
+              <span
+                className="text-[11px] shrink-0"
+                style={{ color: 'rgba(255,255,255,0.35)' }}
+              >
+                {label}
+              </span>
+
+              {/* Severity badge */}
+              <span
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                style={{
+                  background: `${sev.badge}18`,
+                  color: sev.badge,
+                  border: `1px solid ${sev.badge}30`,
+                }}
+              >
+                {alert.severity ?? 'Info'}
+              </span>
             </div>
           )
         })}
