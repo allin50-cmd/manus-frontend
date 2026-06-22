@@ -204,8 +204,8 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
     <div class="sb-section">
       <button class="sb-link active" onclick="showHome()">Home</button>
       <button class="sb-link" onclick="push('sc-activity')">Activity</button>
-      <button class="sb-link" onclick="">Calendar</button>
-      <button class="sb-link" onclick="">Favourites</button>
+      <button class="sb-link" onclick="push('sc-calendar')">Calendar</button>
+      <button class="sb-link" onclick="push('sc-favourites')">Favourites</button>
     </div>
     <div class="sb-section">
       <div class="sb-label">Modules</div>
@@ -265,7 +265,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
         </div>
         <div class="mod-card" onclick="push('sc-calls')">
           <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#90F5C0 0%,#28C76F 50%,#065E30 100%);box-shadow:0 12px 36px -6px rgba(40,199,111,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">📞</span></div><div class="notif-badge">4</div></div>
-          <div class="mod-bottom"><div><div class="mod-label">Calls</div><div class="mod-desc">4 tasks today</div></div><span class="mod-chevron">›</span></div>
+          <div class="mod-bottom"><div><div class="mod-label">Calls</div><div class="mod-desc">4 calls today</div></div><span class="mod-chevron">›</span></div>
         </div>
         <div class="mod-card" onclick="push('sc-contacts')">
           <div class="mod-card-top"><div class="icon-box" style="background:radial-gradient(circle at 30% 20%,#E0A8FF 0%,#A855F7 50%,#550090 100%);box-shadow:0 12px 36px -6px rgba(168,85,247,0.45),0 4px 14px -2px rgba(0,0,0,0.55),inset 0 1.5px 0 rgba(255,255,255,0.45)"><div class="icon-gloss"></div><div class="icon-spec"></div><span class="icon-emoji">👥</span></div></div>
@@ -288,7 +288,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
           <div class="mod-bottom"><div><div class="mod-label">Documents</div><div class="mod-desc">Your important documents</div></div><span class="mod-chevron">›</span></div>
         </div>
       </div>
-      <div class="focus-bar">
+      <div class="focus-bar" onclick="push('sc-alerts')" style="cursor:pointer">
         <div class="focus-left"><span style="font-size:18px">⭐</span><div><div class="focus-label">Today's Focus</div><div class="focus-text">3 things need your attention</div></div></div>
         <div class="focus-right"><div><div class="focus-meeting">Next Meeting</div><div class="focus-meeting-name">Sales Review</div></div><span class="focus-time">14:00</span></div>
       </div>
@@ -314,7 +314,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
           <div class="mod-bottom"><div><div class="mod-label">Messages</div><div class="mod-desc">3 unread</div></div><span class="mod-chevron">›</span></div>
         </div>
       </div>
-      <div class="focus-bar">
+      <div class="focus-bar" onclick="push('sc-calls')" style="cursor:pointer">
         <div class="focus-left"><span style="font-size:18px">🎯</span><div><div class="focus-label">Your Focus</div><div class="focus-text">Hawk Construction call — 11:30</div></div></div>
         <div class="focus-right"><span class="focus-time">11:30</span></div>
       </div>
@@ -340,7 +340,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
           <div class="mod-bottom"><div><div class="mod-label">Documents</div><div class="mod-desc">SOW drafts</div></div><span class="mod-chevron">›</span></div>
         </div>
       </div>
-      <div class="focus-bar">
+      <div class="focus-bar" onclick="push('sc-alerts')" style="cursor:pointer">
         <div class="focus-left"><span style="font-size:18px">📌</span><div><div class="focus-label">Your Focus</div><div class="focus-text">Accuracy Ltd SOW — send today</div></div></div>
         <div class="focus-right"><span class="focus-time" style="background:rgba(139,92,246,0.2);color:#8B5CF6;border-color:rgba(139,92,246,0.3)">EOD</span></div>
       </div>
@@ -384,7 +384,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
     </div>
     <div class="sec"><div class="sec-label">Invoices</div>
       <div class="card">
-        <div class="row" onclick=""><div class="ri" style="background:#FEF3C7">🧾</div><div class="rm"><div class="rt">INV-2024-041</div><div class="rs">FineGuard Ltd · £4,800</div></div><div class="rr"><div class="rd">Jun 18</div><span class="badge ba">Overdue</span></div></div>
+        <div class="row" onclick="push('sc-alert-detail')"><div class="ri" style="background:#FEF3C7">🧾</div><div class="rm"><div class="rt">INV-2024-041</div><div class="rs">FineGuard Ltd · £4,800</div></div><div class="rr"><div class="rd">Jun 18</div><span class="badge br">Overdue</span></div></div>
         <div class="row"><div class="ri" style="background:#D1FAE5">🧾</div><div class="rm"><div class="rt">INV-2024-040</div><div class="rs">Ultratech Ltd · £12,000</div></div><div class="rr"><div class="rd">Jun 15</div><span class="badge bg">Paid</span></div></div>
         <div class="row"><div class="ri" style="background:#DBEAFE">🧾</div><div class="rm"><div class="rt">INV-2024-039</div><div class="rs">Accuracy Ltd · £3,200</div></div><div class="rr"><div class="rd">Jun 12</div><span class="badge bb">Sent</span></div></div>
         <div class="row"><div class="ri" style="background:#D1FAE5">🧾</div><div class="rm"><div class="rt">INV-2024-038</div><div class="rs">Builder Big Jobs · £7,500</div></div><div class="rr"><div class="rd">Jun 8</div><span class="badge bg">Paid</span></div></div>
@@ -397,7 +397,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 
 <!-- ═══════════ MESSAGES ═══════════ -->
 <div id="sc-messages" class="screen">
-  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Messages</span><span class="tb-action">New</span></div>
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Messages</span><span class="tb-action" onclick="push('sc-message-compose')">New</span></div>
   <div class="sbody">
     <div class="tab-bar">
       <div class="tab-item active">All</div>
@@ -407,10 +407,10 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
     </div>
     <div class="sec"><div class="sec-label">Recent</div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:#EDE9FE;border-radius:50%;font-weight:700;color:#6D28D9">D</div><div class="rm"><div class="rt">Dagon Kalev</div><div class="rs">BBJ pipeline update attached...</div></div><div class="rr"><div class="rd">10:42</div><span class="badge bp">2</span></div></div>
-        <div class="row"><div class="ri" style="background:#DBEAFE;border-radius:50%;font-weight:700;color:#1D4ED8">A</div><div class="rm"><div class="rt">Alissa Marsh</div><div class="rs">Accuracy call booked for Thu</div></div><div class="rr"><div class="rd">9:15</div></div></div>
-        <div class="row"><div class="ri" style="background:#D1FAE5;border-radius:50%;font-weight:700;color:#065F46">F</div><div class="rm"><div class="rt">FineGuard Support</div><div class="rs">Customer escalation resolved ✓</div></div><div class="rr"><div class="rd">Yesterday</div></div></div>
-        <div class="row"><div class="ri" style="background:#FEF3C7;border-radius:50%;font-weight:700;color:#92400E">G</div><div class="rm"><div class="rt">George Morris</div><div class="rs">Pricing decision needed by EOD</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
+        <div class="row" onclick="push('sc-bbj')"><div class="ri" style="background:#EDE9FE;border-radius:50%;font-weight:700;color:#6D28D9">D</div><div class="rm"><div class="rt">Dagon Kalev</div><div class="rs">BBJ pipeline update attached...</div></div><div class="rr"><div class="rd">10:42</div><span class="badge bp">2</span></div></div>
+        <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:#DBEAFE;border-radius:50%;font-weight:700;color:#1D4ED8">A</div><div class="rm"><div class="rt">Alissa Marsh</div><div class="rs">Accuracy call booked for Thu</div></div><div class="rr"><div class="rd">9:15</div></div></div>
+        <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:#D1FAE5;border-radius:50%;font-weight:700;color:#065F46">F</div><div class="rm"><div class="rt">FineGuard Support</div><div class="rs">Customer escalation resolved ✓</div></div><div class="rr"><div class="rd">Yesterday</div></div></div>
+        <div class="row" onclick="push('sc-task-detail');loadTask(3)"><div class="ri" style="background:#FEF3C7;border-radius:50%;font-weight:700;color:#92400E">G</div><div class="rm"><div class="rt">George Morris</div><div class="rs">Pricing decision needed by EOD</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
       </div>
     </div>
     <div class="pb-safe"></div>
@@ -420,7 +420,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 
 <!-- ═══════════ CALLS ═══════════ -->
 <div id="sc-calls" class="screen">
-  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Calls</span><span class="tb-action">Log</span></div>
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Calls</span><span class="tb-action" onclick="push('sc-calls-log')">Log</span></div>
   <div class="sbody">
     <div class="stat-grid">
       <div class="stat"><div class="slabel">This Week</div><div class="sval">14</div><div class="schg up">↑ 3 vs last week</div></div>
@@ -428,15 +428,15 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
     </div>
     <div class="sec"><div class="sec-label">Today</div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">Hawk Construction Ltd</div><div class="rs">Dagon · 12 min</div></div><div class="rr"><div class="rd">11:20</div><span class="badge bg">Done</span></div></div>
-        <div class="row"><div class="ri" style="background:#FEE2E2">📞</div><div class="rm"><div class="rt">Premier Build Co</div><div class="rs">George · Missed</div></div><div class="rr"><div class="rd">9:05</div><span class="badge br">Missed</span></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(0)"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">Hawk Construction Ltd</div><div class="rs">Dagon · 12 min</div></div><div class="rr"><div class="rd">11:20</div><span class="badge bg">Done</span></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(1)"><div class="ri" style="background:#FEE2E2">📞</div><div class="rm"><div class="rt">Premier Build Co</div><div class="rs">George · Missed</div></div><div class="rr"><div class="rd">9:05</div><span class="badge br">Missed</span></div></div>
       </div>
     </div>
     <div class="sec"><div class="sec-label">Recent Calls</div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">FineGuard Renewal</div><div class="rs">Alissa · 24 min</div></div><div class="rr"><div class="rd">Yesterday</div><span class="badge bg">Done</span></div></div>
-        <div class="row"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">Accuracy Planning</div><div class="rs">George · 18 min</div></div><div class="rr"><div class="rd">Jun 20</div><span class="badge bg">Done</span></div></div>
-        <div class="row"><div class="ri" style="background:#FEE2E2">📞</div><div class="rm"><div class="rt">Meridian Builders</div><div class="rs">Dagon · No answer</div></div><div class="rr"><div class="rd">Jun 20</div><span class="badge br">Missed</span></div></div>
+        <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">FineGuard Renewal</div><div class="rs">Alissa · 24 min</div></div><div class="rr"><div class="rd">Yesterday</div><span class="badge bg">Done</span></div></div>
+        <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:#D1FAE5">📞</div><div class="rm"><div class="rt">Accuracy Planning</div><div class="rs">George · 18 min</div></div><div class="rr"><div class="rd">Jun 20</div><span class="badge bg">Done</span></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(3)"><div class="ri" style="background:#FEE2E2">📞</div><div class="rm"><div class="rt">Meridian Builders</div><div class="rs">Dagon · No answer</div></div><div class="rr"><div class="rd">Jun 20</div><span class="badge br">Missed</span></div></div>
       </div>
     </div>
     <div class="pb-safe"></div>
@@ -446,7 +446,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 
 <!-- ═══════════ ALERTS ═══════════ -->
 <div id="sc-alerts" class="screen">
-  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Alerts</span><span class="tb-action">Mark All</span></div>
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Alerts</span><span class="tb-action" onclick="markAllAlerts(this)">Mark All</span></div>
   <div class="sbody">
     <div class="sec"><div class="sec-label">Unread · 3</div>
       <!-- Alert card — red -->
@@ -466,14 +466,14 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
         </div>
       </div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:#FEF3C7">🟡</div><div class="rm"><div class="rt">Lead Score Drop</div><div class="rs">Premier Build Co — 78→74</div></div><div class="rr"><div class="rd">2h ago</div></div></div>
-        <div class="row"><div class="ri" style="background:#DBEAFE">🔵</div><div class="rm"><div class="rt">New BBJ Lead</div><div class="rs">Sovereign Structures — score 38</div></div><div class="rr"><div class="rd">4h ago</div></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(1)"><div class="ri" style="background:#FEF3C7">🟡</div><div class="rm"><div class="rt">Lead Score Drop</div><div class="rs">Premier Build Co — 78→74</div></div><div class="rr"><div class="rd">2h ago</div></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(4)"><div class="ri" style="background:#DBEAFE">🔵</div><div class="rm"><div class="rt">New BBJ Lead</div><div class="rs">Sovereign Structures — score 38</div></div><div class="rr"><div class="rd">4h ago</div></div></div>
       </div>
     </div>
     <div class="sec"><div class="sec-label">Earlier</div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:#D1FAE5">🟢</div><div class="rm"><div class="rt">Payment Received</div><div class="rs">BBJ paid INV-2024-038 · £7,500</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
-        <div class="row"><div class="ri" style="background:#D1FAE5">🟢</div><div class="rm"><div class="rt">Task Completed</div><div class="rs">Accuracy planning call — Alissa</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
+        <div class="row" onclick="push('sc-money')"><div class="ri" style="background:#D1FAE5">🟢</div><div class="rm"><div class="rt">Payment Received</div><div class="rs">BBJ paid INV-2024-038 · £7,500</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
+        <div class="row" onclick="push('sc-task-detail');loadTask(0)"><div class="ri" style="background:#D1FAE5">🟢</div><div class="rm"><div class="rt">Task Completed</div><div class="rs">Accuracy planning call — Alissa</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
       </div>
     </div>
     <div class="pb-safe"></div>
@@ -497,7 +497,7 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
         <div class="drow"><span class="dlabel">Due Date</span><span class="dval">Jun 18, 2024</span></div>
         <div class="drow"><span class="dlabel">Days Overdue</span><span class="dval" style="color:#DC2626;font-weight:600">4 days</span></div>
         <div class="drow"><span class="dlabel">Contact</span><span class="dval">Clare Webb</span></div>
-        <div class="drow"><span class="dlabel">Phone</span><span class="dval" style="color:#3D8BFF">07712 000123</span></div>
+        <div class="drow"><span class="dlabel">Phone</span><a class="dval" href="tel:07712000123" style="color:#3D8BFF;text-decoration:none">07712 000123</a></div>
       </div>
     </div>
     <div class="sec"><div class="sec-label">History</div>
@@ -590,16 +590,16 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
   <div class="sbody">
     <div class="sec"><div class="sec-label">Team</div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:linear-gradient(135deg,#FFC145,#FF8A34);border-radius:50%;color:white;font-weight:700">G</div><div class="rm"><div class="rt">George Thomas</div><div class="rs">Founder · george@ultratech.co.uk</div></div></div>
-        <div class="row"><div class="ri" style="background:linear-gradient(135deg,#20AFFF,#7A5AF8);border-radius:50%;color:white;font-weight:700">D</div><div class="rm"><div class="rt">Dagon Kalev</div><div class="rs">Sales · dagon@ultratech.co.uk</div></div></div>
-        <div class="row"><div class="ri" style="background:linear-gradient(135deg,#28C76F,#00A86B);border-radius:50%;color:white;font-weight:700">A</div><div class="rm"><div class="rt">Alissa Marsh</div><div class="rs">Ops · alissa@ultratech.co.uk</div></div></div>
+        <div class="row" onclick="push('sc-messages')"><div class="ri" style="background:linear-gradient(135deg,#FFC145,#FF8A34);border-radius:50%;color:white;font-weight:700">G</div><div class="rm"><div class="rt">George Thomas</div><div class="rs">Founder · george@ultratech.co.uk</div></div></div>
+        <div class="row" onclick="push('sc-messages')"><div class="ri" style="background:linear-gradient(135deg,#20AFFF,#7A5AF8);border-radius:50%;color:white;font-weight:700">D</div><div class="rm"><div class="rt">Dagon Kalev</div><div class="rs">Sales · dagon@ultratech.co.uk</div></div></div>
+        <div class="row" onclick="push('sc-messages')"><div class="ri" style="background:linear-gradient(135deg,#28C76F,#00A86B);border-radius:50%;color:white;font-weight:700">A</div><div class="rm"><div class="rt">Alissa Marsh</div><div class="rs">Ops · alissa@ultratech.co.uk</div></div></div>
       </div>
     </div>
     <div class="sec"><div class="sec-label">Key Clients</div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:#D1FAE5">🛡️</div><div class="rm"><div class="rt">Clare Webb — FineGuard</div><div class="rs">accounts@fineguard.co.uk</div></div><div class="rr"><span class="badge bg">Client</span></div></div>
-        <div class="row"><div class="ri" style="background:#FEF3C7">🏗️</div><div class="rm"><div class="rt">James Hawkins — Hawk Const.</div><div class="rs">j.hawkins@hawkconstruction.co.uk</div></div><div class="rr"><span class="badge ba">Lead</span></div></div>
-        <div class="row"><div class="ri" style="background:#EDE9FE">🎯</div><div class="rm"><div class="rt">Sarah Thornton — Accuracy</div><div class="rs">sarah@accuracy.co.uk</div></div><div class="rr"><span class="badge ba">Pipeline</span></div></div>
+        <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:#D1FAE5">🛡️</div><div class="rm"><div class="rt">Clare Webb — FineGuard</div><div class="rs">accounts@fineguard.co.uk</div></div><div class="rr"><span class="badge bg">Client</span></div></div>
+        <div class="row" onclick="push('sc-bbj-lead');loadLead(0)"><div class="ri" style="background:#FEF3C7">🏗️</div><div class="rm"><div class="rt">James Hawkins — Hawk Const.</div><div class="rs">j.hawkins@hawkconstruction.co.uk</div></div><div class="rr"><span class="badge ba">Lead</span></div></div>
+        <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:#EDE9FE">🎯</div><div class="rm"><div class="rt">Sarah Thornton — Accuracy</div><div class="rs">sarah@accuracy.co.uk</div></div><div class="rr"><span class="badge ba">Pipeline</span></div></div>
       </div>
     </div>
     <div class="pb-safe"></div>
@@ -613,10 +613,10 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
   <div class="sbody">
     <div class="sec"><div class="sec-label">Recent Files</div>
       <div class="card">
-        <div class="row"><div class="ri" style="background:#FEE2E2">📄</div><div class="rm"><div class="rt">FineGuard_Proposal_v3.pdf</div><div class="rs">Shared · 2.4 MB</div></div><div class="rr"><div class="rd">Today</div></div></div>
-        <div class="row"><div class="ri" style="background:#DBEAFE">📊</div><div class="rm"><div class="rt">BBJ_Pipeline_June.xlsx</div><div class="rs">George · 340 KB</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
-        <div class="row"><div class="ri" style="background:#D1FAE5">📝</div><div class="rm"><div class="rt">Accuracy_SOW_Draft.docx</div><div class="rs">Alissa · 128 KB</div></div><div class="rr"><div class="rd">Jun 18</div></div></div>
-        <div class="row"><div class="ri" style="background:#FEF3C7">📋</div><div class="rm"><div class="rt">Q2_Revenue_Summary.pdf</div><div class="rs">George · 1.1 MB</div></div><div class="rr"><div class="rd">Jun 15</div></div></div>
+        <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:#FEE2E2">📄</div><div class="rm"><div class="rt">FineGuard_Proposal_v3.pdf</div><div class="rs">Shared · 2.4 MB</div></div><div class="rr"><div class="rd">Today</div></div></div>
+        <div class="row" onclick="push('sc-bbj')"><div class="ri" style="background:#DBEAFE">📊</div><div class="rm"><div class="rt">BBJ_Pipeline_June.xlsx</div><div class="rs">George · 340 KB</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
+        <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:#D1FAE5">📝</div><div class="rm"><div class="rt">Accuracy_SOW_Draft.docx</div><div class="rs">Alissa · 128 KB</div></div><div class="rr"><div class="rd">Jun 18</div></div></div>
+        <div class="row" onclick="push('sc-money')"><div class="ri" style="background:#FEF3C7">📋</div><div class="rm"><div class="rt">Q2_Revenue_Summary.pdf</div><div class="rs">George · 1.1 MB</div></div><div class="rr"><div class="rd">Jun 15</div></div></div>
       </div>
     </div>
     <div class="pb-safe"></div>
@@ -723,13 +723,14 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
       <div class="dcard">
         <div class="drow"><span class="dlabel">Contact</span><span class="dval" id="ld-contact">—</span></div>
         <div class="drow"><span class="dlabel">Email</span><span class="dval" id="ld-email" style="color:#3D8BFF;font-size:12px">—</span></div>
-        <div class="drow"><span class="dlabel">Phone</span><span class="dval" id="ld-phone" style="color:#3D8BFF">—</span></div>
+        <div class="drow"><span class="dlabel">Phone</span><a class="dval" id="ld-phone" href="#" style="color:#3D8BFF;text-decoration:none">—</a></div>
         <div class="drow"><span class="dlabel">Postcode</span><span class="dval" id="ld-post">—</span></div>
       </div>
     </div>
     <div class="sec"><div class="sec-label">Job Types</div><div class="dcard"><div class="drow"><span id="ld-jobs" style="font-size:13px;color:#475569;font-weight:400">—</span></div></div></div>
     <div class="sec"><div class="sec-label">Notes</div><div class="dcard"><div class="drow"><span id="ld-notes" style="font-size:13px;color:#475569;line-height:1.6;font-weight:400">—</span></div></div></div>
     <button class="btn btn-p" style="margin-top:16px">📞 Log Call</button>
+    <button class="btn btn-s" onclick="push('sc-quote')">📋 Send Quote</button>
     <button class="btn btn-s">✉️ Send Email</button>
     <div class="pb-safe"></div>
   </div>
@@ -784,7 +785,57 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
         <div class="row"><div class="ri" style="background:#EDE9FE;border-radius:50%;color:#6D28D9;font-weight:700">S</div><div class="rm"><div class="rt">Sarah Thornton</div><div class="rs">CEO · sarah@accuracy.co.uk</div></div></div>
       </div>
     </div>
-    <button class="btn btn-p" style="margin-top:16px">Send Proposal</button>
+    <button class="btn btn-s" style="margin-top:16px" onclick="push('sc-message-compose')">📧 Email Sarah</button>
+    <button class="btn btn-p">Send Proposal</button>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ QUOTE ═══════════ -->
+<div id="sc-quote" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Lead</button><span class="tb-title">Send Quote</span><span></span></div>
+  <div class="sbody">
+    <div class="hero" style="background:linear-gradient(135deg,#7C2D12,#C2410C)">
+      <div class="hero-tag">Builder Big Jobs — Quote</div>
+      <div class="hero-title" id="qt-company">—</div>
+      <div class="hero-sub" id="qt-contact">—</div>
+    </div>
+    <div class="sec"><div class="sec-label">Package</div>
+      <div class="dcard">
+        <div class="drow"><span class="dlabel">Service</span><span class="dval">BBJ Lead Gen — Starter</span></div>
+        <div class="drow"><span class="dlabel">Duration</span><span class="dval">3 months</span></div>
+        <div class="drow"><span class="dlabel">Monthly</span><span class="dval" style="color:#16A34A;font-weight:700">£299/mo</span></div>
+        <div class="drow"><span class="dlabel">Setup Fee</span><span class="dval">£0</span></div>
+        <div class="drow"><span class="dlabel">Total</span><span class="dval" style="font-weight:700">£897</span></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-label">Note to Lead</div>
+      <div style="background:white;border-radius:14px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);font-size:13px;color:#475569;line-height:1.7" id="qt-note">Hi, following our conversation — here's a tailored quote for the BBJ Lead Generation Starter package. You'll receive verified, scored construction leads in your area each week. Happy to walk you through it on a quick call.</div>
+    </div>
+    <button class="btn btn-p" style="margin-top:16px" onclick="sendQuote(this)">📧 Send Quote by Email</button>
+    <button class="btn btn-s">📄 Download as PDF</button>
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ MESSAGE COMPOSE ═══════════ -->
+<div id="sc-message-compose" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Back</button><span class="tb-title">New Message</span><span class="tb-action" onclick="sendMessage(this)">Send</span></div>
+  <div class="sbody">
+    <div style="padding:16px">
+      <div style="background:white;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #F1F5F9">
+          <span style="font-size:13px;color:#94A3B8;width:32px;flex-shrink:0">To:</span>
+          <input id="mc-to" style="flex:1;border:none;outline:none;font-size:14px;color:#0F172A;font-family:inherit" placeholder="Name or company…" type="text"/>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px">
+          <span style="font-size:13px;color:#94A3B8;width:32px;flex-shrink:0;padding-top:2px">Msg:</span>
+          <textarea id="mc-body" style="flex:1;border:none;outline:none;font-size:14px;color:#0F172A;resize:none;min-height:120px;font-family:inherit;line-height:1.5" placeholder="Write a message…"></textarea>
+        </div>
+      </div>
+    </div>
     <div class="pb-safe"></div>
   </div>
 </div>
@@ -894,6 +945,45 @@ function loadLead(i){
   fill.style.background=l.score>=70?'#16A34A':l.score>=50?'#D97706':'#DC2626';
   num.textContent=l.score;
   num.style.color=l.score>=70?'#16A34A':l.score>=50?'#D97706':'#DC2626';
+}
+
+// ── Patch loadLead to set phone href + populate quote ──
+const _origLoadLead=loadLead;
+window.loadLead=function(i){
+  _origLoadLead(i);
+  const l=LEADS[i];if(!l)return;
+  const ph=document.getElementById('ld-phone');
+  if(ph&&ph.tagName==='A') ph.href='tel:'+l.phone.replace(/\s/g,'');
+  const qtc=document.getElementById('qt-company');
+  const qtco=document.getElementById('qt-contact');
+  if(qtc) qtc.textContent=l.name;
+  if(qtco) qtco.textContent=l.contact+' · '+l.post;
+};
+
+// ── Send quote feedback ────────────────────────────────
+function sendQuote(btn){
+  const orig=btn.textContent;
+  btn.textContent='✓ Quote Sent';
+  btn.style.background='#16A34A';
+  setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2500);
+}
+
+// ── Send message feedback ─────────────────────────────
+function sendMessage(btn){
+  const orig=btn.textContent;
+  btn.textContent='Sent ✓';
+  btn.style.color='#16A34A';
+  setTimeout(()=>{btn.textContent=orig;btn.style.color='';pop();},1200);
+}
+
+// ── Mark all alerts ───────────────────────────────────
+function markAllAlerts(el){
+  if(el.textContent!=='Mark All')return;
+  el.textContent='Done ✓';el.style.color='#94A3B8';
+  document.querySelectorAll('#sc-alerts .badge.br').forEach(b=>{
+    b.textContent='Read';b.style.background='#F1F5F9';b.style.color='#475569';
+  });
+  setTimeout(()=>{el.textContent='Mark All';el.style.color='';},3000);
 }
 
 // ── Greeting time ──────────────────────────────────────
