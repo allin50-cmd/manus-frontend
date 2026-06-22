@@ -1,5 +1,5 @@
 /**
- * lib/db.ts — Drizzle client for Next.js app routes.
+ * lib/db.ts — Drizzle client for the FineGuard Next.js app.
  *
  * Uses drizzle-orm/postgres-js + postgres driver pointed at Supabase Postgres.
  * Lazy-init pattern: the connection is created on first call and cached for
@@ -11,10 +11,10 @@ import * as schema from '@/db/schema';
 
 type DrizzleDb = ReturnType<typeof drizzle<typeof schema>>;
 
-const g = globalThis as unknown as { __ultratech_db?: DrizzleDb };
+const g = globalThis as unknown as { __fineguard_db?: DrizzleDb };
 
 export async function getDb(): Promise<DrizzleDb> {
-  if (g.__ultratech_db) return g.__ultratech_db;
+  if (g.__fineguard_db) return g.__fineguard_db;
 
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not configured');
@@ -22,17 +22,16 @@ export async function getDb(): Promise<DrizzleDb> {
   const client = postgres(url, { max: 10 });
   const db = drizzle(client, { schema });
 
-  g.__ultratech_db = db;
+  g.__fineguard_db = db;
 
   return db;
 }
 
-// Re-export schema table references so callers can import from one place
+// Re-export FineGuard schema table references
 export {
-  workItems,
-  actions,
-  activityLogs,
-  decisions,
-  templates,
-  builderBigJobsLeads,
+  monitoredCompanies,
+  fineguardLeads,
+  alertHistory,
+  leads,
+  contacts,
 } from '@/db/schema';

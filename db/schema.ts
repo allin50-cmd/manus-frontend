@@ -599,34 +599,3 @@ export const clerkAuditEvents = pgTable(
 export type ClerkAuditEvent = typeof clerkAuditEvents.$inferSelect;
 export type InsertClerkAuditEvent = typeof clerkAuditEvents.$inferInsert;
 
-// ─── Builder Big Jobs Tables ──────────────────────────────────────────────────
-
-/**
- * Builder Big Jobs Leads Table
- * Builder preferences and incoming project leads for the BBJ lead gen product.
- * Shared Supabase instance — isolated product, separate table.
- */
-export const builderBigJobsLeads = pgTable('builder_big_jobs_leads', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  source: varchar('source', { length: 100 }).default('intake_form').notNull(),
-  companyName: varchar('company_name', { length: 255 }).notNull(),
-  contactName: varchar('contact_name', { length: 255 }).notNull(),
-  email: varchar('email', { length: 255 }).notNull(),
-  phone: varchar('phone', { length: 50 }),
-  postcodeArea: varchar('postcode_area', { length: 255 }),
-  jobTypes: text('job_types'),
-  minJobSizeBand: varchar('min_job_size_band', { length: 50 }),
-  maxTravelMiles: integer('max_travel_miles'),
-  preferredContact: varchar('preferred_contact', { length: 50 }),
-  notes: text('notes'),
-  estimatedValueBand: varchar('estimated_value_band', { length: 50 }),
-  planningStatus: varchar('planning_status', { length: 50 }),
-  leadScore: integer('lead_score').default(0).notNull(),
-  status: varchar('status', { length: 50 }).default('new').notNull(),
-  assignedTo: varchar('assigned_to', { length: 100 }),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-})
-
-export type BuilderBigJobsLead = typeof builderBigJobsLeads.$inferSelect;
-export type NewBuilderBigJobsLead = typeof builderBigJobsLeads.$inferInsert;
