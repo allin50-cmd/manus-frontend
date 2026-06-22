@@ -13,11 +13,11 @@ function daysLabel(d: Date) {
   return `${diff}d ago`
 }
 
-function statusStyle(s: string) {
-  if (s === 'Overdue') return 'bg-red-50 text-red-700 border border-red-200'
-  if (s === 'Sent') return 'bg-amber-50 text-amber-700 border border-amber-200'
-  if (s === 'Paid') return 'bg-green-50 text-green-700 border border-green-200'
-  return 'bg-slate-100 text-slate-500'
+function statusBadge(s: string): { bg: string; color: string } {
+  if (s === 'Paid') return { bg: 'rgba(40,199,111,0.15)', color: '#28C76F' }
+  if (s === 'Sent') return { bg: 'rgba(255,159,10,0.15)', color: '#FF9F0A' }
+  if (s === 'Overdue') return { bg: 'rgba(255,59,48,0.15)', color: '#FF3B30' }
+  return { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }
 }
 
 export const dynamic = 'force-dynamic'
@@ -26,81 +26,177 @@ export default async function MoneyPage() {
   const db = await getDb()
 
   const [invoices, agg] = await Promise.all([
-    db.select().from(osInvoices).orderBy(desc(osInvoices.createdAt)).limit(20),
+    db.select().from(osInvoices).orderBy(desc(osInvoices.createdAt)).limit(8),
     db
       .select({
         totalPaid: sql<number>`coalesce(sum(amount_pence) filter (where status = 'Paid'), 0)`,
         totalOutstanding: sql<number>`coalesce(sum(amount_pence) filter (where status in ('Sent','Draft')), 0)`,
         dueThisWeek: sql<number>`coalesce(sum(amount_pence) filter (where status != 'Paid' and status != 'Cancelled' and due_at between now() and now() + interval '7 days'), 0)`,
         countOverdue: sql<number>`count(*) filter (where status = 'Overdue')`,
+        countInvoices: sql<number>`count(*)`,
       })
       .from(osInvoices),
   ])
 
-  const stats = agg[0] ?? { totalPaid: 0, totalOutstanding: 0, dueThisWeek: 0, countOverdue: 0 }
+  const stats = agg[0] ?? { totalPaid: 0, totalOutstanding: 0, dueThisWeek: 0, countOverdue: 0, countInvoices: 0 }
+
+  const sections = [
+    { label: 'Revenue', color: '#FFD000', count: 0, icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
+      </svg>
+    ) },
+    { label: 'Invoices', color: '#FFC145', count: Number(stats.countInvoices), icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+      </svg>
+    ) },
+    { label: 'Banking', color: '#A0C4FF', count: 0, icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+      </svg>
+    ) },
+    { label: 'Subscriptions', color: '#C084FC', count: 0, icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+      </svg>
+    ) },
+    { label: 'Forecast', color: '#34D399', count: 0, icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ) },
+  ]
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: 'linear-gradient(135deg, #FFD070, #FF8C00)' }}
-        >
-          <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <circle cx="12" cy="12" r="9" />
-            <path strokeLinecap="round" d="M14 9.5c-.6-.9-1.5-1.5-2.5-1.5-1.7 0-3 1.3-3 3s1.3 3 3 3c1 0 1.9-.6 2.5-1.5" />
-            <path strokeLinecap="round" d="M12 7v1.5M12 15.5V17" />
-          </svg>
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Money</h1>
-          <p className="text-slate-500 text-sm">Revenue · Invoices · Payments</p>
-        </div>
-      </div>
+    <div className="min-h-screen pb-24 lg:pb-0">
+      <div className="max-w-2xl mx-auto px-4 py-6">
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Revenue (paid)', value: pence(stats.totalPaid) },
-          { label: 'Outstanding', value: pence(stats.totalOutstanding) },
-          { label: 'Due This Week', value: pence(stats.dueThisWeek) },
-          { label: 'Overdue invoices', value: String(stats.countOverdue), urgent: Number(stats.countOverdue) > 0 },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className={`text-2xl font-bold ${s.urgent ? 'text-red-600' : 'text-slate-800'}`}>{s.value}</div>
-            <div className="text-xs text-slate-500 mt-1">{s.label}</div>
+        {/* Module header */}
+        <div className="flex items-center gap-4 mb-6">
+          <div
+            className="relative w-[60px] h-[60px] rounded-[20px] shrink-0 overflow-hidden flex items-center justify-center"
+            style={{
+              background: 'radial-gradient(circle at 30% 20%, #FFF0A0 0%, #FFD000 50%, #A85C00 100%)',
+              boxShadow: '0 16px 40px -8px rgba(255,193,69,0.55), 0 4px 14px -2px rgba(0,0,0,0.6), inset 0 1.5px 0 rgba(255,255,255,0.45)',
+            }}
+          >
+            <div
+              className="absolute inset-x-0 top-0 pointer-events-none z-10"
+              style={{ height: '55%', background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%)', borderRadius: '20px 20px 0 0' }}
+            />
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(120,60,0,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'relative', zIndex: 20 }}>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M14.5 9.5c-.7-1-1.8-1.5-2.8-1.5-1.9 0-3.2 1.3-3.2 3s1.3 3 3.2 3c1 0 2-.5 2.8-1.5" />
+              <line x1="12" y1="6.5" x2="12" y2="8" />
+              <line x1="12" y1="16" x2="12" y2="17.5" />
+            </svg>
           </div>
-        ))}
-      </div>
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: 'rgba(255,255,255,0.92)' }}>Money</h1>
+            <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              {pence(stats.totalPaid)} revenue · {Number(stats.countOverdue) > 0 ? `${stats.countOverdue} overdue` : 'All clear'}
+            </p>
+          </div>
+        </div>
 
-      <div>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Invoices</h2>
-        {invoices.length === 0 ? (
-          <div className="bg-white rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400 text-sm">
-            No invoices yet
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {invoices.map((inv) => (
+        {/* Stats row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {[
+            { label: 'Revenue (Paid)', value: pence(Number(stats.totalPaid)), urgent: false },
+            { label: 'Outstanding', value: pence(Number(stats.totalOutstanding)), urgent: false },
+            { label: 'Due This Week', value: pence(Number(stats.dueThisWeek)), urgent: false },
+            { label: 'Overdue', value: String(Number(stats.countOverdue)), urgent: Number(stats.countOverdue) > 0 },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.09)' }}>
+              <div className="text-2xl font-bold" style={{ color: s.urgent ? '#FF3B30' : 'rgba(255,255,255,0.92)' }}>{s.value}</div>
+              <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Sub-sections */}
+        <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest px-4 pt-3 pb-2" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            SECTIONS
+          </p>
+          {sections.map((s, i) => (
+            <div
+              key={s.label}
+              className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+              style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
+            >
               <div
-                key={inv.id}
-                className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100"
+                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: `${s.color}18`, border: `1px solid ${s.color}30`, color: s.color }}
               >
-                <div>
-                  <div className="font-semibold text-slate-900 text-sm">{inv.clientName}</div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    {inv.number} · {daysLabel(new Date(inv.createdAt))}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-sm font-semibold text-slate-900">{pence(inv.amountPence)}</div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle(inv.status)}`}>
-                    {inv.status}
-                  </span>
-                </div>
+                {s.icon}
               </div>
-            ))}
-          </div>
-        )}
+              <span className="flex-1 text-sm font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{s.label}</span>
+              {s.count > 0 && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: `${s.color}20`, color: s.color }}>{s.count}</span>
+              )}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5">
+                <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent invoices */}
+        <div className="mb-6">
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.25)' }}>
+            RECENT INVOICES
+          </p>
+          {invoices.length === 0 ? (
+            <div className="rounded-2xl p-8 text-center text-sm" style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }}>
+              No invoices yet
+            </div>
+          ) : (
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              {invoices.map((inv, i) => {
+                const badge = statusBadge(inv.status)
+                return (
+                  <div
+                    key={inv.id}
+                    className="flex items-center gap-3 px-4 py-3.5"
+                    style={{ borderBottom: i < invoices.length - 1 ? '1px solid rgba(255,255,255,0.06)' : undefined }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold truncate" style={{ color: 'rgba(255,255,255,0.92)' }}>{inv.clientName}</div>
+                      <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.32)' }}>
+                        {inv.number} · {daysLabel(new Date(inv.createdAt))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>{pence(inv.amountPence)}</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
+                        {inv.status}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3">
+          <button
+            className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #FFD000, #FFA500)', color: '#3A1800', boxShadow: '0 4px 16px rgba(255,193,69,0.3)' }}
+          >
+            New Invoice
+          </button>
+          <button
+            className="px-5 py-3 rounded-xl text-sm font-medium"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.7)' }}
+          >
+            View All
+          </button>
+        </div>
+
       </div>
     </div>
   )

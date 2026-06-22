@@ -1,103 +1,295 @@
 import { getDb } from '@/lib/db'
 import { osPeople } from '@/db/schema'
-import { eq, sql, asc } from 'drizzle-orm'
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Team: 'bg-purple-100 text-purple-700',
-  Client: 'bg-blue-100 text-blue-700',
-  Partner: 'bg-green-100 text-green-700',
-  Supplier: 'bg-amber-100 text-amber-700',
-  Prospect: 'bg-pink-100 text-pink-700',
-}
+import { desc, sql } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
+
+function categoryBadge(category: string | null) {
+  switch (category) {
+    case 'Client':
+      return { bg: 'rgba(168,85,247,0.15)', color: '#A855F7' }
+    case 'Partner':
+      return { bg: 'rgba(61,139,255,0.15)', color: '#3D8BFF' }
+    case 'Supplier':
+      return { bg: 'rgba(129,140,248,0.15)', color: '#818CF8' }
+    case 'Team':
+      return { bg: 'rgba(40,199,111,0.15)', color: '#28C76F' }
+    case 'Prospect':
+      return { bg: 'rgba(255,193,69,0.15)', color: '#FFC145' }
+    default:
+      return { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)' }
+  }
+}
 
 export default async function ContactsPage() {
   const db = await getDb()
 
-  const [people, counts] = await Promise.all([
-    db.select().from(osPeople).orderBy(asc(osPeople.category), asc(osPeople.name)).limit(50),
-    db
-      .select({
-        category: osPeople.category,
-        count: sql<number>`count(*)`,
-      })
-      .from(osPeople)
-      .groupBy(osPeople.category),
+  const [people, agg] = await Promise.all([
+    db.select().from(osPeople).orderBy(desc(osPeople.createdAt)).limit(20),
+    db.select({
+      total: sql<number>`count(*)`,
+      clients: sql<number>`count(*) filter (where category = 'Client')`,
+      partners: sql<number>`count(*) filter (where category = 'Partner')`,
+      suppliers: sql<number>`count(*) filter (where category = 'Supplier')`,
+      team: sql<number>`count(*) filter (where category = 'Team')`,
+      prospects: sql<number>`count(*) filter (where category = 'Prospect')`,
+    }).from(osPeople),
   ])
 
-  const countMap: Record<string, number> = {}
-  counts.forEach((c) => { countMap[c.category] = Number(c.count) })
+  const s = agg[0] ?? { total: 0, clients: 0, partners: 0, suppliers: 0, team: 0, prospects: 0 }
 
-  const grouped: Record<string, typeof people> = {}
-  for (const p of people) {
-    grouped[p.category] = grouped[p.category] ?? []
-    grouped[p.category].push(p)
-  }
+  const stats = [
+    { label: 'Total', value: Number(s.total) },
+    { label: 'Clients', value: Number(s.clients) },
+    { label: 'Partners', value: Number(s.partners) },
+  ]
 
-  const CATEGORY_ORDER = ['Team', 'Client', 'Partner', 'Supplier', 'Prospect']
+  const sections = [
+    { label: 'Customers', count: Number(s.clients), color: '#A855F7' },
+    { label: 'Suppliers', count: Number(s.suppliers), color: '#818CF8' },
+    { label: 'Partners', count: Number(s.partners), color: '#3D8BFF' },
+    { label: 'Staff / Team', count: Number(s.team), color: '#28C76F' },
+    { label: 'Favourites', count: 0, color: '#FFC145' },
+  ]
+
+  const displayPeople = people.slice(0, 15)
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
+    <div className="p-4 max-w-2xl mx-auto">
+      {/* Module Header */}
+      <div className="flex items-center gap-4 mb-6">
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: 'linear-gradient(135deg, #C47BFF, #7A1ABF)' }}
+          className="relative w-[60px] h-[60px] rounded-[20px] shrink-0 overflow-hidden flex items-center justify-center"
+          style={{
+            background: 'radial-gradient(circle at 30% 20%, #E0A8FF 0%, #A855F7 50%, #550090 100%)',
+            boxShadow:
+              '0 16px 40px -8px rgba(168,85,247,0.55), 0 4px 14px -2px rgba(0,0,0,0.6), inset 0 1.5px 0 rgba(255,255,255,0.45)',
+          }}
         >
-          <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+          <div
+            className="absolute inset-x-0 top-0 pointer-events-none z-10"
+            style={{
+              height: '55%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%)',
+              borderRadius: '20px 20px 0 0',
+            }}
+          />
+          <svg
+            className="relative z-20 w-7 h-7 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.75}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+            />
           </svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Contacts</h1>
-          <p className="text-slate-500 text-sm">{people.length} people</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'rgba(255,255,255,0.92)' }}>
+            Contacts
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            People, clients &amp; partners
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-        {CATEGORY_ORDER.map((cat) => (
-          <div key={cat} className="bg-white rounded-xl border border-slate-100 p-3 text-center">
-            <div className="text-xl font-bold text-slate-800">{countMap[cat] ?? 0}</div>
-            <div className="text-xs text-slate-500 mt-0.5">{cat}s</div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-2xl p-4"
+            style={{
+              background: 'rgba(255,255,255,0.055)',
+              border: '1px solid rgba(255,255,255,0.09)',
+            }}
+          >
+            <div className="text-2xl font-bold" style={{ color: 'rgba(255,255,255,0.92)' }}>
+              {stat.value}
+            </div>
+            <div className="text-[11px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              {stat.label}
+            </div>
           </div>
         ))}
       </div>
 
-      {people.length === 0 ? (
-        <div className="bg-white rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400 text-sm">
-          No contacts yet
-        </div>
-      ) : (
-        CATEGORY_ORDER.filter((cat) => grouped[cat]?.length).map((cat) => (
-          <div key={cat}>
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">{cat}s</h2>
-            <div className="space-y-2">
-              {grouped[cat].map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100"
-                >
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 shrink-0">
-                    {p.avatarInitials ?? p.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-slate-900 text-sm">{p.name}</div>
-                    <div className="text-xs text-slate-400 truncate">{p.role ?? p.company ?? '—'}</div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {p.phone && (
-                      <a href={`tel:${p.phone}`} className="text-xs text-blue-600 hover:underline">{p.phone}</a>
-                    )}
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${CATEGORY_COLORS[p.category] ?? 'bg-slate-100 text-slate-600'}`}>
-                      {p.category}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* Sub-sections */}
+      <div
+        className="rounded-2xl overflow-hidden mb-6"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+        }}
+      >
+        {sections.map((section, i) => (
+          <div
+            key={section.label}
+            className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+            style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
+          >
+            <span className="flex-1 text-sm font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              {section.label}
+            </span>
+            {section.count > 0 && (
+              <span
+                className="text-xs font-bold px-2 py-0.5 rounded-full"
+                style={{ background: `${section.color}20`, color: section.color }}
+              >
+                {section.count}
+              </span>
+            )}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgba(255,255,255,0.25)"
+              strokeWidth="2.5"
+            >
+              <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
-        ))
-      )}
+        ))}
+      </div>
+
+      {/* Contact List */}
+      <div
+        className="rounded-2xl overflow-hidden mb-6"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.07)',
+        }}
+      >
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span
+            className="text-xs font-semibold uppercase tracking-wider"
+            style={{ color: 'rgba(255,255,255,0.32)' }}
+          >
+            Recent Contacts
+          </span>
+        </div>
+
+        {displayPeople.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm" style={{ color: 'rgba(255,255,255,0.32)' }}>
+            No contacts yet
+          </div>
+        )}
+
+        {displayPeople.map((person, i) => {
+          const initials =
+            person.avatarInitials ??
+            person.name
+              .split(' ')
+              .map((w: string) => w[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()
+          const badge = categoryBadge(person.category)
+
+          return (
+            <div
+              key={person.id}
+              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
+              style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
+            >
+              {/* Avatar */}
+              <div
+                className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-xs font-bold"
+                style={{
+                  background: 'rgba(168,85,247,0.22)',
+                  color: '#C084FC',
+                  border: '1px solid rgba(168,85,247,0.3)',
+                }}
+              >
+                {initials}
+              </div>
+
+              {/* Name + role + company */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className="text-sm font-semibold truncate"
+                    style={{ color: 'rgba(255,255,255,0.92)' }}
+                  >
+                    {person.name}
+                  </span>
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                    style={{ background: badge.bg, color: badge.color }}
+                  >
+                    {person.category ?? 'Contact'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {person.role && (
+                    <span className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      {person.role}
+                    </span>
+                  )}
+                  {person.company && (
+                    <>
+                      {person.role && (
+                        <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                      )}
+                      <span className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                        {person.company}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Phone */}
+              {person.phone && (
+                <span
+                  className="text-xs shrink-0 hidden sm:block"
+                  style={{ color: 'rgba(255,255,255,0.35)' }}
+                >
+                  {person.phone}
+                </span>
+              )}
+
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2.5"
+                className="shrink-0"
+              >
+                <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <button
+          className="flex-1 py-3 rounded-xl text-sm font-semibold"
+          style={{ background: 'linear-gradient(135deg, #A855F7, #6D28D9)', color: 'white' }}
+        >
+          Add Contact
+        </button>
+        <button
+          className="px-5 py-3 rounded-xl text-sm font-medium"
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            color: 'rgba(255,255,255,0.7)',
+          }}
+        >
+          Search
+        </button>
+      </div>
     </div>
   )
 }
