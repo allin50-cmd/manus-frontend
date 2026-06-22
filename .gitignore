@@ -71,3 +71,4 @@ Thumbs.db
 *.cert
 credentials.json
 .vercel
+.claude/
