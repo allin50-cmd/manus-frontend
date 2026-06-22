@@ -1,82 +1,150 @@
 import Link from 'next/link'
 
-const STATS = [
-  { label: 'Revenue Today', value: '—' },
-  { label: 'Outstanding', value: '—' },
-  { label: 'Due This Week', value: '—' },
-  { label: 'Overdue', value: '—' },
+const OVERDUE = [
+  {
+    company: 'FineGuard Ltd',
+    invoice: 'INV-2024-089',
+    amount: '£4,800',
+    daysOverdue: 4,
+    phone: 'tel:+441234567890',
+  },
+  {
+    company: 'Accuracy Developments',
+    invoice: 'INV-2024-091',
+    amount: '£3,200',
+    daysOverdue: 2,
+    phone: 'tel:+441234567891',
+  },
+  {
+    company: 'Hawk Construction',
+    invoice: 'INV-2024-085',
+    amount: '£7,500',
+    daysOverdue: 9,
+    phone: 'tel:+441234567892',
+  },
 ]
 
-const QUICK_ACTIONS = [
-  { href: '#', label: 'Create Invoice', desc: 'Draft a new invoice' },
-  { href: '#', label: 'View Payments', desc: 'Payment history and status' },
-  { href: '#', label: 'Subscriptions', desc: 'Recurring revenue' },
+const RECENT_PAYMENTS = [
+  { company: 'Premier Build Co', invoice: 'INV-2024-082', amount: '£2,100', date: '20 Jun' },
+  { company: 'FineGuard Ltd', invoice: 'INV-2024-078', amount: '£4,800', date: '18 Jun' },
+  { company: 'Hawk Construction', invoice: 'INV-2024-074', amount: '£6,200', date: '15 Jun' },
 ]
 
 export default function MoneyPage() {
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen" style={{ background: '#F1F5F9' }}>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div
+        className="flex items-center gap-4 px-5 py-5 text-white"
+        style={{ background: 'linear-gradient(135deg,#92400E,#B45309)' }}
+      >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: 'linear-gradient(135deg, #FFD070, #FF8C00)' }}
+          style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}
         >
-          <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <circle cx="12" cy="12" r="9" />
-            <path strokeLinecap="round" d="M14 9.5c-.6-.9-1.5-1.5-2.5-1.5-1.7 0-3 1.3-3 3s1.3 3 3 3c1 0 1.9-.6 2.5-1.5" />
-            <path strokeLinecap="round" d="M12 7v1.5M12 15.5V17" />
+          <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="13" fill="rgba(255,220,80,0.9)" />
+            <circle cx="18" cy="18" r="12.5" fill="none" stroke="rgba(255,240,100,0.4)" strokeWidth="0.75" />
+            <text x="18.5" y="23" textAnchor="middle" fontSize="16" fontWeight="900" fill="rgba(80,40,0,0.85)" fontFamily="system-ui,sans-serif">£</text>
           </svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Money</h1>
-          <p className="text-slate-500 text-sm">Revenue · Invoices · Payments</p>
+          <div className="text-xs opacity-60 uppercase tracking-wide mb-1">Module</div>
+          <div className="text-2xl font-bold tracking-tight">Money</div>
+          <div className="text-sm opacity-60 mt-0.5">Revenue · Invoices · Payments</div>
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {STATS.map((s) => (
-          <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-2xl font-bold text-slate-400">{s.value}</div>
-            <div className="text-xs text-slate-500 mt-1">{s.label}</div>
+      <div className="px-4 py-5 space-y-5">
+        {/* Overdue invoices — action needed */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <h2 className="text-sm font-bold text-red-600 uppercase tracking-wide">Action Needed — 3 Overdue</h2>
           </div>
-        ))}
-      </div>
-
-      {/* Quick actions */}
-      <div>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Actions</h2>
-        <div className="space-y-2">
-          {QUICK_ACTIONS.map((qa) => (
-            <Link
-              key={qa.label}
-              href={qa.href}
-              className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group"
-            >
-              <div>
-                <div className="font-semibold text-slate-900 text-sm">{qa.label}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{qa.desc}</div>
-              </div>
-              <svg
-                className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {OVERDUE.map((inv, i) => (
+              <div
+                key={inv.invoice}
+                className="flex items-center gap-3 px-4 py-3.5"
+                style={{ borderBottom: i < OVERDUE.length - 1 ? '1px solid #F1F5F9' : 'none' }}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-slate-900 truncate">{inv.company}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {inv.invoice} · <span className="text-red-500 font-medium">{inv.daysOverdue}d overdue</span>
+                  </div>
+                </div>
+                <div className="text-base font-bold text-slate-900 shrink-0">{inv.amount}</div>
+                <div className="flex gap-1.5 shrink-0">
+                  <a
+                    href={inv.phone}
+                    className="text-xs font-semibold px-2.5 py-1.5 rounded-lg whitespace-nowrap"
+                    style={{ background: '#EFF6FF', color: '#1D4ED8' }}
+                  >
+                    📞 Call
+                  </a>
+                  <button
+                    className="text-xs font-semibold px-2.5 py-1.5 rounded-lg whitespace-nowrap"
+                    style={{ background: '#FEF3C7', color: '#92400E' }}
+                  >
+                    ✉️ Remind
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Coming soon note */}
-      <div className="mt-8 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-        <p className="text-sm text-slate-500">
-          Full invoicing and revenue tracking is coming. Data will flow automatically from your existing products.
-        </p>
+        {/* Recent Payments */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <h2 className="text-sm font-bold text-green-700 uppercase tracking-wide">Recent Payments</h2>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {RECENT_PAYMENTS.map((p, i) => (
+              <div
+                key={p.invoice}
+                className="flex items-center gap-3 px-4 py-3.5"
+                style={{ borderBottom: i < RECENT_PAYMENTS.length - 1 ? '1px solid #F1F5F9' : 'none' }}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-slate-900 truncate">{p.company}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{p.invoice} · {p.date}</div>
+                </div>
+                <div className="text-base font-bold text-slate-700 shrink-0">{p.amount}</div>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: '#D1FAE5', color: '#065F46' }}>
+                  Paid
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Revenue summary strip */}
+        <div
+          className="rounded-2xl px-5 py-4 flex items-center justify-between"
+          style={{ background: 'linear-gradient(135deg,#92400E,#B45309)' }}
+        >
+          <div className="text-white">
+            <div className="text-xs opacity-60 uppercase tracking-wide">Monthly Revenue</div>
+            <div className="text-2xl font-bold">£42K</div>
+          </div>
+          <div className="w-px h-10 bg-white opacity-20" />
+          <div className="text-white text-right">
+            <div className="text-xs opacity-60 uppercase tracking-wide">Collected YTD</div>
+            <div className="text-2xl font-bold">£218K</div>
+          </div>
+        </div>
+
+        {/* Nav hint */}
+        <Link
+          href="/os"
+          className="block text-center text-xs text-slate-400 py-2"
+        >
+          ← Back to Ultratech OS
+        </Link>
       </div>
     </div>
   )

@@ -1,61 +1,153 @@
-import Link from 'next/link'
+'use client'
 
-const CATEGORIES = [
-  { href: '#', label: 'Email', count: '—' },
-  { href: '#', label: 'WhatsApp', count: '—' },
-  { href: '#', label: 'SMS', count: '—' },
-  { href: '/intake', label: 'Intake forms', count: null },
+import Link from 'next/link'
+import { useState } from 'react'
+
+const THREADS = [
+  {
+    id: 1,
+    sender: 'Dagon Kalev',
+    initials: 'DK',
+    avatarColor: 'linear-gradient(135deg,#20AFFF,#7A5AF8)',
+    preview: 'Hawk Construction are keen — following up today at 11:30. Should I push for a site visit?',
+    time: '14:23',
+    unread: 3,
+    href: '/os/companies/builder-big-jobs',
+  },
+  {
+    id: 2,
+    sender: 'Alissa Marsh',
+    initials: 'AM',
+    avatarColor: 'linear-gradient(135deg,#28C76F,#00A86B)',
+    preview: 'Accuracy SOW draft is ready for review. Just needs sign-off before I send it to Sarah.',
+    time: '13:05',
+    unread: 2,
+    href: '/os/companies/accuracy',
+  },
+  {
+    id: 3,
+    sender: 'FineGuard Support',
+    initials: 'FG',
+    avatarColor: 'linear-gradient(135deg,#064E3B,#065F46)',
+    preview: 'Customer Clare Webb raised a billing query — invoice INV-2024-089 showing as unpaid.',
+    time: '11:48',
+    unread: 1,
+    href: '/os/companies/fineguard',
+  },
+  {
+    id: 4,
+    sender: 'George Morris',
+    initials: 'GM',
+    avatarColor: 'linear-gradient(135deg,#FFC145,#FF8A34)',
+    preview: 'Can we move the Monday review to Tuesday? Got a site visit with Premier Build first thing.',
+    time: 'Yesterday',
+    unread: 0,
+    href: '/os/contacts',
+  },
 ]
 
 export default function MessagesPage() {
+  const [tab, setTab] = useState<'all' | 'unread'>('all')
+
+  const filtered = tab === 'unread' ? THREADS.filter((t) => t.unread > 0) : THREADS
+
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen" style={{ background: '#F1F5F9' }}>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div
+        className="flex items-center gap-4 px-5 py-5 text-white"
+        style={{ background: 'linear-gradient(135deg,#1E40AF,#2563EB)' }}
+      >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
-          style={{ background: 'linear-gradient(135deg, #60C8FF, #0070CC)' }}
+          style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}
         >
-          <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          <svg width="30" height="30" viewBox="0 0 36 36" fill="none">
+            <rect x="5" y="10" width="26" height="17" rx="3" fill="rgba(255,255,255,0.9)" />
+            <path d="M5 13 L18 21 L31 13" stroke="rgba(37,99,235,0.6)" strokeWidth="2" fill="none" strokeLinecap="round" />
           </svg>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Messages</h1>
-          <p className="text-slate-500 text-sm">Email · WhatsApp · SMS · Intake</p>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs opacity-60 uppercase tracking-wide mb-1">Module</div>
+          <div className="text-2xl font-bold tracking-tight">Messages</div>
+          <div className="text-sm opacity-60 mt-0.5">Email · WhatsApp · SMS</div>
         </div>
+        <Link
+          href="/os/companies"
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0"
+          style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
+        >
+          ✏️ Compose
+        </Link>
       </div>
 
-      {/* Categories */}
-      <div className="space-y-2">
-        {CATEGORIES.map((cat) => (
-          <Link
-            key={cat.label}
-            href={cat.href}
-            className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group"
+      {/* Tab filter */}
+      <div className="flex gap-1 px-4 py-3">
+        {(['all', 'unread'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
+            style={{
+              background: tab === t ? '#1D4ED8' : 'white',
+              color: tab === t ? 'white' : '#64748B',
+              boxShadow: tab === t ? '0 2px 8px rgba(29,78,216,0.3)' : 'none',
+              border: '1px solid',
+              borderColor: tab === t ? '#1D4ED8' : '#E2E8F0',
+            }}
           >
-            <div>
-              <span className="font-semibold text-slate-900 text-sm">{cat.label}</span>
-              {cat.count !== null && (
-                <span className="text-slate-400 text-xs ml-2">{cat.count}</span>
-              )}
-            </div>
-            <svg
-              className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+            {t === 'all' ? 'All' : 'Unread'}
+            {t === 'unread' && (
+              <span className="ml-1.5 text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.25)' }}>
+                {THREADS.filter((th) => th.unread > 0).length}
+              </span>
+            )}
+          </button>
         ))}
       </div>
 
-      {/* Note */}
-      <div className="mt-8 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-        <p className="text-sm text-slate-500">Message routing across all products coming soon.</p>
+      {/* Thread list */}
+      <div className="px-4 space-y-0">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          {filtered.map((thread, i) => (
+            <Link
+              key={thread.id}
+              href={thread.href}
+              className="flex items-center gap-3 px-4 py-4 hover:bg-slate-50 transition-colors"
+              style={{ borderBottom: i < filtered.length - 1 ? '1px solid #F1F5F9' : 'none' }}
+            >
+              {/* Avatar */}
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                style={{ background: thread.avatarColor }}
+              >
+                {thread.initials}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="font-semibold text-sm text-slate-900 truncate">{thread.sender}</div>
+                  <div className="text-xs text-slate-400 shrink-0">{thread.time}</div>
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5 truncate">{thread.preview}</div>
+              </div>
+
+              {/* Unread badge */}
+              {thread.unread > 0 && (
+                <span
+                  className="text-[10px] font-bold min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: '#1D4ED8', color: 'white' }}
+                >
+                  {thread.unread}
+                </span>
+              )}
+            </Link>
+          ))}
+          {filtered.length === 0 && (
+            <div className="px-4 py-8 text-center text-sm text-slate-400">No unread messages</div>
+          )}
+        </div>
       </div>
     </div>
   )

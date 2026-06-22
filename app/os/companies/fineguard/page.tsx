@@ -34,31 +34,147 @@ function WorkspaceLink({
   )
 }
 
+const STATS = [
+  { label: 'MRR', val: '£4.8K', chg: '↑ 5%', chgColor: '#16A34A' },
+  { label: 'Customers', val: '124', chg: '↑ 3 this month', chgColor: '#16A34A' },
+  { label: 'Churn', val: '1.8%', chg: '↓ 0.2%', chgColor: '#16A34A' },
+  { label: 'Tickets', val: '3', chg: '1 urgent', chgColor: '#DC2626' },
+]
+
+const OPEN_TASKS = [
+  {
+    title: 'Renewal call — Clare Webb',
+    sub: 'Assigned: George · Due today',
+    urgency: 'urgent' as const,
+  },
+  {
+    title: 'Pricing decision — Q3 plan',
+    sub: 'Decision needed by 30 Jun',
+    urgency: 'decision' as const,
+  },
+]
+
 export default function FineGuardPage() {
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen" style={{ background: '#F1F5F9' }}>
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div
+        className="flex items-center gap-4 px-5 py-5 text-white"
+        style={{ background: 'linear-gradient(135deg,#064E3B,#065F46)' }}
+      >
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0"
-          style={{ background: 'linear-gradient(135deg, #6EE7B7, #059669)' }}
+          className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}
         >
-          <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+            <path
+              d="M18 3L7 8V17C7 23 12 28.5 18 31C24 28.5 29 23 29 17V8L18 3Z"
+              fill="rgba(255,255,255,0.9)"
+            />
+            <path
+              d="M14 18L17 21L23 14"
+              stroke="rgba(6,79,60,0.8)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
           </svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">FineGuard</h1>
-          <p className="text-slate-500 text-sm">Compliance protection · Customer monitoring</p>
+          <div className="text-xs opacity-60 uppercase tracking-wide mb-1">Company Workspace</div>
+          <div className="text-2xl font-bold tracking-tight">FineGuard Ltd</div>
+          <div className="text-sm opacity-60 mt-0.5">Compliance monitoring SaaS</div>
         </div>
       </div>
 
-      {/* Links */}
-      <div className="space-y-2">
-        <WorkspaceLink href="/portal" label="Customers" desc="View and manage FineGuard customers" external />
-        <WorkspaceLink href="/check" label="Check a company" desc="Run a FineGuard compliance check" />
-        <WorkspaceLink href="/portal" label="Monitoring" desc="Live monitoring dashboard" external />
-        <WorkspaceLink href="/admin" label="Leads dashboard" desc="Admin view of leads and sign-ups" />
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-4">
+        {STATS.map((s) => (
+          <div key={s.label} className="bg-white rounded-xl p-3 shadow-sm">
+            <div className="text-xs text-slate-400">{s.label}</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{s.val}</div>
+            <div className="text-xs mt-0.5" style={{ color: s.chgColor }}>{s.chg}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="px-4 space-y-4 pb-8">
+        {/* Open Tasks */}
+        <div>
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">Open Tasks</h2>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {OPEN_TASKS.map((task, i) => (
+              <Link
+                key={task.title}
+                href="/os/tasks"
+                className="flex items-center gap-3 px-4 py-3.5 hover:bg-slate-50 transition-colors"
+                style={{ borderBottom: i < OPEN_TASKS.length - 1 ? '1px solid #F1F5F9' : 'none' }}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-slate-900 truncate">{task.title}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{task.sub}</div>
+                </div>
+                <span
+                  className="text-xs font-semibold px-2 py-1 rounded-full shrink-0"
+                  style={
+                    task.urgency === 'urgent'
+                      ? { background: '#FEE2E2', color: '#DC2626' }
+                      : { background: '#EDE9FE', color: '#5B21B6' }
+                  }
+                >
+                  {task.urgency === 'urgent' ? 'Urgent' : 'Decision'}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Invoice Action */}
+        <div>
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">Action Needed</h2>
+          <div
+            className="bg-white rounded-2xl shadow-sm p-4"
+            style={{ border: '1.5px solid #FECACA' }}
+          >
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div className="text-xs text-red-500 font-semibold uppercase tracking-wide">Invoice Overdue</div>
+                <div className="text-2xl font-bold text-slate-900 mt-0.5">£4,800</div>
+                <div className="text-xs text-slate-500 mt-0.5">Clare Webb · INV-2024-089 · 4 days overdue</div>
+              </div>
+              <span className="text-xs font-bold px-2 py-1 rounded-full shrink-0" style={{ background: '#FEE2E2', color: '#DC2626' }}>
+                Overdue
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <a
+                href="tel:+441234567890"
+                className="flex-1 text-center text-sm font-bold py-2.5 rounded-xl text-white"
+                style={{ background: '#065F46' }}
+              >
+                📞 Call
+              </a>
+              <button
+                className="flex-1 text-center text-sm font-bold py-2.5 rounded-xl"
+                style={{ background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7' }}
+              >
+                ✉️ Send Reminder
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Links */}
+        <div>
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-2">Workspace</h2>
+          <div className="space-y-2">
+            <WorkspaceLink href="/portal" label="Customers" desc="View and manage FineGuard customers" external />
+            <WorkspaceLink href="/portal" label="Monitoring Dashboard" desc="Live compliance monitoring" external />
+            <WorkspaceLink href="#" label="Billing" desc="Invoices and subscription management" />
+            <WorkspaceLink href="/os/documents" label="Documents" desc="Contracts, proposals, policies" />
+          </div>
+        </div>
       </div>
     </div>
   )
