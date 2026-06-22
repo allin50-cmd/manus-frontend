@@ -10,13 +10,17 @@ import NavBar from './NavBar'
 //   /hub, /ultai
 const PUBLIC_PATHS = ['/', '/check', '/landing', '/portal', '/intake/fineguard', '/intake/accuracy', '/intake/builder-big-jobs', '/builder-big-jobs', '/hub', '/privacy', '/terms']
 
+// OS routes manage their own layout via app/os/layout.tsx + OsShell
+const OS_PATHS = ['/os']
+
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isPublic = PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + '/'),
   )
+  const isOs = OS_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 
-  if (isPublic) {
+  if (isPublic || isOs) {
     return <>{children}</>
   }
 
