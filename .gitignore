@@ -57,6 +57,9 @@ src/pages/## GitHub Copilot Chat.md
 .DS_Store
 Thumbs.db
 
+# Claude Code session files
+.claude/
+
 # Temporary files
 *.tmp
 *.temp
