@@ -1,4 +1,6 @@
 {
   "framework": null,
-  "outputDirectory": "public"
+  "buildCommand": "echo 'Static — no build required'",
+  "outputDirectory": "public",
+  "installCommand": "echo 'Skip install'"
 }
