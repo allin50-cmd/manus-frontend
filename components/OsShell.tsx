@@ -183,18 +183,34 @@ export default function OsShell({
           style={{ background: '#060C1C', borderTop: BORDER }}
         >
           {[
-            { href: '/os',          label: 'Home',      icon: '⊞' },
-            { href: '/os/tasks',    label: 'Tasks',     icon: '≡' },
-            { href: '/os/alerts',   label: 'Alerts',    icon: '◎' },
-            { href: '/os/companies',label: 'Companies', icon: '▦' },
+            {
+            href: '/os',
+            label: 'Home',
+            svg: <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>,
+          },
+            {
+              href: '/os/tasks',
+              label: 'Tasks',
+              svg: <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>,
+            },
+            {
+              href: '/os/alerts',
+              label: 'Alerts',
+              svg: <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>,
+            },
+            {
+              href: '/os/companies',
+              label: 'Companies',
+              svg: <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>,
+            },
           ].map((n) => (
             <Link
               key={n.href}
               href={n.href}
-              className="flex-1 flex flex-col items-center py-2.5 text-[10px] transition-colors"
+              className="flex-1 flex flex-col items-center py-2.5 text-[10px] transition-colors gap-0.5"
               style={{ color: pathname === n.href ? '#fff' : 'rgba(255,255,255,0.28)' }}
             >
-              <span className="text-base leading-none mb-0.5">{n.icon}</span>
+              <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">{n.svg}</svg>
               {n.label}
             </Link>
           ))}

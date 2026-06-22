@@ -37,11 +37,17 @@ function scoreBadge(score: number) {
 export default async function BuilderBigJobsLeadsPage() {
   await requireAuth()
 
-  const db = await getDb()
-  const leads = await db
-    .select()
-    .from(builderBigJobsLeads)
-    .orderBy(desc(builderBigJobsLeads.leadScore), desc(builderBigJobsLeads.createdAt))
+  type Lead = typeof builderBigJobsLeads.$inferSelect
+  let leads: Lead[] = []
+  try {
+    const db = await getDb()
+    leads = await db
+      .select()
+      .from(builderBigJobsLeads)
+      .orderBy(desc(builderBigJobsLeads.leadScore), desc(builderBigJobsLeads.createdAt))
+  } catch {
+    leads = []
+  }
 
   const counts = {
     new: leads.filter((l) => l.status === 'new').length,

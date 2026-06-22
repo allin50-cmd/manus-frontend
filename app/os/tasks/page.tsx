@@ -5,7 +5,10 @@ import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
+const EMPTY_STATS = { total: 0, dueToday: 0, decisionNeeded: 0, openActions: 0, completedThisWeek: 0 }
+
 async function getStats() {
+  try {
   const now = new Date()
   const startOfToday = new Date(now)
   startOfToday.setHours(0, 0, 0, 0)
@@ -49,6 +52,9 @@ async function getStats() {
     decisionNeeded: Number(decisionNeededRes[0]?.count ?? 0),
     openActions: Number(openActionsRes[0]?.count ?? 0),
     completedThisWeek: Number(completedThisWeekRes[0]?.count ?? 0),
+  }
+  } catch {
+    return EMPTY_STATS
   }
 }
 
