@@ -3,24 +3,48 @@
 import { usePathname } from 'next/navigation'
 import NavBar from './NavBar'
 
-// Routes that manage their own layout — skip the Ultratech OS NavBar shell.
-// FineGuard public routes: /, /check, /landing, /privacy, /terms
-// FineGuard customer portal: /company-portal (has its own PortalNav)
-// Future Platform Lab (isolated — not linked from any FineGuard or Ultratech OS navigation):
-//   /hub, /ultai
-const PUBLIC_PATHS = ['/', '/check', '/landing', '/portal', '/intake/fineguard', '/intake/accuracy', '/intake/builder-big-jobs', '/builder-big-jobs', '/hub', '/privacy', '/terms']
+// Routes that manage their own layout — skip the default NavBar + container.
+// Important: '/' is handled as an exact match only. Do not include it in the
+// prefix-matched route arrays or every route can be treated as public.
+const PUBLIC_PATHS = [
+  '/check',
+  '/landing',
+  '/portal',
+  '/company-portal',
+  '/intake/fineguard',
+  '/intake/accuracy',
+  '/intake/builder-big-jobs',
+  '/builder-big-jobs',
+  '/privacy',
+  '/terms',
+  '/login',
+]
 
-// OS routes manage their own layout via app/os/layout.tsx + OsShell
-const OS_PATHS = ['/os']
+// Internal product shells provide their own layout and must not receive a
+// duplicate default NavBar + container.
+const INTERNAL_PATHS = [
+  '/os',
+  '/admin',
+  '/intake',
+  '/dashboard',
+  '/today',
+  '/activity',
+  '/decisions',
+  '/templates',
+  '/voice-intake',
+  '/work-items',
+]
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isPublic = PUBLIC_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + '/'),
-  )
-  const isOs = OS_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 
-  if (isPublic || isOs) {
+  const ownsLayout =
+    pathname === '/' ||
+    [...PUBLIC_PATHS, ...INTERNAL_PATHS].some(
+      (p) => pathname === p || pathname.startsWith(p + '/'),
+    )
+
+  if (ownsLayout) {
     return <>{children}</>
   }
 
