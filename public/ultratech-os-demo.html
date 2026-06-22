@@ -89,7 +89,8 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 .bn-icon{font-size:18px;line-height:1;margin-bottom:2px}
 
 /* ── Overlay screens ── */
-.screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;background:#F1F5F9;transform:translateX(100%);will-change:transform}
+.screen{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;background:#F1F5F9;transform:translateX(110%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);pointer-events:none}
+.screen.s-active{transform:translateX(0);pointer-events:auto}
 
 /* ── Topbar ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0;position:sticky;top:0;z-index:5}
@@ -793,34 +794,34 @@ button{font-family:inherit;border:none;cursor:pointer;background:none;color:inhe
 // ── Nav stack ──────────────────────────────────────────
 let stack=[];
 function push(id){
+  if(stack.length>0){
+    document.getElementById(stack[stack.length-1]).style.pointerEvents='none';
+  }
   const s=document.getElementById(id);
   if(!s)return;
-  s.style.display='flex';
   s.style.zIndex=10+stack.length;
-  s.style.transition='none';
-  s.style.transform='translateX(100%)';
   stack.push(id);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    s.style.transition='transform 0.32s cubic-bezier(0.32,0.72,0,1)';
-    s.style.transform='translateX(0)';
-  }));
+  s.getBoundingClientRect(); // force reflow so CSS transition fires from off-screen
+  s.classList.add('s-active');
   document.getElementById('home-bnav').style.display='none';
 }
 function pop(){
   if(!stack.length)return;
-  const id=stack[stack.length-1];
+  const id=stack.pop();
   const s=document.getElementById(id);
-  s.style.transition='transform 0.3s cubic-bezier(0.32,0.72,0,1)';
-  s.style.transform='translateX(100%)';
-  stack.pop();
-  setTimeout(()=>{s.style.display='none';s.style.transform='translateX(100%)';s.style.zIndex='';s.style.transition='';},300);
+  s.classList.remove('s-active');
+  s.style.pointerEvents='';
+  setTimeout(()=>{s.style.zIndex='';},350);
+  if(stack.length>0){
+    document.getElementById(stack[stack.length-1]).style.pointerEvents='';
+  }
   if(!stack.length)document.getElementById('home-bnav').style.display='flex';
 }
 function showHome(){
   while(stack.length){
     const id=stack.pop();
     const s=document.getElementById(id);
-    if(s){s.style.display='none';s.style.transform='translateX(100%)';s.style.zIndex='';s.style.transition='';}
+    if(s){s.classList.remove('s-active');s.style.zIndex='';s.style.pointerEvents='';}
   }
   document.getElementById('home-bnav').style.display='flex';
 }
