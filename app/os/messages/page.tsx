@@ -1,17 +1,39 @@
-import Link from 'next/link'
+import { getDb } from '@/lib/db'
+import { osMessageThreads } from '@/db/schema'
+import { desc, sql } from 'drizzle-orm'
 
-const CATEGORIES = [
-  { href: '#', label: 'Email', count: '—' },
-  { href: '#', label: 'WhatsApp', count: '—' },
-  { href: '#', label: 'SMS', count: '—' },
-  { href: '/intake', label: 'Intake forms', count: null },
-]
+function timeLabel(d: Date) {
+  const diff = Date.now() - d.getTime()
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
+  if (diff < 86_400_000) {
+    const h = d.getHours(), m = d.getMinutes()
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  const diff_d = Math.floor(diff / 86_400_000)
+  if (diff_d === 1) return 'Yesterday'
+  return `${diff_d}d ago`
+}
 
-export default function MessagesPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function MessagesPage() {
+  const db = await getDb()
+
+  const [threads, agg] = await Promise.all([
+    db.select().from(osMessageThreads).orderBy(desc(osMessageThreads.lastMessageAt)).limit(30),
+    db
+      .select({
+        totalUnread: sql<number>`coalesce(sum(unread_count), 0)`,
+        threadCount: sql<number>`count(*)`,
+      })
+      .from(osMessageThreads),
+  ])
+
+  const s = agg[0] ?? { totalUnread: 0, threadCount: 0 }
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: 'linear-gradient(135deg, #60C8FF, #0070CC)' }}
@@ -22,41 +44,50 @@ export default function MessagesPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Messages</h1>
-          <p className="text-slate-500 text-sm">Email · WhatsApp · SMS · Intake</p>
+          <p className="text-slate-500 text-sm">
+            {Number(s.threadCount)} threads · {Number(s.totalUnread)} unread
+          </p>
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="space-y-2">
-        {CATEGORIES.map((cat) => (
-          <Link
-            key={cat.label}
-            href={cat.href}
-            className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group"
-          >
-            <div>
-              <span className="font-semibold text-slate-900 text-sm">{cat.label}</span>
-              {cat.count !== null && (
-                <span className="text-slate-400 text-xs ml-2">{cat.count}</span>
-              )}
-            </div>
-            <svg
-              className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        ))}
-      </div>
-
-      {/* Note */}
-      <div className="mt-8 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-        <p className="text-sm text-slate-500">Message routing across all products coming soon.</p>
-      </div>
+      {threads.length === 0 ? (
+        <div className="bg-white rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400 text-sm">
+          No messages yet
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {threads.map((t) => {
+            const participants = (t.participantNames as string[]) ?? []
+            const initials = participants[0]?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() ?? '?'
+            return (
+              <div
+                key={t.id}
+                className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 cursor-pointer hover:border-slate-200 transition"
+              >
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
+                  {initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm font-semibold truncate ${t.unreadCount > 0 ? 'text-slate-900' : 'text-slate-600'}`}>
+                      {t.subject}
+                    </span>
+                    <span className="text-xs text-slate-400 shrink-0 ml-2">{timeLabel(new Date(t.lastMessageAt))}</span>
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5 truncate">
+                    {participants.join(', ') || 'No participants'}
+                  </div>
+                </div>
+                {t.unreadCount > 0 && (
+                  <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {t.unreadCount}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

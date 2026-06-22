@@ -1,18 +1,57 @@
-import Link from 'next/link'
+import { getDb } from '@/lib/db'
+import { osDocuments } from '@/db/schema'
+import { desc, sql, eq } from 'drizzle-orm'
 
-const CATEGORIES = [
-  { href: '#', label: 'Contracts', count: '—' },
-  { href: '#', label: 'Invoices', count: '—' },
-  { href: '#', label: 'Policies', count: '—' },
-  { href: '#', label: 'Quotes', count: '—' },
-  { href: '#', label: 'Uploads', count: '—' },
-]
+function fileSize(bytes: number | null) {
+  if (!bytes) return '—'
+  if (bytes < 1024) return `${bytes}B`
+  if (bytes < 1_048_576) return `${(bytes / 1024).toFixed(0)}KB`
+  return `${(bytes / 1_048_576).toFixed(1)}MB`
+}
 
-export default function DocumentsPage() {
+function timeLabel(d: Date) {
+  const diff = Math.floor((Date.now() - d.getTime()) / 86_400_000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  return `${diff}d ago`
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  PendingReview: 'bg-amber-50 text-amber-700 border border-amber-200',
+  Approved: 'bg-green-50 text-green-700 border border-green-200',
+  Rejected: 'bg-red-50 text-red-700 border border-red-200',
+  Archived: 'bg-slate-100 text-slate-500',
+}
+
+const MIME_ICON: Record<string, string> = {
+  'application/pdf': '📄',
+  'image/png': '🖼',
+  'image/jpeg': '🖼',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📊',
+}
+
+export const dynamic = 'force-dynamic'
+
+export default async function DocumentsPage() {
+  const db = await getDb()
+
+  const [docs, agg] = await Promise.all([
+    db.select().from(osDocuments).orderBy(desc(osDocuments.createdAt)).limit(30),
+    db
+      .select({
+        pending: sql<number>`count(*) filter (where status = 'PendingReview')`,
+        approved: sql<number>`count(*) filter (where status = 'Approved')`,
+        total: sql<number>`count(*)`,
+      })
+      .from(osDocuments),
+  ])
+
+  const s = agg[0] ?? { pending: 0, approved: 0, total: 0 }
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: 'linear-gradient(135deg, #A5B4FC, #6366F1)' }}
@@ -23,39 +62,51 @@ export default function DocumentsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Documents</h1>
-          <p className="text-slate-500 text-sm">Contracts · Invoices · Policies · Quotes</p>
+          <p className="text-slate-500 text-sm">{Number(s.total)} files · {Number(s.pending)} pending review</p>
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="space-y-2">
-        {CATEGORIES.map((cat) => (
-          <Link
-            key={cat.label}
-            href={cat.href}
-            className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group"
-          >
-            <div>
-              <span className="font-semibold text-slate-900 text-sm">{cat.label}</span>
-              <span className="text-slate-400 text-xs ml-2">{cat.count}</span>
-            </div>
-            <svg
-              className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Total', value: String(s.total) },
+          { label: 'Needs Review', value: String(s.pending), urgent: Number(s.pending) > 0 },
+          { label: 'Approved', value: String(s.approved) },
+        ].map((st) => (
+          <div key={st.label} className="bg-white rounded-xl border border-slate-100 p-4 text-center">
+            <div className={`text-3xl font-bold ${st.urgent ? 'text-amber-600' : 'text-slate-800'}`}>{st.value}</div>
+            <div className="text-xs text-slate-500 mt-0.5">{st.label}</div>
+          </div>
         ))}
       </div>
 
-      {/* Note */}
-      <div className="mt-8 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-        <p className="text-sm text-slate-500">Document management coming soon.</p>
-      </div>
+      {docs.length === 0 ? (
+        <div className="bg-white rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400 text-sm">
+          No documents yet
+        </div>
+      ) : (
+        <div>
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">All Documents</h2>
+          <div className="space-y-2">
+            {docs.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100"
+              >
+                <div className="text-2xl shrink-0">{MIME_ICON[doc.mimeType ?? ''] ?? '📎'}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-slate-900 text-sm truncate">{doc.filename}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {fileSize(doc.fileSizeBytes)} · {doc.uploadedBy} · {timeLabel(new Date(doc.createdAt))}
+                  </div>
+                </div>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${STATUS_STYLE[doc.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                  {doc.status === 'PendingReview' ? 'Review' : doc.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

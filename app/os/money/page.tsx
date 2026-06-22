@@ -1,23 +1,47 @@
-import Link from 'next/link'
+import { getDb } from '@/lib/db'
+import { osInvoices } from '@/db/schema'
+import { desc, sql } from 'drizzle-orm'
 
-const STATS = [
-  { label: 'Revenue Today', value: '—' },
-  { label: 'Outstanding', value: '—' },
-  { label: 'Due This Week', value: '—' },
-  { label: 'Overdue', value: '—' },
-]
+function pence(p: number) {
+  return `£${(p / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
 
-const QUICK_ACTIONS = [
-  { href: '#', label: 'Create Invoice', desc: 'Draft a new invoice' },
-  { href: '#', label: 'View Payments', desc: 'Payment history and status' },
-  { href: '#', label: 'Subscriptions', desc: 'Recurring revenue' },
-]
+function daysLabel(d: Date) {
+  const diff = Math.floor((Date.now() - d.getTime()) / 86_400_000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  return `${diff}d ago`
+}
 
-export default function MoneyPage() {
+function statusStyle(s: string) {
+  if (s === 'Overdue') return 'bg-red-50 text-red-700 border border-red-200'
+  if (s === 'Sent') return 'bg-amber-50 text-amber-700 border border-amber-200'
+  if (s === 'Paid') return 'bg-green-50 text-green-700 border border-green-200'
+  return 'bg-slate-100 text-slate-500'
+}
+
+export const dynamic = 'force-dynamic'
+
+export default async function MoneyPage() {
+  const db = await getDb()
+
+  const [invoices, agg] = await Promise.all([
+    db.select().from(osInvoices).orderBy(desc(osInvoices.createdAt)).limit(20),
+    db
+      .select({
+        totalPaid: sql<number>`coalesce(sum(amount_pence) filter (where status = 'Paid'), 0)`,
+        totalOutstanding: sql<number>`coalesce(sum(amount_pence) filter (where status in ('Sent','Draft')), 0)`,
+        dueThisWeek: sql<number>`coalesce(sum(amount_pence) filter (where status != 'Paid' and status != 'Cancelled' and due_at between now() and now() + interval '7 days'), 0)`,
+        countOverdue: sql<number>`count(*) filter (where status = 'Overdue')`,
+      })
+      .from(osInvoices),
+  ])
+
+  const stats = agg[0] ?? { totalPaid: 0, totalOutstanding: 0, dueThisWeek: 0, countOverdue: 0 }
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: 'linear-gradient(135deg, #FFD070, #FF8C00)' }}
@@ -34,49 +58,49 @@ export default function MoneyPage() {
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {STATS.map((s) => (
+        {[
+          { label: 'Revenue (paid)', value: pence(stats.totalPaid) },
+          { label: 'Outstanding', value: pence(stats.totalOutstanding) },
+          { label: 'Due This Week', value: pence(stats.dueThisWeek) },
+          { label: 'Overdue invoices', value: String(stats.countOverdue), urgent: Number(stats.countOverdue) > 0 },
+        ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
-            <div className="text-2xl font-bold text-slate-400">{s.value}</div>
+            <div className={`text-2xl font-bold ${s.urgent ? 'text-red-600' : 'text-slate-800'}`}>{s.value}</div>
             <div className="text-xs text-slate-500 mt-1">{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Quick actions */}
       <div>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Actions</h2>
-        <div className="space-y-2">
-          {QUICK_ACTIONS.map((qa) => (
-            <Link
-              key={qa.label}
-              href={qa.href}
-              className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group"
-            >
-              <div>
-                <div className="font-semibold text-slate-900 text-sm">{qa.label}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{qa.desc}</div>
-              </div>
-              <svg
-                className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Invoices</h2>
+        {invoices.length === 0 ? (
+          <div className="bg-white rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400 text-sm">
+            No invoices yet
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {invoices.map((inv) => (
+              <div
+                key={inv.id}
+                className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Coming soon note */}
-      <div className="mt-8 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-        <p className="text-sm text-slate-500">
-          Full invoicing and revenue tracking is coming. Data will flow automatically from your existing products.
-        </p>
+                <div>
+                  <div className="font-semibold text-slate-900 text-sm">{inv.clientName}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {inv.number} · {daysLabel(new Date(inv.createdAt))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-sm font-semibold text-slate-900">{pence(inv.amountPence)}</div>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle(inv.status)}`}>
+                    {inv.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -599,6 +599,164 @@ export const clerkAuditEvents = pgTable(
 export type ClerkAuditEvent = typeof clerkAuditEvents.$inferSelect;
 export type InsertClerkAuditEvent = typeof clerkAuditEvents.$inferInsert;
 
+// ─── Ultratech OS Module Tables ──────────────────────────────────────────────
+
+export const invoiceStatusEnum = pgEnum('InvoiceStatus', [
+  'Draft',
+  'Sent',
+  'Paid',
+  'Overdue',
+  'Cancelled',
+]);
+
+export const osInvoices = pgTable('os_invoices', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  number: varchar('number', { length: 32 }).notNull().unique(),
+  clientName: text('client_name').notNull(),
+  clientEmail: varchar('client_email', { length: 255 }),
+  description: text('description'),
+  amountPence: integer('amount_pence').notNull(),
+  status: invoiceStatusEnum('status').notNull().default('Draft'),
+  issuedAt: timestamp('issued_at'),
+  dueAt: timestamp('due_at'),
+  paidAt: timestamp('paid_at'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsInvoice = typeof osInvoices.$inferSelect;
+export type NewOsInvoice = typeof osInvoices.$inferInsert;
+
+export const callDirectionEnum = pgEnum('CallDirection', ['Inbound', 'Outbound']);
+export const callOutcomeEnum = pgEnum('CallOutcome', ['Answered', 'Missed', 'Voicemail', 'NoAnswer']);
+
+export const osCallLogs = pgTable('os_call_logs', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  direction: callDirectionEnum('direction').notNull().default('Inbound'),
+  callerName: text('caller_name').notNull(),
+  callerPhone: varchar('caller_phone', { length: 50 }),
+  durationSeconds: integer('duration_seconds').default(0),
+  outcome: callOutcomeEnum('outcome').notNull().default('Answered'),
+  notes: text('notes'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  calledAt: timestamp('called_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export type OsCallLog = typeof osCallLogs.$inferSelect;
+export type NewOsCallLog = typeof osCallLogs.$inferInsert;
+
+export const osMessageThreads = pgTable('os_message_threads', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  subject: text('subject').notNull(),
+  participantNames: jsonb('participant_names').$type<string[]>().default([]),
+  lastMessageAt: timestamp('last_message_at').notNull().defaultNow(),
+  unreadCount: integer('unread_count').notNull().default(0),
+  isPinned: boolean('is_pinned').notNull().default(false),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export type OsMessageThread = typeof osMessageThreads.$inferSelect;
+export type NewOsMessageThread = typeof osMessageThreads.$inferInsert;
+
+export const osMessages = pgTable('os_messages', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  threadId: text('thread_id').notNull().references(() => osMessageThreads.id, { onDelete: 'cascade' }),
+  fromName: text('from_name').notNull(),
+  body: text('body').notNull(),
+  isRead: boolean('is_read').notNull().default(false),
+  sentAt: timestamp('sent_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export type OsMessage = typeof osMessages.$inferSelect;
+export type NewOsMessage = typeof osMessages.$inferInsert;
+
+export const personCategoryEnum = pgEnum('PersonCategory', [
+  'Team',
+  'Client',
+  'Partner',
+  'Supplier',
+  'Prospect',
+]);
+
+export const osPeople = pgTable('os_people', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  phone: varchar('phone', { length: 50 }),
+  email: varchar('email', { length: 255 }),
+  company: text('company'),
+  role: text('role'),
+  category: personCategoryEnum('category').notNull().default('Client'),
+  avatarInitials: varchar('avatar_initials', { length: 4 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsPerson = typeof osPeople.$inferSelect;
+export type NewOsPerson = typeof osPeople.$inferInsert;
+
+export const alertSeverityEnum = pgEnum('AlertSeverity', ['Critical', 'Warning', 'Info']);
+
+export const osAlerts = pgTable('os_alerts', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  severity: alertSeverityEnum('severity').notNull().default('Info'),
+  title: text('title').notNull(),
+  body: text('body'),
+  source: text('source'),
+  isRead: boolean('is_read').notNull().default(false),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  resolvedAt: timestamp('resolved_at'),
+});
+export type OsAlert = typeof osAlerts.$inferSelect;
+export type NewOsAlert = typeof osAlerts.$inferInsert;
+
+export const documentStatusEnum = pgEnum('DocumentStatus', [
+  'PendingReview',
+  'Approved',
+  'Rejected',
+  'Archived',
+]);
+
+export const osDocuments = pgTable('os_documents', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  filename: text('filename').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }),
+  fileSizeBytes: integer('file_size_bytes'),
+  storagePath: text('storage_path'),
+  source: varchar('source', { length: 50 }).default('Upload').notNull(),
+  status: documentStatusEnum('status').notNull().default('PendingReview'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  linkedCompany: text('linked_company'),
+  uploadedBy: text('uploaded_by').notNull().default('George'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsDocument = typeof osDocuments.$inferSelect;
+export type NewOsDocument = typeof osDocuments.$inferInsert;
+
+export const taskStatusEnum = pgEnum('TaskStatus', [
+  'Open',
+  'InProgress',
+  'Done',
+  'Cancelled',
+]);
+
+export const osTasks = pgTable('os_tasks', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text('title').notNull(),
+  assignedTo: text('assigned_to').notNull().default('George'),
+  priority: priorityEnum('priority').notNull().default('Medium'),
+  status: taskStatusEnum('status').notNull().default('Open'),
+  dueAt: timestamp('due_at'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsTask = typeof osTasks.$inferSelect;
+export type NewOsTask = typeof osTasks.$inferInsert;
+
 // ─── Builder Big Jobs Tables ──────────────────────────────────────────────────
 
 /**

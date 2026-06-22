@@ -1,17 +1,47 @@
-import Link from 'next/link'
+import { getDb } from '@/lib/db'
+import { osCallLogs } from '@/db/schema'
+import { desc, sql, gte } from 'drizzle-orm'
 
-const CATEGORIES = [
-  { href: '#', label: "Today's Calls", count: '—' },
-  { href: '#', label: 'Missed Calls', count: '—' },
-  { href: '#', label: 'Scheduled Calls', count: '—' },
-  { href: '#', label: 'Call Log', count: '—' },
-]
+function dur(secs: number) {
+  if (!secs) return '—'
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${m}m ${s}s`
+}
 
-export default function CallsPage() {
+function timeLabel(d: Date) {
+  const diff = Date.now() - d.getTime()
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
+  if (diff < 86_400_000) {
+    const h = d.getHours(), m = d.getMinutes()
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  const diff_d = Math.floor(diff / 86_400_000)
+  return `${diff_d}d ago`
+}
+
+export const dynamic = 'force-dynamic'
+
+export default async function CallsPage() {
+  const db = await getDb()
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+
+  const [recent, stats] = await Promise.all([
+    db.select().from(osCallLogs).orderBy(desc(osCallLogs.calledAt)).limit(25),
+    db
+      .select({
+        todayCount: sql<number>`count(*) filter (where called_at >= ${todayStart.toISOString()})`,
+        missedToday: sql<number>`count(*) filter (where called_at >= ${todayStart.toISOString()} and outcome = 'Missed')`,
+        totalMissed: sql<number>`count(*) filter (where outcome = 'Missed')`,
+      })
+      .from(osCallLogs),
+  ])
+
+  const s = stats[0] ?? { todayCount: 0, missedToday: 0, totalMissed: 0 }
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: 'linear-gradient(135deg, #4CE890, #16954A)' }}
@@ -22,38 +52,58 @@ export default function CallsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Calls</h1>
-          <p className="text-slate-500 text-sm">Today · Scheduled · Logged</p>
+          <p className="text-slate-500 text-sm">Today · Missed · Log</p>
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="space-y-2">
-        {CATEGORIES.map((cat) => (
-          <Link
-            key={cat.label}
-            href={cat.href}
-            className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group"
-          >
-            <div>
-              <span className="font-semibold text-slate-900 text-sm">{cat.label}</span>
-              <span className="text-slate-400 text-xs ml-2">{cat.count}</span>
-            </div>
-            <svg
-              className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Today', value: String(s.todayCount) },
+          { label: 'Missed Today', value: String(s.missedToday), urgent: Number(s.missedToday) > 0 },
+          { label: 'Total Missed', value: String(s.totalMissed) },
+        ].map((st) => (
+          <div key={st.label} className="bg-white rounded-xl border border-slate-100 p-4 text-center">
+            <div className={`text-3xl font-bold ${st.urgent ? 'text-red-600' : 'text-slate-800'}`}>{st.value}</div>
+            <div className="text-xs text-slate-500 mt-1">{st.label}</div>
+          </div>
         ))}
       </div>
 
-      {/* Note */}
-      <div className="mt-8 p-4 bg-slate-50 border border-slate-100 rounded-xl">
-        <p className="text-sm text-slate-500">Call tracking integration coming soon.</p>
+      <div>
+        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Recent Calls</h2>
+        {recent.length === 0 ? (
+          <div className="bg-white rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400 text-sm">
+            No calls logged yet
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {recent.map((c) => (
+              <div key={c.id} className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                      c.outcome === 'Missed' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'
+                    }`}
+                  >
+                    {c.direction === 'Inbound' ? '↙' : '↗'}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-900 text-sm">{c.callerName}</div>
+                    <div className="text-xs text-slate-400">{c.callerPhone ?? '—'}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-xs font-medium ${c.outcome === 'Missed' ? 'text-red-500' : 'text-slate-500'}`}>
+                    {c.outcome}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {dur(c.durationSeconds ?? 0)} · {timeLabel(new Date(c.calledAt))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -35,4 +35,12 @@ export {
   decisions,
   templates,
   builderBigJobsLeads,
+  osInvoices,
+  osCallLogs,
+  osMessageThreads,
+  osMessages,
+  osPeople,
+  osAlerts,
+  osDocuments,
+  osTasks,
 } from '@/db/schema';
