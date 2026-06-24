@@ -43,4 +43,8 @@ export {
   osAlerts,
   osDocuments,
   osTasks,
+  osQuotes,
+  utActivityEvents,
+  utDailyMetrics,
+  utWeeklyReports,
 } from '@/db/schema';

@@ -32,6 +32,7 @@ import {
   fgReminderEvents,
   monitoredCompanies,
 } from '@/db/schema'
+import { trackEvent } from '@/lib/ut-tracker'
 
 type Db = Awaited<ReturnType<typeof getDb>>
 type MonitoredCompany = typeof monitoredCompanies.$inferSelect
@@ -271,6 +272,8 @@ async function dispatchReminder(
     }
   }
 
+  await trackEvent({ eventType: 'message_sent', userId: 'system', metadata: { companyNumber: company.companyNumber, channel, outcome } })
+
   const msgStatus = outcome === 'sent' ? 'sent' : resendKey && company.email ? 'failed' : 'logged'
 
   await db.insert(fgMessageLogs).values({
@@ -444,6 +447,10 @@ export async function processCompany(
     })
 
     const { alertsCreated, duplicatesSkipped } = await scheduleAlerts(db, num, snapshot)
+
+    if (alertsCreated > 0) {
+      await trackEvent({ eventType: 'alert_generated', userId: 'system', metadata: { companyNumber: num, count: alertsCreated } })
+    }
 
     await logActivity(db, 'alerts_scheduled', {
       runId: myRunId,

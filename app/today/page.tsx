@@ -1,4 +1,7 @@
 import Link from 'next/link'
+import { getDb } from '@/lib/db'
+import { utWeeklyReports, utActivityEvents } from '@/db/schema'
+import { and, gte, lt, desc } from 'drizzle-orm'
 
 const PRIORITIES = [
   { label: 'FineGuard renewal call overdue', tag: 'Money', tagColor: '#FFC145', href: '/os/money' },
@@ -18,6 +21,68 @@ const QUICK_LINKS = [
   { label: 'Contacts', href: '/os/contacts', color: '#A855F7' },
   { label: 'Work', href: '/os/tasks', color: '#3D8BFF' },
 ]
+
+interface ConsolidationData {
+  currentRate: number
+  prevRate: number | null
+  trend: string | null
+  utActions: number
+  workflowLeaks: number
+}
+
+async function getConsolidationData(): Promise<ConsolidationData | null> {
+  try {
+    const db = await getDb()
+
+    const reports = await db
+      .select()
+      .from(utWeeklyReports)
+      .orderBy(desc(utWeeklyReports.weekStart))
+      .limit(2)
+
+    if (reports.length > 0) {
+      const current = reports[0]
+      const previous = reports[1] ?? null
+      return {
+        currentRate: Number(current.consolidationRate),
+        prevRate: previous ? Number(previous.consolidationRate) : null,
+        trend: current.trend ?? null,
+        utActions: current.utActions,
+        workflowLeaks: current.workflowLeaks,
+      }
+    }
+
+    // Fall back to a live count of this week's raw events
+    const today = new Date()
+    const day = today.getUTCDay()
+    const monday = new Date(today)
+    monday.setUTCDate(today.getUTCDate() + (day === 0 ? -6 : 1 - day))
+    monday.setUTCHours(0, 0, 0, 0)
+
+    const events = await db
+      .select({ eventType: utActivityEvents.eventType })
+      .from(utActivityEvents)
+      .where(
+        and(
+          gte(utActivityEvents.occurredAt, monday),
+          lt(utActivityEvents.occurredAt, today),
+        ),
+      )
+
+    const leaks = events.filter((e) => e.eventType === 'workflow_leak').length
+    const utActions = events.filter((e) => e.eventType !== 'workflow_leak').length
+    const total = utActions + leaks
+    return {
+      currentRate: total > 0 ? Number(((utActions / total) * 100).toFixed(1)) : 0,
+      prevRate: null,
+      trend: null,
+      utActions,
+      workflowLeaks: leaks,
+    }
+  } catch {
+    return null
+  }
+}
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
@@ -41,9 +106,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function TodayPage() {
+export default async function TodayPage() {
   const now = new Date()
   const dateStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+  const consolidation = await getConsolidationData()
 
   return (
     <div className="space-y-5">
@@ -73,6 +139,60 @@ export default function TodayPage() {
             </span>
           </Link>
         ))}
+      </div>
+
+      {/* Operational Consolidation Rate */}
+      <div>
+        <SectionLabel>Operational Consolidation</SectionLabel>
+        <Card>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                This Week
+              </p>
+              <p className="text-3xl font-bold tabular-nums" style={{ color: 'rgba(255,255,255,0.92)' }}>
+                {consolidation !== null ? `${consolidation.currentRate.toFixed(1)}%` : '—'}
+              </p>
+              {consolidation && (
+                <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  {consolidation.utActions} in-system · {consolidation.workflowLeaks} outside
+                </p>
+              )}
+            </div>
+
+            {consolidation?.prevRate !== null && consolidation?.prevRate !== undefined && (
+              <div className="text-right">
+                <p className="text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Last Week
+                </p>
+                <p className="text-xl font-semibold tabular-nums" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {consolidation.prevRate.toFixed(1)}%
+                </p>
+                {consolidation.trend && (
+                  <p
+                    className="text-[10px] mt-1 font-semibold"
+                    style={{
+                      color:
+                        consolidation.trend === 'up'
+                          ? '#4ade80'
+                          : consolidation.trend === 'down'
+                          ? '#f87171'
+                          : 'rgba(255,255,255,0.4)',
+                    }}
+                  >
+                    {consolidation.trend === 'up' ? '↑ Improving' : consolidation.trend === 'down' ? '↓ Declining' : '→ Stable'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {consolidation === null && (
+              <p className="text-[10px] self-center" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                No data yet
+              </p>
+            )}
+          </div>
+        </Card>
       </div>
 
       {/* Priorities */}

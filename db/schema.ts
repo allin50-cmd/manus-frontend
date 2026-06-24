@@ -16,6 +16,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   serial,
@@ -862,6 +863,31 @@ export const osTasks = pgTable('os_tasks', {
 export type OsTask = typeof osTasks.$inferSelect;
 export type NewOsTask = typeof osTasks.$inferInsert;
 
+export const quoteStatusEnum = pgEnum('QuoteStatus', [
+  'Draft',
+  'Sent',
+  'Accepted',
+  'Declined',
+  'Expired',
+]);
+
+export const osQuotes = pgTable('os_quotes', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  number: varchar('number', { length: 32 }).notNull().unique(),
+  clientName: text('client_name').notNull(),
+  clientEmail: varchar('client_email', { length: 255 }),
+  description: text('description'),
+  amountPence: integer('amount_pence').notNull().default(0),
+  status: quoteStatusEnum('status').notNull().default('Draft'),
+  validUntil: timestamp('valid_until'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsQuote = typeof osQuotes.$inferSelect;
+export type NewOsQuote = typeof osQuotes.$inferInsert;
+
 // ─── Builder Big Jobs Tables ──────────────────────────────────────────────────
 
 /**
@@ -893,3 +919,65 @@ export const builderBigJobsLeads = pgTable('builder_big_jobs_leads', {
 
 export type BuilderBigJobsLead = typeof builderBigJobsLeads.$inferSelect;
 export type NewBuilderBigJobsLead = typeof builderBigJobsLeads.$inferInsert;
+
+// ─── UltraTech OS Validation & Measurement Tables ────────────────────────────
+
+/**
+ * ut_activity_events — append-only stream of every tracked user action.
+ * Never updated. One row per event. source/notes only populated for workflow_leak.
+ */
+export const utActivityEvents = pgTable('ut_activity_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: varchar('user_id', { length: 255 }),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  source: varchar('source', { length: 50 }),
+  notes: text('notes'),
+  metadata: jsonb('metadata'),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+});
+export type UtActivityEvent = typeof utActivityEvents.$inferSelect;
+export type NewUtActivityEvent = typeof utActivityEvents.$inferInsert;
+
+/**
+ * ut_daily_metrics — aggregated counts per calendar day.
+ * Computed by POST /api/ut/aggregate/daily — safe to re-run (upserts).
+ */
+export const utDailyMetrics = pgTable('ut_daily_metrics', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  date: date('date').notNull().unique(),
+  dau: integer('dau').notNull().default(0),
+  appOpens: integer('app_opens').notNull().default(0),
+  tasksCreated: integer('tasks_created').notNull().default(0),
+  tasksCompleted: integer('tasks_completed').notNull().default(0),
+  callsLogged: integer('calls_logged').notNull().default(0),
+  alertsGenerated: integer('alerts_generated').notNull().default(0),
+  alertsAcknowledged: integer('alerts_acknowledged').notNull().default(0),
+  documentsUploaded: integer('documents_uploaded').notNull().default(0),
+  quotesCreated: integer('quotes_created').notNull().default(0),
+  invoicesCreated: integer('invoices_created').notNull().default(0),
+  companiesAdded: integer('companies_added').notNull().default(0),
+  contactsAdded: integer('contacts_added').notNull().default(0),
+  workflowLeaks: integer('workflow_leaks').notNull().default(0),
+  computedAt: timestamp('computed_at', { withTimezone: true }).defaultNow().notNull(),
+});
+export type UtDailyMetric = typeof utDailyMetrics.$inferSelect;
+export type NewUtDailyMetric = typeof utDailyMetrics.$inferInsert;
+
+/**
+ * ut_weekly_reports — weekly summary with Operational Consolidation Rate.
+ * week_start is always a Monday. Computed by POST /api/ut/aggregate/weekly.
+ */
+export const utWeeklyReports = pgTable('ut_weekly_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  weekStart: date('week_start').notNull().unique(),
+  weekEnd: date('week_end').notNull(),
+  totalBusinessActions: integer('total_business_actions').notNull().default(0),
+  utActions: integer('ut_actions').notNull().default(0),
+  workflowLeaks: integer('workflow_leaks').notNull().default(0),
+  consolidationRate: numeric('consolidation_rate', { precision: 5, scale: 2 }).notNull().default('0'),
+  prevWeekRate: numeric('prev_week_rate', { precision: 5, scale: 2 }),
+  trend: varchar('trend', { length: 10 }),
+  computedAt: timestamp('computed_at', { withTimezone: true }).defaultNow().notNull(),
+});
+export type UtWeeklyReport = typeof utWeeklyReports.$inferSelect;
+export type NewUtWeeklyReport = typeof utWeeklyReports.$inferInsert;
