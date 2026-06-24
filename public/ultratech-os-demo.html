@@ -420,7 +420,7 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22)}
 
 <!-- ═══════════ MONEY ═══════════ -->
 <div id="sc-money" class="screen">
-  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Money</span><span class="tb-action" onclick="push('sc-add-enquiry')">New</span></div>
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Money</span><span class="tb-action" onclick="push('sc-add-task')">New</span></div>
   <div class="sbody">
     <!-- Overdue action banner -->
     <div style="margin:16px 16px 0;padding:14px 16px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -492,15 +492,15 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22)}
     </div>
     <div class="sec"><div class="sec-label">Today</div>
       <div class="card">
-        <div class="row" onclick="push('sc-bbj-lead');loadLead(0)"><div class="ri" style="background:rgba(16,185,129,0.15)">📞</div><div class="rm"><div class="rt">Hawk Construction Ltd</div><div class="rs">Dagon · 12 min</div></div><div class="rr"><div class="rd">11:20</div><span class="badge bg">Done</span></div></div>
-        <div class="row" onclick="push('sc-bbj-lead');loadLead(1)"><div class="ri" style="background:rgba(239,68,68,0.15)">📞</div><div class="rm"><div class="rt">Premier Build Co</div><div class="rs">George · Missed</div></div><div class="rr"><div class="rd">9:05</div><button onclick="event.stopPropagation()" style="background:rgba(61,139,255,0.2);color:#60A5FA;border:1px solid rgba(61,139,255,0.3);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Call Back</button></div></div>
+        <div class="row" onclick="push('sc-contacts')"><div class="ri" style="background:rgba(16,185,129,0.15)">📞</div><div class="rm"><div class="rt">Hawk Construction Ltd</div><div class="rs">Dagon · 12 min</div></div><div class="rr"><div class="rd">11:20</div><span class="badge bg">Done</span></div></div>
+        <div class="row" onclick="push('sc-contacts')"><div class="ri" style="background:rgba(239,68,68,0.15)">📞</div><div class="rm"><div class="rt">Premier Build Co</div><div class="rs">George · Missed</div></div><div class="rr"><div class="rd">9:05</div><button onclick="event.stopPropagation();push('sc-calls')" style="background:rgba(61,139,255,0.2);color:#60A5FA;border:1px solid rgba(61,139,255,0.3);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Call Back</button></div></div>
       </div>
     </div>
     <div class="sec"><div class="sec-label">Recent</div>
       <div class="card">
         <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:rgba(16,185,129,0.15)">📞</div><div class="rm"><div class="rt">FineGuard Renewal</div><div class="rs">Alissa · 24 min</div></div><div class="rr"><div class="rd">Yesterday</div><span class="badge bg">Done</span></div></div>
         <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:rgba(16,185,129,0.15)">📞</div><div class="rm"><div class="rt">Accuracy Planning</div><div class="rs">George · 18 min</div></div><div class="rr"><div class="rd">Jun 20</div><span class="badge bg">Done</span></div></div>
-        <div class="row" onclick="push('sc-bbj-lead');loadLead(3)"><div class="ri" style="background:rgba(239,68,68,0.15)">📞</div><div class="rm"><div class="rt">Meridian Builders</div><div class="rs">Dagon · No answer</div></div><div class="rr"><div class="rd">Jun 20</div><button onclick="event.stopPropagation()" style="background:rgba(61,139,255,0.2);color:#60A5FA;border:1px solid rgba(61,139,255,0.3);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Call Back</button></div></div>
+        <div class="row" onclick="push('sc-contacts')"><div class="ri" style="background:rgba(239,68,68,0.15)">📞</div><div class="rm"><div class="rt">Meridian Builders</div><div class="rs">Dagon · No answer</div></div><div class="rr"><div class="rd">Jun 20</div><button onclick="event.stopPropagation();push('sc-calls')" style="background:rgba(61,139,255,0.2);color:#60A5FA;border:1px solid rgba(61,139,255,0.3);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Call Back</button></div></div>
       </div>
     </div>
     <div class="pb-safe"></div>
@@ -574,8 +574,10 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22)}
         <div class="drow"><span style="font-size:13px;color:rgba(255,255,255,0.65);line-height:1.5">Call Clare Webb directly — remind her of the overdue balance. Follow up with a written reminder by email if no answer. Escalate to George if no resolution by end of day.</span></div>
       </div>
     </div>
-    <button class="btn btn-p" style="margin-top:16px">📞 Call Customer</button>
-    <button class="btn btn-s">✉️ Send Reminder</button>
+    <button class="btn btn-p" style="margin-top:16px" onclick="push('sc-calls')">📞 Call Customer</button>
+    <button class="btn btn-s" onclick="push('sc-message-compose')">✉️ Send Reminder</button>
+    <button class="btn btn-s" onclick="push('sc-fg')">🏢 Open Company</button>
+    <button class="btn btn-s" onclick="push('sc-money')">💰 View in Money</button>
     <button class="btn btn-r" onclick="submitForm(this,'Resolved')">✓ Mark Resolved</button>
     <div class="pb-safe"></div>
   </div>
@@ -628,8 +630,10 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22)}
       <div class="drow"><span class="dlabel">Due</span><span class="dval" id="td-due">—</span></div>
     </div></div>
     <div class="sec"><div class="sec-label">Notes</div><div class="dcard"><div class="drow"><span id="td-notes" style="font-size:13px;color:rgba(255,255,255,0.65);line-height:1.6;font-weight:400">—</span></div></div></div>
-    <button class="btn btn-p" style="margin-top:16px">Mark Complete</button>
-    <button class="btn btn-s">Reassign Task</button>
+    <button class="btn btn-p" style="margin-top:16px">✓ Mark Complete</button>
+    <button class="btn btn-s" onclick="push('sc-calls')">📞 Call Contact</button>
+    <button class="btn btn-s" onclick="push('sc-message-compose')">✉️ Message Contact</button>
+    <button class="btn btn-s" id="td-company-btn">🏢 Open Company</button>
     <div class="pb-safe"></div>
   </div>
 </div>
@@ -666,10 +670,11 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22)}
     <div class="sec"><div class="sec-label">Key Clients</div>
       <div class="card">
         <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:rgba(16,185,129,0.15)">🛡️</div><div class="rm"><div class="rt">Clare Webb — FineGuard</div><div class="rs">accounts@fineguard.co.uk</div></div><div class="rr"><span class="badge bg">Client</span></div></div>
-        <div class="row" onclick="push('sc-bbj-lead');loadLead(0)"><div class="ri" style="background:rgba(245,158,11,0.15)">🏗️</div><div class="rm"><div class="rt">James Hawkins — Hawk Const.</div><div class="rs">j.hawkins@hawkconstruction.co.uk</div></div><div class="rr"><span class="badge ba">Lead</span></div></div>
+        <div class="row" onclick="push('sc-bbj')"><div class="ri" style="background:rgba(245,158,11,0.15)">🏗️</div><div class="rm"><div class="rt">James Hawkins — Hawk Const.</div><div class="rs">j.hawkins@hawkconstruction.co.uk</div></div><div class="rr"><span class="badge ba">Lead</span></div></div>
         <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:rgba(139,92,246,0.15)">🎯</div><div class="rm"><div class="rt">Sarah Thornton — Accuracy</div><div class="rs">sarah@accuracy.co.uk</div></div><div class="rr"><span class="badge ba">Pipeline</span></div></div>
       </div>
     </div>
+    <button class="btn btn-s" style="margin-top:16px" onclick="push('sc-calls')">📞 Log a Call</button>
     <div class="pb-safe"></div>
   </div>
 </div>
@@ -762,28 +767,6 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22)}
     <button class="btn btn-s" onclick="push('sc-contacts')">👤 Open Contact</button>
     <button class="btn btn-s" onclick="push('sc-add-task')">✅ Create Task</button>
     <button class="btn btn-r" style="margin-top:8px" onclick="submitForm(this,'Archived')">🗄️ Archive</button>
-    <div class="pb-safe"></div>
-  </div>
-</div>
-
-
-<!-- ═══════════ ACTIVITY ═══════════ -->
-<div id="sc-activity" class="screen">
-  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Activity</span><span></span></div>
-  <div class="sbody">
-    <div class="sec"><div class="sec-label">Today</div>
-      <div class="card">
-        <div class="row"><div class="ri" style="background:rgba(16,185,129,0.15)">✅</div><div class="rm"><div class="rt">Task completed</div><div class="rs">FineGuard renewal call — Dagon</div></div><div class="rr"><div class="rd">11:20</div></div></div>
-        <div class="row"><div class="ri" style="background:rgba(239,68,68,0.15)">🔴</div><div class="rm"><div class="rt">Alert triggered</div><div class="rs">Invoice overdue — FineGuard</div></div><div class="rr"><div class="rd">9:00</div></div></div>
-        <div class="row"><div class="ri" style="background:rgba(59,130,246,0.15)">📥</div><div class="rm"><div class="rt">New lead captured</div><div class="rs">Sovereign Structures — BBJ</div></div><div class="rr"><div class="rd">8:45</div></div></div>
-      </div>
-    </div>
-    <div class="sec"><div class="sec-label">Yesterday</div>
-      <div class="card">
-        <div class="row"><div class="ri" style="background:rgba(16,185,129,0.15)">💰</div><div class="rm"><div class="rt">Payment received</div><div class="rs">BBJ — £7,500 — INV-2024-038</div></div><div class="rr"><div class="rd">16:30</div></div></div>
-        <div class="row"><div class="ri" style="background:rgba(139,92,246,0.15)">📞</div><div class="rm"><div class="rt">Call logged</div><div class="rs">FineGuard renewal · 24 min · Alissa</div></div><div class="rr"><div class="rd">14:00</div></div></div>
-      </div>
-    </div>
     <div class="pb-safe"></div>
   </div>
 </div>
@@ -1124,11 +1107,11 @@ function filterTasks(owner,el){
 
 // ── Task data ──────────────────────────────────────────
 const TASKS=[
-  {title:'FineGuard renewal call',type:'Call',status:'In Progress',priority:'Urgent',owner:'Dagon Kalev',company:'FineGuard Ltd',due:'Jun 24, 2024',notes:'Key renewal — customer on month-to-month since April. Decision maker is Clare Webb. Emphasise new monitoring dashboard and the 2 resolved alerts. Target: annual plan at £58/mo.'},
-  {title:'Review BBJ pipeline',type:'Review',status:'In Progress',priority:'High',owner:'George Morris',company:'Builder Big Jobs',due:'Jun 25, 2024',notes:'Review the June leads from the intake form. Qualify Hawk, Premier, Fortis. Decide on outreach priority for Meridian and Sovereign. Update pipeline scores if any new data.'},
-  {title:'Accuracy planning lead',type:'Follow-up',status:'Captured',priority:'Medium',owner:'Alissa Marsh',company:'Accuracy Ltd',due:'Jun 30, 2024',notes:'Sarah Thornton expressed interest in a data pipeline project. Waiting on internal budget approval. Draft SOW ready. Estimated £24K annual retainer if closed.'},
-  {title:'FineGuard pricing decision',type:'Decision',status:'Decision Needed',priority:'High',owner:'George Morris',company:'FineGuard Ltd',due:'Jun 23, 2024',notes:'Three options: (A) hold at £49/mo, (B) move to £58/mo with feature unlock, (C) introduce tiered plan. Need decision before the Dagon renewal call.'},
-  {title:'BBJ lead follow-up',type:'Follow-up',status:'Waiting',priority:'Medium',owner:'Dagon Kalev',company:'Builder Big Jobs',due:'Jun 27, 2024',notes:'Premier Build Co called Jun 15. Waiting for their internal sign-off. If no response by Jun 27, send follow-up email.'},
+  {title:'FineGuard renewal call',type:'Call',status:'In Progress',priority:'Urgent',owner:'Dagon Kalev',company:'FineGuard Ltd',due:'Jun 24, 2024',companyScreen:'sc-fg',notes:'Key renewal — customer on month-to-month since April. Decision maker is Clare Webb. Emphasise new monitoring dashboard and the 2 resolved alerts. Target: annual plan at £58/mo.'},
+  {title:'Review BBJ pipeline',type:'Review',status:'In Progress',priority:'High',owner:'George Morris',company:'Builder Big Jobs',due:'Jun 25, 2024',companyScreen:'sc-bbj',notes:'Review the June leads from the intake form. Qualify Hawk, Premier, Fortis. Decide on outreach priority for Meridian and Sovereign. Update pipeline scores if any new data.'},
+  {title:'Accuracy planning lead',type:'Follow-up',status:'Captured',priority:'Medium',owner:'Alissa Marsh',company:'Accuracy Ltd',due:'Jun 30, 2024',companyScreen:'sc-accuracy',notes:'Sarah Thornton expressed interest in a data pipeline project. Waiting on internal budget approval. Draft SOW ready. Estimated £24K annual retainer if closed.'},
+  {title:'FineGuard pricing decision',type:'Decision',status:'Decision Needed',priority:'High',owner:'George Morris',company:'FineGuard Ltd',due:'Jun 23, 2024',companyScreen:'sc-fg',notes:'Three options: (A) hold at £49/mo, (B) move to £58/mo with feature unlock, (C) introduce tiered plan. Need decision before the Dagon renewal call.'},
+  {title:'BBJ lead follow-up',type:'Follow-up',status:'Waiting',priority:'Medium',owner:'Dagon Kalev',company:'Builder Big Jobs',due:'Jun 27, 2024',companyScreen:'sc-bbj',notes:'Premier Build Co called Jun 15. Waiting for their internal sign-off. If no response by Jun 27, send follow-up email.'},
 ];
 function loadTask(i){
   const t=TASKS[i];if(!t)return;
@@ -1142,6 +1125,8 @@ function loadTask(i){
   document.getElementById('td-company').textContent=t.company;
   document.getElementById('td-due').textContent=t.due;
   document.getElementById('td-notes').textContent=t.notes;
+  const cb=document.getElementById('td-company-btn');
+  if(cb)cb.onclick=function(){push(t.companyScreen);};
 }
 
 // ── Lead data ──────────────────────────────────────────
