@@ -11,7 +11,8 @@
     "db:generate": "drizzle-kit generate:pg --schema=./db/schema.ts --out=./db/migrations",
     "db:push": "drizzle-kit push:pg --config=drizzle.config.ts",
     "db:seed": "tsx scripts/seed-os-modules.ts",
-    "type-check:server": "echo 'server/ removed — skipping'"
+    "type-check:server": "echo 'server/ removed — skipping'",
+    "fineguard:test-workflow": "tsx scripts/fineguard-test-workflow.ts"
   },
   "dependencies": {
     "autoprefixer": "^10.4.19",

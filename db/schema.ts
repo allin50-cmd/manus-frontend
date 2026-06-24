@@ -341,6 +341,7 @@ export const alertHistory = pgTable(
  */
 export const fgCompanySnapshots = pgTable('fg_company_snapshots', {
   id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
   companyNumber: varchar('company_number', { length: 50 }).notNull(),
   rawData: jsonb('raw_data').notNull(),
   companyName: varchar('company_name', { length: 255 }),
@@ -388,6 +389,7 @@ export const fgAlerts = pgTable(
  */
 export const fgReminderEvents = pgTable('fg_reminder_events', {
   id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
   alertId: uuid('alert_id').references(() => fgAlerts.id, { onDelete: 'cascade' }),
   companyNumber: varchar('company_number', { length: 50 }).notNull(),
   eventType: varchar('event_type', { length: 50 }).notNull(),
@@ -401,6 +403,7 @@ export const fgReminderEvents = pgTable('fg_reminder_events', {
  */
 export const fgMessageLogs = pgTable('fg_message_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
   companyNumber: varchar('company_number', { length: 50 }).notNull(),
   channel: varchar('channel', { length: 20 }).default('email').notNull(),
   recipient: varchar('recipient', { length: 255 }),
@@ -416,6 +419,7 @@ export const fgMessageLogs = pgTable('fg_message_logs', {
  */
 export const fgActivityLog = pgTable('fg_activity_log', {
   id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
   entityType: varchar('entity_type', { length: 50 }),
   entityId: varchar('entity_id', { length: 255 }),
   action: varchar('action', { length: 100 }).notNull(),

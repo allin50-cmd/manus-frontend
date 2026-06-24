@@ -1,17 +1,25 @@
 /**
  * FineGuard compliance workflow service.
  *
- * Flow per company:
- *   1. Fetch raw profile from Companies House API
- *   2. Save snapshot → fg_company_snapshots
- *   3. Schedule one fg_alert row per (deadline × threshold) — idempotent
- *   4. Process pending alerts whose reminder_date ≤ today
- *      → create fg_message_logs (send email if RESEND_API_KEY is set)
- *      → append fg_reminder_events
- *   5. Write every major step to fg_activity_log
+ * Flow per company — every step writes to fg_activity_log with the same run_id:
  *
- * Duplicate safety: the UNIQUE constraint on fg_alerts
- * (company_number, alert_type, due_date, reminder_date) ensures idempotency.
+ *   process_started        → run begins, company looked up
+ *   company_checked        → raw profile fetched from Companies House API
+ *   snapshot_created       → raw data + extracted dates saved (fg_company_snapshots)
+ *   alerts_scheduled       → fg_alert rows upserted for every deadline × threshold
+ *   reminder_processed     → per-alert: dispatched; fg_alert.status updated
+ *   message_sent_or_logged → per-alert: message written to fg_message_logs
+ *   process_completed      → success summary (mutually exclusive with process_failed)
+ *   process_failed         → error detail written; original error rethrown
+ *
+ * Duplicate safety:
+ *   UNIQUE (company_number, alert_type, due_date, reminder_date) on fg_alerts means
+ *   onConflictDoNothing() silently skips existing rows. Running the same company
+ *   twice never inserts duplicate alerts.
+ *
+ * RESEND_API_KEY absent:
+ *   Workflow continues without failing. Messages are written to fg_message_logs
+ *   with status = 'logged' instead of 'sent'. No exception is raised.
  */
 
 import { and, eq, isNull, lte } from 'drizzle-orm'
@@ -32,10 +40,12 @@ type FgSnapshot = typeof fgCompanySnapshots.$inferSelect
 
 const CH_API_BASE = 'https://api.company-information.service.gov.uk'
 
-// Thresholds (days before due date). -1 is the overdue sentinel.
+// Thresholds in days before the due date.
+// -1 is the overdue sentinel: reminder fires the day AFTER the due date,
+// giving exactly one overdue alert per (company, alertType, dueDate).
 const THRESHOLDS = [90, 60, 30, 14, 7, 0, -1] as const
 
-// ─── Date helpers (UTC throughout) ───────────────────────────────────────────
+// ─── Date helpers (UTC throughout to avoid DST edge cases) ────────────────────
 
 function todayIso(): string {
   return new Date().toISOString().split('T')[0]
@@ -53,8 +63,6 @@ function daysUntil(iso: string): number {
   return Math.round((due - today) / 86_400_000)
 }
 
-// For the overdue sentinel (daysBefore = -1), the reminder fires the day after
-// the due date so there is exactly one overdue alert per (company, type, dueDate).
 function reminderDateFor(dueDate: string, daysBefore: number): string {
   return daysBefore < 0 ? offsetDate(dueDate, 1) : offsetDate(dueDate, -daysBefore)
 }
@@ -85,23 +93,29 @@ export async function fetchCompanyProfile(
   return res.json() as Promise<Record<string, unknown>>
 }
 
-// ─── Activity log ─────────────────────────────────────────────────────────────
+// ─── Activity log (never throws — logging must not abort the workflow) ─────────
 
 async function logActivity(
   db: Db,
   action: string,
   opts: {
+    runId: string
     entityType?: string
     entityId?: string
     detail?: Record<string, unknown>
-  } = {},
+  },
 ): Promise<void> {
-  await db.insert(fgActivityLog).values({
-    action,
-    entityType: opts.entityType,
-    entityId: opts.entityId,
-    detail: opts.detail ?? null,
-  })
+  try {
+    await db.insert(fgActivityLog).values({
+      runId: opts.runId,
+      action,
+      entityType: opts.entityType,
+      entityId: opts.entityId,
+      detail: opts.detail ?? null,
+    })
+  } catch {
+    // Swallow — activity log failures must never abort the main workflow
+  }
 }
 
 // ─── Snapshot ─────────────────────────────────────────────────────────────────
@@ -126,11 +140,13 @@ async function saveSnapshot(
   db: Db,
   companyNumber: string,
   rawData: Record<string, unknown>,
+  runId: string,
 ): Promise<FgSnapshot> {
   const dates = extractDates(rawData)
   const [row] = await db
     .insert(fgCompanySnapshots)
     .values({
+      runId,
       companyNumber,
       rawData,
       companyName: dates.companyName,
@@ -150,7 +166,7 @@ async function scheduleAlerts(
   db: Db,
   companyNumber: string,
   snapshot: FgSnapshot,
-): Promise<number> {
+): Promise<{ alertsCreated: number; duplicatesSkipped: number }> {
   const deadlines: { alertType: string; dueDate: string }[] = []
   if (snapshot.accountsNextDue) {
     deadlines.push({ alertType: 'accounts', dueDate: snapshot.accountsNextDue })
@@ -162,7 +178,9 @@ async function scheduleAlerts(
     })
   }
 
-  let created = 0
+  let alertsCreated = 0
+  let duplicatesSkipped = 0
+
   for (const { alertType, dueDate } of deadlines) {
     for (const daysBefore of THRESHOLDS) {
       const reminderDate = reminderDateFor(dueDate, daysBefore)
@@ -171,10 +189,13 @@ async function scheduleAlerts(
         .values({ companyNumber, alertType, dueDate, reminderDate, daysBefore })
         .onConflictDoNothing()
         .returning({ id: fgAlerts.id })
-      if (inserted.length > 0) created++
+
+      if (inserted.length > 0) alertsCreated++
+      else duplicatesSkipped++
     }
   }
-  return created
+
+  return { alertsCreated, duplicatesSkipped }
 }
 
 // ─── Message dispatch ─────────────────────────────────────────────────────────
@@ -192,40 +213,42 @@ function buildReminder(
     year: 'numeric',
   })
 
-  let subject: string
-  let body: string
-
   if (daysLeft < 0) {
-    subject = `OVERDUE: ${label} for ${company.companyName}`
-    body = `${label} for ${company.companyName} (${company.companyNumber}) was due on ${dateStr} and is now ${Math.abs(daysLeft)} day(s) overdue.`
-  } else if (daysLeft === 0) {
-    subject = `DUE TODAY: ${label} for ${company.companyName}`
-    body = `${label} for ${company.companyName} (${company.companyNumber}) is due TODAY (${dateStr}). Please file immediately to avoid penalties.`
-  } else {
-    const urgency = daysLeft <= 7 ? '⚠️ URGENT: ' : ''
-    subject = `${urgency}Reminder: ${label} due in ${daysLeft} days — ${company.companyName}`
-    body = `${label} for ${company.companyName} (${company.companyNumber}) is due on ${dateStr} — ${daysLeft} days remaining.`
+    return {
+      subject: `OVERDUE: ${label} for ${company.companyName}`,
+      body: `${label} for ${company.companyName} (${company.companyNumber}) was due on ${dateStr} and is now ${Math.abs(daysLeft)} day(s) overdue.`,
+    }
   }
-
-  return { subject, body }
+  if (daysLeft === 0) {
+    return {
+      subject: `DUE TODAY: ${label} for ${company.companyName}`,
+      body: `${label} for ${company.companyName} (${company.companyNumber}) is due TODAY (${dateStr}). Please file immediately to avoid penalties.`,
+    }
+  }
+  const urgency = daysLeft <= 7 ? '⚠️ URGENT: ' : ''
+  return {
+    subject: `${urgency}Reminder: ${label} due in ${daysLeft} days — ${company.companyName}`,
+    body: `${label} for ${company.companyName} (${company.companyNumber}) is due on ${dateStr} — ${daysLeft} days remaining.`,
+  }
 }
 
 async function dispatchReminder(
   db: Db,
   company: MonitoredCompany,
   alert: FgAlert,
-): Promise<'sent' | 'logged' | 'failed'> {
+  runId: string,
+): Promise<'sent' | 'logged'> {
   const daysLeft = daysUntil(alert.dueDate)
   const { subject, body } = buildReminder(company, alert, daysLeft)
 
   const resendKey = process.env.RESEND_API_KEY
   let channel = 'log'
-  let status: 'sent' | 'logged' | 'failed' = 'logged'
+  let outcome: 'sent' | 'logged' = 'logged'
 
   if (resendKey && company.email) {
     channel = 'email'
-    const from = process.env.RESEND_FROM ?? 'FineGuard Alerts <alerts@fineguard.co.uk>'
     try {
+      const from = process.env.RESEND_FROM ?? 'FineGuard Alerts <alerts@fineguard.co.uk>'
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -240,31 +263,50 @@ async function dispatchReminder(
           reply_to: 'hello@fineguard.co.uk',
         }),
       })
-      status = res.ok ? 'sent' : 'failed'
+      // A failed send still creates a message_log (status='failed') but
+      // counts as 'logged' in summary — the message is recorded, not delivered.
+      if (res.ok) outcome = 'sent'
     } catch {
-      status = 'failed'
+      // Network error — fall through to 'logged'
     }
   }
 
+  const msgStatus = outcome === 'sent' ? 'sent' : resendKey && company.email ? 'failed' : 'logged'
+
   await db.insert(fgMessageLogs).values({
+    runId,
     companyNumber: company.companyNumber,
     channel,
     recipient: company.email ?? undefined,
     subject,
     body,
-    status,
+    status: msgStatus,
   })
 
-  return status
+  await logActivity(db, 'message_sent_or_logged', {
+    runId,
+    entityType: 'alert',
+    entityId: alert.id,
+    detail: {
+      outcome,
+      channel,
+      alertType: alert.alertType,
+      dueDate: alert.dueDate,
+      recipient: company.email ?? null,
+    },
+  })
+
+  return outcome
 }
 
-// ─── Process due alerts ───────────────────────────────────────────────────────
+// ─── Process pending alerts ───────────────────────────────────────────────────
 
 async function processDueAlerts(
   db: Db,
   companyNumber: string,
   company: MonitoredCompany,
-): Promise<number> {
+  runId: string,
+): Promise<{ remindersProcessed: number; messagesSent: number; messagesLogged: number }> {
   const today = todayIso()
   const dueAlerts = await db
     .select()
@@ -277,8 +319,11 @@ async function processDueAlerts(
       ),
     )
 
+  let messagesSent = 0
+  let messagesLogged = 0
+
   for (const alert of dueAlerts) {
-    const outcome = await dispatchReminder(db, company, alert)
+    const outcome = await dispatchReminder(db, company, alert, runId)
 
     await db
       .update(fgAlerts)
@@ -286,32 +331,70 @@ async function processDueAlerts(
       .where(eq(fgAlerts.id, alert.id))
 
     await db.insert(fgReminderEvents).values({
+      runId,
       alertId: alert.id,
       companyNumber,
       eventType: outcome,
       detail: `${alert.alertType} | due ${alert.dueDate} | daysBefore=${alert.daysBefore}`,
     })
+
+    await logActivity(db, 'reminder_processed', {
+      runId,
+      entityType: 'alert',
+      entityId: alert.id,
+      detail: { alertType: alert.alertType, dueDate: alert.dueDate, outcome },
+    })
+
+    if (outcome === 'sent') messagesSent++
+    else messagesLogged++
   }
 
-  return dueAlerts.length
+  return { remindersProcessed: dueAlerts.length, messagesSent, messagesLogged }
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// ─── Public interfaces ────────────────────────────────────────────────────────
 
 export interface CompanyWorkflowResult {
   companyNumber: string
   companyName: string
+  runId: string
   snapshotId: string
-  alertsScheduled: number
+  alertsCreated: number
+  duplicatesSkipped: number
   remindersProcessed: number
+  messagesSent: number
+  messagesLogged: number
   error?: string
 }
 
+export interface BatchWorkflowResult {
+  runId: string
+  processedCompanies: number
+  snapshotsCreated: number
+  alertsCreated: number
+  duplicatesSkipped: number
+  remindersProcessed: number
+  messagesSent: number
+  messagesLogged: number
+  errors: number
+  results: CompanyWorkflowResult[]
+}
+
+// ─── processCompany ───────────────────────────────────────────────────────────
+
+/**
+ * Process a single company through the full compliance workflow.
+ *
+ * @param companyNumber - Companies House number (case-insensitive).
+ * @param runId         - Shared run_id from a batch caller; generated when absent.
+ */
 export async function processCompany(
   companyNumber: string,
+  runId?: string,
 ): Promise<CompanyWorkflowResult> {
   const db = await getDb()
   const num = companyNumber.trim().toUpperCase()
+  const myRunId = runId ?? crypto.randomUUID()
 
   const [company] = await db
     .select()
@@ -319,101 +402,166 @@ export async function processCompany(
     .where(eq(monitoredCompanies.companyNumber, num))
     .limit(1)
 
-  if (!company) throw new Error(`Company ${num} is not in monitored_companies`)
+  if (!company) {
+    throw new Error(
+      `Company ${num} is not in monitored_companies. ` +
+      `Add it via POST /api/monitored first.`,
+    )
+  }
 
   await logActivity(db, 'process_started', {
+    runId: myRunId,
     entityType: 'company',
     entityId: num,
     detail: { companyName: company.companyName },
   })
 
-  const rawData = await fetchCompanyProfile(num)
+  try {
+    const rawData = await fetchCompanyProfile(num)
 
-  await logActivity(db, 'ch_fetch_complete', {
-    entityType: 'company',
-    entityId: num,
-    detail: { status: (rawData.company_status as string) ?? null },
-  })
+    await logActivity(db, 'company_checked', {
+      runId: myRunId,
+      entityType: 'company',
+      entityId: num,
+      detail: {
+        companyStatus: (rawData.company_status as string) ?? null,
+        companyName: (rawData.company_name as string) ?? null,
+      },
+    })
 
-  const snapshot = await saveSnapshot(db, num, rawData)
+    const snapshot = await saveSnapshot(db, num, rawData, myRunId)
 
-  await logActivity(db, 'snapshot_saved', {
-    entityType: 'snapshot',
-    entityId: snapshot.id,
-    detail: {
-      accountsNextDue: snapshot.accountsNextDue,
-      confirmationStatementNextDue: snapshot.confirmationStatementNextDue,
-      lastAccountsMadeUpTo: snapshot.lastAccountsMadeUpTo,
-      lastConfirmationStatementDate: snapshot.lastConfirmationStatementDate,
-    },
-  })
+    await logActivity(db, 'snapshot_created', {
+      runId: myRunId,
+      entityType: 'snapshot',
+      entityId: snapshot.id,
+      detail: {
+        accountsNextDue: snapshot.accountsNextDue,
+        confirmationStatementNextDue: snapshot.confirmationStatementNextDue,
+        lastAccountsMadeUpTo: snapshot.lastAccountsMadeUpTo,
+        lastConfirmationStatementDate: snapshot.lastConfirmationStatementDate,
+      },
+    })
 
-  const alertsScheduled = await scheduleAlerts(db, num, snapshot)
+    const { alertsCreated, duplicatesSkipped } = await scheduleAlerts(db, num, snapshot)
 
-  await logActivity(db, 'alerts_scheduled', {
-    entityType: 'company',
-    entityId: num,
-    detail: { alertsScheduled },
-  })
+    await logActivity(db, 'alerts_scheduled', {
+      runId: myRunId,
+      entityType: 'company',
+      entityId: num,
+      detail: { alertsCreated, duplicatesSkipped },
+    })
 
-  const remindersProcessed = await processDueAlerts(db, num, company)
+    const { remindersProcessed, messagesSent, messagesLogged } =
+      await processDueAlerts(db, num, company, myRunId)
 
-  await logActivity(db, 'reminders_processed', {
-    entityType: 'company',
-    entityId: num,
-    detail: { remindersProcessed },
-  })
+    const result: CompanyWorkflowResult = {
+      companyNumber: num,
+      companyName: company.companyName,
+      runId: myRunId,
+      snapshotId: snapshot.id,
+      alertsCreated,
+      duplicatesSkipped,
+      remindersProcessed,
+      messagesSent,
+      messagesLogged,
+    }
 
-  return {
-    companyNumber: num,
-    companyName: company.companyName,
-    snapshotId: snapshot.id,
-    alertsScheduled,
-    remindersProcessed,
+    await logActivity(db, 'process_completed', {
+      runId: myRunId,
+      entityType: 'company',
+      entityId: num,
+      detail: { alertsCreated, duplicatesSkipped, remindersProcessed, messagesSent, messagesLogged },
+    })
+
+    return result
+  } catch (err) {
+    await logActivity(db, 'process_failed', {
+      runId: myRunId,
+      entityType: 'company',
+      entityId: num,
+      detail: { error: String(err) },
+    })
+    throw err
   }
 }
 
-export async function processAllActiveCompanies(): Promise<{
-  total: number
-  succeeded: number
-  failed: number
-  results: CompanyWorkflowResult[]
-}> {
+// ─── processAllActiveCompanies ────────────────────────────────────────────────
+
+/**
+ * Process all non-cancelled monitored companies sequentially.
+ * All activity log entries share the same batch run_id.
+ */
+export async function processAllActiveCompanies(): Promise<BatchWorkflowResult> {
   const db = await getDb()
+  const runId = crypto.randomUUID()
 
   const rows = await db
     .select({ companyNumber: monitoredCompanies.companyNumber })
     .from(monitoredCompanies)
     .where(isNull(monitoredCompanies.cancelledAt))
 
-  await logActivity(db, 'batch_started', {
-    entityType: 'company',
-    detail: { count: rows.length },
+  await logActivity(db, 'process_started', {
+    runId,
+    entityType: 'batch',
+    detail: { companyCount: rows.length },
   })
 
   const results: CompanyWorkflowResult[] = []
-  let failed = 0
+  let errors = 0
 
   for (const { companyNumber } of rows) {
     try {
-      results.push(await processCompany(companyNumber))
+      results.push(await processCompany(companyNumber, runId))
     } catch (err) {
-      failed++
+      errors++
       results.push({
         companyNumber,
         companyName: '',
+        runId,
         snapshotId: '',
-        alertsScheduled: 0,
+        alertsCreated: 0,
+        duplicatesSkipped: 0,
         remindersProcessed: 0,
+        messagesSent: 0,
+        messagesLogged: 0,
         error: String(err),
       })
     }
   }
 
-  await logActivity(db, 'batch_complete', {
-    entityType: 'company',
-    detail: { total: rows.length, succeeded: rows.length - failed, failed },
+  const snapshotsCreated = results.filter((r) => !r.error && r.snapshotId).length
+  const alertsCreated = results.reduce((s, r) => s + r.alertsCreated, 0)
+  const duplicatesSkipped = results.reduce((s, r) => s + r.duplicatesSkipped, 0)
+  const remindersProcessed = results.reduce((s, r) => s + r.remindersProcessed, 0)
+  const messagesSent = results.reduce((s, r) => s + r.messagesSent, 0)
+  const messagesLogged = results.reduce((s, r) => s + r.messagesLogged, 0)
+
+  await logActivity(db, 'process_completed', {
+    runId,
+    entityType: 'batch',
+    detail: {
+      processedCompanies: rows.length,
+      snapshotsCreated,
+      alertsCreated,
+      duplicatesSkipped,
+      remindersProcessed,
+      messagesSent,
+      messagesLogged,
+      errors,
+    },
   })
 
-  return { total: rows.length, succeeded: rows.length - failed, failed, results }
+  return {
+    runId,
+    processedCompanies: rows.length,
+    snapshotsCreated,
+    alertsCreated,
+    duplicatesSkipped,
+    remindersProcessed,
+    messagesSent,
+    messagesLogged,
+    errors,
+    results,
+  }
 }

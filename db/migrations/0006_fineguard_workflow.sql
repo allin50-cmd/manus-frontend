@@ -1,8 +1,13 @@
 -- Migration 0006: FineGuard workflow tables
 -- Adds: fg_company_snapshots, fg_alerts, fg_reminder_events, fg_message_logs, fg_activity_log
+--
+-- run_id (VARCHAR 36) is included in all four auditable tables so every write
+-- from a single processCompany() or processAllActiveCompanies() invocation
+-- can be traced back to the same run.
 
 CREATE TABLE IF NOT EXISTS fg_company_snapshots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id VARCHAR(36),
   company_number VARCHAR(50) NOT NULL,
   raw_data JSONB NOT NULL,
   company_name VARCHAR(255),
@@ -15,8 +20,11 @@ CREATE TABLE IF NOT EXISTS fg_company_snapshots (
 );
 
 CREATE INDEX IF NOT EXISTS fg_snapshots_company_idx ON fg_company_snapshots (company_number);
-CREATE INDEX IF NOT EXISTS fg_snapshots_fetched_idx ON fg_company_snapshots (fetched_at DESC);
+CREATE INDEX IF NOT EXISTS fg_snapshots_run_idx      ON fg_company_snapshots (run_id);
+CREATE INDEX IF NOT EXISTS fg_snapshots_fetched_idx  ON fg_company_snapshots (fetched_at DESC);
 
+-- UNIQUE(company_number, alert_type, due_date, reminder_date) is the idempotency guard.
+-- Running the same company twice inserts nothing on the second pass.
 CREATE TABLE IF NOT EXISTS fg_alerts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_number VARCHAR(50) NOT NULL,
@@ -36,6 +44,7 @@ CREATE INDEX IF NOT EXISTS fg_alerts_pending_idx ON fg_alerts (status, reminder_
 
 CREATE TABLE IF NOT EXISTS fg_reminder_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id VARCHAR(36),
   alert_id UUID REFERENCES fg_alerts (id) ON DELETE CASCADE,
   company_number VARCHAR(50) NOT NULL,
   event_type VARCHAR(50) NOT NULL,
@@ -44,9 +53,11 @@ CREATE TABLE IF NOT EXISTS fg_reminder_events (
 );
 
 CREATE INDEX IF NOT EXISTS fg_reminder_events_alert_idx ON fg_reminder_events (alert_id);
+CREATE INDEX IF NOT EXISTS fg_reminder_events_run_idx   ON fg_reminder_events (run_id);
 
 CREATE TABLE IF NOT EXISTS fg_message_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id VARCHAR(36),
   company_number VARCHAR(50) NOT NULL,
   channel VARCHAR(20) NOT NULL DEFAULT 'email',
   recipient VARCHAR(255),
@@ -57,9 +68,11 @@ CREATE TABLE IF NOT EXISTS fg_message_logs (
 );
 
 CREATE INDEX IF NOT EXISTS fg_message_logs_company_idx ON fg_message_logs (company_number);
+CREATE INDEX IF NOT EXISTS fg_message_logs_run_idx     ON fg_message_logs (run_id);
 
 CREATE TABLE IF NOT EXISTS fg_activity_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id VARCHAR(36),
   entity_type VARCHAR(50),
   entity_id VARCHAR(255),
   action VARCHAR(100) NOT NULL,
@@ -67,5 +80,6 @@ CREATE TABLE IF NOT EXISTS fg_activity_log (
   occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS fg_activity_log_entity_idx ON fg_activity_log (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS fg_activity_log_run_idx      ON fg_activity_log (run_id);
+CREATE INDEX IF NOT EXISTS fg_activity_log_entity_idx   ON fg_activity_log (entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS fg_activity_log_occurred_idx ON fg_activity_log (occurred_at DESC);
