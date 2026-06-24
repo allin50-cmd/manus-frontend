@@ -332,6 +332,97 @@ export const alertHistory = pgTable(
   }),
 );
 
+// ─── FineGuard Workflow Tables ────────────────────────────────────────────────
+
+/**
+ * FineGuard Company Snapshots
+ * One row per Companies House API fetch. Stores raw response + extracted dates.
+ * Append-only — never updated, only inserted.
+ */
+export const fgCompanySnapshots = pgTable('fg_company_snapshots', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  rawData: jsonb('raw_data').notNull(),
+  companyName: varchar('company_name', { length: 255 }),
+  companyStatus: varchar('company_status', { length: 50 }),
+  accountsNextDue: date('accounts_next_due'),
+  confirmationStatementNextDue: date('confirmation_statement_next_due'),
+  lastAccountsMadeUpTo: date('last_accounts_made_up_to'),
+  lastConfirmationStatementDate: date('last_confirmation_statement_date'),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * FineGuard Alerts
+ * One row per (company_number, alert_type, due_date, reminder_date).
+ * Unique constraint prevents duplicates if the same company is processed repeatedly.
+ * daysBefore: 90 | 60 | 30 | 14 | 7 | 0 | negative (overdue sentinel)
+ * status: 'pending' → 'sent' | 'logged' | 'suppressed'
+ */
+export const fgAlerts = pgTable(
+  'fg_alerts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyNumber: varchar('company_number', { length: 50 }).notNull(),
+    alertType: varchar('alert_type', { length: 50 }).notNull(),
+    dueDate: date('due_date').notNull(),
+    reminderDate: date('reminder_date').notNull(),
+    daysBefore: integer('days_before').notNull(),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+  },
+  (t) => ({
+    uniqueAlert: uniqueIndex('fg_alerts_unique_idx').on(
+      t.companyNumber,
+      t.alertType,
+      t.dueDate,
+      t.reminderDate,
+    ),
+  }),
+);
+
+/**
+ * FineGuard Reminder Events
+ * Append-only log of every time an fgAlert row is processed by the cron/route.
+ */
+export const fgReminderEvents = pgTable('fg_reminder_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  alertId: uuid('alert_id').references(() => fgAlerts.id, { onDelete: 'cascade' }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  detail: text('detail'),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * FineGuard Message Logs
+ * Records every message dispatched (or logged when no provider is configured).
+ */
+export const fgMessageLogs = pgTable('fg_message_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  channel: varchar('channel', { length: 20 }).default('email').notNull(),
+  recipient: varchar('recipient', { length: 255 }),
+  subject: varchar('subject', { length: 500 }),
+  body: text('body'),
+  status: varchar('status', { length: 20 }).default('logged').notNull(),
+  sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * FineGuard Activity Log
+ * Append-only audit trail — one row per major workflow step.
+ */
+export const fgActivityLog = pgTable('fg_activity_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  entityType: varchar('entity_type', { length: 50 }),
+  entityId: varchar('entity_id', { length: 255 }),
+  action: varchar('action', { length: 100 }).notNull(),
+  detail: jsonb('detail'),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Brand-suite inferred types
 export type AlertHistory = typeof alertHistory.$inferSelect;
 export type NewAlertHistory = typeof alertHistory.$inferInsert;
@@ -347,6 +438,16 @@ export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+export type FgCompanySnapshot = typeof fgCompanySnapshots.$inferSelect;
+export type NewFgCompanySnapshot = typeof fgCompanySnapshots.$inferInsert;
+export type FgAlert = typeof fgAlerts.$inferSelect;
+export type NewFgAlert = typeof fgAlerts.$inferInsert;
+export type FgReminderEvent = typeof fgReminderEvents.$inferSelect;
+export type NewFgReminderEvent = typeof fgReminderEvents.$inferInsert;
+export type FgMessageLog = typeof fgMessageLogs.$inferSelect;
+export type NewFgMessageLog = typeof fgMessageLogs.$inferInsert;
+export type FgActivityLogEntry = typeof fgActivityLog.$inferSelect;
+export type NewFgActivityLogEntry = typeof fgActivityLog.$inferInsert;
 
 // ─── ClerkOS Tables ──────────────────────────────────────────────────────────
 
