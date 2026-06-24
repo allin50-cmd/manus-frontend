@@ -11,7 +11,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = await getDb()
-  const tasks = await db.select().from(osTasks).orderBy(desc(osTasks.createdAt))
+  const tasks = await db.select().from(osTasks).orderBy(desc(osTasks.createdAt)).limit(200)
   return NextResponse.json(tasks)
 }
 

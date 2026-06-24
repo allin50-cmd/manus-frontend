@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     .insert(osMessages)
     .values({
       threadId: body.threadId,
-      fromName: body.fromName || session.person,
+      fromName: session.person,
       body: body.body,
       isRead: false,
     })

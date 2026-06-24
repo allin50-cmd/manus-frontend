@@ -272,9 +272,9 @@ async function dispatchReminder(
     }
   }
 
-  await trackEvent({ eventType: 'message_sent', userId: 'system', metadata: { companyNumber: company.companyNumber, channel, outcome } })
-
   const msgStatus = outcome === 'sent' ? 'sent' : resendKey && company.email ? 'failed' : 'logged'
+
+  await trackEvent({ eventType: 'message_sent', userId: 'system', metadata: { companyNumber: company.companyNumber, channel, status: msgStatus } })
 
   await db.insert(fgMessageLogs).values({
     runId,

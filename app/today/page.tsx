@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getDb } from '@/lib/db'
 import { utWeeklyReports, utActivityEvents } from '@/db/schema'
-import { and, gte, lt, desc } from 'drizzle-orm'
+import { and, gte, lt, eq } from 'drizzle-orm'
 
 const PRIORITIES = [
   { label: 'FineGuard renewal call overdue', tag: 'Money', tagColor: '#FFC145', href: '/os/money' },
@@ -34,25 +34,7 @@ async function getConsolidationData(): Promise<ConsolidationData | null> {
   try {
     const db = await getDb()
 
-    const reports = await db
-      .select()
-      .from(utWeeklyReports)
-      .orderBy(desc(utWeeklyReports.weekStart))
-      .limit(2)
-
-    if (reports.length > 0) {
-      const current = reports[0]
-      const previous = reports[1] ?? null
-      return {
-        currentRate: Number(current.consolidationRate),
-        prevRate: previous ? Number(previous.consolidationRate) : null,
-        trend: current.trend ?? null,
-        utActions: current.utActions,
-        workflowLeaks: current.workflowLeaks,
-      }
-    }
-
-    // Fall back to a live count of this week's raw events
+    // Current week — always computed live so the widget reflects today's activity.
     const today = new Date()
     const day = today.getUTCDay()
     const monday = new Date(today)
@@ -72,13 +54,30 @@ async function getConsolidationData(): Promise<ConsolidationData | null> {
     const leaks = events.filter((e) => e.eventType === 'workflow_leak').length
     const utActions = events.filter((e) => e.eventType !== 'workflow_leak').length
     const total = utActions + leaks
-    return {
-      currentRate: total > 0 ? Number(((utActions / total) * 100).toFixed(1)) : 0,
-      prevRate: null,
-      trend: null,
-      utActions,
-      workflowLeaks: leaks,
-    }
+    const currentRate = total > 0 ? Number(((utActions / total) * 100).toFixed(1)) : 0
+
+    // Previous week — look up the completed weekly report for last week specifically.
+    const lastWeekMonday = new Date(monday)
+    lastWeekMonday.setUTCDate(monday.getUTCDate() - 7)
+    const lastWeekMondayStr = lastWeekMonday.toISOString().split('T')[0]
+
+    const [prevReport] = await db
+      .select()
+      .from(utWeeklyReports)
+      .where(eq(utWeeklyReports.weekStart, lastWeekMondayStr))
+      .limit(1)
+
+    const prevRate = prevReport ? Number(prevReport.consolidationRate) : null
+    const trend =
+      prevRate === null
+        ? null
+        : currentRate > prevRate
+        ? 'up'
+        : currentRate < prevRate
+        ? 'down'
+        : 'flat'
+
+    return { currentRate, prevRate, trend, utActions, workflowLeaks: leaks }
   } catch {
     return null
   }

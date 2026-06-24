@@ -10,16 +10,24 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { getDb } from '@/lib/db'
 import { utActivityEvents, utDailyMetrics } from '@/db/schema'
 import { getSession } from '@/lib/auth'
-import { and, gte, lt } from 'drizzle-orm'
+import { and, gte, lt, count, eq, isNotNull } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
 function hasCronAuth(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
-  return !!secret && req.headers.get('x-cron-secret') === secret
+  if (!secret) return false
+  const provided = req.headers.get('x-cron-secret') ?? ''
+  if (provided.length !== secret.length) return false
+  try {
+    return timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+  } catch {
+    return false
+  }
 }
 
 function yesterdayIso(): string {
@@ -48,42 +56,38 @@ export async function POST(req: NextRequest) {
   const dayEnd = new Date(`${targetDate}T00:00:00Z`)
   dayEnd.setUTCDate(dayEnd.getUTCDate() + 1)
 
-  const events = await db
-    .select({
-      userId: utActivityEvents.userId,
-      eventType: utActivityEvents.eventType,
-    })
+  const dayFilter = and(gte(utActivityEvents.occurredAt, dayStart), lt(utActivityEvents.occurredAt, dayEnd))
+
+  // Push aggregation to the DB — avoids loading all events into memory.
+  const eventCounts = await db
+    .select({ eventType: utActivityEvents.eventType, n: count() })
     .from(utActivityEvents)
-    .where(
-      and(
-        gte(utActivityEvents.occurredAt, dayStart),
-        lt(utActivityEvents.occurredAt, dayEnd),
-      ),
-    )
+    .where(dayFilter)
+    .groupBy(utActivityEvents.eventType)
 
-  const count = (type: string) => events.filter((e) => e.eventType === type).length
+  const dauResult = await db
+    .selectDistinct({ userId: utActivityEvents.userId })
+    .from(utActivityEvents)
+    .where(and(dayFilter, eq(utActivityEvents.eventType, 'app_opened'), isNotNull(utActivityEvents.userId)))
 
-  const dau = new Set(
-    events
-      .filter((e) => e.eventType === 'app_opened' && e.userId)
-      .map((e) => e.userId),
-  ).size
+  const countOf = (type: string) => eventCounts.find((r) => r.eventType === type)?.n ?? 0
+  const dau = dauResult.length
 
   const metrics = {
     date: targetDate,
     dau,
-    appOpens: count('app_opened'),
-    tasksCreated: count('task_created'),
-    tasksCompleted: count('task_completed'),
-    callsLogged: count('call_logged'),
-    alertsGenerated: count('alert_generated'),
-    alertsAcknowledged: count('alert_acknowledged'),
-    documentsUploaded: count('document_uploaded'),
-    quotesCreated: count('quote_created'),
-    invoicesCreated: count('invoice_created'),
-    companiesAdded: count('company_created'),
-    contactsAdded: count('contact_created'),
-    workflowLeaks: count('workflow_leak'),
+    appOpens: countOf('app_opened'),
+    tasksCreated: countOf('task_created'),
+    tasksCompleted: countOf('task_completed'),
+    callsLogged: countOf('call_logged'),
+    alertsGenerated: countOf('alert_generated'),
+    alertsAcknowledged: countOf('alert_acknowledged'),
+    documentsUploaded: countOf('document_uploaded'),
+    quotesCreated: countOf('quote_created'),
+    invoicesCreated: countOf('invoice_created'),
+    companiesAdded: countOf('company_created'),
+    contactsAdded: countOf('contact_created'),
+    workflowLeaks: countOf('workflow_leak'),
     computedAt: new Date(),
   }
 

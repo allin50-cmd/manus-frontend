@@ -9,16 +9,9 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { utWeeklyReports, utActivityEvents } from '@/db/schema'
 import { getSession } from '@/lib/auth'
-import { and, gte, lt, desc } from 'drizzle-orm'
+import { and, gte, lt, eq } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
-
-function currentWeekStart(): string {
-  const d = new Date()
-  const day = d.getUTCDay()
-  d.setUTCDate(d.getUTCDate() + (day === 0 ? -6 : 1 - day))
-  return d.toISOString().split('T')[0]
-}
 
 export async function GET() {
   const session = await getSession()
@@ -26,53 +19,44 @@ export async function GET() {
 
   const db = await getDb()
 
-  const reports = await db
-    .select()
-    .from(utWeeklyReports)
-    .orderBy(desc(utWeeklyReports.weekStart))
-    .limit(2)
-
-  if (reports.length > 0) {
-    const current = reports[0]
-    const previous = reports[1] ?? null
-    return NextResponse.json({
-      currentWeek: {
-        weekStart: current.weekStart,
-        weekEnd: current.weekEnd,
-        rate: Number(current.consolidationRate),
-        utActions: current.utActions,
-        workflowLeaks: current.workflowLeaks,
-        totalBusinessActions: current.totalBusinessActions,
-      },
-      previousWeek: previous
-        ? {
-            weekStart: previous.weekStart,
-            rate: Number(previous.consolidationRate),
-          }
-        : null,
-      trend: current.trend ?? null,
-    })
-  }
-
-  // No weekly reports yet — compute live from raw events this week
-  const weekStart = currentWeekStart()
-  const weekStartDate = new Date(`${weekStart}T00:00:00Z`)
+  // Current week — always live so the response reflects today's activity.
   const now = new Date()
+  const day = now.getUTCDay()
+  const monday = new Date(now)
+  monday.setUTCDate(now.getUTCDate() + (day === 0 ? -6 : 1 - day))
+  monday.setUTCHours(0, 0, 0, 0)
+  const weekStart = monday.toISOString().split('T')[0]
 
   const events = await db
     .select({ eventType: utActivityEvents.eventType })
     .from(utActivityEvents)
-    .where(
-      and(
-        gte(utActivityEvents.occurredAt, weekStartDate),
-        lt(utActivityEvents.occurredAt, now),
-      ),
-    )
+    .where(and(gte(utActivityEvents.occurredAt, monday), lt(utActivityEvents.occurredAt, now)))
 
   const leaks = events.filter((e) => e.eventType === 'workflow_leak').length
   const utActions = events.filter((e) => e.eventType !== 'workflow_leak').length
   const total = utActions + leaks
   const rate = total > 0 ? Number(((utActions / total) * 100).toFixed(2)) : 0
+
+  // Previous week — look up the completed report for last week specifically.
+  const lastWeekMonday = new Date(monday)
+  lastWeekMonday.setUTCDate(monday.getUTCDate() - 7)
+  const lastWeekMondayStr = lastWeekMonday.toISOString().split('T')[0]
+
+  const [prevReport] = await db
+    .select()
+    .from(utWeeklyReports)
+    .where(eq(utWeeklyReports.weekStart, lastWeekMondayStr))
+    .limit(1)
+
+  const prevRate = prevReport ? Number(prevReport.consolidationRate) : null
+  const trend =
+    prevRate === null
+      ? null
+      : rate > prevRate
+      ? 'up'
+      : rate < prevRate
+      ? 'down'
+      : 'flat'
 
   return NextResponse.json({
     currentWeek: {
@@ -83,7 +67,9 @@ export async function GET() {
       workflowLeaks: leaks,
       totalBusinessActions: total,
     },
-    previousWeek: null,
-    trend: null,
+    previousWeek: prevReport
+      ? { weekStart: prevReport.weekStart, rate: prevRate }
+      : null,
+    trend,
   })
 }

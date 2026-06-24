@@ -28,6 +28,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { getSession } from '@/lib/auth'
 import {
   processCompany,
@@ -40,7 +41,14 @@ export const maxDuration = 60
 
 function hasCronAuth(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
-  return !!secret && req.headers.get('x-cron-secret') === secret
+  if (!secret) return false
+  const provided = req.headers.get('x-cron-secret') ?? ''
+  if (provided.length !== secret.length) return false
+  try {
+    return timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+  } catch {
+    return false
+  }
 }
 
 export async function POST(req: NextRequest) {

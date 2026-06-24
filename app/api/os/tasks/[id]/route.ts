@@ -13,6 +13,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
+
+  const VALID_STATUS = ['Open', 'InProgress', 'Done', 'Cancelled'] as const
+  const VALID_PRIORITY = ['Low', 'Medium', 'High', 'Urgent'] as const
+  if (body.status !== undefined && !VALID_STATUS.includes(body.status)) {
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+  }
+  if (body.priority !== undefined && !VALID_PRIORITY.includes(body.priority)) {
+    return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
+  }
+
   const updates: Record<string, unknown> = { updatedAt: new Date() }
   if (body.title !== undefined) updates.title = body.title
   if (body.assignedTo !== undefined) updates.assignedTo = body.assignedTo

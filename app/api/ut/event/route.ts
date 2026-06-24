@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid eventType' }, { status: 400 })
   }
 
+  if (body.metadata !== undefined && JSON.stringify(body.metadata).length > 2048) {
+    return NextResponse.json({ error: 'metadata too large' }, { status: 400 })
+  }
+
   await trackEvent({ eventType, userId: session.person, metadata: body.metadata })
   return NextResponse.json({ success: true }, { status: 201 })
 }

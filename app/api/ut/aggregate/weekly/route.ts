@@ -17,6 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { getDb } from '@/lib/db'
 import { utDailyMetrics, utWeeklyReports } from '@/db/schema'
 import { getSession } from '@/lib/auth'
@@ -26,7 +27,14 @@ export const dynamic = 'force-dynamic'
 
 function hasCronAuth(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
-  return !!secret && req.headers.get('x-cron-secret') === secret
+  if (!secret) return false
+  const provided = req.headers.get('x-cron-secret') ?? ''
+  if (provided.length !== secret.length) return false
+  try {
+    return timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+  } catch {
+    return false
+  }
 }
 
 function getWeekBounds(isoDate: string): { weekStart: string; weekEnd: string } {
@@ -55,13 +63,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Default: most recently completed week (last Monday's week)
+  // Default: most recently completed week — go back 7 days then snap to that week's Monday.
+  // Using getWeekBounds avoids the Sunday edge case where a raw -7 then Monday-snap lands
+  // on the Monday two weeks prior.
   const lastMonday = (() => {
     const d = new Date()
     d.setUTCDate(d.getUTCDate() - 7)
-    const day = d.getUTCDay()
-    d.setUTCDate(d.getUTCDate() + (day === 0 ? -6 : 1 - day))
-    return d.toISOString().split('T')[0]
+    return getWeekBounds(d.toISOString().split('T')[0]).weekStart
   })()
 
   let inputDate = lastMonday
