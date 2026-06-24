@@ -1,6 +1,16 @@
-# Ultratech OS
+# UltraTechOS
 
-Simple operator UI for work items, actions, decisions, templates and activity logs.
+> **UltraTechOS is a mobile-first Business Operating System.**
+> FineGuard, UltAi and VaultLine are modules.
+> All development must follow [`ULTRATECHOS.md`](./ULTRATECHOS.md) and [`ANTI_DRIFT.md`](./ANTI_DRIFT.md).
+
+---
+
+## Required Reading
+
+Before making architectural, database, framework, workflow, navigation, or product changes, read [`ULTRATECHOS.md`](./ULTRATECHOS.md) and [`ANTI_DRIFT.md`](./ANTI_DRIFT.md).
+
+---
 
 ## Current architecture
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, workItems, activityLogs } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { eq, asc, desc } from 'drizzle-orm'
+import { trackEvent } from '@/lib/ut-tracker'
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
@@ -65,5 +66,6 @@ export async function POST(req: NextRequest) {
     newStatus: item.status,
   })
 
+  await trackEvent({ eventType: 'task_created', userId: session.person })
   return NextResponse.json(item, { status: 201 })
 }

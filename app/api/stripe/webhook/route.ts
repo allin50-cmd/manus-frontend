@@ -11,9 +11,11 @@ export async function POST(req: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
   if (!secretKey) {
+    console.error('FINEGUARD OPS: STRIPE_SECRET_KEY is not set — webhook cannot be processed')
     return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 })
   }
   if (!webhookSecret) {
+    console.error('FINEGUARD OPS: STRIPE_WEBHOOK_SECRET is not set — webhook signature cannot be verified')
     return NextResponse.json({ error: 'Stripe webhook secret not configured' }, { status: 500 })
   }
 
@@ -44,6 +46,18 @@ export async function POST(req: NextRequest) {
             ? session.subscription
             : session.subscription.id
           : null
+
+      // Email is required for alerts to work. customer_creation:'always' in the
+      // checkout session guarantees Stripe creates a customer with email, but
+      // log loudly if it somehow arrives empty so ops can manually correct it.
+      if (!email) {
+        console.error(
+          `FINEGUARD OPS: checkout.session.completed for ${companyName} (${companyNumber}) ` +
+          `arrived with no customer email. This company will NOT receive deadline alerts ` +
+          `until email is manually set in monitored_companies. Stripe session: ${session.id}`
+        )
+      }
+
       try {
         const db = await getDb()
         await db
@@ -62,10 +76,14 @@ export async function POST(req: NextRequest) {
               stripeSessionId: session.id,
               stripeSubscriptionId: subscriptionId,
               cancelledAt: null,
+              // Only overwrite email if Stripe has one — preserve a manually-set address.
               ...(email ? { email } : {}),
             },
           })
-        console.log(`FineGuard activated for ${companyName} (${companyNumber}), sub=${subscriptionId}`)
+        console.log(
+          `FineGuard activated: ${companyName} (${companyNumber}), ` +
+          `email=${email ?? 'MISSING — OPS ACTION REQUIRED'}, sub=${subscriptionId}`
+        )
       } catch (err) {
         console.error('Stripe monitoring activation failed:', String(err))
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
@@ -86,13 +104,19 @@ export async function POST(req: NextRequest) {
             isNull(monitoredCompanies.cancelledAt),
           ),
         )
-        .returning({ companyNumber: monitoredCompanies.companyNumber, companyName: monitoredCompanies.companyName })
+        .returning({
+          companyNumber: monitoredCompanies.companyNumber,
+          companyName: monitoredCompanies.companyName,
+        })
 
       if (updated.length === 0) {
-        console.log(`Stripe cancellation: no active company found for subscription ${sub.id} — already cancelled or not found`)
+        console.log(
+          `Stripe cancellation: no active company found for subscription ${sub.id} — ` +
+          `already cancelled or not found`
+        )
       } else {
         for (const row of updated) {
-          console.log(`FineGuard monitoring cancelled for ${row.companyName} (${row.companyNumber}), sub=${sub.id}`)
+          console.log(`FineGuard monitoring cancelled: ${row.companyName} (${row.companyNumber}), sub=${sub.id}`)
         }
       }
     } catch (err) {

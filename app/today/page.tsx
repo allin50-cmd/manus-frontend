@@ -1,0 +1,263 @@
+import Link from 'next/link'
+import { getDb } from '@/lib/db'
+import { utWeeklyReports, utActivityEvents } from '@/db/schema'
+import { and, gte, lt, eq } from 'drizzle-orm'
+
+const PRIORITIES = [
+  { label: 'FineGuard renewal call overdue', tag: 'Money', tagColor: '#FFC145', href: '/os/money' },
+  { label: 'BBJ pipeline review due today', tag: 'Work', tagColor: '#3D8BFF', href: '/os/tasks' },
+  { label: 'Accuracy Ltd proposal to send', tag: 'Work', tagColor: '#3D8BFF', href: '/os/tasks' },
+]
+
+const ACTIVITY = [
+  { time: '9:14 am', text: 'Clare Webb replied to renewal quote', area: 'Messages', href: '/os/messages' },
+  { time: '8:50 am', text: 'BBJ lead James Hartley — new enquiry', area: 'Companies', href: '/os/companies' },
+  { time: 'Yesterday', text: 'FineGuard invoice £4,800 unpaid (14 days)', area: 'Money', href: '/os/money' },
+]
+
+const QUICK_LINKS = [
+  { label: 'Money', href: '/os/money', color: '#FFC145' },
+  { label: 'Companies', href: '/os/companies', color: '#7A5AF8' },
+  { label: 'Contacts', href: '/os/contacts', color: '#A855F7' },
+  { label: 'Work', href: '/os/tasks', color: '#3D8BFF' },
+]
+
+interface ConsolidationData {
+  currentRate: number
+  prevRate: number | null
+  trend: string | null
+  utActions: number
+  workflowLeaks: number
+}
+
+async function getConsolidationData(): Promise<ConsolidationData | null> {
+  try {
+    const db = await getDb()
+
+    // Current week — always computed live so the widget reflects today's activity.
+    const today = new Date()
+    const day = today.getUTCDay()
+    const monday = new Date(today)
+    monday.setUTCDate(today.getUTCDate() + (day === 0 ? -6 : 1 - day))
+    monday.setUTCHours(0, 0, 0, 0)
+
+    const events = await db
+      .select({ eventType: utActivityEvents.eventType })
+      .from(utActivityEvents)
+      .where(
+        and(
+          gte(utActivityEvents.occurredAt, monday),
+          lt(utActivityEvents.occurredAt, today),
+        ),
+      )
+
+    const leaks = events.filter((e) => e.eventType === 'workflow_leak').length
+    const utActions = events.filter((e) => e.eventType !== 'workflow_leak').length
+    const total = utActions + leaks
+    const currentRate = total > 0 ? Number(((utActions / total) * 100).toFixed(1)) : 0
+
+    // Previous week — look up the completed weekly report for last week specifically.
+    const lastWeekMonday = new Date(monday)
+    lastWeekMonday.setUTCDate(monday.getUTCDate() - 7)
+    const lastWeekMondayStr = lastWeekMonday.toISOString().split('T')[0]
+
+    const [prevReport] = await db
+      .select()
+      .from(utWeeklyReports)
+      .where(eq(utWeeklyReports.weekStart, lastWeekMondayStr))
+      .limit(1)
+
+    const prevRate = prevReport ? Number(prevReport.consolidationRate) : null
+    const trend =
+      prevRate === null
+        ? null
+        : currentRate > prevRate
+        ? 'up'
+        : currentRate < prevRate
+        ? 'down'
+        : 'flat'
+
+    return { currentRate, prevRate, trend, utActions, workflowLeaks: leaks }
+  } catch {
+    return null
+  }
+}
+
+function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={`rounded-2xl p-4 ${className}`}
+      style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.07)' }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="text-[10px] font-semibold uppercase tracking-widest mb-2"
+      style={{ color: 'rgba(255,255,255,0.28)' }}
+    >
+      {children}
+    </p>
+  )
+}
+
+export default async function TodayPage() {
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+  const consolidation = await getConsolidationData()
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{dateStr}</p>
+        <h1 className="text-xl font-bold mt-0.5" style={{ color: 'rgba(255,255,255,0.92)' }}>
+          Today
+        </h1>
+      </div>
+
+      {/* Quick links */}
+      <div className="grid grid-cols-4 gap-2">
+        {QUICK_LINKS.map((q) => (
+          <Link
+            key={q.href}
+            href={q.href}
+            className="flex flex-col items-center gap-1.5 rounded-xl py-3 transition-opacity hover:opacity-80"
+            style={{ background: 'rgba(255,255,255,0.055)', border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ background: q.color, boxShadow: `0 0 6px ${q.color}80` }}
+            />
+            <span className="text-[10px] font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              {q.label}
+            </span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Operational Consolidation Rate */}
+      <div>
+        <SectionLabel>Operational Consolidation</SectionLabel>
+        <Card>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                This Week
+              </p>
+              <p className="text-3xl font-bold tabular-nums" style={{ color: 'rgba(255,255,255,0.92)' }}>
+                {consolidation !== null ? `${consolidation.currentRate.toFixed(1)}%` : '—'}
+              </p>
+              {consolidation && (
+                <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  {consolidation.utActions} in-system · {consolidation.workflowLeaks} outside
+                </p>
+              )}
+            </div>
+
+            {consolidation?.prevRate !== null && consolidation?.prevRate !== undefined && (
+              <div className="text-right">
+                <p className="text-[10px] mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  Last Week
+                </p>
+                <p className="text-xl font-semibold tabular-nums" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {consolidation.prevRate.toFixed(1)}%
+                </p>
+                {consolidation.trend && (
+                  <p
+                    className="text-[10px] mt-1 font-semibold"
+                    style={{
+                      color:
+                        consolidation.trend === 'up'
+                          ? '#4ade80'
+                          : consolidation.trend === 'down'
+                          ? '#f87171'
+                          : 'rgba(255,255,255,0.4)',
+                    }}
+                  >
+                    {consolidation.trend === 'up' ? '↑ Improving' : consolidation.trend === 'down' ? '↓ Declining' : '→ Stable'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {consolidation === null && (
+              <p className="text-[10px] self-center" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                No data yet
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Priorities */}
+      <div>
+        <SectionLabel>Priorities</SectionLabel>
+        <Card>
+          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            {PRIORITIES.map((p, i) => (
+              <Link
+                key={i}
+                href={p.href}
+                className="flex items-center justify-between py-3 first:pt-0 last:pb-0 transition-opacity hover:opacity-75"
+              >
+                <span className="text-sm font-medium pr-3" style={{ color: 'rgba(255,255,255,0.82)' }}>
+                  {p.label}
+                </span>
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                  style={{ background: `${p.tagColor}22`, color: p.tagColor }}
+                >
+                  {p.tag}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Activity */}
+      <div>
+        <SectionLabel>Activity</SectionLabel>
+        <Card>
+          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            {ACTIVITY.map((a, i) => (
+              <Link
+                key={i}
+                href={a.href}
+                className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 transition-opacity hover:opacity-75"
+              >
+                <span
+                  className="text-[10px] shrink-0 mt-0.5 w-14 text-right"
+                  style={{ color: 'rgba(255,255,255,0.3)' }}
+                >
+                  {a.time}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.78)' }}>{a.text}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{a.area}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* OS link */}
+      <div className="pt-1">
+        <Link
+          href="/os"
+          className="text-xs transition-colors"
+          style={{ color: 'rgba(255,255,255,0.25)' }}
+          onMouseOver={undefined}
+        >
+          ← Ultratech OS Home
+        </Link>
+      </div>
+    </div>
+  )
+}

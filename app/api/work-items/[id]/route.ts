@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, workItems, actions, activityLogs, decisions } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { eq, desc } from 'drizzle-orm'
+import { trackEvent } from '@/lib/ut-tracker'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
@@ -58,6 +59,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       oldStatus: item.status,
       newStatus: body.status,
     })
+    if (body.status === 'Completed') {
+      await trackEvent({ eventType: 'task_completed', userId: session.person })
+    }
   }
 
   return NextResponse.json(updated)

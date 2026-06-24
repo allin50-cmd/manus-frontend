@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 const PUBLIC = [
+  // ── Shared auth ──────────────────────────────────────────────────────────
+  // /login is the entry point for both Ultratech OS staff and, temporarily,
+  // the FineGuard customer portal (until customer-specific auth is added).
   '/login',
   '/api/auth/login',
   '/api/health/db',
-  // FineGuard public-facing surfaces and the APIs they rely on.
+
+  // ── FineGuard — public customer-facing routes ─────────────────────────
   // '/' must be an exact match — handled separately below so it doesn't
   // accidentally prefix-match every route.
   '/landing',
@@ -16,9 +20,22 @@ const PUBLIC = [
   // called by Stripe's servers and authenticates via signature, not session.
   '/api/stripe',
   '/api/fineguard-leads',
-  // Legal pages — publicly accessible, no auth required.
+  // Legal pages
   '/privacy',
   '/terms',
+
+  // ── Intake — public lead-capture forms ───────────────────────────────
+  // /intake/fineguard, /intake/accuracy, /intake/builder-big-jobs are public.
+  // /intake (UltAi voice intake) is auth-protected — not listed here.
+  '/intake/fineguard',
+  '/intake/accuracy',
+  '/intake/builder-big-jobs',
+
+  // ── Builder Big Jobs — public landing page ────────────────────────────
+  '/builder-big-jobs',
+
+  // ── Builder Big Jobs — public lead submission ─────────────────────────
+  '/api/builder-big-jobs/leads',
 ]
 
 // The homepage is public but '/' would prefix-match every path, so we check

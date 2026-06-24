@@ -142,7 +142,7 @@ All resource names follow the pattern `clerkos-{env}-{type}`. Status of each is 
 | Variable | System | Notes |
 |---|---|---|
 | `AZURE_SERVICE_BUS_NAMESPACE` | VaultLine | Alternative namespace config |
-| `NODE_ENV` | All | Controls dev auth fallback (`!== 'production'`) |
+| `NODE_ENV` | All | Controls `secure` flag on session cookie only — no auth bypass exists |
 
 ---
 

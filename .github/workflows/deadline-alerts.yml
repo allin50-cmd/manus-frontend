@@ -7,6 +7,14 @@ on:
   # Allow manual trigger from the GitHub Actions UI
   workflow_dispatch:
 
+# Prevent two alert runs from overlapping. If a scheduled run is still in
+# progress when the next one starts, the second run queues and waits rather
+# than running in parallel. This eliminates the race condition where both runs
+# query alert_history before either has inserted, causing duplicate sends.
+concurrency:
+  group: fineguard-deadline-alerts
+  cancel-in-progress: false
+
 jobs:
   send-alerts:
     name: Check deadlines and send email alerts
@@ -26,20 +34,49 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Validate required secrets are present before running the script.
+      # Missing secrets appear as empty strings in GitHub Actions — catch them
+      # here with a clear message so the failure reason is visible in the logs.
+      - name: Validate required secrets
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "FINEGUARD OPS: DATABASE_URL secret is not set. Cannot connect to database." >&2
+            exit 1
+          fi
+          if [ -z "$COMPANIES_HOUSE_API_KEY" ]; then
+            echo "FINEGUARD OPS: COMPANIES_HOUSE_API_KEY secret is not set. Cannot fetch deadlines." >&2
+            exit 1
+          fi
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "FINEGUARD OPS: RESEND_API_KEY secret is not set. Alert emails cannot be sent." >&2
+            exit 1
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
       - name: Send deadline alerts
         run: npx tsx scripts/send-deadline-alerts.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           COMPANIES_HOUSE_API_KEY: ${{ secrets.COMPANIES_HOUSE_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_FROM: ${{ vars.RESEND_FROM || 'FineGuard Alerts <alerts@fineguard.co.uk>' }}
+          RESEND_FROM: ${{ vars.RESEND_FROM }}
 
       - name: Notify on failure
         if: failure()
         run: |
-          curl -s -X POST 'https://api.resend.com/emails' \
-            -H "Authorization: Bearer $RESEND_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{\"from\":\"FineGuard System <alerts@fineguard.co.uk>\",\"to\":\"hello@fineguard.co.uk\",\"subject\":\"ALERT: FineGuard deadline alert workflow failed\",\"html\":\"<p>The daily deadline alert GitHub Actions workflow failed. Check the run at https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</p>\"}"
+          # Only attempt Resend notification if the key is present.
+          # The job has already failed and will be visible in GitHub Actions
+          # regardless of whether this notification succeeds.
+          if [ -n "$RESEND_API_KEY" ]; then
+            curl -s -X POST 'https://api.resend.com/emails' \
+              -H "Authorization: Bearer $RESEND_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"from\":\"FineGuard System <alerts@fineguard.co.uk>\",\"to\":\"hello@fineguard.co.uk\",\"subject\":\"ALERT: FineGuard deadline alert workflow failed\",\"html\":\"<p>The daily deadline alert GitHub Actions workflow failed at $(date -u). Check the run at https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}</p>\"}"
+          else
+            echo "Skipping Resend notification — RESEND_API_KEY not set. Check GitHub Actions for failure details."
+          fi
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}

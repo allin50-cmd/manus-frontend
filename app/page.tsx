@@ -51,7 +51,7 @@ export default function HomePage() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <a href="/login" className="text-slate-300 hover:text-white text-sm font-medium transition-colors hidden sm:block">Login</a>
+          <a href="/login" className="text-slate-500 hover:text-slate-300 text-xs transition-colors hidden sm:block">Sign in</a>
           <a href="/check" className="bg-[#00A86B] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#009960] transition-colors whitespace-nowrap">
             Get Protected
           </a>

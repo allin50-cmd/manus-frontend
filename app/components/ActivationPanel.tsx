@@ -48,35 +48,21 @@ export function ActivationPanel({ companyNumber, companyName, onContinue }: Acti
     setActivating(true);
     setError(null);
     try {
-      const checkout = await fetch('/api/stripe/checkout', {
+      const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyNumber, companyName, alertCount: selectedCount }),
       });
 
-      if (checkout.ok) {
-        const data = (await checkout.json()) as { configured?: boolean; url?: string };
-        if (data.configured && data.url) {
-          window.location.href = data.url;
-          return;
-        }
+      const data = await res.json().catch(() => ({})) as { url?: string; error?: string };
+
+      if (!res.ok || !data.url) {
+        throw new Error(
+          data.error || 'Payment service is unavailable. Please contact hello@fineguard.co.uk'
+        );
       }
 
-      const res = await fetch('/api/monitored', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyNumber, companyName }),
-      });
-      if (res.status === 401) {
-        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
-        return;
-      }
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Activation failed. Please try again.');
-      }
-      setActivated(true);
-      onContinue?.();
+      window.location.href = data.url;
     } catch (err) {
       setError((err as Error).message);
     } finally {

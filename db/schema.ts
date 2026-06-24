@@ -16,6 +16,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   serial,
@@ -332,6 +333,101 @@ export const alertHistory = pgTable(
   }),
 );
 
+// ─── FineGuard Workflow Tables ────────────────────────────────────────────────
+
+/**
+ * FineGuard Company Snapshots
+ * One row per Companies House API fetch. Stores raw response + extracted dates.
+ * Append-only — never updated, only inserted.
+ */
+export const fgCompanySnapshots = pgTable('fg_company_snapshots', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  rawData: jsonb('raw_data').notNull(),
+  companyName: varchar('company_name', { length: 255 }),
+  companyStatus: varchar('company_status', { length: 50 }),
+  accountsNextDue: date('accounts_next_due'),
+  confirmationStatementNextDue: date('confirmation_statement_next_due'),
+  lastAccountsMadeUpTo: date('last_accounts_made_up_to'),
+  lastConfirmationStatementDate: date('last_confirmation_statement_date'),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * FineGuard Alerts
+ * One row per (company_number, alert_type, due_date, reminder_date).
+ * Unique constraint prevents duplicates if the same company is processed repeatedly.
+ * daysBefore: 90 | 60 | 30 | 14 | 7 | 0 | negative (overdue sentinel)
+ * status: 'pending' → 'sent' | 'logged' | 'suppressed'
+ */
+export const fgAlerts = pgTable(
+  'fg_alerts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    companyNumber: varchar('company_number', { length: 50 }).notNull(),
+    alertType: varchar('alert_type', { length: 50 }).notNull(),
+    dueDate: date('due_date').notNull(),
+    reminderDate: date('reminder_date').notNull(),
+    daysBefore: integer('days_before').notNull(),
+    status: varchar('status', { length: 20 }).default('pending').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+  },
+  (t) => ({
+    uniqueAlert: uniqueIndex('fg_alerts_unique_idx').on(
+      t.companyNumber,
+      t.alertType,
+      t.dueDate,
+      t.reminderDate,
+    ),
+  }),
+);
+
+/**
+ * FineGuard Reminder Events
+ * Append-only log of every time an fgAlert row is processed by the cron/route.
+ */
+export const fgReminderEvents = pgTable('fg_reminder_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
+  alertId: uuid('alert_id').references(() => fgAlerts.id, { onDelete: 'cascade' }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  detail: text('detail'),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * FineGuard Message Logs
+ * Records every message dispatched (or logged when no provider is configured).
+ */
+export const fgMessageLogs = pgTable('fg_message_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  channel: varchar('channel', { length: 20 }).default('email').notNull(),
+  recipient: varchar('recipient', { length: 255 }),
+  subject: varchar('subject', { length: 500 }),
+  body: text('body'),
+  status: varchar('status', { length: 20 }).default('logged').notNull(),
+  sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * FineGuard Activity Log
+ * Append-only audit trail — one row per major workflow step.
+ */
+export const fgActivityLog = pgTable('fg_activity_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: varchar('run_id', { length: 36 }),
+  entityType: varchar('entity_type', { length: 50 }),
+  entityId: varchar('entity_id', { length: 255 }),
+  action: varchar('action', { length: 100 }).notNull(),
+  detail: jsonb('detail'),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Brand-suite inferred types
 export type AlertHistory = typeof alertHistory.$inferSelect;
 export type NewAlertHistory = typeof alertHistory.$inferInsert;
@@ -347,6 +443,16 @@ export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
 export type MonitoredCompany = typeof monitoredCompanies.$inferSelect;
 export type NewMonitoredCompany = typeof monitoredCompanies.$inferInsert;
+export type FgCompanySnapshot = typeof fgCompanySnapshots.$inferSelect;
+export type NewFgCompanySnapshot = typeof fgCompanySnapshots.$inferInsert;
+export type FgAlert = typeof fgAlerts.$inferSelect;
+export type NewFgAlert = typeof fgAlerts.$inferInsert;
+export type FgReminderEvent = typeof fgReminderEvents.$inferSelect;
+export type NewFgReminderEvent = typeof fgReminderEvents.$inferInsert;
+export type FgMessageLog = typeof fgMessageLogs.$inferSelect;
+export type NewFgMessageLog = typeof fgMessageLogs.$inferInsert;
+export type FgActivityLogEntry = typeof fgActivityLog.$inferSelect;
+export type NewFgActivityLogEntry = typeof fgActivityLog.$inferInsert;
 
 // ─── ClerkOS Tables ──────────────────────────────────────────────────────────
 
@@ -598,3 +704,280 @@ export const clerkAuditEvents = pgTable(
 
 export type ClerkAuditEvent = typeof clerkAuditEvents.$inferSelect;
 export type InsertClerkAuditEvent = typeof clerkAuditEvents.$inferInsert;
+
+// ─── Ultratech OS Module Tables ──────────────────────────────────────────────
+
+export const invoiceStatusEnum = pgEnum('InvoiceStatus', [
+  'Draft',
+  'Sent',
+  'Paid',
+  'Overdue',
+  'Cancelled',
+]);
+
+export const osInvoices = pgTable('os_invoices', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  number: varchar('number', { length: 32 }).notNull().unique(),
+  clientName: text('client_name').notNull(),
+  clientEmail: varchar('client_email', { length: 255 }),
+  description: text('description'),
+  amountPence: integer('amount_pence').notNull(),
+  status: invoiceStatusEnum('status').notNull().default('Draft'),
+  issuedAt: timestamp('issued_at'),
+  dueAt: timestamp('due_at'),
+  paidAt: timestamp('paid_at'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsInvoice = typeof osInvoices.$inferSelect;
+export type NewOsInvoice = typeof osInvoices.$inferInsert;
+
+export const callDirectionEnum = pgEnum('CallDirection', ['Inbound', 'Outbound']);
+export const callOutcomeEnum = pgEnum('CallOutcome', ['Answered', 'Missed', 'Voicemail', 'NoAnswer']);
+
+export const osCallLogs = pgTable('os_call_logs', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  direction: callDirectionEnum('direction').notNull().default('Inbound'),
+  callerName: text('caller_name').notNull(),
+  callerPhone: varchar('caller_phone', { length: 50 }),
+  durationSeconds: integer('duration_seconds').default(0),
+  outcome: callOutcomeEnum('outcome').notNull().default('Answered'),
+  notes: text('notes'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  calledAt: timestamp('called_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export type OsCallLog = typeof osCallLogs.$inferSelect;
+export type NewOsCallLog = typeof osCallLogs.$inferInsert;
+
+export const osMessageThreads = pgTable('os_message_threads', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  subject: text('subject').notNull(),
+  participantNames: jsonb('participant_names').$type<string[]>().default([]),
+  lastMessageAt: timestamp('last_message_at').notNull().defaultNow(),
+  unreadCount: integer('unread_count').notNull().default(0),
+  isPinned: boolean('is_pinned').notNull().default(false),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export type OsMessageThread = typeof osMessageThreads.$inferSelect;
+export type NewOsMessageThread = typeof osMessageThreads.$inferInsert;
+
+export const osMessages = pgTable('os_messages', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  threadId: text('thread_id').notNull().references(() => osMessageThreads.id, { onDelete: 'cascade' }),
+  fromName: text('from_name').notNull(),
+  body: text('body').notNull(),
+  isRead: boolean('is_read').notNull().default(false),
+  sentAt: timestamp('sent_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export type OsMessage = typeof osMessages.$inferSelect;
+export type NewOsMessage = typeof osMessages.$inferInsert;
+
+export const personCategoryEnum = pgEnum('PersonCategory', [
+  'Team',
+  'Client',
+  'Partner',
+  'Supplier',
+  'Prospect',
+]);
+
+export const osPeople = pgTable('os_people', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  phone: varchar('phone', { length: 50 }),
+  email: varchar('email', { length: 255 }),
+  company: text('company'),
+  role: text('role'),
+  category: personCategoryEnum('category').notNull().default('Client'),
+  avatarInitials: varchar('avatar_initials', { length: 4 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsPerson = typeof osPeople.$inferSelect;
+export type NewOsPerson = typeof osPeople.$inferInsert;
+
+export const alertSeverityEnum = pgEnum('AlertSeverity', ['Critical', 'Warning', 'Info']);
+
+export const osAlerts = pgTable('os_alerts', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  severity: alertSeverityEnum('severity').notNull().default('Info'),
+  title: text('title').notNull(),
+  body: text('body'),
+  source: text('source'),
+  isRead: boolean('is_read').notNull().default(false),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  resolvedAt: timestamp('resolved_at'),
+});
+export type OsAlert = typeof osAlerts.$inferSelect;
+export type NewOsAlert = typeof osAlerts.$inferInsert;
+
+export const documentStatusEnum = pgEnum('DocumentStatus', [
+  'PendingReview',
+  'Approved',
+  'Rejected',
+  'Archived',
+]);
+
+export const osDocuments = pgTable('os_documents', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  filename: text('filename').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }),
+  fileSizeBytes: integer('file_size_bytes'),
+  storagePath: text('storage_path'),
+  source: varchar('source', { length: 50 }).default('Upload').notNull(),
+  status: documentStatusEnum('status').notNull().default('PendingReview'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  linkedCompany: text('linked_company'),
+  uploadedBy: text('uploaded_by').notNull().default('George'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsDocument = typeof osDocuments.$inferSelect;
+export type NewOsDocument = typeof osDocuments.$inferInsert;
+
+export const taskStatusEnum = pgEnum('TaskStatus', [
+  'Open',
+  'InProgress',
+  'Done',
+  'Cancelled',
+]);
+
+export const osTasks = pgTable('os_tasks', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text('title').notNull(),
+  assignedTo: text('assigned_to').notNull().default('George'),
+  priority: priorityEnum('priority').notNull().default('Medium'),
+  status: taskStatusEnum('status').notNull().default('Open'),
+  dueAt: timestamp('due_at'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsTask = typeof osTasks.$inferSelect;
+export type NewOsTask = typeof osTasks.$inferInsert;
+
+export const quoteStatusEnum = pgEnum('QuoteStatus', [
+  'Draft',
+  'Sent',
+  'Accepted',
+  'Declined',
+  'Expired',
+]);
+
+export const osQuotes = pgTable('os_quotes', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  number: varchar('number', { length: 32 }).notNull().unique(),
+  clientName: text('client_name').notNull(),
+  clientEmail: varchar('client_email', { length: 255 }),
+  description: text('description'),
+  amountPence: integer('amount_pence').notNull().default(0),
+  status: quoteStatusEnum('status').notNull().default('Draft'),
+  validUntil: timestamp('valid_until'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type OsQuote = typeof osQuotes.$inferSelect;
+export type NewOsQuote = typeof osQuotes.$inferInsert;
+
+// ─── Builder Big Jobs Tables ──────────────────────────────────────────────────
+
+/**
+ * Builder Big Jobs Leads Table
+ * Builder preferences and incoming project leads for the BBJ lead gen product.
+ * Shared Supabase instance — isolated product, separate table.
+ */
+export const builderBigJobsLeads = pgTable('builder_big_jobs_leads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  source: varchar('source', { length: 100 }).default('intake_form').notNull(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  contactName: varchar('contact_name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 50 }),
+  postcodeArea: varchar('postcode_area', { length: 255 }),
+  jobTypes: text('job_types'),
+  minJobSizeBand: varchar('min_job_size_band', { length: 50 }),
+  maxTravelMiles: integer('max_travel_miles'),
+  preferredContact: varchar('preferred_contact', { length: 50 }),
+  notes: text('notes'),
+  estimatedValueBand: varchar('estimated_value_band', { length: 50 }),
+  planningStatus: varchar('planning_status', { length: 50 }),
+  leadScore: integer('lead_score').default(0).notNull(),
+  status: varchar('status', { length: 50 }).default('new').notNull(),
+  assignedTo: varchar('assigned_to', { length: 100 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export type BuilderBigJobsLead = typeof builderBigJobsLeads.$inferSelect;
+export type NewBuilderBigJobsLead = typeof builderBigJobsLeads.$inferInsert;
+
+// ─── UltraTech OS Validation & Measurement Tables ────────────────────────────
+
+/**
+ * ut_activity_events — append-only stream of every tracked user action.
+ * Never updated. One row per event. source/notes only populated for workflow_leak.
+ */
+export const utActivityEvents = pgTable('ut_activity_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: varchar('user_id', { length: 255 }),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  source: varchar('source', { length: 50 }),
+  notes: text('notes'),
+  metadata: jsonb('metadata'),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+});
+export type UtActivityEvent = typeof utActivityEvents.$inferSelect;
+export type NewUtActivityEvent = typeof utActivityEvents.$inferInsert;
+
+/**
+ * ut_daily_metrics — aggregated counts per calendar day.
+ * Computed by POST /api/ut/aggregate/daily — safe to re-run (upserts).
+ */
+export const utDailyMetrics = pgTable('ut_daily_metrics', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  date: date('date').notNull().unique(),
+  dau: integer('dau').notNull().default(0),
+  appOpens: integer('app_opens').notNull().default(0),
+  tasksCreated: integer('tasks_created').notNull().default(0),
+  tasksCompleted: integer('tasks_completed').notNull().default(0),
+  callsLogged: integer('calls_logged').notNull().default(0),
+  alertsGenerated: integer('alerts_generated').notNull().default(0),
+  alertsAcknowledged: integer('alerts_acknowledged').notNull().default(0),
+  documentsUploaded: integer('documents_uploaded').notNull().default(0),
+  quotesCreated: integer('quotes_created').notNull().default(0),
+  invoicesCreated: integer('invoices_created').notNull().default(0),
+  companiesAdded: integer('companies_added').notNull().default(0),
+  contactsAdded: integer('contacts_added').notNull().default(0),
+  workflowLeaks: integer('workflow_leaks').notNull().default(0),
+  computedAt: timestamp('computed_at', { withTimezone: true }).defaultNow().notNull(),
+});
+export type UtDailyMetric = typeof utDailyMetrics.$inferSelect;
+export type NewUtDailyMetric = typeof utDailyMetrics.$inferInsert;
+
+/**
+ * ut_weekly_reports — weekly summary with Operational Consolidation Rate.
+ * week_start is always a Monday. Computed by POST /api/ut/aggregate/weekly.
+ */
+export const utWeeklyReports = pgTable('ut_weekly_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  weekStart: date('week_start').notNull().unique(),
+  weekEnd: date('week_end').notNull(),
+  totalBusinessActions: integer('total_business_actions').notNull().default(0),
+  utActions: integer('ut_actions').notNull().default(0),
+  workflowLeaks: integer('workflow_leaks').notNull().default(0),
+  consolidationRate: numeric('consolidation_rate', { precision: 5, scale: 2 }).notNull().default('0'),
+  prevWeekRate: numeric('prev_week_rate', { precision: 5, scale: 2 }),
+  trend: varchar('trend', { length: 10 }),
+  computedAt: timestamp('computed_at', { withTimezone: true }).defaultNow().notNull(),
+});
+export type UtWeeklyReport = typeof utWeeklyReports.$inferSelect;
+export type NewUtWeeklyReport = typeof utWeeklyReports.$inferInsert;

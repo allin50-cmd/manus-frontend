@@ -197,16 +197,42 @@ async function main() {
   const client = postgres(databaseUrl, { max: 1 })
   const db = drizzle(client)
 
+  let alertsSent = 0
+  let alertsSkipped = 0
+  let errors = 0
+
+  // Identify active companies with no email — they cannot receive alerts.
+  // This must be zero in a correctly configured system. Log loudly and count
+  // as errors so the GitHub Action exits non-zero and ops are notified.
+  const missingEmail = await db
+    .select({
+      companyNumber: monitoredCompanies.companyNumber,
+      companyName: monitoredCompanies.companyName,
+      stripeSessionId: monitoredCompanies.stripeSessionId,
+    })
+    .from(monitoredCompanies)
+    .where(and(isNull(monitoredCompanies.email), isNull(monitoredCompanies.cancelledAt)))
+
+  if (missingEmail.length > 0) {
+    console.error(
+      `\nFINEGUARD OPS ERROR: ${missingEmail.length} active company/companies have no email — alerts cannot be sent:`
+    )
+    for (const c of missingEmail) {
+      console.error(
+        `  MISSING EMAIL: ${c.companyName} (${c.companyNumber}) ` +
+        `[stripe_session: ${c.stripeSessionId}]`
+      )
+    }
+    console.error('  Action required: set email in monitored_companies or contact customer to re-activate.\n')
+    errors += missingEmail.length
+  }
+
   const companies = await db
     .select()
     .from(monitoredCompanies)
     .where(and(isNotNull(monitoredCompanies.email), isNull(monitoredCompanies.cancelledAt)))
 
   console.log(`Checking deadlines for ${companies.length} monitored companies...`)
-
-  let alertsSent = 0
-  let alertsSkipped = 0
-  let errors = 0
 
   for (const company of companies) {
     if (!company.email) continue

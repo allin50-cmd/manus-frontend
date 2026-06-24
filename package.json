@@ -4,13 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-governance.js",
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
     "test": "echo 'Unit tests require DATABASE_URL — run locally or in provisioned CI job' && exit 0",
     "db:generate": "drizzle-kit generate:pg --schema=./db/schema.ts --out=./db/migrations",
     "db:push": "drizzle-kit push:pg --config=drizzle.config.ts",
-    "type-check:server": "echo 'server/ removed — skipping'"
+    "db:seed": "tsx scripts/seed-os-modules.ts",
+    "type-check:server": "echo 'server/ removed — skipping'",
+    "fineguard:test-workflow": "tsx scripts/fineguard-test-workflow.ts"
   },
   "dependencies": {
     "autoprefixer": "^10.4.19",

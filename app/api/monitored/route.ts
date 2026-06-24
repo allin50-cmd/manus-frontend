@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { monitoredCompanies } from '@/db/schema'
 import { getSession } from '@/lib/auth'
 import { desc, eq } from 'drizzle-orm'
+import { trackEvent } from '@/lib/ut-tracker'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,5 +59,6 @@ export async function POST(req: NextRequest) {
     })
     .returning()
 
+  await trackEvent({ eventType: 'company_created', userId: session.person })
   return NextResponse.json(created, { status: 201 })
 }
