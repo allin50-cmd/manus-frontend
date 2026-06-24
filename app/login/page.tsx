@@ -23,7 +23,7 @@ export default function LoginPage() {
         // Honour ?next= but only allow relative paths to prevent open-redirect attacks
         const params = new URLSearchParams(window.location.search)
         const next = params.get('next') ?? ''
-        const destination = next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+        const destination = next.startsWith('/') && !next.startsWith('//') ? next : '/today'
         router.push(destination)
       } else {
         setError('Incorrect passcode. Try again.')
