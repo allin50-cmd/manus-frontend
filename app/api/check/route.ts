@@ -38,7 +38,9 @@ export async function GET(req: NextRequest) {
     } else if (compliance.status === 'warning') {
       status = 'amber'
       headline = 'Action Required Soon'
-      const next = compliance.upcomingDeadlines[0]
+      const next = [...compliance.upcomingDeadlines].sort(
+        (a, b) => a.daysUntilDue - b.daysUntilDue
+      )[0]
       daysUntilAction = next?.daysUntilDue ?? soonestDays
       message = `${daysUntilAction} days until ${next?.description ?? 'next required filing'}.`
     } else {
