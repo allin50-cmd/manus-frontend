@@ -20,8 +20,9 @@ const PUBLIC_PATHS = [
   '/login',
 ]
 
-// Internal product shells provide their own layout and must not receive a
-// duplicate default NavBar + container.
+// Routes inside the (internal) route group, or routes with their own shell
+// (OsShell, AdminShell), provide their own NavBar + main. List them here to
+// avoid rendering a duplicate default NavBar + container.
 const INTERNAL_PATHS = [
   '/os',
   '/admin',
