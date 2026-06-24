@@ -677,16 +677,91 @@ input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22)}
 
 <!-- ═══════════ DOCUMENTS ═══════════ -->
 <div id="sc-documents" class="screen">
-  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Documents</span><span class="tb-action">Upload</span></div>
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Home</button><span class="tb-title">Documents</span><span class="tb-action" onclick="push('sc-add-task')">+ Task</span></div>
   <div class="sbody">
-    <div class="sec"><div class="sec-label">Recent Files</div>
+
+    <div class="sec"><div class="sec-label">Needs Review</div>
       <div class="card">
-        <div class="row" onclick="push('sc-fg')"><div class="ri" style="background:rgba(239,68,68,0.15)">📄</div><div class="rm"><div class="rt">FineGuard_Proposal_v3.pdf</div><div class="rs">Shared · 2.4 MB</div></div><div class="rr"><div class="rd">Today</div></div></div>
-        <div class="row" onclick="push('sc-bbj')"><div class="ri" style="background:rgba(59,130,246,0.15)">📊</div><div class="rm"><div class="rt">BBJ_Pipeline_June.xlsx</div><div class="rs">George · 340 KB</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
-        <div class="row" onclick="push('sc-accuracy')"><div class="ri" style="background:rgba(16,185,129,0.15)">📝</div><div class="rm"><div class="rt">Accuracy_SOW_Draft.docx</div><div class="rs">Alissa · 128 KB</div></div><div class="rr"><div class="rd">Jun 18</div></div></div>
-        <div class="row" onclick="push('sc-money')"><div class="ri" style="background:rgba(245,158,11,0.15)">📋</div><div class="rm"><div class="rt">Q2_Revenue_Summary.pdf</div><div class="rs">George · 1.1 MB</div></div><div class="rr"><div class="rd">Jun 15</div></div></div>
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(0)"><div class="ri" style="background:rgba(245,158,11,0.15)">📝</div><div class="rm"><div class="rt">Accuracy_SOW_Draft.docx</div><div class="rs">Contract · Accuracy Ltd</div></div><div class="rr"><span class="badge ba">Draft</span></div></div>
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(1)"><div class="ri" style="background:rgba(245,158,11,0.15)">📄</div><div class="rm"><div class="rt">FineGuard_Renewal_Quote.pdf</div><div class="rs">Quote · FineGuard Ltd</div></div><div class="rr"><span class="badge ba">Draft</span></div></div>
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(2)"><div class="ri" style="background:rgba(245,158,11,0.15)">📋</div><div class="rm"><div class="rt">BBJ_TCs_v2.docx</div><div class="rs">Contract · Builder Big Jobs</div></div><div class="rr"><span class="badge ba">Draft</span></div></div>
       </div>
     </div>
+
+    <div class="sec"><div class="sec-label">Recent Documents</div>
+      <div class="card">
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(3)"><div class="ri" style="background:rgba(239,68,68,0.15)">📄</div><div class="rm"><div class="rt">FineGuard_Proposal_v3.pdf</div><div class="rs">Quote · FineGuard Ltd</div></div><div class="rr"><div class="rd">Today</div></div></div>
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(6)"><div class="ri" style="background:rgba(59,130,246,0.15)">📊</div><div class="rm"><div class="rt">BBJ_Pipeline_June.xlsx</div><div class="rs">Internal · Ultratech</div></div><div class="rr"><div class="rd">Jun 20</div></div></div>
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(7)"><div class="ri" style="background:rgba(59,130,246,0.15)">📋</div><div class="rm"><div class="rt">Q2_Revenue_Summary.pdf</div><div class="rs">Internal · Ultratech</div></div><div class="rr"><div class="rd">Jun 15</div></div></div>
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(4)"><div class="ri" style="background:rgba(16,185,129,0.15)">🛡️</div><div class="rm"><div class="rt">FineGuard_Compliance_Cert.pdf</div><div class="rs">Compliance · FineGuard Ltd</div></div><div class="rr"><div class="rd">Jun 10</div></div></div>
+        <div class="row" onclick="push('sc-doc-detail');loadDoc(8)"><div class="ri" style="background:rgba(139,92,246,0.15)">📄</div><div class="rm"><div class="rt">Accuracy_NDA.pdf</div><div class="rs">Contract · Accuracy Ltd</div></div><div class="rr"><div class="rd">Apr 28</div></div></div>
+      </div>
+    </div>
+
+    <div class="sec"><div class="sec-label">All Documents</div>
+      <div style="background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.35)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg>
+        <input id="doc-search" type="text" placeholder="Search documents…" oninput="searchDocs(this.value)" style="flex:1;border:none;outline:none;font-size:14px;color:rgba(255,255,255,0.85);background:transparent;font-family:inherit" />
+      </div>
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+        <button class="pchip active" data-filter="all" onclick="filterDocs('all',this)">All</button>
+        <button class="pchip" data-filter="Contract" onclick="filterDocs('Contract',this)">Contract</button>
+        <button class="pchip" data-filter="Quote" onclick="filterDocs('Quote',this)">Quote</button>
+        <button class="pchip" data-filter="Invoice" onclick="filterDocs('Invoice',this)">Invoice</button>
+        <button class="pchip" data-filter="Compliance" onclick="filterDocs('Compliance',this)">Compliance</button>
+        <button class="pchip" data-filter="Customer" onclick="filterDocs('Customer',this)">Customer</button>
+        <button class="pchip" data-filter="Internal" onclick="filterDocs('Internal',this)">Internal</button>
+        <button class="pchip" data-filter="Other" onclick="filterDocs('Other',this)">Other</button>
+      </div>
+      <div class="card" id="doc-all-list">
+        <div class="row doc-row" data-type="Contract" data-search="accuracy sow draft contract accuracy ltd sarah thornton" onclick="push('sc-doc-detail');loadDoc(0)"><div class="ri" style="background:rgba(245,158,11,0.15)">📝</div><div class="rm"><div class="rt">Accuracy_SOW_Draft.docx</div><div class="rs">Contract · Accuracy Ltd</div></div><div class="rr"><span class="badge ba">Draft</span></div></div>
+        <div class="row doc-row" data-type="Quote" data-search="fineguard renewal quote quote fineguard ltd clare webb" onclick="push('sc-doc-detail');loadDoc(1)"><div class="ri" style="background:rgba(245,158,11,0.15)">📄</div><div class="rm"><div class="rt">FineGuard_Renewal_Quote.pdf</div><div class="rs">Quote · FineGuard Ltd</div></div><div class="rr"><span class="badge ba">Draft</span></div></div>
+        <div class="row doc-row" data-type="Contract" data-search="bbj tcs v2 contract builder big jobs james hartley" onclick="push('sc-doc-detail');loadDoc(2)"><div class="ri" style="background:rgba(245,158,11,0.15)">📋</div><div class="rm"><div class="rt">BBJ_TCs_v2.docx</div><div class="rs">Contract · Builder Big Jobs</div></div><div class="rr"><span class="badge ba">Draft</span></div></div>
+        <div class="row doc-row" data-type="Quote" data-search="fineguard proposal v3 quote fineguard ltd clare webb" onclick="push('sc-doc-detail');loadDoc(3)"><div class="ri" style="background:rgba(239,68,68,0.15)">📄</div><div class="rm"><div class="rt">FineGuard_Proposal_v3.pdf</div><div class="rs">Quote · FineGuard Ltd</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row doc-row" data-type="Compliance" data-search="fineguard compliance cert compliance fineguard ltd clare webb" onclick="push('sc-doc-detail');loadDoc(4)"><div class="ri" style="background:rgba(16,185,129,0.15)">🛡️</div><div class="rm"><div class="rt">FineGuard_Compliance_Cert.pdf</div><div class="rs">Compliance · FineGuard Ltd</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row doc-row" data-type="Contract" data-search="bbj service agreement 2024 contract builder big jobs james hartley" onclick="push('sc-doc-detail');loadDoc(5)"><div class="ri" style="background:rgba(245,158,11,0.15)">📋</div><div class="rm"><div class="rt">BBJ_ServiceAgreement_2024.pdf</div><div class="rs">Contract · Builder Big Jobs</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row doc-row" data-type="Internal" data-search="bbj pipeline june internal ultratech dagon kalev" onclick="push('sc-doc-detail');loadDoc(6)"><div class="ri" style="background:rgba(59,130,246,0.15)">📊</div><div class="rm"><div class="rt">BBJ_Pipeline_June.xlsx</div><div class="rs">Internal · Ultratech</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row doc-row" data-type="Internal" data-search="q2 revenue summary internal ultratech george morris" onclick="push('sc-doc-detail');loadDoc(7)"><div class="ri" style="background:rgba(59,130,246,0.15)">📋</div><div class="rm"><div class="rt">Q2_Revenue_Summary.pdf</div><div class="rs">Internal · Ultratech</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row doc-row" data-type="Contract" data-search="accuracy nda contract accuracy ltd sarah thornton" onclick="push('sc-doc-detail');loadDoc(8)"><div class="ri" style="background:rgba(139,92,246,0.15)">📄</div><div class="rm"><div class="rt">Accuracy_NDA.pdf</div><div class="rs">Contract · Accuracy Ltd</div></div><div class="rr"><span class="badge bg">Active</span></div></div>
+        <div class="row doc-row" data-type="Quote" data-search="fineguard quote v1 quote fineguard ltd clare webb archived" onclick="push('sc-doc-detail');loadDoc(9)"><div class="ri" style="background:rgba(255,255,255,0.05)">📄</div><div class="rm"><div class="rt">FineGuard_Quote_v1.pdf</div><div class="rs">Quote · FineGuard Ltd</div></div><div class="rr"><span class="badge bgr">Archived</span></div></div>
+        <div class="row doc-row" data-type="Customer" data-search="bbj onboarding pack customer builder big jobs james hartley archived" onclick="push('sc-doc-detail');loadDoc(10)"><div class="ri" style="background:rgba(255,255,255,0.05)">📋</div><div class="rm"><div class="rt">BBJ_Onboarding_Pack.pdf</div><div class="rs">Customer · Builder Big Jobs</div></div><div class="rr"><span class="badge bgr">Archived</span></div></div>
+        <div class="row doc-row" data-type="Compliance" data-search="ultratech privacy policy compliance ultratech george morris archived" onclick="push('sc-doc-detail');loadDoc(11)"><div class="ri" style="background:rgba(255,255,255,0.05)">🛡️</div><div class="rm"><div class="rt">UltraTech_Privacy_Policy.pdf</div><div class="rs">Compliance · Ultratech</div></div><div class="rr"><span class="badge bgr">Archived</span></div></div>
+      </div>
+    </div>
+
+    <div class="pb-safe"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════ DOCUMENT DETAIL ═══════════ -->
+<div id="sc-doc-detail" class="screen">
+  <div class="topbar"><button class="tb-back" onclick="pop()"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>Documents</button><span class="tb-title">Document</span><span></span></div>
+  <div class="sbody">
+    <div class="hero" style="background:linear-gradient(135deg,#1E1B4B,#312E81)">
+      <div class="hero-tag" id="dd-type-tag">Document</div>
+      <div class="hero-title" id="dd-name">—</div>
+      <div class="hero-sub" id="dd-hero-sub">—</div>
+    </div>
+    <div class="sec"><div class="sec-label">Details</div>
+      <div class="dcard">
+        <div class="drow"><span class="dlabel">Type</span><span class="dval" id="dd-type">—</span></div>
+        <div class="drow"><span class="dlabel">Status</span><span id="dd-status">—</span></div>
+        <div class="drow"><span class="dlabel">Company</span><span class="dval" id="dd-company">—</span></div>
+        <div class="drow"><span class="dlabel">Contact</span><span class="dval" id="dd-contact">—</span></div>
+        <div class="drow"><span class="dlabel">Created</span><span class="dval" id="dd-created">—</span></div>
+        <div class="drow"><span class="dlabel">Last Updated</span><span class="dval" id="dd-updated">—</span></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-label">Notes</div>
+      <div class="dcard"><div class="drow"><span id="dd-notes" style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.65;display:block">—</span></div></div>
+    </div>
+    <button class="btn btn-p" style="margin-top:16px">📂 Open</button>
+    <button class="btn btn-s">⬇️ Download</button>
+    <button class="btn btn-s" id="dd-company-btn">🏢 Open Company</button>
+    <button class="btn btn-s" onclick="push('sc-contacts')">👤 Open Contact</button>
+    <button class="btn btn-s" onclick="push('sc-add-task')">✅ Create Task</button>
+    <button class="btn btn-r" style="margin-top:8px" onclick="submitForm(this,'Archived')">🗄️ Archive</button>
     <div class="pb-safe"></div>
   </div>
 </div>
@@ -1155,6 +1230,57 @@ document.addEventListener('touchend',e=>{
   if(sw&&e.changedTouches[0].clientX-tx>80)pop();
   sw=false;
 },{passive:true});
+// ── Document data ─────────────────────────────────────
+const DOCS=[
+  {name:'Accuracy_SOW_Draft.docx',type:'Contract',status:'Draft',company:'Accuracy Ltd',contact:'Sarah Thornton',created:'Jun 18, 2024',updated:'Jun 18, 2024',notes:'Statement of work for data analytics retainer. Awaiting Sarah review before sending.',companyScreen:'sc-accuracy'},
+  {name:'FineGuard_Renewal_Quote.pdf',type:'Quote',status:'Draft',company:'FineGuard Ltd',contact:'Clare Webb',created:'Jun 22, 2024',updated:'Jun 22, 2024',notes:'Annual renewal quote at £4,800. Needs sign-off before sending to Clare Webb.',companyScreen:'sc-fg'},
+  {name:'BBJ_TCs_v2.docx',type:'Contract',status:'Draft',company:'Builder Big Jobs',contact:'James Hartley',created:'Jun 21, 2024',updated:'Jun 21, 2024',notes:'Updated terms and conditions v2. Legal review pending before distribution.',companyScreen:'sc-bbj'},
+  {name:'FineGuard_Proposal_v3.pdf',type:'Quote',status:'Active',company:'FineGuard Ltd',contact:'Clare Webb',created:'Jun 10, 2024',updated:'Today',notes:'Final proposal sent to FineGuard. Awaiting countersignature from Clare Webb.',companyScreen:'sc-fg'},
+  {name:'FineGuard_Compliance_Cert.pdf',type:'Compliance',status:'Active',company:'FineGuard Ltd',contact:'Clare Webb',created:'Mar 15, 2024',updated:'Jun 10, 2024',notes:'Annual compliance certificate. Valid until Mar 2025. Keep on file.',companyScreen:'sc-fg'},
+  {name:'BBJ_ServiceAgreement_2024.pdf',type:'Contract',status:'Active',company:'Builder Big Jobs',contact:'James Hartley',created:'Jan 12, 2024',updated:'May 15, 2024',notes:'Main service agreement for BBJ lead generation. 12-month term from Jan 2024.',companyScreen:'sc-bbj'},
+  {name:'BBJ_Pipeline_June.xlsx',type:'Internal',status:'Active',company:'Ultratech',contact:'Dagon Kalev',created:'Jun 1, 2024',updated:'Jun 20, 2024',notes:'BBJ lead pipeline tracker for June. Updated weekly by Dagon.',companyScreen:'sc-ultratech'},
+  {name:'Q2_Revenue_Summary.pdf',type:'Internal',status:'Active',company:'Ultratech',contact:'George Morris',created:'Jun 15, 2024',updated:'Jun 15, 2024',notes:'Q2 revenue summary across all products. For board review.',companyScreen:'sc-ultratech'},
+  {name:'Accuracy_NDA.pdf',type:'Contract',status:'Active',company:'Accuracy Ltd',contact:'Sarah Thornton',created:'Apr 28, 2024',updated:'Apr 28, 2024',notes:'Mutual NDA signed by both parties. On file for reference.',companyScreen:'sc-accuracy'},
+  {name:'FineGuard_Quote_v1.pdf',type:'Quote',status:'Archived',company:'FineGuard Ltd',contact:'Clare Webb',created:'Jan 5, 2024',updated:'Jan 12, 2024',notes:'Original proposal v1. Superseded by v3. Archived for records.',companyScreen:'sc-fg'},
+  {name:'BBJ_Onboarding_Pack.pdf',type:'Customer',status:'Archived',company:'Builder Big Jobs',contact:'James Hartley',created:'Dec 1, 2023',updated:'Jan 12, 2024',notes:'Initial onboarding pack sent at contract start. Archived after completion.',companyScreen:'sc-bbj'},
+  {name:'UltraTech_Privacy_Policy.pdf',type:'Compliance',status:'Archived',company:'Ultratech',contact:'George Morris',created:'Nov 1, 2023',updated:'Mar 1, 2024',notes:'Previous privacy policy. Superseded by updated version. Archived for records.',companyScreen:'sc-ultratech'},
+];
+function loadDoc(i){
+  const d=DOCS[i];if(!d)return;
+  document.getElementById('dd-name').textContent=d.name;
+  document.getElementById('dd-type-tag').textContent=d.type+' · '+d.status;
+  document.getElementById('dd-hero-sub').textContent=d.company+' · '+d.contact;
+  document.getElementById('dd-type').textContent=d.type;
+  const sc=d.status==='Draft'?'ba':d.status==='Active'?'bg':'bgr';
+  document.getElementById('dd-status').innerHTML='<span class="badge '+sc+'">'+d.status+'</span>';
+  document.getElementById('dd-company').textContent=d.company;
+  document.getElementById('dd-contact').textContent=d.contact;
+  document.getElementById('dd-created').textContent=d.created;
+  document.getElementById('dd-updated').textContent=d.updated;
+  document.getElementById('dd-notes').textContent=d.notes;
+  const cb=document.getElementById('dd-company-btn');
+  if(cb)cb.onclick=function(){push(d.companyScreen);};
+}
+function filterDocs(type,btn){
+  document.querySelectorAll('#sc-documents .pchip').forEach(function(c){c.classList.remove('active');});
+  btn.classList.add('active');
+  const q=(document.getElementById('doc-search')||{}).value||'';
+  document.querySelectorAll('.doc-row').forEach(function(r){
+    var typeOk=type==='all'||r.dataset.type===type;
+    var searchOk=!q||r.dataset.search.includes(q.toLowerCase());
+    r.style.display=(typeOk&&searchOk)?'':'none';
+  });
+}
+function searchDocs(q){
+  var active=document.querySelector('#sc-documents .pchip.active');
+  var type=active?active.dataset.filter:'all';
+  document.querySelectorAll('.doc-row').forEach(function(r){
+    var typeOk=type==='all'||r.dataset.type===type;
+    var searchOk=!q||r.dataset.search.includes(q.toLowerCase());
+    r.style.display=(typeOk&&searchOk)?'':'none';
+  });
+}
+
 // ── Inline form submit helpers ─────────────────────────
 function submitForm(btn,successMsg){
   const form=btn.closest('.sbody');
