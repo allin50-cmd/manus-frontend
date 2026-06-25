@@ -75,3 +75,4 @@ credentials.json
 
 .env.production
 .env.vercel
+.env*
