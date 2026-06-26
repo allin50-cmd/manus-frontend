@@ -56,6 +56,12 @@ Before doing any of the following, stop and ask the user:
 - Modifying `lib/fineguard-workflow.ts` or any `fg_*` table
 - Modifying `lib/auth.ts`, `app/api/auth/`, or middleware
 
+**Protected-file emergency rule:** If a defensive fix to a protected file
+(`lib/auth.ts`, `app/api/auth/`, middleware) is made before approval, it must
+be reported to the user immediately in the same session and logged in
+`docs/DECISION_LOG.md`. No further changes to protected files may be made
+until the user has explicitly approved or reverted the fix.
+
 ---
 
 ## What Is Safe Without Asking

@@ -21,6 +21,7 @@ export default async function PortalPage({
     .select()
     .from(monitoredCompanies)
     .orderBy(desc(monitoredCompanies.activatedAt))
+    .limit(1000)
 
   const now = new Date()
   const activatedThisMonth = companies.filter((c) => {

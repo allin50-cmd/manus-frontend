@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { COMPANY_REGISTRY } from '@/lib/company-registry'
 
 const MODULE_LINKS = [
   { href: '/os/money',     label: 'Money',     color: '#FFC145' },
@@ -14,12 +15,11 @@ const MODULE_LINKS = [
   { href: '/os/documents', label: 'Documents', color: '#818CF8' },
 ]
 
-const COMPANY_LINKS = [
-  { href: '/os/companies/fineguard',        label: 'FineGuard',        color: '#00A86B' },
-  { href: '/os/companies/builder-big-jobs', label: 'Builder Big Jobs', color: '#F97316' },
-  { href: '/os/companies/ultratech',        label: 'Ultratech',        color: '#3B82F6' },
-  { href: '/os/companies/accuracy',         label: 'Accuracy Ltd',     color: '#8B5CF6' },
-]
+const COMPANY_LINKS = COMPANY_REGISTRY.map((c) => ({
+  href: `/os/workspace/${c.id}`,
+  label: c.name,
+  color: c.color,
+}))
 
 const BORDER = '1px solid rgba(255,255,255,0.06)'
 

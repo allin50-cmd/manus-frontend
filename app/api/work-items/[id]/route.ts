@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const [itemActions, itemLogs, itemDecisions] = await Promise.all([
     db.select().from(actions).where(eq(actions.workItemId, params.id)).orderBy(desc(actions.createdAt)).limit(20),
     db.select().from(activityLogs).where(eq(activityLogs.workItemId, params.id)).orderBy(desc(activityLogs.createdAt)).limit(50),
-    db.select().from(decisions).where(eq(decisions.workItemId, params.id)).orderBy(desc(decisions.createdAt)),
+    db.select().from(decisions).where(eq(decisions.workItemId, params.id)).orderBy(desc(decisions.createdAt)).limit(50),
   ])
 
   return NextResponse.json({ ...item, actions: itemActions, activityLogs: itemLogs, decisions: itemDecisions })
@@ -33,7 +33,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const item = rows[0]
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   const updates: Record<string, unknown> = {}
 
   if (body.status) updates.status = body.status

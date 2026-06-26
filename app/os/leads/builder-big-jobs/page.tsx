@@ -42,6 +42,7 @@ export default async function BuilderBigJobsLeadsPage() {
     .select()
     .from(builderBigJobsLeads)
     .orderBy(desc(builderBigJobsLeads.leadScore), desc(builderBigJobsLeads.createdAt))
+    .limit(500)
 
   const counts = {
     new: leads.filter((l) => l.status === 'new').length,

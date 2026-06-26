@@ -106,7 +106,7 @@ export default async function MessagesPage() {
         {/* Unread banner */}
         {Number(s.totalUnread) > 0 && (
           <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(32,175,255,0.07)', border: '1px solid rgba(32,175,255,0.14)' }}>
-            <p className="text-xs font-bold mb-0.5" style={{ color: '#20AFFF' }}>{s.totalUnread} UNREAD</p>
+            <p className="text-xs font-bold mb-0.5" style={{ color: '#20AFFF' }}>{Number(s.totalUnread)} UNREAD</p>
             <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.75)' }}>
               You have unread messages waiting
             </p>

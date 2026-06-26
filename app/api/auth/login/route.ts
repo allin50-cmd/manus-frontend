@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSessionToken, COOKIE_NAME } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
-  const { passcode } = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  const { passcode } = body
 
   const expected = process.env.APP_PASSCODE
   if (!expected) {

@@ -95,7 +95,7 @@ export default async function MoneyPage() {
           <div>
             <h1 className="text-2xl font-bold" style={{ color: 'rgba(255,255,255,0.92)' }}>Money</h1>
             <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              {pence(stats.totalPaid)} revenue · {Number(stats.countOverdue) > 0 ? `${stats.countOverdue} overdue` : 'All clear'}
+              {pence(Number(stats.totalPaid))} revenue · {Number(stats.countOverdue) > 0 ? `${Number(stats.countOverdue)} overdue` : 'All clear'}
             </p>
           </div>
         </div>
@@ -105,9 +105,9 @@ export default async function MoneyPage() {
           <div className="rounded-2xl p-4 mb-5" style={{ background: 'rgba(255,59,48,0.07)', border: '1px solid rgba(255,59,48,0.14)' }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold" style={{ color: '#FF3B30' }}>{stats.countOverdue} OVERDUE</p>
+                <p className="text-xs font-bold" style={{ color: '#FF3B30' }}>{Number(stats.countOverdue)} OVERDUE</p>
                 <p className="text-sm font-medium mt-0.5" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                  {pence(stats.totalOutstanding)} outstanding
+                  {pence(Number(stats.totalOutstanding))} outstanding
                 </p>
               </div>
               <button className="text-xs font-semibold px-4 py-2 rounded-xl transition-colors"

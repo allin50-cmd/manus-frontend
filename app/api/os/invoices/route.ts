@@ -19,9 +19,15 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   if (!body.clientName || !body.number) {
     return NextResponse.json({ error: 'clientName and number are required' }, { status: 400 })
+  }
+
+  const amountPence = Number(body.amountPence ?? 0)
+  if (!Number.isFinite(amountPence) || amountPence < 0 || !Number.isInteger(amountPence)) {
+    return NextResponse.json({ error: 'amountPence must be a non-negative integer' }, { status: 400 })
   }
 
   const db = await getDb()
@@ -32,7 +38,7 @@ export async function POST(req: NextRequest) {
       clientName: body.clientName,
       clientEmail: body.clientEmail || null,
       description: body.description || null,
-      amountPence: body.amountPence ?? 0,
+      amountPence,
       status: body.status || 'Draft',
       issuedAt: body.issuedAt ? new Date(body.issuedAt) : null,
       dueAt: body.dueAt ? new Date(body.dueAt) : null,
