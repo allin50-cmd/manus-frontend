@@ -30,6 +30,9 @@ export type UtEventType =
   | 'invoice_created'
   | 'message_sent'
   | 'workflow_leak'
+  | 'app_page_view'
+  | 'app_started'
+  | 'app_submitted'
 
 export type WorkflowLeakSource =
   | 'whatsapp'

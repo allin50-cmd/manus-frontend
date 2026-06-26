@@ -177,4 +177,46 @@ maintenance burden with no benefit.
 
 ---
 
+## [2026-06-26] — Add public Revenue Web Apps layer at /apps
+
+**Decision:** Create public customer-facing app routes at `/apps/` (AI Receptionist,
+Quote Builder, Appointment Booking, and placeholder pages for 4 further apps). Add
+`/apps` and `/api/apps` to the middleware PUBLIC list. Create public API routes at
+`app/api/apps/` that write to existing spine tables (`work_items`, `os_quotes`,
+`os_tasks`) without session auth. Add `app_page_view`, `app_started`, `app_submitted`
+event types to `lib/ut-tracker.ts`.
+
+**Reason:** Explicit user instruction to create a revenue-focused web apps layer for
+customer-facing tools. Apps must be public (no login). Middleware modification is minimal
+(two route prefixes added) and directly required by the task.
+
+**Governance note:** Adding `/apps` and `/api/apps` to the middleware PUBLIC list modifies
+a protected file (`middleware.ts`). The modification is additive only. Logged here per the
+protected-file emergency rule in `CLAUDE.md`.
+
+**Alternatives Considered:** Separate Next.js app for public tools — rejected because it
+would create a second deployment target and violate the single-app architecture.
+
+**Approved By:** George (explicit task instruction, 2026-06-26).
+
+---
+
+## [2026-06-26] — Create Knowledge System and Evidence Register
+
+**Decision:** Create `KNOWLEDGE_SYSTEM.md`, `KNOWLEDGE_OBJECT_TEMPLATE.md`, and
+`knowledge/` directory with `evidence/EVIDENCE_REGISTER.md`,
+`commercial/COMMERCIAL_VALIDATION.md`, and `commercial/PILOT_METRICS.md`.
+
+**Reason:** The Commercial Validation Programme requires every claim about UltraTechOS
+to reference auditable evidence. The Knowledge System provides that structure.
+Existing evidence (build, governance files, code inventory, deployments) is catalogued.
+Missing evidence is explicitly flagged (product screenshots, live metrics, pilot data).
+
+**Alternatives Considered:** Tracking in Notion or Airtable — rejected as an unnecessary
+external dependency; the repository is the source of truth.
+
+**Approved By:** George (explicit task instruction, 2026-06-26).
+
+---
+
 <!-- Add new decisions above this line -->

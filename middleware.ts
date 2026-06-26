@@ -36,6 +36,10 @@ const PUBLIC = [
 
   // ── Builder Big Jobs — public lead submission ─────────────────────────
   '/api/builder-big-jobs/leads',
+
+  // ── Revenue Web Apps — public customer-facing tools ──────────────────
+  '/apps',
+  '/api/apps',
 ]
 
 // The homepage is public but '/' would prefix-match every path, so we check
