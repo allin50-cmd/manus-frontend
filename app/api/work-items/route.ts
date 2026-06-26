@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
 
   if (!body.title || !body.type || !body.owner) {
     return NextResponse.json({ error: 'title, type and owner are required' }, { status: 400 })

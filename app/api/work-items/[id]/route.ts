@@ -33,7 +33,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const item = rows[0]
   if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body = await req.json()
+  const body = await req.json().catch(() => null)
+  if (!body) return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   const updates: Record<string, unknown> = {}
 
   if (body.status) updates.status = body.status
