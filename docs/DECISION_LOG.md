@@ -155,4 +155,26 @@ restore avoidable 500 errors on the login endpoint with no safety benefit.
 
 ---
 
+## [2026-06-26] — Remove redundant GitHub Actions deploy workflow
+
+**Decision:** Delete `.github/workflows/deploy.yml`. Vercel GitHub Integration
+is the sole deployment path. `ci.yml` remains as the CI workflow.
+
+**Reason:** `deploy.yml` duplicated every CI step already in `ci.yml` and added
+only a `vercel deploy` step that Vercel's native GitHub integration performs
+automatically, more reliably, and with zero secret management overhead. The
+workflow was also non-functional: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and
+`VERCEL_PROJECT_ID` were never set as GitHub Actions secrets, causing every
+deploy job to fail immediately. Removing it eliminates two parallel deploy paths,
+removes three unused secret dependencies, and simplifies the CI pipeline to a
+single responsibility: quality checks (type-check, build, governance, tests).
+
+**Alternatives Considered:** Split deploy.yml into a CI-only workflow — rejected
+because `ci.yml` already does this; a second file with identical steps adds
+maintenance burden with no benefit.
+
+**Approved By:** George.
+
+---
+
 <!-- Add new decisions above this line -->
