@@ -31,7 +31,7 @@ async function seed() {
   await db.insert(osPeople).values([
     { name: 'George', phone: '07700900001', email: 'george@ultratech.co.uk', company: 'Ultratech', role: 'Director', category: 'Team', avatarInitials: 'GE' },
     { name: 'Dagon', phone: '07700900002', email: 'dagon@ultratech.co.uk', company: 'Ultratech', role: 'Operations', category: 'Team', avatarInitials: 'DA' },
-    { name: 'Alissa', phone: '07700900003', email: 'alissa@ultratech.co.uk', company: 'Ultratech', role: 'Admin', category: 'Team', avatarInitials: 'AL' },
+    { name: 'Alissa', phone: '07700900003', email: 'Alissahowell06@gmail.com', company: 'Ultratech', role: 'Operations Administrator', category: 'Team', avatarInitials: 'AL', notes: 'Owns evidence register, grant tracker, pilot administration, weekly reporting, and operational task control.' },
     { name: 'Marcus Webb', phone: '07700900010', email: 'm.webb@fineguard.co.uk', company: 'FineGuard', role: 'Legal Director', category: 'Client', avatarInitials: 'MW' },
     { name: 'Sarah Tilbury', phone: '07700900011', email: 'sarah@builderbig.co.uk', company: 'Builder Big Jobs', role: 'MD', category: 'Client', avatarInitials: 'ST' },
     { name: 'James Accuracy', phone: '07700900012', email: 'james@accuracy.co.uk', company: 'Accuracy Ltd', role: 'CEO', category: 'Client', avatarInitials: 'JA' },
@@ -121,6 +121,10 @@ async function seed() {
     { title: 'Send FineGuard renewal invoice (INV-007)', assignedTo: 'George', priority: 'High', status: 'Open', dueAt: fwd(5) },
     { title: 'Review FineGuard SLA v2 document', assignedTo: 'George', priority: 'Medium', status: 'Open', dueAt: fwd(3) },
     { title: 'Review AccountSup onboarding checklist', assignedTo: 'Alissa', priority: 'Medium', status: 'Open', dueAt: fwd(4) },
+    { title: 'Update Evidence Register with Quote, Booking, and Receptionist E2E results', assignedTo: 'Alissa', priority: 'High', status: 'Open', dueAt: fwd(1), notes: 'Add EV-013, EV-014, and EV-015 for the successful HTTP 201 app flow evidence.' },
+    { title: 'Create Grant Tracker and record next funding opportunities', assignedTo: 'Alissa', priority: 'High', status: 'Open', dueAt: fwd(2), notes: 'Track programme, deadline, status, owner, evidence required, and next action.' },
+    { title: 'Prepare weekly Founder Briefing Pack for George', assignedTo: 'Alissa', priority: 'Medium', status: 'Open', dueAt: fwd(3), notes: 'Summarise tasks, risks, grant deadlines, pilot progress, partner actions, and missing evidence.' },
+    { title: 'Maintain Pilot Business Tracker for first 10–20 SMEs', assignedTo: 'Alissa', priority: 'Medium', status: 'Open', dueAt: fwd(5), notes: 'Track business name, sector, stage, contact, services, evidence, and next action.' },
     { title: 'Follow up Tom Hartley — integration spec call', assignedTo: 'Dagon', priority: 'Low', status: 'Open', dueAt: fwd(7) },
     { title: 'Draft INV-006 for Builder Big Jobs', assignedTo: 'George', priority: 'Medium', status: 'InProgress' },
   ])
