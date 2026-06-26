@@ -1,14 +1,16 @@
-'use client'
-
 import Link from 'next/link'
+import { getDb } from '@/lib/db'
+import { monitoredCompanies, fgAlerts, builderBigJobsLeads } from '@/db/schema'
 import { COMPANY_REGISTRY } from '@/lib/company-registry'
+import { getApps } from '@/lib/app-registry'
+import { count, eq } from 'drizzle-orm'
+
+export const dynamic = 'force-dynamic'
 
 type CompanyVisual = {
   gradFrom: string
   gradTo: string
   glow: string
-  kpi: string
-  kpiLabel: string
   badge: string | null
   badgeColor: string | null
   icon: React.ReactNode
@@ -19,10 +21,8 @@ const COMPANY_VISUALS: Record<string, CompanyVisual> = {
     gradFrom: '#6EE7B7',
     gradTo: '#059669',
     glow: 'rgba(0,168,107,0.45)',
-    kpi: '152 monitored',
-    kpiLabel: 'companies',
-    badge: '3 alerts',
-    badgeColor: '#FF3B30',
+    badge: null,
+    badgeColor: null,
     icon: (
       <svg className="relative z-20 w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4z" />
@@ -34,10 +34,8 @@ const COMPANY_VISUALS: Record<string, CompanyVisual> = {
     gradFrom: '#FDB97A',
     gradTo: '#C2410C',
     glow: 'rgba(249,115,22,0.45)',
-    kpi: '18 new leads',
-    kpiLabel: 'this week',
-    badge: '5 urgent',
-    badgeColor: '#FF9F0A',
+    badge: null,
+    badgeColor: null,
     icon: (
       <svg className="relative z-20 w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-6h6v6" />
@@ -48,8 +46,6 @@ const COMPANY_VISUALS: Record<string, CompanyVisual> = {
     gradFrom: '#93BBFC',
     gradTo: '#1D4ED8',
     glow: 'rgba(59,130,246,0.45)',
-    kpi: '£84,200',
-    kpiLabel: 'revenue YTD',
     badge: null,
     badgeColor: null,
     icon: (
@@ -62,8 +58,6 @@ const COMPANY_VISUALS: Record<string, CompanyVisual> = {
     gradFrom: '#C4B5FD',
     gradTo: '#6D28D9',
     glow: 'rgba(139,92,246,0.45)',
-    kpi: '7 live projects',
-    kpiLabel: 'in planning',
     badge: null,
     badgeColor: null,
     icon: (
@@ -75,21 +69,60 @@ const COMPANY_VISUALS: Record<string, CompanyVisual> = {
   },
 }
 
-export default function CompaniesPage() {
-  const COMPANIES = COMPANY_REGISTRY.map((co) => ({
-    ...co,
-    href: `/os/workspace/${co.id}`,
-    ...(COMPANY_VISUALS[co.id] ?? {
+export default async function CompaniesPage() {
+  const db = await getDb()
+
+  const [monitoredCount, pendingAlerts, leadsCount] = await Promise.all([
+    db.select({ n: count() }).from(monitoredCompanies),
+    db.select({ n: count() }).from(fgAlerts).where(eq(fgAlerts.status, 'pending')),
+    db.select({ n: count() }).from(builderBigJobsLeads),
+  ])
+
+  const fgMonitored = monitoredCount[0]?.n ?? 0
+  const fgPending = pendingAlerts[0]?.n ?? 0
+  const bbjLeads = leadsCount[0]?.n ?? 0
+
+  const COMPANIES = COMPANY_REGISTRY.map((co) => {
+    const visual = COMPANY_VISUALS[co.id] ?? {
       gradFrom: co.color,
       gradTo: co.color,
       glow: `${co.color}44`,
-      kpi: '',
-      kpiLabel: '',
       badge: null,
       badgeColor: null,
-      icon: <span className="text-2xl">{co.name.charAt(0)}</span>,
-    }),
-  }))
+      icon: <span className="text-2xl text-white relative z-20">{co.name.charAt(0)}</span>,
+    }
+
+    let kpi = ''
+    let kpiLabel = ''
+    let badge = visual.badge
+    let badgeColor = visual.badgeColor
+
+    if (co.id === 'fineguard') {
+      kpi = String(fgMonitored)
+      kpiLabel = fgMonitored === 1 ? 'company monitored' : 'companies monitored'
+      if (fgPending > 0) {
+        badge = `${fgPending} alert${fgPending > 1 ? 's' : ''}`
+        badgeColor = '#FF3B30'
+      }
+    } else if (co.id === 'builder-big-jobs') {
+      kpi = String(bbjLeads)
+      kpiLabel = bbjLeads === 1 ? 'lead' : 'leads'
+    } else {
+      const activeApps = getApps(co.enabledApps).filter((a) => a.status !== 'coming_soon').length
+      kpi = String(activeApps)
+      kpiLabel = activeApps === 1 ? 'active app' : 'active apps'
+    }
+
+    return {
+      ...co,
+      href: `/os/workspace/${co.id}`,
+      ...visual,
+      badge,
+      badgeColor,
+      kpi,
+      kpiLabel,
+    }
+  })
 
   return (
     <div className="space-y-6">
@@ -100,6 +133,7 @@ export default function CompaniesPage() {
           <p className="text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>Your operating entities</p>
         </div>
         <button
+          type="button"
           className="px-4 py-2 rounded-xl text-sm font-medium"
           style={{ background: 'rgba(122,90,248,0.15)', border: '1px solid rgba(122,90,248,0.25)', color: '#7A5AF8' }}
         >

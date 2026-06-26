@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getDb } from '@/lib/db'
 import { monitoredCompanies, fgAlerts, fgActivityLog } from '@/db/schema'
 import { getCompany } from '@/lib/company-registry'
-import { desc, eq, count, and } from 'drizzle-orm'
+import { desc } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +26,7 @@ export default async function FineGuardAppPage({
   params: { companyId: string }
 }) {
   const company = getCompany(params.companyId)
-  if (!company) notFound()
+  if (!company || !company.enabledApps.includes('fineguard')) notFound()
 
   const db = await getDb()
 
