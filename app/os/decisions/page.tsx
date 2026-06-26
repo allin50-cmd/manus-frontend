@@ -32,6 +32,7 @@ export default async function DecisionsPage() {
     .innerJoin(workItems, eq(decisions.workItemId, workItems.id))
     .where(eq(decisions.status, 'Open'))
     .orderBy(asc(decisions.dueDate), asc(decisions.createdAt))
+    .limit(100)
 
   const decisionsWithWorkItem = rows.map((row) => ({
     id: row.id,
