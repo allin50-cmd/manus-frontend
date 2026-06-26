@@ -2,1047 +2,989 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UltraTechOS — Interactive Prototype</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  :root{
-    --bg:#050816;--surface:rgba(255,255,255,0.055);--border:rgba(255,255,255,0.07);
-    --text:rgba(255,255,255,0.92);--text2:rgba(255,255,255,0.6);--text3:rgba(255,255,255,0.32);
-    --purple:#7A5AF8;--blue:#3D8BFF;--yellow:#FFC145;--green:#28C76F;
-    --cyan:#20AFFF;--violet:#A855F7;--orange:#FF8A34;--indigo:#818CF8;
-    --grad:linear-gradient(135deg,#7A5AF8,#3D8BFF);
-  }
-  html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;overflow:hidden}
-  .screen{display:none;height:100vh;flex-direction:column;overflow:hidden}
-  .screen.active{display:flex}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#EEF1FC;--card:#fff;--border:#E3E8F5;
+  --text:#1A1C2E;--text2:#5B6480;--text3:#9AA0B8;
+  --accent:#5B3FE8;--accent-lt:#EDE9FF;--sidebar:#fff;
+  --sw:220px;
+}
+html,body{height:100vh;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+#app{display:flex;height:100vh;overflow:hidden}
 
-  /* ─── DEVICE SHELL ─── */
-  .device-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#030610;padding:20px}
-  .device{width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;position:relative;
-    box-shadow:0 0 0 10px #18202E,0 40px 80px rgba(0,0,0,0.8);display:flex;flex-direction:column}
-  .status-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px 6px;flex-shrink:0}
-  .status-time{font-size:15px;font-weight:600;color:var(--text)}
-  .status-icons{display:flex;gap:6px;align-items:center;color:var(--text)}
-  .notch{width:120px;height:34px;background:#030610;border-radius:0 0 20px 20px;position:absolute;top:0;left:50%;transform:translateX(-50%)}
-  .content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
-  .content::-webkit-scrollbar{display:none}
-  .bottom-nav{flex-shrink:0;display:flex;align-items:center;background:rgba(6,12,28,0.95);
-    backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:4px 0 calc(4px + env(safe-area-inset-bottom))}
-  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;
-    cursor:pointer;color:var(--text3);transition:color .15s;border:none;background:none;font:inherit}
-  .nav-item:hover,.nav-item.active{color:var(--text)}
-  .nav-item svg{width:22px;height:22px}
-  .nav-label{font-size:9px;font-weight:600;letter-spacing:.04em}
-  .nav-add{width:48px;height:48px;background:var(--grad);border-radius:50%;display:flex;align-items:center;
-    justify-content:center;box-shadow:0 4px 16px rgba(122,90,248,0.5);cursor:pointer;border:none;margin-bottom:2px}
+/* ── SIDEBAR ── */
+#sb{width:var(--sw);min-width:var(--sw);height:100vh;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:20;overflow-y:auto;flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:9px;padding:18px 16px;border-bottom:1px solid var(--border)}
+.sb-logo-icon{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#5B3FE8,#3D8BFF);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(91,63,232,.35)}
+.sb-logo-icon svg{color:#fff}
+.sb-brand{font-size:12.5px;font-weight:800;color:var(--text);letter-spacing:-.2px}
+.sb-brand em{color:var(--accent);font-style:normal}
+.sb-sec{padding:6px 10px}
+.sb-sec-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--text3);padding:8px 8px 3px}
+.sbl{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--text2);transition:.12s;user-select:none}
+.sbl:hover{background:#F3F4FB;color:var(--text)}
+.sbl.on{background:var(--accent-lt);color:var(--accent);font-weight:600}
+.sbl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sbl svg{flex-shrink:0;opacity:.7}
+.sbl.on svg{opacity:1}
+.sb-spacer{flex:1}
+.sb-foot{padding:14px 16px;border-top:1px solid var(--border)}
+.sb-user{display:flex;align-items:center;gap:9px}
+.sb-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#5B3FE8,#A855F7);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.sb-uname{font-size:12px;font-weight:600;color:var(--text)}
+.sb-urole{font-size:10px;color:var(--text3)}
+.sb-logout{font-size:10px;color:var(--text3);cursor:pointer;margin-top:8px;display:block;background:none;border:none;padding:0;transition:.12s}
+.sb-logout:hover{color:var(--accent)}
 
-  /* ─── SHARED COMPONENTS ─── */
-  .page-pad{padding:20px 16px 24px}
-  .page-title{font-size:22px;font-weight:700;color:var(--text);line-height:1.2}
-  .page-sub{font-size:12px;color:var(--text3);margin-bottom:4px}
-  .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:8px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px}
-  .card+.card{margin-top:10px}
-  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-  .tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px}
-  .divider{border:none;height:1px;background:var(--border);margin:0 -14px}
-  .row{display:flex;align-items:center;gap:10px;padding:11px 0;cursor:pointer}
-  .row:first-child{padding-top:0}
-  .row:last-child{padding-bottom:0}
-  .row+.row{border-top:1px solid var(--border)}
-  .row-label{font-size:13px;color:var(--text);flex:1}
-  .row-sub{font-size:11px;color:var(--text3);margin-top:1px}
-  .chevron{color:var(--text3);flex-shrink:0}
-  .badge{min-width:18px;height:18px;background:var(--purple);border-radius:9px;font-size:10px;font-weight:700;
-    color:#fff;display:flex;align-items:center;justify-content:center;padding:0 5px}
-  .big-num{font-size:32px;font-weight:700;color:var(--text);line-height:1}
-  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
-    padding:4px 10px;border-radius:99px;cursor:pointer}
-  .btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;
-    border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
-  .btn:hover{opacity:.88}
-  .btn-primary{background:var(--grad);color:#fff}
-  .btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text2)}
-  input[type=text],input[type=password]{width:100%;padding:13px 14px;background:var(--surface);
-    border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;outline:none;font:inherit}
-  input::placeholder{color:var(--text3)}
-  input:focus{border-color:rgba(122,90,248,0.5)}
-  .avatar{width:36px;height:36px;border-radius:50%;background:var(--grad);display:flex;align-items:center;
-    justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+.topbar{height:56px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.tb-search{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:7px 12px;font-size:12px;color:var(--text3);width:190px;cursor:pointer}
+.tb-icon-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);position:relative;transition:.12s}
+.tb-icon-btn:hover{background:var(--bg)}
+.tb-badge{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:#EF4444;border:1.5px solid #fff}
+.tb-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#5B3FE8,#A855F7);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:pointer}
 
-  /* ─── SCREENS ─── */
+/* ── SCREENS ── */
+.screen{display:none;flex:1;overflow-y:auto;padding:26px 28px 32px}
+.screen.on{display:block}
 
-  /* LOGIN */
-  #login .login-inner{display:flex;flex-direction:column;justify-content:center;height:100%;padding:32px 24px}
-  .logo-mark{width:52px;height:52px;background:var(--grad);border-radius:16px;display:flex;align-items:center;
-    justify-content:center;margin-bottom:24px;box-shadow:0 8px 24px rgba(122,90,248,0.4)}
-  .login-title{font-size:24px;font-weight:700;margin-bottom:6px}
-  .login-sub{font-size:13px;color:var(--text3);margin-bottom:32px}
-  .field-label{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
-  .field{margin-bottom:16px}
-  .login-error{font-size:12px;color:#f87171;margin-top:-8px;margin-bottom:12px;display:none}
+/* ── 3D ICONS ── */
+.ic{border-radius:20px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ic::after{content:'';position:absolute;top:3px;left:3px;right:3px;height:46%;background:linear-gradient(to bottom,rgba(255,255,255,.45),transparent);border-radius:16px 16px 60% 60%;pointer-events:none}
+.ic svg{position:relative;z-index:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
+.ic-money{background:linear-gradient(145deg,#FFEC80,#FFB800,#E07000);box-shadow:0 4px 18px rgba(255,140,0,.45),0 1px 0 1px rgba(255,200,0,.2)}
+.ic-msg{background:linear-gradient(145deg,#70C8FF,#2299FF,#0044CC);box-shadow:0 4px 18px rgba(30,120,255,.45)}
+.ic-calls{background:linear-gradient(145deg,#80F0A0,#22DD66,#00992B);box-shadow:0 4px 18px rgba(20,200,60,.45)}
+.ic-contacts{background:linear-gradient(145deg,#E090FF,#BB44FF,#7700CC);box-shadow:0 4px 18px rgba(170,40,255,.45)}
+.ic-alerts{background:linear-gradient(145deg,#FFDD80,#FF8800,#CC3000);box-shadow:0 4px 18px rgba(255,100,0,.45)}
+.ic-tasks{background:linear-gradient(145deg,#80CCFF,#33AAFF,#0055FF);box-shadow:0 4px 18px rgba(30,130,255,.45)}
+.ic-companies{background:linear-gradient(145deg,#C080FF,#9944FF,#5500BB);box-shadow:0 4px 18px rgba(140,40,255,.45)}
+.ic-docs{background:linear-gradient(145deg,#A0B4D4,#6688AA,#445577);box-shadow:0 4px 18px rgba(80,110,160,.4)}
+.ic-fg{background:linear-gradient(145deg,#80F0F4,#22CCDD,#005599);box-shadow:0 4px 18px rgba(0,160,200,.45)}
+.ic-ai{background:linear-gradient(145deg,#FFC0E0,#FF44AA,#BB0088);box-shadow:0 4px 18px rgba(240,30,140,.45)}
 
-  /* HOME / TODAY */
-  #home .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
-  .quick-tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 12px;
-    display:flex;align-items:center;gap:10px;cursor:pointer;transition:opacity .15s}
-  .quick-tile:hover{opacity:.8}
-  .quick-tile-label{font-size:12px;font-weight:600;color:var(--text2)}
-  .consolidation-big{display:flex;align-items:flex-start;justify-content:space-between}
-  .trend-up{color:#4ade80;font-size:11px;font-weight:600}
-  .trend-down{color:#f87171;font-size:11px;font-weight:600}
+/* ── HOME TILES ── */
+.tile-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.tile{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px 18px 16px;cursor:pointer;transition:all .16s;position:relative;display:flex;flex-direction:column;gap:14px}
+.tile:hover{transform:translateY(-3px);box-shadow:0 8px 32px rgba(91,63,232,.12);border-color:rgba(91,63,232,.2)}
+.tile-cnt{position:absolute;top:14px;right:14px;min-width:22px;height:22px;border-radius:11px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 6px;line-height:1}
+.tile-cnt.red{background:#EF4444}
+.tile-cnt.orange{background:#F97316}
+.tile-label{font-size:14px;font-weight:700;color:var(--text)}
+.tile-sub{font-size:11.5px;color:var(--text3);margin-top:2px}
+.tile-arrow{font-size:16px;color:var(--text3);margin-left:auto;margin-top:4px}
 
-  /* OS LAUNCHER */
-  #launcher .launcher-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .launcher-tile{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 14px;
-    display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:opacity .15s;min-height:80px}
-  .launcher-tile:hover{opacity:.8}
-  .launcher-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center}
-  .launcher-name{font-size:13px;font-weight:600;color:var(--text)}
-  .launcher-desc{font-size:10px;color:var(--text3);line-height:1.4}
+/* ── KPI ROW ── */
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.kpi2{grid-template-columns:repeat(2,1fr)}
+.kpi3{grid-template-columns:repeat(3,1fr)}
+.kcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.kcard-label{font-size:10.5px;color:var(--text3);margin-bottom:5px}
+.kcard-val{font-size:26px;font-weight:800;color:var(--text);line-height:1}
+.kcard-sub{font-size:11px;margin-top:4px;font-weight:600}
+.up{color:#16A34A}.down{color:#DC2626}.flat{color:var(--text3)}
 
-  /* FINEGUARD */
-  .compliance-score{width:100%;aspect-ratio:1;max-width:160px;margin:0 auto;position:relative;display:flex;
-    align-items:center;justify-content:center}
-  .score-ring{transform:rotate(-90deg)}
-  .score-text{position:absolute;text-align:center}
-  .status-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;
-    font-size:11px;font-weight:600}
+/* ── SECTION ── */
+.sec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:12px}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+.page-title{font-size:20px;font-weight:800;color:var(--text)}
+.page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
+.head-actions{display:flex;gap:8px;align-items:center}
 
-  /* AI RECEPTIONIST */
-  .chat-bubble{padding:10px 13px;border-radius:16px;font-size:13px;line-height:1.5;max-width:80%;margin-bottom:8px}
-  .chat-bubble.ai{background:rgba(122,90,248,0.18);border:1px solid rgba(122,90,248,0.25);color:var(--text);
-    border-bottom-left-radius:4px}
-  .chat-bubble.user{background:rgba(61,139,255,0.18);border:1px solid rgba(61,139,255,0.25);color:var(--text);
-    margin-left:auto;border-bottom-right-radius:4px}
-  .chat-input-row{display:flex;gap:8px;padding:12px 16px;background:rgba(6,12,28,0.9);
-    border-top:1px solid var(--border);flex-shrink:0}
-  .chat-input{flex:1;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:24px;
-    color:var(--text);font-size:13px;outline:none;font:inherit}
-  .chat-send{width:38px;height:38px;background:var(--grad);border-radius:50%;border:none;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.card-sm{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
 
-  /* FINANCIAL VISIBILITY */
-  .chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:80px;padding-top:8px}
-  .chart-bar{flex:1;border-radius:4px 4px 0 0;transition:opacity .2s;cursor:pointer}
-  .chart-bar:hover{opacity:.75}
-  .chart-labels{display:flex;gap:6px;margin-top:6px}
-  .chart-label{flex:1;text-align:center;font-size:9px;color:var(--text3)}
-  .money-stat{display:flex;flex-direction:column;gap:2px}
-  .money-stat-label{font-size:10px;color:var(--text3)}
-  .money-stat-val{font-size:20px;font-weight:700;color:var(--text)}
-  .money-stat-delta{font-size:11px;font-weight:600}
+/* ── LIST ITEMS ── */
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:.12s}
+.li:last-child{border-bottom:none}
+.li:hover{background:#F7F8FE;margin:0 -4px;padding-left:4px;padding-right:4px;border-radius:10px;border-bottom:1px solid transparent}
+.li-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.li-av-sq{border-radius:10px}
+.li-main{flex:1;min-width:0}
+.li-name{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-sub{font-size:11.5px;color:var(--text3);margin-top:1px}
+.li-r{text-align:right;flex-shrink:0}
+.li-val{font-size:13px;font-weight:700;color:var(--text)}
+.li-tag{font-size:10.5px;color:var(--text3);margin-top:2px}
 
-  /* MODULE HEADER */
-  .mod-header{display:flex;align-items:center;gap:10px;padding:16px 16px 0;flex-shrink:0}
-  .mod-header-back{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);
-    border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-  .mod-header-title{font-size:17px;font-weight:700;color:var(--text)}
-  .mod-header-right{margin-left:auto;display:flex;gap:8px}
-  .icon-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);
-    border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none}
+/* ── PILLS ── */
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;line-height:1.5}
+.pill-purple{background:var(--accent-lt);color:var(--accent)}
+.pill-green{background:#E6FAF0;color:#16A34A}
+.pill-red{background:#FEF2F2;color:#DC2626}
+.pill-blue{background:#EEF2FF;color:#4338CA}
+.pill-orange{background:#FFF7ED;color:#C2410C}
+.pill-gray{background:#F3F4F6;color:#6B7280}
 
-  /* CONTACTS */
-  .contact-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+/* ── TABLE ── */
+table.dt{width:100%;border-collapse:collapse}
+table.dt th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--text3);padding:10px 14px;border-bottom:1px solid var(--border);text-align:left}
+table.dt td{font-size:13px;color:var(--text);padding:13px 14px;border-bottom:1px solid var(--border)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tbody tr{cursor:pointer;transition:.12s}
+table.dt tbody tr:hover td{background:#F7F8FE}
 
-  /* TASKS */
-  .task-check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
-  .task-check.done{background:var(--green);border-color:var(--green)}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;transition:.12s}
+.btn-p{background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(91,63,232,.3)}
+.btn-p:hover{background:#4A30D4}
+.btn-s{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{background:var(--bg)}
+.btn-sm{padding:6px 13px;font-size:11.5px;border-radius:8px}
 
-  /* CALLS */
-  .call-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* ── ACTION BTNS ── */
+.act-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.act-btn{display:flex;align-items:center;gap:7px;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.12s}
+.ab-call{background:linear-gradient(135deg,#22DD66,#009933);color:#fff;box-shadow:0 3px 12px rgba(20,200,60,.35)}
+.ab-email{background:linear-gradient(135deg,#33AAFF,#0055FF);color:#fff;box-shadow:0 3px 12px rgba(30,130,255,.35)}
+.ab-text{background:linear-gradient(135deg,#BB44FF,#7700CC);color:#fff;box-shadow:0 3px 12px rgba(160,40,240,.35)}
 
-  /* MESSAGES */
-  .msg-unread{width:8px;height:8px;background:var(--blue);border-radius:50%;flex-shrink:0}
+/* ── INFO GRID ── */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.info-cell{background:var(--bg);border-radius:11px;padding:13px 15px}
+.info-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:4px}
+.info-val{font-size:14px;font-weight:700;color:var(--text)}
 
-  /* ALERTS */
-  .alert-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* ── PROGRESS ── */
+.pbar{height:7px;background:var(--border);border-radius:10px;overflow:hidden;margin:10px 0}
+.pfill{height:100%;border-radius:10px}
 
-  /* ONBOARDING overlay */
-  .proto-label{position:fixed;top:12px;left:50%;transform:translateX(-50%);
-    background:rgba(6,12,28,0.9);border:1px solid var(--border);border-radius:99px;
-    padding:5px 14px;font-size:10px;color:var(--text3);letter-spacing:.06em;
-    backdrop-filter:blur(12px);z-index:100;pointer-events:none;white-space:nowrap}
+/* ── WORKSPACE CARD ── */
+.ws-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;cursor:pointer;transition:all .16s}
+.ws-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(91,63,232,.1);border-color:rgba(91,63,232,.18)}
+.ws-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.ws-logo{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0}
+.ws-name{font-size:14px;font-weight:700;color:var(--text)}
+.ws-type{font-size:11px;color:var(--text3)}
+.ws-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ws-stat{background:var(--bg);border-radius:9px;padding:9px 11px}
+.ws-stat-label{font-size:9.5px;color:var(--text3);margin-bottom:2px}
+.ws-stat-val{font-size:15px;font-weight:800;color:var(--text)}
+
+/* ── BACK BTN ── */
+.back{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;padding:0;margin-bottom:18px;transition:.12s}
+.back:hover{color:var(--accent)}
+
+/* ── TASK ITEM ── */
+.task-li{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.task-li:last-child{border-bottom:none}
+.tchk{width:20px;height:20px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s}
+.tchk.done{background:var(--accent);border-color:var(--accent)}
+.ttext{flex:1;font-size:13px;color:var(--text)}
+.ttext.done{text-decoration:line-through;color:var(--text3)}
+
+/* ── ACTIVITY ── */
+.act-li{display:flex;align-items:flex-start;gap:11px;padding:13px 0;border-bottom:1px solid var(--border)}
+.act-li:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.act-time{font-size:10.5px;color:var(--text3);white-space:nowrap;min-width:52px;margin-top:2px}
+.act-text{font-size:13px;color:var(--text)}
+.act-sub{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* ── CHART ── */
+.ch-row{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.ch-label{font-size:11px;color:var(--text2);width:90px;flex-shrink:0;text-align:right}
+.ch-track{flex:1;height:7px;background:var(--border);border-radius:10px;overflow:hidden}
+.ch-fill{height:100%;border-radius:10px}
+.ch-val{font-size:11px;font-weight:700;color:var(--text);width:36px;flex-shrink:0}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;gap:3px;margin-bottom:10px}
+.ps{flex:1;height:7px;border-radius:4px}
+
+/* ── GRIDS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+/* ── TODAY STRIP ── */
+.today-strip{
+  position:fixed;bottom:0;right:0;
+  width:calc(100vw - var(--sw));
+  background:var(--card);border-top:1px solid var(--border);
+  display:flex;align-items:center;height:44px;padding:0 24px;gap:28px;
+  font-size:11.5px;color:var(--text2);z-index:10;
+}
+.today-strip span{font-weight:700;color:var(--text)}
+
+/* ── PIPELINE BADGE ── */
+.pipe-stage{display:flex;gap:16px;font-size:11px;color:var(--text3);margin-top:6px}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#D0D5E8;border-radius:10px}
+
+/* icon svg sizes */
+.ic-lg{width:64px;height:64px}
+.ic-md{width:44px;height:44px}
+.ic-sm{width:32px;height:32px}
 </style>
 </head>
 <body>
+<div id="app">
 
-<div class="proto-label">PROTOTYPE — UltraTechOS</div>
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════════ -->
+<nav id="sb">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    </div>
+    <div class="sb-brand">Ultra<em>Tech</em>OS</div>
+  </div>
 
-<!-- ═══════════════════════════════════════════
-     DEVICE SHELL  (all screens live inside)
-═══════════════════════════════════════════ -->
-<div class="device-wrap">
-<div class="device">
-
-  <div class="notch"></div>
-  <div class="status-bar">
-    <span class="status-time" id="clock">9:41</span>
-    <div class="status-icons">
-      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="4" width="3" height="8" rx="1" opacity=".4"/><rect x="4" y="2" width="3" height="10" rx="1" opacity=".6"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12.5" y="1" width="3" height="10" rx="1" opacity=".3"/></svg>
-      <svg width="16" height="12" viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 5.5C3.8 2.5 7.2 1 10 1s6.2 1.5 9 4.5"/><path d="M4 8.5C6 6.5 8 5.5 10 5.5s4 1 6 3"/><path d="M7 11.5C8.2 10.3 9.1 9.8 10 9.8s1.8.5 3 1.7"/><circle cx="10" cy="13.5" r="1" fill="currentColor"/></svg>
-      <svg width="26" height="12" viewBox="0 0 26 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="3" stroke="currentColor" strokeWidth="1" fill="rgba(255,255,255,0.2)"/><rect x="1.5" y="2.5" width="17" height="7" rx="2"/><rect x="23" y="4" width="3" height="4" rx="1.5" opacity=".5"/></svg>
+  <div class="sb-sec">
+    <div class="sbl on" id="n-home" onclick="go('home')">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 21V12h6v9"/></svg>
+      Home
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: LOGIN ════════════ -->
-  <div id="login" class="screen active" style="flex:1;overflow:hidden">
-    <div class="login-inner">
-      <div class="logo-mark">
-        <svg width="26" height="26" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-        </svg>
-      </div>
-      <h1 class="login-title">UltraTechOS</h1>
-      <p class="login-sub">Business Operating System</p>
-      <div class="field">
-        <div class="field-label">Email</div>
-        <input type="text" id="login-email" placeholder="you@business.co.uk" value="george@ultratechos.co.uk">
-      </div>
-      <div class="field">
-        <div class="field-label">Password</div>
-        <input type="password" id="login-pass" placeholder="Password" value="••••••••">
-      </div>
-      <p class="login-error" id="login-error">Invalid credentials. Try again.</p>
-      <button class="btn btn-primary" onclick="goTo('home')">Sign in</button>
-      <p style="text-align:center;margin-top:20px;font-size:11px;color:var(--text3)">
-        Prototype — tap Sign in to continue
-      </p>
+  <div class="sb-sec" style="border-top:1px solid var(--border);padding-top:10px">
+    <div class="sb-sec-label">Modules</div>
+    <div class="sbl" id="n-money" onclick="go('money')"><span class="sbl-dot" style="background:#FFB800"></span>Money</div>
+    <div class="sbl" id="n-messages" onclick="go('messages')"><span class="sbl-dot" style="background:#2299FF"></span>Messages</div>
+    <div class="sbl" id="n-calls" onclick="go('calls')"><span class="sbl-dot" style="background:#22DD66"></span>Calls</div>
+    <div class="sbl" id="n-contacts" onclick="go('contacts')"><span class="sbl-dot" style="background:#BB44FF"></span>Contacts</div>
+    <div class="sbl" id="n-alerts" onclick="go('alerts')"><span class="sbl-dot" style="background:#FF8800"></span>Alerts</div>
+    <div class="sbl" id="n-tasks" onclick="go('tasks')"><span class="sbl-dot" style="background:#33AAFF"></span>Tasks</div>
+    <div class="sbl" id="n-companies" onclick="go('companies')"><span class="sbl-dot" style="background:#9944FF"></span>Companies</div>
+    <div class="sbl" id="n-docs" onclick="go('docs')"><span class="sbl-dot" style="background:#6688AA"></span>Documents</div>
+  </div>
+
+  <div class="sb-sec" style="border-top:1px solid var(--border);padding-top:10px">
+    <div class="sb-sec-label">Workspaces</div>
+    <div class="sbl" id="n-ws-fg" onclick="go('ws-fg')"><span class="sbl-dot" style="background:#22CCDD"></span>FineGuard Ltd</div>
+    <div class="sbl" id="n-ws-bbj" onclick="go('ws-bbj')"><span class="sbl-dot" style="background:#FF8800"></span>Builder Big Jobs</div>
+    <div class="sbl" id="n-ws-br" onclick="go('ws-br')"><span class="sbl-dot" style="background:#22DD66"></span>BrightBuild Homes</div>
+    <div class="sbl" id="n-ws-acc" onclick="go('ws-acc')"><span class="sbl-dot" style="background:#9944FF"></span>Accuracy Ltd</div>
+  </div>
+
+  <div class="sb-sec" style="border-top:1px solid var(--border);padding-top:10px">
+    <div class="sbl" id="n-fg" onclick="go('fg')">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      FineGuard
+    </div>
+    <div class="sbl" id="n-ai" onclick="go('ai')">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      UltAi
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: HOME / TODAY ════════════ -->
-  <div id="home" class="screen" style="flex:1;overflow:hidden">
-    <div class="content page-pad">
-      <p class="page-sub" id="home-date">Thursday, 26 June</p>
-      <h1 class="page-title" style="margin-bottom:20px">Today</h1>
-
-      <!-- Quick links -->
-      <div class="quick-grid" style="margin-bottom:20px">
-        <div class="quick-tile" onclick="goTo('money')"><span class="dot" style="background:#FFC145;box-shadow:0 0 6px #FFC14580"></span><span class="quick-tile-label">Money</span></div>
-        <div class="quick-tile" onclick="goTo('companies')"><span class="dot" style="background:#7A5AF8;box-shadow:0 0 6px #7A5AF880"></span><span class="quick-tile-label">Companies</span></div>
-        <div class="quick-tile" onclick="goTo('contacts')"><span class="dot" style="background:#A855F7;box-shadow:0 0 6px #A855F780"></span><span class="quick-tile-label">Contacts</span></div>
-        <div class="quick-tile" onclick="goTo('tasks')"><span class="dot" style="background:#3D8BFF;box-shadow:0 0 6px #3D8BFF80"></span><span class="quick-tile-label">Work</span></div>
-      </div>
-
-      <!-- Consolidation -->
-      <div style="margin-bottom:20px">
-        <p class="section-label">Operational Consolidation</p>
-        <div class="card">
-          <div class="consolidation-big">
-            <div>
-              <p style="font-size:10px;color:var(--text3);margin-bottom:4px">This Week</p>
-              <p class="big-num">84.2%</p>
-              <p style="font-size:10px;color:var(--text3);margin-top:4px">47 in-system · 9 outside</p>
-            </div>
-            <div style="text-align:right">
-              <p style="font-size:10px;color:var(--text3);margin-bottom:4px">Last Week</p>
-              <p style="font-size:22px;font-weight:600;color:var(--text2)">79.1%</p>
-              <p class="trend-up" style="margin-top:4px">↑ Improving</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Priorities -->
-      <div style="margin-bottom:20px">
-        <p class="section-label">Priorities</p>
-        <div class="card">
-          <div class="row" onclick="goTo('money')">
-            <span class="row-label">FineGuard renewal call overdue</span>
-            <span class="tag" style="background:#FFC14522;color:#FFC145">Money</span>
-          </div>
-          <div class="row" onclick="goTo('tasks')">
-            <span class="row-label">BBJ pipeline review due today</span>
-            <span class="tag" style="background:#3D8BFF22;color:#3D8BFF">Work</span>
-          </div>
-          <div class="row" onclick="goTo('tasks')">
-            <span class="row-label">Accuracy Ltd proposal to send</span>
-            <span class="tag" style="background:#3D8BFF22;color:#3D8BFF">Work</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Activity -->
-      <div style="margin-bottom:20px">
-        <p class="section-label">Activity</p>
-        <div class="card">
-          <div class="row" onclick="goTo('messages')">
-            <span style="font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0">9:14 am</span>
-            <div style="min-width:0">
-              <p class="row-label" style="font-size:12px">Clare Webb replied to renewal quote</p>
-              <p style="font-size:10px;color:var(--text3)">Messages</p>
-            </div>
-          </div>
-          <div class="row" onclick="goTo('companies')">
-            <span style="font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0">8:50 am</span>
-            <div style="min-width:0">
-              <p class="row-label" style="font-size:12px">BBJ lead James Hartley — new enquiry</p>
-              <p style="font-size:10px;color:var(--text3)">Companies</p>
-            </div>
-          </div>
-          <div class="row" onclick="goTo('money')">
-            <span style="font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0">Yesterday</span>
-            <div style="min-width:0">
-              <p class="row-label" style="font-size:12px">FineGuard invoice £4,800 unpaid (14 days)</p>
-              <p style="font-size:10px;color:var(--text3)">Money</p>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="sb-spacer"></div>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-av">JR</div>
+      <div><div class="sb-uname">James Reid</div><div class="sb-urole">Founder</div></div>
     </div>
-    <div class="bottom-nav" id="home-nav">
-      <button class="nav-item active" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    <button class="sb-logout">Log out</button>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════ -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-title" id="tb-title">Home</div>
+    <div class="topbar-right">
+      <div class="tb-search">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        Search…
+      </div>
+      <div class="tb-icon-btn">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <div class="tb-badge"></div>
+      </div>
+      <div class="tb-av">JR</div>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: LAUNCHER ════════════ -->
-  <div id="launcher" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('home')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">UltraTechOS</span>
+  <!-- ── HOME ─────────────────────────────────────────────────── -->
+  <div id="home" class="screen on" style="padding-bottom:60px">
+    <div style="margin-bottom:24px">
+      <p style="font-size:12px;color:var(--text3)">Thursday, 26 June 2026</p>
+      <h1 style="font-size:24px;font-weight:800;margin-top:4px">Good morning, James 👋</h1>
+      <p style="font-size:13px;color:var(--text2);margin-top:4px">You have <strong style="color:var(--accent)">7 alerts</strong> and <strong style="color:#DC2626">3 overdue tasks</strong> today.</p>
     </div>
-    <div class="content" style="padding:0 16px 24px">
-      <div class="launcher-grid">
-        <div class="launcher-tile" onclick="goTo('fineguard')">
-          <div class="launcher-icon" style="background:rgba(40,199,111,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <div><div class="launcher-name">FineGuard</div><div class="launcher-desc">Compliance & audit trail</div></div>
+
+    <div class="sec-label">Modules</div>
+    <div class="tile-grid">
+      <!-- Money -->
+      <div class="tile" onclick="go('money')">
+        <div class="tile-cnt">£</div>
+        <div class="ic ic-lg ic-money">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <div class="launcher-tile" onclick="goTo('ultai')">
-          <div class="launcher-icon" style="background:rgba(122,90,248,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A5AF8" strokeWidth="2" strokeLinecap="round"><path d="M12 2a3 3 0 003 3v1a3 3 0 11-6 0V5a3 3 0 013-3z"/><path d="M19 10c0 5.52-3.13 8-7 9-3.87-1-7-3.48-7-9"/><path d="M12 14v4M9 18h6"/></svg></div>
-          <div><div class="launcher-name">UltAi</div><div class="launcher-desc">AI Receptionist</div></div>
+        <div>
+          <div class="tile-label">Money</div>
+          <div class="tile-sub">See your financial summary</div>
         </div>
-        <div class="launcher-tile" onclick="goTo('money')">
-          <div class="launcher-icon" style="background:rgba(255,193,69,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC145" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="16" cy="15" r="1.5" fill="#FFC145"/></svg></div>
-          <div><div class="launcher-name">Money</div><div class="launcher-desc">Financial Visibility</div></div>
+        <div class="tile-arrow">→</div>
+      </div>
+
+      <!-- Messages -->
+      <div class="tile" onclick="go('messages')">
+        <div class="tile-cnt">9</div>
+        <div class="ic ic-lg ic-msg">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
         </div>
-        <div class="launcher-tile" onclick="goTo('tasks')">
-          <div class="launcher-icon" style="background:rgba(61,139,255,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3D8BFF" strokeWidth="2" strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
-          <div><div class="launcher-name">Tasks</div><div class="launcher-desc">Work items & actions</div></div>
+        <div>
+          <div class="tile-label">Messages</div>
+          <div class="tile-sub">9 unread messages</div>
         </div>
-        <div class="launcher-tile" onclick="goTo('contacts')">
-          <div class="launcher-icon" style="background:rgba(168,85,247,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
-          <div><div class="launcher-name">Contacts</div><div class="launcher-desc">People & relationships</div></div>
+        <div class="tile-arrow">→</div>
+      </div>
+
+      <!-- Calls -->
+      <div class="tile" onclick="go('calls')">
+        <div class="tile-cnt">9</div>
+        <div class="ic ic-lg ic-calls">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
         </div>
-        <div class="launcher-tile" onclick="goTo('calls')">
-          <div class="launcher-icon" style="background:rgba(40,199,111,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div><div class="launcher-name">Calls</div><div class="launcher-desc">Call log & summaries</div></div>
+        <div>
+          <div class="tile-label">Calls</div>
+          <div class="tile-sub">9 calls today</div>
         </div>
-        <div class="launcher-tile" onclick="goTo('messages')">
-          <div class="launcher-icon" style="background:rgba(32,175,255,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#20AFFF" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
-          <div><div class="launcher-name">Messages</div><div class="launcher-desc">Inbox & threads</div></div>
+        <div class="tile-arrow">→</div>
+      </div>
+
+      <!-- Contacts -->
+      <div class="tile" onclick="go('contacts')">
+        <div class="ic ic-lg ic-contacts">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
-        <div class="launcher-tile" onclick="goTo('alerts')">
-          <div class="launcher-icon" style="background:rgba(255,138,52,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF8A34" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
-          <div><div class="launcher-name">Alerts</div><div class="launcher-desc">Notifications & actions</div></div>
+        <div>
+          <div class="tile-label">Contacts</div>
+          <div class="tile-sub">Manage your contacts</div>
+        </div>
+        <div class="tile-arrow">→</div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="tile" onclick="go('alerts')">
+        <div class="tile-cnt red">7</div>
+        <div class="ic ic-lg ic-alerts">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div>
+          <div class="tile-label">Alerts</div>
+          <div class="tile-sub">3 things need your attention</div>
+        </div>
+        <div class="tile-arrow">→</div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="tile" onclick="go('tasks')">
+        <div class="tile-cnt orange">14</div>
+        <div class="ic ic-lg ic-tasks">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </div>
+        <div>
+          <div class="tile-label">Tasks</div>
+          <div class="tile-sub">4 tasks due today</div>
+        </div>
+        <div class="tile-arrow">→</div>
+      </div>
+
+      <!-- Companies -->
+      <div class="tile" onclick="go('companies')">
+        <div class="ic ic-lg ic-companies">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        </div>
+        <div>
+          <div class="tile-label">Companies</div>
+          <div class="tile-sub">Manage your companies</div>
+        </div>
+        <div class="tile-arrow">→</div>
+      </div>
+
+      <!-- Documents -->
+      <div class="tile" onclick="go('docs')">
+        <div class="ic ic-lg ic-docs">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+        </div>
+        <div>
+          <div class="tile-label">Documents</div>
+          <div class="tile-sub">Manage your documents</div>
+        </div>
+        <div class="tile-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="sec-label">Company Workspaces</div>
+    <div class="g3" style="margin-bottom:24px">
+      <div class="ws-card" onclick="go('ws-fg')">
+        <div class="ws-head"><div class="ws-logo" style="background:linear-gradient(135deg,#22CCDD,#005599)">F</div><div><div class="ws-name">FineGuard Ltd</div><div class="ws-type">Compliance · Active</div></div></div>
+        <div class="ws-stats">
+          <div class="ws-stat"><div class="ws-stat-label">Tasks</div><div class="ws-stat-val">152</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Compliance</div><div class="ws-stat-val">98%</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Invoice</div><div class="ws-stat-val" style="color:#DC2626">£4.8k</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Status</div><div class="ws-stat-val" style="font-size:11px;color:#DC2626">Overdue</div></div>
+        </div>
+      </div>
+      <div class="ws-card" onclick="go('ws-bbj')">
+        <div class="ws-head"><div class="ws-logo" style="background:linear-gradient(135deg,#FF8800,#FF3300)">B</div><div><div class="ws-name">Builder Big Jobs</div><div class="ws-type">Construction · Active</div></div></div>
+        <div class="ws-stats">
+          <div class="ws-stat"><div class="ws-stat-label">Leads</div><div class="ws-stat-val">18</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Growth</div><div class="ws-stat-val" style="color:#16A34A">+29%</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Pipeline</div><div class="ws-stat-val">£1.09M</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Tasks Due</div><div class="ws-stat-val" style="color:#DC2626">4</div></div>
+        </div>
+      </div>
+      <div class="ws-card" onclick="go('ws-br')">
+        <div class="ws-head"><div class="ws-logo" style="background:linear-gradient(135deg,#22DD66,#009933)">B</div><div><div class="ws-name">BrightBuild Homes</div><div class="ws-type">Construction · Prospect</div></div></div>
+        <div class="ws-stats">
+          <div class="ws-stat"><div class="ws-stat-label">Value</div><div class="ws-stat-val">£85k</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Prob.</div><div class="ws-stat-val">65%</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Stage</div><div class="ws-stat-val" style="font-size:11px">Proposal</div></div>
+          <div class="ws-stat"><div class="ws-stat-label">Contact</div><div class="ws-stat-val" style="font-size:11px">J.Roberts</div></div>
         </div>
       </div>
     </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add active" style="box-shadow:0 4px 20px rgba(122,90,248,0.7)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+
+    <div class="sec-label">Recent Activity</div>
+    <div class="card">
+      <div class="act-li"><div class="act-dot" style="background:#16A34A"></div><div class="act-time">9:14 am</div><div><div class="act-text">Clare Webb replied to renewal quote</div><div class="act-sub">Messages · FineGuard Ltd</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#2299FF"></div><div class="act-time">8:50 am</div><div><div class="act-text">BBJ lead James Hartley — new enquiry logged</div><div class="act-sub">Companies · Builder Big Jobs</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#DC2626"></div><div class="act-time">Yesterday</div><div><div class="act-text">FineGuard invoice £4,800 unpaid — 14 days overdue</div><div class="act-sub">Money · FineGuard Ltd</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#BB44FF"></div><div class="act-time">Yesterday</div><div><div class="act-text">BrightBuild Homes proposal submitted</div><div class="act-sub">Companies · BrightBuild</div></div></div>
+    </div>
+
+    <!-- Today strip -->
+    <div class="today-strip">
+      <div>Today's focus: <span>3 things need your attention</span></div>
+      <div style="margin-left:auto">Next meeting: <span>Sales Review 14:00</span></div>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: FINEGUARD ════════════ -->
-  <div id="fineguard" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('launcher')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">FineGuard</span>
-      <div class="mod-header-right">
-        <span class="status-chip" style="background:rgba(40,199,111,0.15);color:#28C76F">● Live</span>
-      </div>
+  <!-- ── MONEY ─────────────────────────────────────────────────── -->
+  <div id="money" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Money</div><div class="page-sub">Invoices, payments &amp; cash flow</div></div>
+      <div class="head-actions"><button class="btn btn-s btn-sm">Export</button><button class="btn btn-p btn-sm">+ Invoice</button></div>
     </div>
-    <div class="content page-pad" style="padding-top:8px">
-      <!-- Score -->
-      <div class="card" style="margin-bottom:16px">
-        <p class="section-label" style="margin-bottom:12px">Compliance Score</p>
-        <div style="display:flex;align-items:center;gap:16px">
-          <svg width="90" height="90" viewBox="0 0 90 90">
-            <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="8"/>
-            <circle cx="45" cy="45" r="36" fill="none" stroke="#28C76F" stroke-width="8"
-              stroke-dasharray="226.2" stroke-dashoffset="27.1" stroke-linecap="round"
-              transform="rotate(-90 45 45)"/>
-            <text x="45" y="49" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-size="18" font-weight="700" font-family="system-ui">88%</text>
-          </svg>
-          <div>
-            <p style="font-size:22px;font-weight:700;color:#28C76F">Good</p>
-            <p style="font-size:11px;color:var(--text3);margin-top:4px">2 items need attention</p>
-            <p style="font-size:11px;color:var(--text3)">Last checked: today</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Checks -->
-      <p class="section-label">Compliance Checks</p>
-      <div class="card" style="margin-bottom:16px">
-        <div class="row">
-          <span style="font-size:16px">✅</span>
-          <div style="flex:1"><div class="row-label">GDPR data processing records</div><div class="row-sub">Up to date · 3 processors listed</div></div>
-        </div>
-        <div class="row">
-          <span style="font-size:16px">✅</span>
-          <div style="flex:1"><div class="row-label">ICO registration</div><div class="row-sub">Registered · Renews Jan 2025</div></div>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <span style="font-size:16px">⚠️</span>
-          <div style="flex:1"><div class="row-label" style="color:#FFC145">Contract review overdue</div><div class="row-sub">Last reviewed 14 months ago</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <span style="font-size:16px">⚠️</span>
-          <div style="flex:1"><div class="row-label" style="color:#FFC145">Health & safety policy</div><div class="row-sub">Not signed by all staff</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="row">
-          <span style="font-size:16px">✅</span>
-          <div style="flex:1"><div class="row-label">Anti-money laundering checks</div><div class="row-sub">3/3 clients verified</div></div>
-        </div>
-      </div>
-
-      <!-- Audit log -->
-      <p class="section-label">Audit Log</p>
-      <div class="card">
-        <div class="row">
-          <div style="flex:1"><div class="row-label" style="font-size:12px">GDPR record updated</div><div class="row-sub">Jun 24</div></div>
-          <span class="tag" style="background:rgba(40,199,111,0.15);color:#28C76F">Auto</span>
-        </div>
-        <div class="row">
-          <div style="flex:1"><div class="row-label" style="font-size:12px">Contract uploaded: Accuracy Ltd</div><div class="row-sub">Jun 21</div></div>
-          <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Manual</span>
-        </div>
-        <div class="row">
-          <div style="flex:1"><div class="row-label" style="font-size:12px">ICO registration renewed</div><div class="row-sub">Jan 12</div></div>
-          <span class="tag" style="background:rgba(40,199,111,0.15);color:#28C76F">Auto</span>
-        </div>
-      </div>
+    <div class="kpi" style="margin-bottom:22px">
+      <div class="kcard"><div class="kcard-label">Revenue</div><div class="kcard-val">£3,140</div><div class="kcard-sub up">↑ 12% vs last month</div></div>
+      <div class="kcard"><div class="kcard-label">Invoices Total</div><div class="kcard-val">£18,760</div><div class="kcard-sub flat">outstanding</div></div>
+      <div class="kcard"><div class="kcard-label">Overdue</div><div class="kcard-val">£4,800</div><div class="kcard-sub down">FineGuard 14 days</div></div>
+      <div class="kcard"><div class="kcard-label">Q3 Forecast</div><div class="kcard-val">£38k</div><div class="kcard-sub up">Base case</div></div>
     </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
-    </div>
-  </div>
-
-  <!-- ════════════ SCREEN: UltAi / AI RECEPTIONIST ════════════ -->
-  <div id="ultai" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('launcher')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
+    <div class="g2" style="gap:18px">
       <div>
-        <div class="mod-header-title">UltAi</div>
-        <div style="font-size:10px;color:var(--text3)">AI Receptionist</div>
-      </div>
-      <div class="mod-header-right">
-        <span class="status-chip" style="background:rgba(122,90,248,0.15);color:#A855F7">● Online</span>
-      </div>
-    </div>
-    <div class="content" style="padding:8px 16px 0">
-      <!-- Stats row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-        <div class="card" style="padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:#7A5AF8">12</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Calls today</div></div>
-        <div class="card" style="padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:#28C76F">94%</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Answered</div></div>
-        <div class="card" style="padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:#FFC145">3</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Follow-ups</div></div>
-      </div>
-
-      <!-- Chat demo -->
-      <p class="section-label">Recent interaction</p>
-      <div style="margin-bottom:12px">
-        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
-          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#7A5AF8,#3D8BFF);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px">🤖</div>
-          <div class="chat-bubble ai">Hello, you've reached UltraTech. I'm the AI receptionist — how can I help you today?</div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <div class="chat-bubble user">Hi, I'd like to speak to someone about a compliance audit.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
-          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#7A5AF8,#3D8BFF);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px">🤖</div>
-          <div class="chat-bubble ai">Of course! I've logged your enquiry. George will call you back within 2 hours. Can I take your name and best number?</div>
-        </div>
-        <div style="display:flex;justify-content:flex-end">
-          <div class="chat-bubble user">James Hartley, 07700 900 123.</div>
+        <div class="sec-label">Invoices</div>
+        <div class="card">
+          <div class="list">
+            <div class="li"><div class="li-av" style="background:#DC2626">F</div><div class="li-main"><div class="li-name">FineGuard Ltd — INV-0042</div><div class="li-sub">Issued 12 Jun · £4,800</div></div><span class="pill pill-red">Overdue 14d</span></div>
+            <div class="li"><div class="li-av" style="background:#FF8800">B</div><div class="li-main"><div class="li-name">Builder Big Jobs — INV-0043</div><div class="li-sub">Issued 20 Jun · £3,200</div></div><span class="pill pill-orange">Due 30 Jun</span></div>
+            <div class="li"><div class="li-av" style="background:#22DD66">B</div><div class="li-main"><div class="li-name">BrightBuild Homes — INV-0041</div><div class="li-sub">Issued 1 Jun · £6,000</div></div><span class="pill pill-green">Paid</span></div>
+            <div class="li"><div class="li-av" style="background:#9944FF">A</div><div class="li-main"><div class="li-name">Accuracy Ltd — INV-0040</div><div class="li-sub">Issued 25 May · £1,800</div></div><span class="pill pill-green">Paid</span></div>
+          </div>
         </div>
       </div>
-
-      <div style="background:rgba(40,199,111,0.08);border:1px solid rgba(40,199,111,0.2);border-radius:12px;padding:10px 12px;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:600;color:#28C76F;margin-bottom:4px">✓ Lead captured automatically</div>
-        <div style="font-size:11px;color:var(--text3)">James Hartley → added to Companies · Task created for George</div>
-      </div>
-
-      <!-- Recent calls -->
-      <p class="section-label">Recent calls</p>
-      <div class="card" style="margin-bottom:24px">
-        <div class="row">
-          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="font-size:12px">James Hartley</div><div class="row-sub">Enquiry · 9:14 am · 3m 22s</div></div>
-          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">Answered</span>
+      <div>
+        <div class="sec-label">Banking &amp; Subscriptions</div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="sec-label" style="margin-bottom:8px">Banking</div>
+          <div class="list">
+            <div class="li"><div class="li-av li-av-sq" style="background:linear-gradient(135deg,#2299FF,#0044CC)">B</div><div class="li-main"><div class="li-name">Barclays Business</div><div class="li-sub">Current account</div></div><div class="li-r"><div class="li-val">£22,140</div></div></div>
+            <div class="li"><div class="li-av li-av-sq" style="background:linear-gradient(135deg,#FF8800,#CC3000)">S</div><div class="li-main"><div class="li-name">Starling Bank</div><div class="li-sub">Savings</div></div><div class="li-r"><div class="li-val">£8,500</div></div></div>
+          </div>
         </div>
-        <div class="row">
-          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="font-size:12px">Clare Webb</div><div class="row-sub">Renewal query · 8:50 am · 1m 47s</div></div>
-          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">Answered</span>
-        </div>
-        <div class="row">
-          <div class="call-icon" style="background:rgba(248,113,113,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="font-size:12px">Unknown number</div><div class="row-sub">No message · Yesterday</div></div>
-          <span class="tag" style="background:rgba(248,113,113,0.12);color:#f87171">Missed</span>
+        <div class="card">
+          <div class="sec-label" style="margin-bottom:8px">Growth</div>
+          <div class="ch-row"><div class="ch-label">Jan–Mar</div><div class="ch-track"><div class="ch-fill" style="width:55%;background:linear-gradient(90deg,#5B3FE8,#3D8BFF)"></div></div><div class="ch-val">£31k</div></div>
+          <div class="ch-row"><div class="ch-label">Apr–Jun</div><div class="ch-track"><div class="ch-fill" style="width:72%;background:linear-gradient(90deg,#5B3FE8,#3D8BFF)"></div></div><div class="ch-val">£38k</div></div>
+          <div class="ch-row"><div class="ch-label">Jul–Sep</div><div class="ch-track"><div class="ch-fill" style="width:88%;background:linear-gradient(90deg,#22DD66,#16A34A)"></div></div><div class="ch-val">£48k</div></div>
         </div>
       </div>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: MONEY / FINANCIAL VISIBILITY ════════════ -->
-  <div id="money" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('launcher')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">Money</span>
+  <!-- ── MESSAGES ─────────────────────────────────────────────────── -->
+  <div id="messages" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Messages</div><div class="page-sub">9 unread conversations</div></div>
+      <button class="btn btn-p btn-sm">+ New</button>
     </div>
-    <div class="content page-pad" style="padding-top:8px">
-      <!-- Summary stats -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+    <div class="g2" style="gap:18px">
+      <div>
+        <div class="sec-label">Email</div>
         <div class="card">
-          <div class="money-stat-label">In this month</div>
-          <div class="money-stat-val" style="color:#28C76F">£18,240</div>
-          <div class="money-stat-delta" style="color:#28C76F">↑ 12% vs last month</div>
-        </div>
-        <div class="card">
-          <div class="money-stat-label">Out this month</div>
-          <div class="money-stat-val" style="color:#f87171">£11,820</div>
-          <div class="money-stat-delta" style="color:var(--text3)">→ Stable</div>
-        </div>
-      </div>
-
-      <!-- Cash flow chart -->
-      <p class="section-label">Cash Flow — Last 6 months</p>
-      <div class="card" style="margin-bottom:20px">
-        <div class="chart-bar-wrap">
-          <div class="chart-bar" style="height:45%;background:rgba(40,199,111,0.5)"></div>
-          <div class="chart-bar" style="height:60%;background:rgba(40,199,111,0.5)"></div>
-          <div class="chart-bar" style="height:38%;background:rgba(40,199,111,0.5)"></div>
-          <div class="chart-bar" style="height:72%;background:rgba(40,199,111,0.5)"></div>
-          <div class="chart-bar" style="height:55%;background:rgba(40,199,111,0.5)"></div>
-          <div class="chart-bar" style="height:85%;background:rgba(61,139,255,0.7);box-shadow:0 0 12px rgba(61,139,255,0.4)"></div>
-        </div>
-        <div class="chart-labels">
-          <span class="chart-label">Jan</span><span class="chart-label">Feb</span><span class="chart-label">Mar</span>
-          <span class="chart-label">Apr</span><span class="chart-label">May</span><span class="chart-label" style="color:var(--blue)">Jun</span>
-        </div>
-        <div style="margin-top:10px;font-size:11px;color:var(--text3)">Net position this month: <span style="color:#4ade80;font-weight:600">+£6,420</span></div>
-      </div>
-
-      <!-- Invoices -->
-      <p class="section-label">Outstanding Invoices</p>
-      <div class="card" style="margin-bottom:20px">
-        <div class="row" style="cursor:pointer">
-          <div style="flex:1">
-            <div class="row-label">FineGuard · Accuracy Ltd</div>
-            <div class="row-sub">Sent Jun 12 · 14 days overdue</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:14px;font-weight:600;color:#FFC145">£4,800</div>
-            <div style="font-size:10px;color:#f87171">Overdue</div>
-          </div>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div style="flex:1">
-            <div class="row-label">Monthly retainer · BBJ Ltd</div>
-            <div class="row-sub">Sent Jun 20 · Due Jul 4</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:14px;font-weight:600;color:var(--text)">£1,200</div>
-            <div style="font-size:10px;color:var(--text3)">Pending</div>
-          </div>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div style="flex:1">
-            <div class="row-label">Setup fee · New client</div>
-            <div class="row-sub">Draft</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:14px;font-weight:600;color:var(--text2)">£600</div>
-            <div style="font-size:10px;color:var(--text3)">Draft</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" style="margin-bottom:24px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        New invoice
-      </button>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
-    </div>
-  </div>
-
-  <!-- ════════════ SCREEN: TASKS ════════════ -->
-  <div id="tasks" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('launcher')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">Tasks</span>
-      <div class="mod-header-right">
-        <div class="badge">5</div>
-      </div>
-    </div>
-    <div class="content page-pad" style="padding-top:8px">
-      <!-- Tabs -->
-      <div style="display:flex;gap:6px;margin-bottom:16px">
-        <button onclick="taskTab(this,'today-tasks')" id="tab-today" class="pill active-tab" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Today</button>
-        <button onclick="taskTab(this,'all-tasks')" id="tab-all" class="pill" style="background:var(--surface);color:var(--text3);border:1px solid var(--border)">All open</button>
-        <button onclick="taskTab(this,'done-tasks')" id="tab-done" class="pill" style="background:var(--surface);color:var(--text3);border:1px solid var(--border)">Done</button>
-      </div>
-
-      <div id="today-tasks">
-        <div class="card">
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check" id="tc1"></div>
-            <div style="flex:1">
-              <div class="row-label">BBJ pipeline review</div>
-              <div class="row-sub">Due today · Companies</div>
+          <div class="list">
+            <div class="li" onclick="go('msg-detail')" style="background:#F7F8FE;border-radius:10px;padding:12px 8px;margin-bottom:2px;border-bottom:none">
+              <div class="li-av" style="background:linear-gradient(135deg,#22CCDD,#005599)">CW</div>
+              <div class="li-main"><div class="li-name">Clare Webb</div><div class="li-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">Just reviewed the renewal quote — looks good but…</div></div>
+              <div class="li-r"><div style="font-size:10px;color:var(--text3)">9:14 am</div><div style="width:8px;height:8px;border-radius:50%;background:var(--accent);margin-left:auto;margin-top:4px"></div></div>
             </div>
-            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
-          </div>
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check" id="tc2"></div>
-            <div style="flex:1">
-              <div class="row-label">Send proposal — Accuracy Ltd</div>
-              <div class="row-sub">Due today · Sales</div>
+            <div class="li" style="padding:12px 8px;border-bottom:none">
+              <div class="li-av" style="background:linear-gradient(135deg,#FF8800,#FF3300)">JH</div>
+              <div class="li-main"><div class="li-name" style="font-weight:700">James Hartley</div><div class="li-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">Hi, I'm interested in your services for a large project…</div></div>
+              <div class="li-r"><div style="font-size:10px;color:var(--text3)">8:50 am</div><div style="width:8px;height:8px;border-radius:50%;background:var(--accent);margin-left:auto;margin-top:4px"></div></div>
             </div>
-            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
-          </div>
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check done"></div>
-            <div style="flex:1">
-              <div class="row-label" style="text-decoration:line-through;color:var(--text3)">Morning emails reviewed</div>
-              <div class="row-sub">Done · 8:32 am</div>
+            <div class="li" style="padding:12px 8px;border-bottom:none">
+              <div class="li-av" style="background:linear-gradient(135deg,#22DD66,#009933)">MK</div>
+              <div class="li-main"><div class="li-name">Mike Kendall</div><div class="li-sub">Invoice cleared — thanks for the great work</div></div>
+              <div class="li-r"><div style="font-size:10px;color:var(--text3)">Yesterday</div></div>
+            </div>
+            <div class="li" style="padding:12px 8px;border-bottom:none">
+              <div class="li-av" style="background:linear-gradient(135deg,#9944FF,#5500BB)">SL</div>
+              <div class="li-main"><div class="li-name">Sarah Lee</div><div class="li-sub">Proposal received. Will review internally.</div></div>
+              <div class="li-r"><div style="font-size:10px;color:var(--text3)">Monday</div></div>
             </div>
           </div>
         </div>
       </div>
-
-      <div id="all-tasks" style="display:none">
+      <div>
+        <div class="sec-label">WhatsApp</div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="list">
+            <div class="li" style="padding:12px 8px;border-bottom:none"><div class="li-av" style="background:#22DD66">TM</div><div class="li-main"><div class="li-name">Tom Marsh</div><div class="li-sub">Can we meet Friday re: contract?</div></div><div class="li-r"><div style="font-size:10px;color:var(--text3)">2:30 pm</div></div></div>
+          </div>
+        </div>
+        <div class="sec-label">Call Today</div>
         <div class="card">
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check"></div>
-            <div style="flex:1"><div class="row-label">BBJ pipeline review</div><div class="row-sub">Due today</div></div>
-            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
-          </div>
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check"></div>
-            <div style="flex:1"><div class="row-label">Send proposal — Accuracy Ltd</div><div class="row-sub">Due today</div></div>
-            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
-          </div>
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check"></div>
-            <div style="flex:1"><div class="row-label">Call James Hartley — follow up</div><div class="row-sub">Due tomorrow</div></div>
-            <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Normal</span>
-          </div>
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check"></div>
-            <div style="flex:1"><div class="row-label">Review H&S policy signatures</div><div class="row-sub">Due Fri</div></div>
-            <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Normal</span>
-          </div>
-          <div class="row" onclick="toggleTask(this)">
-            <div class="task-check"></div>
-            <div style="flex:1"><div class="row-label">Chase overdue invoice — Accuracy Ltd</div><div class="row-sub">Overdue 14 days</div></div>
-            <span class="tag" style="background:rgba(248,113,113,0.15);color:#f87171">Urgent</span>
+          <div style="display:flex;gap:16px">
+            <div class="kcard" style="flex:1"><div class="kcard-label">Calls</div><div class="kcard-val" style="font-size:20px">3</div></div>
+            <div class="kcard" style="flex:1"><div class="kcard-label">Incoming</div><div class="kcard-val" style="font-size:20px">1</div></div>
+            <div class="kcard" style="flex:1"><div class="kcard-label">Missed</div><div class="kcard-val" style="font-size:20px;color:#DC2626">0</div></div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div id="done-tasks" style="display:none">
+  <!-- ── MSG DETAIL ─────────────────────────────────────────────────── -->
+  <div id="msg-detail" class="screen">
+    <button class="back" onclick="go('messages')">← Back to Messages</button>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+      <div class="li-av" style="width:48px;height:48px;font-size:16px;background:linear-gradient(135deg,#22CCDD,#005599)">CW</div>
+      <div><div style="font-size:18px;font-weight:800">Clare Webb</div><div style="font-size:12px;color:var(--text3)">FineGuard Ltd · Head of Compliance</div></div>
+    </div>
+    <div style="background:var(--bg);border-radius:14px;padding:18px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Clare Webb · 9:14 am today</div>
+      <p style="font-size:14px;color:var(--text);line-height:1.65">Just reviewed the renewal quote you sent — looks good, but can we discuss the rate increase? 8% feels high given we haven't had any major incidents this year. Happy to jump on a call this afternoon if you're free?</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <input style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text);outline:none" placeholder="Type a reply…">
+      <button class="btn btn-p">Send</button>
+    </div>
+  </div>
+
+  <!-- ── CALLS ─────────────────────────────────────────────────── -->
+  <div id="calls" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Calls</div><div class="page-sub">9 calls logged today</div></div>
+      <button class="btn btn-p btn-sm">+ Log Call</button>
+    </div>
+    <div class="kpi kpi3" style="margin-bottom:22px">
+      <div class="kcard"><div class="kcard-label">Call Today</div><div class="kcard-val">3</div></div>
+      <div class="kcard"><div class="kcard-label">Incoming</div><div class="kcard-val">1</div></div>
+      <div class="kcard"><div class="kcard-label">Avg Duration</div><div class="kcard-val">6:42</div></div>
+    </div>
+    <div class="sec-label">Recent Calls</div>
+    <div class="card">
+      <div class="list">
+        <div class="li"><div class="li-av" style="background:#22DD66">CW</div><div class="li-main"><div class="li-name">Clare Webb — FineGuard Ltd</div><div class="li-sub">9:01 am · 12 min · Renewal discussion</div></div><span class="pill pill-green">Completed</span></div>
+        <div class="li"><div class="li-av" style="background:#FF8800">JH</div><div class="li-main"><div class="li-name">James Hartley — BBJ</div><div class="li-sub">8:45 am · 8 min · New enquiry</div></div><span class="pill pill-green">Completed</span></div>
+        <div class="li"><div class="li-av" style="background:#9944FF">AR</div><div class="li-main"><div class="li-name">Anna Richards — Accuracy Ltd</div><div class="li-sub">Yesterday · 5 min · Proposal follow-up</div></div><span class="pill pill-gray">Yesterday</span></div>
+        <div class="li"><div class="li-av" style="background:#2299FF">TM</div><div class="li-main"><div class="li-name">Tom Marsh — BrightBuild</div><div class="li-sub">Yesterday · 15 min · Contract review</div></div><span class="pill pill-gray">Yesterday</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONTACTS ─────────────────────────────────────────────────── -->
+  <div id="contacts" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Contacts</div><div class="page-sub">182 contacts</div></div>
+      <button class="btn btn-p btn-sm">+ Add Contact</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:7px"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>Search contacts…</div>
+        <span class="pill pill-purple" style="padding:6px 14px">All Contacts <strong>182</strong></span>
+        <span class="pill pill-gray" style="padding:6px 14px">Segments</span>
+      </div>
+      <table class="dt">
+        <thead><tr><th>Name</th><th>Company</th><th>Role</th><th>Last Contact</th><th>Tag</th></tr></thead>
+        <tbody>
+          <tr onclick="go('contact-detail')"><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av" style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#22CCDD,#005599)">CW</div><strong>Clare Webb</strong></div></td><td>FineGuard Ltd</td><td>Head of Compliance</td><td>Today</td><td><span class="pill pill-blue">Key Contact</span></td></tr>
+          <tr><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av" style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#FF8800,#FF3300)">JH</div><strong>James Hartley</strong></div></td><td>Builder Big Jobs</td><td>Project Manager</td><td>Today</td><td><span class="pill pill-orange">New Lead</span></td></tr>
+          <tr onclick="go('ws-br')"><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av" style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#22DD66,#009933)">JR</div><strong>Jamie Roberts</strong></div></td><td>BrightBuild Homes</td><td>Director</td><td>25 Jun</td><td><span class="pill pill-purple">Prospect</span></td></tr>
+          <tr><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av" style="width:30px;height:30px;font-size:11px;background:linear-gradient(135deg,#9944FF,#5500BB)">AR</div><strong>Anna Richards</strong></div></td><td>Accuracy Ltd</td><td>Operations Lead</td><td>24 Jun</td><td><span class="pill pill-green">Active</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── CONTACT DETAIL ─────────────────────────────────────────────────── -->
+  <div id="contact-detail" class="screen">
+    <button class="back" onclick="go('contacts')">← Back to Contacts</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <div class="li-av" style="width:56px;height:56px;font-size:20px;border-radius:50%;background:linear-gradient(135deg,#22CCDD,#005599)">CW</div>
+      <div><div style="font-size:22px;font-weight:800">Clare Webb</div><div style="font-size:13px;color:var(--text3);margin-top:3px">Head of Compliance · FineGuard Ltd</div></div>
+    </div>
+    <div class="act-row">
+      <button class="act-btn ab-call"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> Call</button>
+      <button class="act-btn ab-email"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg> Email</button>
+      <button class="act-btn ab-text"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg> Text</button>
+    </div>
+    <div class="info-grid">
+      <div class="info-cell"><div class="info-label">Email</div><div class="info-val" style="font-size:12px">clare.webb@fineguard.co.uk</div></div>
+      <div class="info-cell"><div class="info-label">Phone</div><div class="info-val">+44 7700 900321</div></div>
+      <div class="info-cell"><div class="info-label">Company</div><div class="info-val">FineGuard Ltd</div></div>
+      <div class="info-cell"><div class="info-label">Last Contact</div><div class="info-val" style="font-size:12px">Today 9:14 am</div></div>
+    </div>
+    <div class="card"><div class="sec-label">Activity</div>
+      <div class="act-li"><div class="act-dot" style="background:#2299FF"></div><div class="act-time">Today</div><div><div class="act-text">Replied to renewal quote via message</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#22DD66"></div><div class="act-time">25 Jun</div><div><div class="act-text">Phone call — 12 min — Renewal discussion</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#BB44FF"></div><div class="act-time">20 Jun</div><div><div class="act-text">Email — Sent compliance pack for FY2026</div></div></div>
+    </div>
+  </div>
+
+  <!-- ── ALERTS ─────────────────────────────────────────────────── -->
+  <div id="alerts" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Alerts</div><div class="page-sub">7 alerts require attention</div></div>
+      <button class="btn btn-s btn-sm">Mark all read</button>
+    </div>
+    <div class="card">
+      <div class="list">
+        <div class="li"><div class="li-av" style="background:#DC2626">!</div><div class="li-main"><div class="li-name">FineGuard invoice £4,800 — 14 days overdue</div><div class="li-sub">Money · Critical</div></div><span class="pill pill-red">Urgent</span></div>
+        <div class="li"><div class="li-av" style="background:#F97316">!</div><div class="li-main"><div class="li-name">Renewal call with Clare Webb — 3 days overdue</div><div class="li-sub">Tasks · Overdue</div></div><span class="pill pill-orange">High</span></div>
+        <div class="li"><div class="li-av" style="background:#F97316">C</div><div class="li-main"><div class="li-name">3 FineGuard compliance items flagged</div><div class="li-sub">FineGuard · Review needed</div></div><span class="pill pill-orange">High</span></div>
+        <div class="li"><div class="li-av" style="background:#2299FF">B</div><div class="li-main"><div class="li-name">New BBJ lead — James Hartley unassigned</div><div class="li-sub">Companies · New lead</div></div><span class="pill pill-blue">Info</span></div>
+        <div class="li"><div class="li-av" style="background:#9944FF">A</div><div class="li-main"><div class="li-name">Accuracy Ltd proposal deadline today</div><div class="li-sub">Tasks · Due today</div></div><span class="pill pill-purple">Today</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TASKS ─────────────────────────────────────────────────── -->
+  <div id="tasks" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Tasks</div><div class="page-sub">14 due today · 3 overdue</div></div>
+      <button class="btn btn-p btn-sm">+ Add Task</button>
+    </div>
+    <div class="g2" style="gap:18px">
+      <div>
+        <div class="sec-label">Overdue</div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="task-li"><div class="tchk"></div><div class="ttext">FineGuard renewal call</div><span class="pill pill-red">3 days late</span></div>
+          <div class="task-li"><div class="tchk"></div><div class="ttext">Send FineGuard invoice chase email</div><span class="pill pill-red">2 days late</span></div>
+          <div class="task-li"><div class="tchk"></div><div class="ttext">Update BBJ lead qualification</div><span class="pill pill-orange">1 day late</span></div>
+        </div>
+        <div class="sec-label">Due Today</div>
         <div class="card">
-          <div class="row">
-            <div class="task-check done"></div>
-            <div style="flex:1"><div class="row-label" style="text-decoration:line-through;color:var(--text3)">Morning emails reviewed</div><div class="row-sub">Done 8:32 am</div></div>
-          </div>
-          <div class="row">
-            <div class="task-check done"></div>
-            <div style="flex:1"><div class="row-label" style="text-decoration:line-through;color:var(--text3)">Onboard Clare Webb to FineGuard</div><div class="row-sub">Done Jun 24</div></div>
-          </div>
+          <div class="task-li"><div class="tchk"></div><div class="ttext">BBJ pipeline review</div><span class="pill pill-blue">Today</span></div>
+          <div class="task-li"><div class="tchk"></div><div class="ttext">Accuracy Ltd proposal — send</div><span class="pill pill-blue">Today</span></div>
+          <div class="task-li"><div class="tchk done"><svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div><div class="ttext done">Morning standup notes filed</div><span class="pill pill-green">Done</span></div>
+          <div class="task-li"><div class="tchk done"><svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div><div class="ttext done">BrightBuild contract reviewed</div><span class="pill pill-green">Done</span></div>
         </div>
       </div>
-
-      <button class="btn btn-primary" style="margin-top:16px;margin-bottom:24px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add task
-      </button>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+      <div>
+        <div class="sec-label">Activity</div>
+        <div class="card">
+          <div class="act-li"><div class="act-dot" style="background:#16A34A"></div><div class="act-time">9:14</div><div><div class="act-text">Task completed: BrightBuild contract</div></div></div>
+          <div class="act-li"><div class="act-dot" style="background:#DC2626"></div><div class="act-time">8:00</div><div><div class="act-text">Renewal call flagged overdue</div></div></div>
+          <div class="act-li"><div class="act-dot" style="background:#2299FF"></div><div class="act-time">Yesterday</div><div><div class="act-text">BBJ pipeline review scheduled</div></div></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: CONTACTS ════════════ -->
-  <div id="contacts" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('launcher')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">Contacts</span>
-      <div class="mod-header-right">
-        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></button>
-      </div>
+  <!-- ── COMPANIES ─────────────────────────────────────────────────── -->
+  <div id="companies" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Companies</div><div class="page-sub">4 active clients and prospects</div></div>
+      <button class="btn btn-p btn-sm">+ Add Company</button>
     </div>
-    <div class="content page-pad" style="padding-top:8px">
-      <p class="section-label">Recent</p>
-      <div class="card" style="margin-bottom:16px">
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#3D8BFF,#20AFFF)">JH</div>
-          <div style="flex:1"><div class="row-label">James Hartley</div><div class="row-sub">BBJ Installations · Lead</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#A855F7,#7A5AF8)">CW</div>
-          <div style="flex:1"><div class="row-label">Clare Webb</div><div class="row-sub">Accuracy Ltd · Client</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#28C76F,#20AFFF)">MT</div>
-          <div style="flex:1"><div class="row-label">Mark Thompson</div><div class="row-sub">Thompson Plumbing · Prospect</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
-
-      <p class="section-label">All contacts — A</p>
-      <div class="card" style="margin-bottom:16px">
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#FFC145,#FF8A34)">AP</div>
-          <div style="flex:1"><div class="row-label">Alissa Parker</div><div class="row-sub">UltraTech · Operations</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
-
-      <p class="section-label">B</p>
-      <div class="card" style="margin-bottom:24px">
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#3D8BFF,#20AFFF)">BS</div>
-          <div style="flex:1"><div class="row-label">Ben Stephens</div><div class="row-sub">Stephens Electrical · Client</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    <div class="g2">
+      <div class="ws-card" onclick="go('ws-fg')"><div class="ws-head"><div class="ws-logo" style="background:linear-gradient(135deg,#22CCDD,#005599)">F</div><div><div class="ws-name">FineGuard Ltd</div><div class="ws-type">Compliance SaaS · Active</div></div></div><div class="ws-stats"><div class="ws-stat"><div class="ws-stat-label">Status</div><div class="ws-stat-val" style="font-size:11px;color:#DC2626">Invoice Overdue</div></div><div class="ws-stat"><div class="ws-stat-label">Outstanding</div><div class="ws-stat-val">£4,800</div></div></div></div>
+      <div class="ws-card" onclick="go('ws-bbj')"><div class="ws-head"><div class="ws-logo" style="background:linear-gradient(135deg,#FF8800,#FF3300)">B</div><div><div class="ws-name">Builder Big Jobs</div><div class="ws-type">Construction · Active</div></div></div><div class="ws-stats"><div class="ws-stat"><div class="ws-stat-label">Pipeline</div><div class="ws-stat-val">£1.09M</div></div><div class="ws-stat"><div class="ws-stat-label">Leads</div><div class="ws-stat-val">18</div></div></div></div>
+      <div class="ws-card" onclick="go('ws-br')"><div class="ws-head"><div class="ws-logo" style="background:linear-gradient(135deg,#22DD66,#009933)">B</div><div><div class="ws-name">BrightBuild Homes</div><div class="ws-type">Construction · Prospect</div></div></div><div class="ws-stats"><div class="ws-stat"><div class="ws-stat-label">Value</div><div class="ws-stat-val">£85k</div></div><div class="ws-stat"><div class="ws-stat-label">Prob.</div><div class="ws-stat-val">65%</div></div></div></div>
+      <div class="ws-card" onclick="go('ws-acc')"><div class="ws-head"><div class="ws-logo" style="background:linear-gradient(135deg,#9944FF,#5500BB)">A</div><div><div class="ws-name">Accuracy Ltd</div><div class="ws-type">Analytics · Prospect</div></div></div><div class="ws-stats"><div class="ws-stat"><div class="ws-stat-label">Stage</div><div class="ws-stat-val" style="font-size:11px">Proposal</div></div><div class="ws-stat"><div class="ws-stat-label">Value</div><div class="ws-stat-val">£12k</div></div></div></div>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: COMPANIES ════════════ -->
-  <div id="companies" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('home')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">Companies</span>
-      <div class="mod-header-right">
-        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></button>
-      </div>
+  <!-- ── DOCUMENTS ─────────────────────────────────────────────────── -->
+  <div id="docs" class="screen">
+    <div class="page-head">
+      <div><div class="page-title">Documents</div><div class="page-sub">23 files · VaultLine</div></div>
+      <button class="btn btn-p btn-sm">+ Upload</button>
     </div>
-    <div class="content page-pad" style="padding-top:8px">
-      <p class="section-label">Active clients</p>
-      <div class="card" style="margin-bottom:16px">
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#A855F7,#7A5AF8);font-size:12px">ACC</div>
-          <div style="flex:1"><div class="row-label">Accuracy Ltd</div><div class="row-sub">FineGuard client · Invoice overdue</div></div>
-          <span style="font-size:10px;color:#FFC145;font-weight:600">!</span>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#28C76F,#20AFFF);font-size:12px">STE</div>
-          <div style="flex:1"><div class="row-label">Stephens Electrical</div><div class="row-sub">Retainer · All up to date</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
-
-      <p class="section-label">Leads</p>
-      <div class="card" style="margin-bottom:16px">
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3D8BFF,#20AFFF);font-size:12px">BBJ</div>
-          <div style="flex:1"><div class="row-label">BBJ Installations</div><div class="row-sub">New enquiry · Pipeline review today</div></div>
-          <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">New</span>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#FFC145,#FF8A34);font-size:12px">THP</div>
-          <div style="flex:1"><div class="row-label">Thompson Plumbing</div><div class="row-sub">Proposal sent Jun 20</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" style="margin-bottom:24px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add company
-      </button>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    <div class="card">
+      <table class="dt">
+        <thead><tr><th>Name</th><th>Company</th><th>Type</th><th>Updated</th><th>Size</th></tr></thead>
+        <tbody>
+          <tr><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av li-av-sq" style="width:28px;height:28px;font-size:9px;background:linear-gradient(135deg,#FF3300,#FF8800)">PDF</div>FineGuard Renewal Quote 2026</div></td><td>FineGuard</td><td>Quote</td><td>Today</td><td>248 KB</td></tr>
+          <tr><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av li-av-sq" style="width:28px;height:28px;font-size:9px;background:linear-gradient(135deg,#0055FF,#33AAFF)">DOC</div>BrightBuild Contract Draft</div></td><td>BrightBuild</td><td>Contract</td><td>25 Jun</td><td>182 KB</td></tr>
+          <tr><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av li-av-sq" style="width:28px;height:28px;font-size:9px;background:linear-gradient(135deg,#16A34A,#22DD66)">XLS</div>BBJ Pipeline Q3 2026</div></td><td>Builder Big Jobs</td><td>Spreadsheet</td><td>24 Jun</td><td>96 KB</td></tr>
+          <tr><td><div style="display:flex;align-items:center;gap:9px"><div class="li-av li-av-sq" style="width:28px;height:28px;font-size:9px;background:linear-gradient(135deg,#9944FF,#5500BB)">PDF</div>Accuracy Ltd Proposal v2</div></td><td>Accuracy Ltd</td><td>Proposal</td><td>23 Jun</td><td>340 KB</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: MESSAGES ════════════ -->
-  <div id="messages" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('home')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">Messages</span>
-      <div class="mod-header-right"><div class="badge">3</div></div>
+  <!-- ── WORKSPACE: FINEGUARD ─────────────────────────────────────────────────── -->
+  <div id="ws-fg" class="screen">
+    <button class="back" onclick="go('companies')">← Back to Companies</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <div class="ws-logo" style="width:56px;height:56px;border-radius:16px;font-size:22px;background:linear-gradient(135deg,#22CCDD,#005599)">F</div>
+      <div>
+        <div style="font-size:22px;font-weight:800">FineGuard Ltd</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:3px">Compliance SaaS · Active Client</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span class="pill pill-red">Invoice Overdue</span><span class="pill pill-blue">98% Compliant</span></div>
+      </div>
     </div>
-    <div class="content page-pad" style="padding-top:8px">
+    <div class="kpi" style="margin-bottom:22px">
+      <div class="kcard"><div class="kcard-label">Tasks Complete</div><div class="kcard-val">152</div></div>
+      <div class="kcard"><div class="kcard-label">Compliance</div><div class="kcard-val">98%</div><div class="kcard-sub up">↑ Excellent</div></div>
+      <div class="kcard"><div class="kcard-label">Alerts</div><div class="kcard-val">3</div><div class="kcard-sub down">Action needed</div></div>
+      <div class="kcard"><div class="kcard-label">Contract Value</div><div class="kcard-val">£19.2k</div><div class="kcard-sub flat">annual</div></div>
+    </div>
+    <div class="g2" style="gap:18px">
       <div class="card">
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#A855F7,#7A5AF8)">CW</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div class="row-label" style="font-size:13px">Clare Webb</div>
-              <div style="font-size:10px;color:var(--text3)">9:14 am</div>
-            </div>
-            <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Thanks for the renewal quote, looks good to me...</div>
-          </div>
-          <div class="msg-unread" style="margin-left:8px"></div>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#3D8BFF,#20AFFF)">JH</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div class="row-label" style="font-size:13px">James Hartley</div>
-              <div style="font-size:10px;color:var(--text3)">8:50 am</div>
-            </div>
-            <div style="font-size:12px;color:var(--text2)">Hi, I'd like to discuss a compliance audit...</div>
-          </div>
-          <div class="msg-unread" style="margin-left:8px"></div>
-        </div>
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#28C76F,#20AFFF)">BS</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div class="row-label" style="font-size:13px">Ben Stephens</div>
-              <div style="font-size:10px;color:var(--text3)">Yesterday</div>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">All good here, see you Thursday</div>
+        <div class="sec-label">Compliance by Area</div>
+        <div class="ch-row"><div class="ch-label">Data Privacy</div><div class="ch-track"><div class="ch-fill" style="width:98%;background:linear-gradient(90deg,#22CCDD,#005599)"></div></div><div class="ch-val">98%</div></div>
+        <div class="ch-row"><div class="ch-label">Health &amp; Safety</div><div class="ch-track"><div class="ch-fill" style="width:95%;background:linear-gradient(90deg,#22CCDD,#005599)"></div></div><div class="ch-val">95%</div></div>
+        <div class="ch-row"><div class="ch-label">Financial</div><div class="ch-track"><div class="ch-fill" style="width:91%;background:linear-gradient(90deg,#FFB800,#FF8800)"></div></div><div class="ch-val">91%</div></div>
+        <div class="ch-row"><div class="ch-label">Employment</div><div class="ch-track"><div class="ch-fill" style="width:88%;background:linear-gradient(90deg,#FFB800,#FF8800)"></div></div><div class="ch-val">88%</div></div>
+        <div class="ch-row"><div class="ch-label">Environmental</div><div class="ch-track"><div class="ch-fill" style="width:78%;background:linear-gradient(90deg,#FF8800,#DC2626)"></div></div><div class="ch-val">78%</div></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="sec-label">Flagged Items</div>
+          <div class="list">
+            <div class="li"><div class="li-av" style="background:#DC2626;width:30px;height:30px;font-size:11px">!</div><div class="li-main"><div class="li-name">Environmental policy not updated</div><div class="li-sub">Due 28 Jun</div></div></div>
+            <div class="li"><div class="li-av" style="background:#F97316;width:30px;height:30px;font-size:11px">!</div><div class="li-main"><div class="li-name">Payroll compliance check outstanding</div><div class="li-sub">Due 30 Jun</div></div></div>
+            <div class="li"><div class="li-av" style="background:#FFB800;width:30px;height:30px;font-size:11px">!</div><div class="li-main"><div class="li-name">Employment contract templates to review</div><div class="li-sub">Due 5 Jul</div></div></div>
           </div>
         </div>
-        <div class="row" style="cursor:pointer">
-          <div class="contact-avatar" style="background:linear-gradient(135deg,#FFC145,#FF8A34)">MT</div>
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div class="row-label" style="font-size:13px">Mark Thompson</div>
-              <div style="font-size:10px;color:var(--text3)">Jun 24</div>
-            </div>
-            <div style="font-size:12px;color:var(--text3)">Received your proposal, will review tomorrow</div>
-          </div>
-          <div class="msg-unread" style="background:var(--orange);margin-left:8px"></div>
+        <div class="card">
+          <div class="sec-label">Recent Activity</div>
+          <div class="act-li"><div class="act-dot" style="background:#22DD66"></div><div class="act-time">Today</div><div><div class="act-text">Q2 audit accepted — no findings</div></div></div>
+          <div class="act-li"><div class="act-dot" style="background:#DC2626"></div><div class="act-time">24 Jun</div><div><div class="act-text">3 items flagged in monthly review</div></div></div>
         </div>
       </div>
-    </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: CALLS ════════════ -->
-  <div id="calls" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('launcher')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">Calls</span>
-    </div>
-    <div class="content page-pad" style="padding-top:8px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px">
-        <div class="card" style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:#28C76F">12</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Today</div></div>
-        <div class="card" style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--text)">1</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Missed</div></div>
-        <div class="card" style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:#FFC145">3</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Follow-ups</div></div>
-      </div>
-
-      <p class="section-label">Today</p>
-      <div class="card" style="margin-bottom:16px">
-        <div class="row">
-          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div style="flex:1"><div class="row-label">James Hartley · BBJ</div><div class="row-sub">9:14 am · 3m 22s · Compliance enquiry</div></div>
-          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">AI</span>
-        </div>
-        <div class="row">
-          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div style="flex:1"><div class="row-label">Clare Webb · Accuracy Ltd</div><div class="row-sub">8:50 am · 1m 47s · Renewal query</div></div>
-          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">AI</span>
-        </div>
-        <div class="row">
-          <div class="call-icon" style="background:rgba(248,113,113,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
-          <div style="flex:1"><div class="row-label">Unknown</div><div class="row-sub">8:02 am · No message left</div></div>
-          <span class="tag" style="background:rgba(248,113,113,0.12);color:#f87171">Missed</span>
-        </div>
+  <!-- ── WORKSPACE: BBJ ─────────────────────────────────────────────────── -->
+  <div id="ws-bbj" class="screen">
+    <button class="back" onclick="go('companies')">← Back to Companies</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <div class="ws-logo" style="width:56px;height:56px;border-radius:16px;font-size:22px;background:linear-gradient(135deg,#FF8800,#FF3300)">B</div>
+      <div>
+        <div style="font-size:22px;font-weight:800">Builder Big Jobs</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:3px">Construction · Active Client · 18 leads in pipeline</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span class="pill pill-green">Active</span><span class="pill pill-orange">4 Tasks Due</span></div>
       </div>
     </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    <div class="kpi" style="margin-bottom:22px">
+      <div class="kcard"><div class="kcard-label">Pipeline</div><div class="kcard-val">£1.09M</div><div class="kcard-sub up">↑ 29%</div></div>
+      <div class="kcard"><div class="kcard-label">Active Leads</div><div class="kcard-val">18</div><div class="kcard-sub up">+3 this week</div></div>
+      <div class="kcard"><div class="kcard-label">Win Rate</div><div class="kcard-val">34%</div></div>
+      <div class="kcard"><div class="kcard-label">Revenue YTD</div><div class="kcard-val">£8,400</div></div>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="sec-label">Pipeline Stages</div>
+      <div class="pipeline">
+        <div class="ps" style="background:#5B3FE8;flex:3"></div>
+        <div class="ps" style="background:#2299FF;flex:4"></div>
+        <div class="ps" style="background:#22DD66;flex:3"></div>
+        <div class="ps" style="background:#FFB800;flex:2"></div>
+        <div class="ps" style="background:#16A34A;flex:6"></div>
+      </div>
+      <div class="pipe-stage"><span><span style="color:#5B3FE8">●</span> New (3)</span><span><span style="color:#2299FF">●</span> Qualified (4)</span><span><span style="color:#22DD66">●</span> Proposal (3)</span><span><span style="color:#FFB800">●</span> Negotiation (2)</span><span><span style="color:#16A34A">●</span> Won (6)</span></div>
+    </div>
+    <div class="card">
+      <div class="sec-label">Leads</div>
+      <table class="dt">
+        <thead><tr><th>Name</th><th>Stage</th><th>Value</th><th>Last Activity</th></tr></thead>
+        <tbody>
+          <tr onclick="go('ws-br')"><td><strong>James Hartley</strong></td><td><span class="pill pill-blue">New</span></td><td>£22k</td><td>Today 8:50</td></tr>
+          <tr><td><strong>Mark Collins</strong></td><td><span class="pill pill-green">Proposal</span></td><td>£18k</td><td>24 Jun</td></tr>
+          <tr><td><strong>BrightBuild Homes</strong></td><td><span class="pill pill-orange">Negotiation</span></td><td>£85k</td><td>25 Jun</td></tr>
+          <tr><td><strong>Westfield Builders</strong></td><td><span class="pill pill-green">Won</span></td><td>£41k</td><td>18 Jun</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ════════════ SCREEN: ALERTS ════════════ -->
-  <div id="alerts" class="screen" style="flex:1;overflow:hidden">
-    <div class="mod-header" style="padding-bottom:14px">
-      <button class="mod-header-back" onclick="goTo('launcher')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      </button>
-      <span class="mod-header-title">Alerts</span>
-      <div class="mod-header-right"><div class="badge" style="background:#FF8A34">4</div></div>
-    </div>
-    <div class="content page-pad" style="padding-top:8px">
-      <p class="section-label">Action required</p>
-      <div class="card" style="margin-bottom:16px">
-        <div class="row" style="cursor:pointer" onclick="goTo('money')">
-          <div class="alert-icon" style="background:rgba(248,113,113,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="color:#f87171">Invoice overdue — Accuracy Ltd</div><div class="row-sub">£4,800 · 14 days overdue</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="row" style="cursor:pointer" onclick="goTo('fineguard')">
-          <div class="alert-icon" style="background:rgba(255,193,69,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC145" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="color:#FFC145">Contract review overdue</div><div class="row-sub">Last reviewed 14 months ago</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="row" style="cursor:pointer" onclick="goTo('fineguard')">
-          <div class="alert-icon" style="background:rgba(255,193,69,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC145" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="color:#FFC145">H&S policy — 2 unsigned</div><div class="row-sub">Requires staff action</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-        <div class="row" style="cursor:pointer" onclick="goTo('tasks')">
-          <div class="alert-icon" style="background:rgba(61,139,255,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3D8BFF" strokeWidth="2" strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
-          <div style="flex:1"><div class="row-label">BBJ pipeline review due</div><div class="row-sub">Scheduled for today</div></div>
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
+  <!-- ── WORKSPACE: BRIGHTBUILD (Object Detail) ─────────────────────────── -->
+  <div id="ws-br" class="screen">
+    <button class="back" onclick="go('ws-bbj')">← Back to Builder Big Jobs</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <div class="ws-logo" style="width:56px;height:56px;border-radius:16px;font-size:22px;background:linear-gradient(135deg,#22DD66,#009933)">B</div>
+      <div>
+        <div style="font-size:22px;font-weight:800">BrightBuild Homes</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:3px">Construction · Prospect · Jamie Roberts, Director</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span class="pill pill-purple">Proposal Stage</span><span class="pill pill-green">65% probability</span></div>
       </div>
+    </div>
+    <div class="act-row">
+      <button class="act-btn ab-call"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> Call Jamie</button>
+      <button class="act-btn ab-email"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg> Email</button>
+      <button class="act-btn ab-text"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg> Text</button>
+    </div>
+    <div class="info-grid">
+      <div class="info-cell"><div class="info-label">Deal Value</div><div class="info-val">£85,000</div></div>
+      <div class="info-cell"><div class="info-label">Contact</div><div class="info-val">Jamie Roberts</div></div>
+      <div class="info-cell"><div class="info-label">Stage</div><div class="info-val">Proposal</div></div>
+      <div class="info-cell"><div class="info-label">Probability</div><div class="info-val">65%</div></div>
+      <div class="info-cell"><div class="info-label">Expected Close</div><div class="info-val">July 2026</div></div>
+      <div class="info-cell"><div class="info-label">Sector</div><div class="info-val">Construction</div></div>
+    </div>
+    <div style="margin-bottom:18px">
+      <div class="sec-label">Deal Probability</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+        <div class="pbar"><div class="pfill" style="width:65%;background:linear-gradient(90deg,#22DD66,#009933)"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)"><span>0%</span><span style="font-weight:700;color:var(--text)">65% likely to close</span><span>100%</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-label">Activity Timeline</div>
+      <div class="act-li"><div class="act-dot" style="background:#BB44FF"></div><div class="act-time">25 Jun</div><div><div class="act-text">Proposal submitted for internal review</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#22DD66"></div><div class="act-time">22 Jun</div><div><div class="act-text">Phone call — 15 min — Contract scope</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#2299FF"></div><div class="act-time">18 Jun</div><div><div class="act-text">Initial discovery — qualified as strong prospect</div></div></div>
+    </div>
+  </div>
 
-      <p class="section-label">Recent — no action needed</p>
+  <!-- ── WORKSPACE: ACCURACY ─────────────────────────────────────────────────── -->
+  <div id="ws-acc" class="screen">
+    <button class="back" onclick="go('companies')">← Back to Companies</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <div class="ws-logo" style="width:56px;height:56px;border-radius:16px;font-size:22px;background:linear-gradient(135deg,#9944FF,#5500BB)">A</div>
+      <div>
+        <div style="font-size:22px;font-weight:800">Accuracy Ltd</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:3px">Analytics · Prospect · Anna Richards</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span class="pill pill-purple">Proposal Stage</span></div>
+      </div>
+    </div>
+    <div class="kpi kpi3" style="margin-bottom:22px">
+      <div class="kcard"><div class="kcard-label">Deal Value</div><div class="kcard-val">£12k</div></div>
+      <div class="kcard"><div class="kcard-label">Tasks</div><div class="kcard-val">8</div><div class="kcard-sub down">6 open</div></div>
+      <div class="kcard"><div class="kcard-label">Contacts</div><div class="kcard-val">3</div></div>
+    </div>
+    <div class="card">
+      <div class="sec-label">Recent Activity</div>
+      <div class="act-li"><div class="act-dot" style="background:#9944FF"></div><div class="act-time">Today</div><div><div class="act-text">Proposal deadline — send today</div></div></div>
+      <div class="act-li"><div class="act-dot" style="background:#22DD66"></div><div class="act-time">24 Jun</div><div><div class="act-text">Call with Anna Richards — 5 min</div></div></div>
+    </div>
+  </div>
+
+  <!-- ── FINEGUARD MODULE ─────────────────────────────────────────────────── -->
+  <div id="fg" class="screen">
+    <div class="page-head">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="ic ic-md ic-fg"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <div><div class="page-title">FineGuard</div><div class="page-sub">Compliance &amp; regulatory workflow engine</div></div>
+      </div>
+      <button class="btn btn-p btn-sm">Run Audit</button>
+    </div>
+    <div class="kpi kpi3" style="margin-bottom:22px">
+      <div class="kcard"><div class="kcard-label">Overall Compliance</div><div class="kcard-val">94.2%</div><div class="kcard-sub up">↑ 2.1% this month</div></div>
+      <div class="kcard"><div class="kcard-label">Open Items</div><div class="kcard-val">7</div><div class="kcard-sub down">3 flagged</div></div>
+      <div class="kcard"><div class="kcard-label">Next Review</div><div class="kcard-val">Jul 3</div><div class="kcard-sub flat">7 days</div></div>
+    </div>
+    <div class="g2" style="gap:18px">
       <div class="card">
-        <div class="row">
-          <div class="alert-icon" style="background:rgba(40,199,111,0.10)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="font-size:12px">GDPR records updated automatically</div><div class="row-sub">Jun 24 · FineGuard</div></div>
-        </div>
-        <div class="row">
-          <div class="alert-icon" style="background:rgba(40,199,111,0.10)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
-          <div style="flex:1"><div class="row-label" style="font-size:12px">New lead captured — James Hartley</div><div class="row-sub">Today · UltAi</div></div>
+        <div class="sec-label">Compliance by Area</div>
+        <div class="ch-row"><div class="ch-label">Data Privacy</div><div class="ch-track"><div class="ch-fill" style="width:98%;background:linear-gradient(90deg,#22DD66,#009933)"></div></div><div class="ch-val">98%</div></div>
+        <div class="ch-row"><div class="ch-label">H &amp; Safety</div><div class="ch-track"><div class="ch-fill" style="width:95%;background:linear-gradient(90deg,#22DD66,#009933)"></div></div><div class="ch-val">95%</div></div>
+        <div class="ch-row"><div class="ch-label">Financial</div><div class="ch-track"><div class="ch-fill" style="width:91%;background:linear-gradient(90deg,#FFB800,#FF8800)"></div></div><div class="ch-val">91%</div></div>
+        <div class="ch-row"><div class="ch-label">Employment</div><div class="ch-track"><div class="ch-fill" style="width:88%;background:linear-gradient(90deg,#FFB800,#FF8800)"></div></div><div class="ch-val">88%</div></div>
+        <div class="ch-row"><div class="ch-label">Environmental</div><div class="ch-track"><div class="ch-fill" style="width:78%;background:linear-gradient(90deg,#FF8800,#DC2626)"></div></div><div class="ch-val">78%</div></div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Flagged Items — Action Required</div>
+        <div class="list">
+          <div class="li"><div class="li-av" style="background:#DC2626;width:30px;height:30px;font-size:11px">!</div><div class="li-main"><div class="li-name">Environmental policy not updated</div><div class="li-sub">Due 28 Jun · Environmental</div></div></div>
+          <div class="li"><div class="li-av" style="background:#F97316;width:30px;height:30px;font-size:11px">!</div><div class="li-main"><div class="li-name">Payroll compliance check outstanding</div><div class="li-sub">Due 30 Jun · Financial</div></div></div>
+          <div class="li"><div class="li-av" style="background:#FFB800;width:30px;height:30px;font-size:11px">!</div><div class="li-main"><div class="li-name">Employment contract templates</div><div class="li-sub">Due 5 Jul · Employment</div></div></div>
         </div>
       </div>
     </div>
-    <div class="bottom-nav">
-      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
-      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
-      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
-      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+  </div>
+
+  <!-- ── ULTAI ─────────────────────────────────────────────────── -->
+  <div id="ai" class="screen">
+    <div class="page-head">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="ic ic-md ic-ai"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div>
+        <div><div class="page-title">UltAi</div><div class="page-sub">AI-powered business intelligence</div></div>
+      </div>
+    </div>
+    <div class="g2" style="gap:18px">
+      <div class="card" style="border-color:rgba(91,63,232,.2);background:linear-gradient(135deg,rgba(91,63,232,.03),rgba(255,68,170,.02))">
+        <div class="sec-label">AI Insights</div>
+        <div class="list">
+          <div class="li"><div class="li-av" style="background:linear-gradient(135deg,#5B3FE8,#A855F7);width:30px;height:30px;font-size:9px;font-weight:800">AI</div><div class="li-main"><div class="li-name">Chase FineGuard — high revenue risk</div><div class="li-sub">£4,800 overdue · Recommended action</div></div></div>
+          <div class="li"><div class="li-av" style="background:linear-gradient(135deg,#5B3FE8,#A855F7);width:30px;height:30px;font-size:9px;font-weight:800">AI</div><div class="li-main"><div class="li-name">BBJ pipeline velocity slowing</div><div class="li-sub">3 leads stale &gt;14 days · Review</div></div></div>
+          <div class="li" style="border-bottom:none"><div class="li-av" style="background:linear-gradient(135deg,#5B3FE8,#A855F7);width:30px;height:30px;font-size:9px;font-weight:800">AI</div><div class="li-main"><div class="li-name">BrightBuild close probability rising</div><div class="li-sub">+8% this week · Push for contract</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-label">Ask UltAi</div>
+        <div style="background:var(--bg);border-radius:12px;padding:16px;margin-bottom:14px;font-size:13.5px;color:var(--text);line-height:1.65">
+          Based on your current pipeline, Q3 forecast is <strong style="color:var(--accent)">£38,000</strong> at the base case. FineGuard is your highest churn risk — recommend a call before end of week.
+        </div>
+        <div style="display:flex;gap:8px">
+          <input style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12.5px;color:var(--text);outline:none" placeholder="Ask anything about your business…">
+          <button class="btn btn-p">Ask</button>
+        </div>
+      </div>
     </div>
   </div>
 
-</div><!-- /device -->
-</div><!-- /device-wrap -->
+</div><!-- /main -->
+</div><!-- /app -->
 
 <script>
-  // ─── Clock ───
-  function tick(){
-    const d=new Date();
-    const h=d.getHours().toString().padStart(2,'0');
-    const m=d.getMinutes().toString().padStart(2,'0');
-    document.getElementById('clock').textContent=h+':'+m;
-  }
-  tick(); setInterval(tick,30000);
+const TITLES = {
+  home:'Home',money:'Money',messages:'Messages','msg-detail':'Messages',
+  calls:'Calls',contacts:'Contacts','contact-detail':'Contacts',
+  alerts:'Alerts',tasks:'Tasks',companies:'Companies',docs:'Documents',
+  'ws-fg':'FineGuard Ltd','ws-bbj':'Builder Big Jobs','ws-br':'BrightBuild Homes',
+  'ws-acc':'Accuracy Ltd',fg:'FineGuard',ai:'UltAi'
+}
+const NAVS = {
+  home:'n-home',money:'n-money',messages:'n-messages','msg-detail':'n-messages',
+  calls:'n-calls',contacts:'n-contacts','contact-detail':'n-contacts',
+  alerts:'n-alerts',tasks:'n-tasks',companies:'n-companies',docs:'n-docs',
+  'ws-fg':'n-ws-fg','ws-bbj':'n-ws-bbj','ws-br':'n-ws-br','ws-acc':'n-ws-acc',
+  fg:'n-fg',ai:'n-ai'
+}
+let cur = 'home'
 
-  // ─── Date ───
-  const dn=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const now=new Date();
-  const el=document.getElementById('home-date');
-  if(el) el.textContent=dn[now.getDay()]+', '+now.getDate()+' '+mn[now.getMonth()];
+function go(id){
+  document.getElementById(cur)?.classList.remove('on')
+  if(NAVS[cur]) document.getElementById(NAVS[cur])?.classList.remove('on')
+  const el = document.getElementById(id)
+  if(el){ el.classList.add('on'); el.scrollTop=0; cur=id }
+  if(NAVS[id]) document.getElementById(NAVS[id])?.classList.add('on')
+  const tb = document.getElementById('tb-title')
+  if(tb) tb.textContent = TITLES[id] || id
+  // Show/hide today strip only on home
+  const strip = document.querySelector('.today-strip')
+  if(strip) strip.style.display = id==='home' ? 'flex' : 'none'
+}
 
-  // ─── Navigation ───
-  function goTo(id){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    const t=document.getElementById(id);
-    if(t){t.classList.add('active');t.querySelector('.content')?.scrollTo(0,0)}
-  }
-
-  // ─── Task toggles ───
-  function toggleTask(row){
-    const check=row.querySelector('.task-check');
-    const label=row.querySelector('.row-label');
-    if(!check) return;
-    const done=check.classList.toggle('done');
-    if(label){
-      label.style.textDecoration=done?'line-through':'none';
-      label.style.color=done?'var(--text3)':'var(--text)';
-    }
-    if(done){
-      check.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-    } else {
-      check.innerHTML='';
-    }
-  }
-
-  // ─── Task tabs ───
-  function taskTab(btn,showId){
-    ['today-tasks','all-tasks','done-tasks'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.style.display=(id===showId)?'block':'none';
-    });
-    document.querySelectorAll('#tasks .pill').forEach(p=>{
-      p.style.background='var(--surface)';
-      p.style.color='var(--text3)';
-      p.style.border='1px solid var(--border)';
-    });
-    btn.style.background='rgba(61,139,255,0.15)';
-    btn.style.color='#3D8BFF';
-    btn.style.border='none';
-  }
+// Task toggle
+document.querySelectorAll('.task-li').forEach(li=>{
+  li.addEventListener('click',()=>{
+    const chk = li.querySelector('.tchk')
+    const txt = li.querySelector('.ttext')
+    if(!chk||!txt) return
+    const done = chk.classList.toggle('done')
+    chk.innerHTML = done ? '<svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' : ''
+    txt.classList.toggle('done', done)
+  })
+})
 </script>
 </body>
 </html>
