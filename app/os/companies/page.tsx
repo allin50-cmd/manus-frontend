@@ -1,13 +1,21 @@
 'use client'
 
 import Link from 'next/link'
+import { COMPANY_REGISTRY } from '@/lib/company-registry'
 
-const COMPANIES = [
-  {
-    href: '/os/companies/fineguard',
-    name: 'FineGuard',
-    tagline: 'Compliance · Monitoring · Alerts',
-    color: '#00A86B',
+type CompanyVisual = {
+  gradFrom: string
+  gradTo: string
+  glow: string
+  kpi: string
+  kpiLabel: string
+  badge: string | null
+  badgeColor: string | null
+  icon: React.ReactNode
+}
+
+const COMPANY_VISUALS: Record<string, CompanyVisual> = {
+  fineguard: {
     gradFrom: '#6EE7B7',
     gradTo: '#059669',
     glow: 'rgba(0,168,107,0.45)',
@@ -22,11 +30,7 @@ const COMPANIES = [
       </svg>
     ),
   },
-  {
-    href: '/os/companies/builder-big-jobs',
-    name: 'Builder Big Jobs',
-    tagline: 'Construction Leads · Qualified Prospects',
-    color: '#F97316',
+  'builder-big-jobs': {
     gradFrom: '#FDB97A',
     gradTo: '#C2410C',
     glow: 'rgba(249,115,22,0.45)',
@@ -40,36 +44,28 @@ const COMPANIES = [
       </svg>
     ),
   },
-  {
-    href: '/os/companies/ultratech',
-    name: 'UltraTech',
-    tagline: 'Operations · Projects · Communications',
-    color: '#3B82F6',
+  ultratech: {
     gradFrom: '#93BBFC',
     gradTo: '#1D4ED8',
     glow: 'rgba(59,130,246,0.45)',
     kpi: '£84,200',
     kpiLabel: 'revenue YTD',
-    badge: null as string | null,
-    badgeColor: null as string | null,
+    badge: null,
+    badgeColor: null,
     icon: (
       <svg className="relative z-20 w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
       </svg>
     ),
   },
-  {
-    href: '/os/companies/accuracy',
-    name: 'Accuracy Ltd',
-    tagline: 'Planning Leads · Projects · Site Visits',
-    color: '#8B5CF6',
+  accuracy: {
     gradFrom: '#C4B5FD',
     gradTo: '#6D28D9',
     glow: 'rgba(139,92,246,0.45)',
     kpi: '7 live projects',
     kpiLabel: 'in planning',
-    badge: null as string | null,
-    badgeColor: null as string | null,
+    badge: null,
+    badgeColor: null,
     icon: (
       <svg className="relative z-20 w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M3 21V8l9-5 9 5v13M9 21v-5h6v5" />
@@ -77,9 +73,24 @@ const COMPANIES = [
       </svg>
     ),
   },
-]
+}
 
 export default function CompaniesPage() {
+  const COMPANIES = COMPANY_REGISTRY.map((co) => ({
+    ...co,
+    href: `/os/workspace/${co.id}`,
+    ...(COMPANY_VISUALS[co.id] ?? {
+      gradFrom: co.color,
+      gradTo: co.color,
+      glow: `${co.color}44`,
+      kpi: '',
+      kpiLabel: '',
+      badge: null,
+      badgeColor: null,
+      icon: <span className="text-2xl">{co.name.charAt(0)}</span>,
+    }),
+  }))
+
   return (
     <div className="space-y-6">
       {/* Header */}
