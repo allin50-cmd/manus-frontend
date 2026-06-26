@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>UltraTechOS — Interactive Prototype</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#050816;--surface:rgba(255,255,255,0.055);--border:rgba(255,255,255,0.07);
+    --text:rgba(255,255,255,0.92);--text2:rgba(255,255,255,0.6);--text3:rgba(255,255,255,0.32);
+    --purple:#7A5AF8;--blue:#3D8BFF;--yellow:#FFC145;--green:#28C76F;
+    --cyan:#20AFFF;--violet:#A855F7;--orange:#FF8A34;--indigo:#818CF8;
+    --grad:linear-gradient(135deg,#7A5AF8,#3D8BFF);
+  }
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;overflow:hidden}
+  .screen{display:none;height:100vh;flex-direction:column;overflow:hidden}
+  .screen.active{display:flex}
+
+  /* ─── DEVICE SHELL ─── */
+  .device-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#030610;padding:20px}
+  .device{width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;position:relative;
+    box-shadow:0 0 0 10px #18202E,0 40px 80px rgba(0,0,0,0.8);display:flex;flex-direction:column}
+  .status-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px 6px;flex-shrink:0}
+  .status-time{font-size:15px;font-weight:600;color:var(--text)}
+  .status-icons{display:flex;gap:6px;align-items:center;color:var(--text)}
+  .notch{width:120px;height:34px;background:#030610;border-radius:0 0 20px 20px;position:absolute;top:0;left:50%;transform:translateX(-50%)}
+  .content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  .content::-webkit-scrollbar{display:none}
+  .bottom-nav{flex-shrink:0;display:flex;align-items:center;background:rgba(6,12,28,0.95);
+    backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:4px 0 calc(4px + env(safe-area-inset-bottom))}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;
+    cursor:pointer;color:var(--text3);transition:color .15s;border:none;background:none;font:inherit}
+  .nav-item:hover,.nav-item.active{color:var(--text)}
+  .nav-item svg{width:22px;height:22px}
+  .nav-label{font-size:9px;font-weight:600;letter-spacing:.04em}
+  .nav-add{width:48px;height:48px;background:var(--grad);border-radius:50%;display:flex;align-items:center;
+    justify-content:center;box-shadow:0 4px 16px rgba(122,90,248,0.5);cursor:pointer;border:none;margin-bottom:2px}
+
+  /* ─── SHARED COMPONENTS ─── */
+  .page-pad{padding:20px 16px 24px}
+  .page-title{font-size:22px;font-weight:700;color:var(--text);line-height:1.2}
+  .page-sub{font-size:12px;color:var(--text3);margin-bottom:4px}
+  .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:8px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px}
+  .card+.card{margin-top:10px}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px}
+  .divider{border:none;height:1px;background:var(--border);margin:0 -14px}
+  .row{display:flex;align-items:center;gap:10px;padding:11px 0;cursor:pointer}
+  .row:first-child{padding-top:0}
+  .row:last-child{padding-bottom:0}
+  .row+.row{border-top:1px solid var(--border)}
+  .row-label{font-size:13px;color:var(--text);flex:1}
+  .row-sub{font-size:11px;color:var(--text3);margin-top:1px}
+  .chevron{color:var(--text3);flex-shrink:0}
+  .badge{min-width:18px;height:18px;background:var(--purple);border-radius:9px;font-size:10px;font-weight:700;
+    color:#fff;display:flex;align-items:center;justify-content:center;padding:0 5px}
+  .big-num{font-size:32px;font-weight:700;color:var(--text);line-height:1}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+    padding:4px 10px;border-radius:99px;cursor:pointer}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;
+    border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s}
+  .btn:hover{opacity:.88}
+  .btn-primary{background:var(--grad);color:#fff}
+  .btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+  input[type=text],input[type=password]{width:100%;padding:13px 14px;background:var(--surface);
+    border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;outline:none;font:inherit}
+  input::placeholder{color:var(--text3)}
+  input:focus{border-color:rgba(122,90,248,0.5)}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--grad);display:flex;align-items:center;
+    justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+
+  /* ─── SCREENS ─── */
+
+  /* LOGIN */
+  #login .login-inner{display:flex;flex-direction:column;justify-content:center;height:100%;padding:32px 24px}
+  .logo-mark{width:52px;height:52px;background:var(--grad);border-radius:16px;display:flex;align-items:center;
+    justify-content:center;margin-bottom:24px;box-shadow:0 8px 24px rgba(122,90,248,0.4)}
+  .login-title{font-size:24px;font-weight:700;margin-bottom:6px}
+  .login-sub{font-size:13px;color:var(--text3);margin-bottom:32px}
+  .field-label{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+  .field{margin-bottom:16px}
+  .login-error{font-size:12px;color:#f87171;margin-top:-8px;margin-bottom:12px;display:none}
+
+  /* HOME / TODAY */
+  #home .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+  .quick-tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 12px;
+    display:flex;align-items:center;gap:10px;cursor:pointer;transition:opacity .15s}
+  .quick-tile:hover{opacity:.8}
+  .quick-tile-label{font-size:12px;font-weight:600;color:var(--text2)}
+  .consolidation-big{display:flex;align-items:flex-start;justify-content:space-between}
+  .trend-up{color:#4ade80;font-size:11px;font-weight:600}
+  .trend-down{color:#f87171;font-size:11px;font-weight:600}
+
+  /* OS LAUNCHER */
+  #launcher .launcher-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .launcher-tile{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 14px;
+    display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:opacity .15s;min-height:80px}
+  .launcher-tile:hover{opacity:.8}
+  .launcher-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .launcher-name{font-size:13px;font-weight:600;color:var(--text)}
+  .launcher-desc{font-size:10px;color:var(--text3);line-height:1.4}
+
+  /* FINEGUARD */
+  .compliance-score{width:100%;aspect-ratio:1;max-width:160px;margin:0 auto;position:relative;display:flex;
+    align-items:center;justify-content:center}
+  .score-ring{transform:rotate(-90deg)}
+  .score-text{position:absolute;text-align:center}
+  .status-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;
+    font-size:11px;font-weight:600}
+
+  /* AI RECEPTIONIST */
+  .chat-bubble{padding:10px 13px;border-radius:16px;font-size:13px;line-height:1.5;max-width:80%;margin-bottom:8px}
+  .chat-bubble.ai{background:rgba(122,90,248,0.18);border:1px solid rgba(122,90,248,0.25);color:var(--text);
+    border-bottom-left-radius:4px}
+  .chat-bubble.user{background:rgba(61,139,255,0.18);border:1px solid rgba(61,139,255,0.25);color:var(--text);
+    margin-left:auto;border-bottom-right-radius:4px}
+  .chat-input-row{display:flex;gap:8px;padding:12px 16px;background:rgba(6,12,28,0.9);
+    border-top:1px solid var(--border);flex-shrink:0}
+  .chat-input{flex:1;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:24px;
+    color:var(--text);font-size:13px;outline:none;font:inherit}
+  .chat-send{width:38px;height:38px;background:var(--grad);border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  /* FINANCIAL VISIBILITY */
+  .chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:80px;padding-top:8px}
+  .chart-bar{flex:1;border-radius:4px 4px 0 0;transition:opacity .2s;cursor:pointer}
+  .chart-bar:hover{opacity:.75}
+  .chart-labels{display:flex;gap:6px;margin-top:6px}
+  .chart-label{flex:1;text-align:center;font-size:9px;color:var(--text3)}
+  .money-stat{display:flex;flex-direction:column;gap:2px}
+  .money-stat-label{font-size:10px;color:var(--text3)}
+  .money-stat-val{font-size:20px;font-weight:700;color:var(--text)}
+  .money-stat-delta{font-size:11px;font-weight:600}
+
+  /* MODULE HEADER */
+  .mod-header{display:flex;align-items:center;gap:10px;padding:16px 16px 0;flex-shrink:0}
+  .mod-header-back{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+  .mod-header-title{font-size:17px;font-weight:700;color:var(--text)}
+  .mod-header-right{margin-left:auto;display:flex;gap:8px}
+  .icon-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none}
+
+  /* CONTACTS */
+  .contact-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+
+  /* TASKS */
+  .task-check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+  .task-check.done{background:var(--green);border-color:var(--green)}
+
+  /* CALLS */
+  .call-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  /* MESSAGES */
+  .msg-unread{width:8px;height:8px;background:var(--blue);border-radius:50%;flex-shrink:0}
+
+  /* ALERTS */
+  .alert-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  /* ONBOARDING overlay */
+  .proto-label{position:fixed;top:12px;left:50%;transform:translateX(-50%);
+    background:rgba(6,12,28,0.9);border:1px solid var(--border);border-radius:99px;
+    padding:5px 14px;font-size:10px;color:var(--text3);letter-spacing:.06em;
+    backdrop-filter:blur(12px);z-index:100;pointer-events:none;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="proto-label">PROTOTYPE — UltraTechOS</div>
+
+<!-- ═══════════════════════════════════════════
+     DEVICE SHELL  (all screens live inside)
+═══════════════════════════════════════════ -->
+<div class="device-wrap">
+<div class="device">
+
+  <div class="notch"></div>
+  <div class="status-bar">
+    <span class="status-time" id="clock">9:41</span>
+    <div class="status-icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="4" width="3" height="8" rx="1" opacity=".4"/><rect x="4" y="2" width="3" height="10" rx="1" opacity=".6"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12.5" y="1" width="3" height="10" rx="1" opacity=".3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 20 14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 5.5C3.8 2.5 7.2 1 10 1s6.2 1.5 9 4.5"/><path d="M4 8.5C6 6.5 8 5.5 10 5.5s4 1 6 3"/><path d="M7 11.5C8.2 10.3 9.1 9.8 10 9.8s1.8.5 3 1.7"/><circle cx="10" cy="13.5" r="1" fill="currentColor"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="3" stroke="currentColor" strokeWidth="1" fill="rgba(255,255,255,0.2)"/><rect x="1.5" y="2.5" width="17" height="7" rx="2"/><rect x="23" y="4" width="3" height="4" rx="1.5" opacity=".5"/></svg>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: LOGIN ════════════ -->
+  <div id="login" class="screen active" style="flex:1;overflow:hidden">
+    <div class="login-inner">
+      <div class="logo-mark">
+        <svg width="26" height="26" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <h1 class="login-title">UltraTechOS</h1>
+      <p class="login-sub">Business Operating System</p>
+      <div class="field">
+        <div class="field-label">Email</div>
+        <input type="text" id="login-email" placeholder="you@business.co.uk" value="george@ultratechos.co.uk">
+      </div>
+      <div class="field">
+        <div class="field-label">Password</div>
+        <input type="password" id="login-pass" placeholder="Password" value="••••••••">
+      </div>
+      <p class="login-error" id="login-error">Invalid credentials. Try again.</p>
+      <button class="btn btn-primary" onclick="goTo('home')">Sign in</button>
+      <p style="text-align:center;margin-top:20px;font-size:11px;color:var(--text3)">
+        Prototype — tap Sign in to continue
+      </p>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: HOME / TODAY ════════════ -->
+  <div id="home" class="screen" style="flex:1;overflow:hidden">
+    <div class="content page-pad">
+      <p class="page-sub" id="home-date">Thursday, 26 June</p>
+      <h1 class="page-title" style="margin-bottom:20px">Today</h1>
+
+      <!-- Quick links -->
+      <div class="quick-grid" style="margin-bottom:20px">
+        <div class="quick-tile" onclick="goTo('money')"><span class="dot" style="background:#FFC145;box-shadow:0 0 6px #FFC14580"></span><span class="quick-tile-label">Money</span></div>
+        <div class="quick-tile" onclick="goTo('companies')"><span class="dot" style="background:#7A5AF8;box-shadow:0 0 6px #7A5AF880"></span><span class="quick-tile-label">Companies</span></div>
+        <div class="quick-tile" onclick="goTo('contacts')"><span class="dot" style="background:#A855F7;box-shadow:0 0 6px #A855F780"></span><span class="quick-tile-label">Contacts</span></div>
+        <div class="quick-tile" onclick="goTo('tasks')"><span class="dot" style="background:#3D8BFF;box-shadow:0 0 6px #3D8BFF80"></span><span class="quick-tile-label">Work</span></div>
+      </div>
+
+      <!-- Consolidation -->
+      <div style="margin-bottom:20px">
+        <p class="section-label">Operational Consolidation</p>
+        <div class="card">
+          <div class="consolidation-big">
+            <div>
+              <p style="font-size:10px;color:var(--text3);margin-bottom:4px">This Week</p>
+              <p class="big-num">84.2%</p>
+              <p style="font-size:10px;color:var(--text3);margin-top:4px">47 in-system · 9 outside</p>
+            </div>
+            <div style="text-align:right">
+              <p style="font-size:10px;color:var(--text3);margin-bottom:4px">Last Week</p>
+              <p style="font-size:22px;font-weight:600;color:var(--text2)">79.1%</p>
+              <p class="trend-up" style="margin-top:4px">↑ Improving</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Priorities -->
+      <div style="margin-bottom:20px">
+        <p class="section-label">Priorities</p>
+        <div class="card">
+          <div class="row" onclick="goTo('money')">
+            <span class="row-label">FineGuard renewal call overdue</span>
+            <span class="tag" style="background:#FFC14522;color:#FFC145">Money</span>
+          </div>
+          <div class="row" onclick="goTo('tasks')">
+            <span class="row-label">BBJ pipeline review due today</span>
+            <span class="tag" style="background:#3D8BFF22;color:#3D8BFF">Work</span>
+          </div>
+          <div class="row" onclick="goTo('tasks')">
+            <span class="row-label">Accuracy Ltd proposal to send</span>
+            <span class="tag" style="background:#3D8BFF22;color:#3D8BFF">Work</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <div style="margin-bottom:20px">
+        <p class="section-label">Activity</p>
+        <div class="card">
+          <div class="row" onclick="goTo('messages')">
+            <span style="font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0">9:14 am</span>
+            <div style="min-width:0">
+              <p class="row-label" style="font-size:12px">Clare Webb replied to renewal quote</p>
+              <p style="font-size:10px;color:var(--text3)">Messages</p>
+            </div>
+          </div>
+          <div class="row" onclick="goTo('companies')">
+            <span style="font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0">8:50 am</span>
+            <div style="min-width:0">
+              <p class="row-label" style="font-size:12px">BBJ lead James Hartley — new enquiry</p>
+              <p style="font-size:10px;color:var(--text3)">Companies</p>
+            </div>
+          </div>
+          <div class="row" onclick="goTo('money')">
+            <span style="font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0">Yesterday</span>
+            <div style="min-width:0">
+              <p class="row-label" style="font-size:12px">FineGuard invoice £4,800 unpaid (14 days)</p>
+              <p style="font-size:10px;color:var(--text3)">Money</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav" id="home-nav">
+      <button class="nav-item active" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: LAUNCHER ════════════ -->
+  <div id="launcher" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('home')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">UltraTechOS</span>
+    </div>
+    <div class="content" style="padding:0 16px 24px">
+      <div class="launcher-grid">
+        <div class="launcher-tile" onclick="goTo('fineguard')">
+          <div class="launcher-icon" style="background:rgba(40,199,111,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div><div class="launcher-name">FineGuard</div><div class="launcher-desc">Compliance & audit trail</div></div>
+        </div>
+        <div class="launcher-tile" onclick="goTo('ultai')">
+          <div class="launcher-icon" style="background:rgba(122,90,248,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A5AF8" strokeWidth="2" strokeLinecap="round"><path d="M12 2a3 3 0 003 3v1a3 3 0 11-6 0V5a3 3 0 013-3z"/><path d="M19 10c0 5.52-3.13 8-7 9-3.87-1-7-3.48-7-9"/><path d="M12 14v4M9 18h6"/></svg></div>
+          <div><div class="launcher-name">UltAi</div><div class="launcher-desc">AI Receptionist</div></div>
+        </div>
+        <div class="launcher-tile" onclick="goTo('money')">
+          <div class="launcher-icon" style="background:rgba(255,193,69,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFC145" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="16" cy="15" r="1.5" fill="#FFC145"/></svg></div>
+          <div><div class="launcher-name">Money</div><div class="launcher-desc">Financial Visibility</div></div>
+        </div>
+        <div class="launcher-tile" onclick="goTo('tasks')">
+          <div class="launcher-icon" style="background:rgba(61,139,255,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3D8BFF" strokeWidth="2" strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+          <div><div class="launcher-name">Tasks</div><div class="launcher-desc">Work items & actions</div></div>
+        </div>
+        <div class="launcher-tile" onclick="goTo('contacts')">
+          <div class="launcher-icon" style="background:rgba(168,85,247,0.15)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+          <div><div class="launcher-name">Contacts</div><div class="launcher-desc">People & relationships</div></div>
+        </div>
+        <div class="launcher-tile" onclick="goTo('calls')">
+          <div class="launcher-icon" style="background:rgba(40,199,111,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div><div class="launcher-name">Calls</div><div class="launcher-desc">Call log & summaries</div></div>
+        </div>
+        <div class="launcher-tile" onclick="goTo('messages')">
+          <div class="launcher-icon" style="background:rgba(32,175,255,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#20AFFF" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+          <div><div class="launcher-name">Messages</div><div class="launcher-desc">Inbox & threads</div></div>
+        </div>
+        <div class="launcher-tile" onclick="goTo('alerts')">
+          <div class="launcher-icon" style="background:rgba(255,138,52,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF8A34" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+          <div><div class="launcher-name">Alerts</div><div class="launcher-desc">Notifications & actions</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add active" style="box-shadow:0 4px 20px rgba(122,90,248,0.7)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: FINEGUARD ════════════ -->
+  <div id="fineguard" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('launcher')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">FineGuard</span>
+      <div class="mod-header-right">
+        <span class="status-chip" style="background:rgba(40,199,111,0.15);color:#28C76F">● Live</span>
+      </div>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <!-- Score -->
+      <div class="card" style="margin-bottom:16px">
+        <p class="section-label" style="margin-bottom:12px">Compliance Score</p>
+        <div style="display:flex;align-items:center;gap:16px">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="8"/>
+            <circle cx="45" cy="45" r="36" fill="none" stroke="#28C76F" stroke-width="8"
+              stroke-dasharray="226.2" stroke-dashoffset="27.1" stroke-linecap="round"
+              transform="rotate(-90 45 45)"/>
+            <text x="45" y="49" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-size="18" font-weight="700" font-family="system-ui">88%</text>
+          </svg>
+          <div>
+            <p style="font-size:22px;font-weight:700;color:#28C76F">Good</p>
+            <p style="font-size:11px;color:var(--text3);margin-top:4px">2 items need attention</p>
+            <p style="font-size:11px;color:var(--text3)">Last checked: today</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checks -->
+      <p class="section-label">Compliance Checks</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row">
+          <span style="font-size:16px">✅</span>
+          <div style="flex:1"><div class="row-label">GDPR data processing records</div><div class="row-sub">Up to date · 3 processors listed</div></div>
+        </div>
+        <div class="row">
+          <span style="font-size:16px">✅</span>
+          <div style="flex:1"><div class="row-label">ICO registration</div><div class="row-sub">Registered · Renews Jan 2025</div></div>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <span style="font-size:16px">⚠️</span>
+          <div style="flex:1"><div class="row-label" style="color:#FFC145">Contract review overdue</div><div class="row-sub">Last reviewed 14 months ago</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <span style="font-size:16px">⚠️</span>
+          <div style="flex:1"><div class="row-label" style="color:#FFC145">Health & safety policy</div><div class="row-sub">Not signed by all staff</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="row">
+          <span style="font-size:16px">✅</span>
+          <div style="flex:1"><div class="row-label">Anti-money laundering checks</div><div class="row-sub">3/3 clients verified</div></div>
+        </div>
+      </div>
+
+      <!-- Audit log -->
+      <p class="section-label">Audit Log</p>
+      <div class="card">
+        <div class="row">
+          <div style="flex:1"><div class="row-label" style="font-size:12px">GDPR record updated</div><div class="row-sub">Jun 24</div></div>
+          <span class="tag" style="background:rgba(40,199,111,0.15);color:#28C76F">Auto</span>
+        </div>
+        <div class="row">
+          <div style="flex:1"><div class="row-label" style="font-size:12px">Contract uploaded: Accuracy Ltd</div><div class="row-sub">Jun 21</div></div>
+          <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Manual</span>
+        </div>
+        <div class="row">
+          <div style="flex:1"><div class="row-label" style="font-size:12px">ICO registration renewed</div><div class="row-sub">Jan 12</div></div>
+          <span class="tag" style="background:rgba(40,199,111,0.15);color:#28C76F">Auto</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: UltAi / AI RECEPTIONIST ════════════ -->
+  <div id="ultai" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('launcher')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <div>
+        <div class="mod-header-title">UltAi</div>
+        <div style="font-size:10px;color:var(--text3)">AI Receptionist</div>
+      </div>
+      <div class="mod-header-right">
+        <span class="status-chip" style="background:rgba(122,90,248,0.15);color:#A855F7">● Online</span>
+      </div>
+    </div>
+    <div class="content" style="padding:8px 16px 0">
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+        <div class="card" style="padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:#7A5AF8">12</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Calls today</div></div>
+        <div class="card" style="padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:#28C76F">94%</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Answered</div></div>
+        <div class="card" style="padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:#FFC145">3</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Follow-ups</div></div>
+      </div>
+
+      <!-- Chat demo -->
+      <p class="section-label">Recent interaction</p>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#7A5AF8,#3D8BFF);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px">🤖</div>
+          <div class="chat-bubble ai">Hello, you've reached UltraTech. I'm the AI receptionist — how can I help you today?</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <div class="chat-bubble user">Hi, I'd like to speak to someone about a compliance audit.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#7A5AF8,#3D8BFF);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px">🤖</div>
+          <div class="chat-bubble ai">Of course! I've logged your enquiry. George will call you back within 2 hours. Can I take your name and best number?</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+          <div class="chat-bubble user">James Hartley, 07700 900 123.</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(40,199,111,0.08);border:1px solid rgba(40,199,111,0.2);border-radius:12px;padding:10px 12px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:600;color:#28C76F;margin-bottom:4px">✓ Lead captured automatically</div>
+        <div style="font-size:11px;color:var(--text3)">James Hartley → added to Companies · Task created for George</div>
+      </div>
+
+      <!-- Recent calls -->
+      <p class="section-label">Recent calls</p>
+      <div class="card" style="margin-bottom:24px">
+        <div class="row">
+          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="font-size:12px">James Hartley</div><div class="row-sub">Enquiry · 9:14 am · 3m 22s</div></div>
+          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">Answered</span>
+        </div>
+        <div class="row">
+          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="font-size:12px">Clare Webb</div><div class="row-sub">Renewal query · 8:50 am · 1m 47s</div></div>
+          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">Answered</span>
+        </div>
+        <div class="row">
+          <div class="call-icon" style="background:rgba(248,113,113,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="font-size:12px">Unknown number</div><div class="row-sub">No message · Yesterday</div></div>
+          <span class="tag" style="background:rgba(248,113,113,0.12);color:#f87171">Missed</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: MONEY / FINANCIAL VISIBILITY ════════════ -->
+  <div id="money" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('launcher')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">Money</span>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <!-- Summary stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+        <div class="card">
+          <div class="money-stat-label">In this month</div>
+          <div class="money-stat-val" style="color:#28C76F">£18,240</div>
+          <div class="money-stat-delta" style="color:#28C76F">↑ 12% vs last month</div>
+        </div>
+        <div class="card">
+          <div class="money-stat-label">Out this month</div>
+          <div class="money-stat-val" style="color:#f87171">£11,820</div>
+          <div class="money-stat-delta" style="color:var(--text3)">→ Stable</div>
+        </div>
+      </div>
+
+      <!-- Cash flow chart -->
+      <p class="section-label">Cash Flow — Last 6 months</p>
+      <div class="card" style="margin-bottom:20px">
+        <div class="chart-bar-wrap">
+          <div class="chart-bar" style="height:45%;background:rgba(40,199,111,0.5)"></div>
+          <div class="chart-bar" style="height:60%;background:rgba(40,199,111,0.5)"></div>
+          <div class="chart-bar" style="height:38%;background:rgba(40,199,111,0.5)"></div>
+          <div class="chart-bar" style="height:72%;background:rgba(40,199,111,0.5)"></div>
+          <div class="chart-bar" style="height:55%;background:rgba(40,199,111,0.5)"></div>
+          <div class="chart-bar" style="height:85%;background:rgba(61,139,255,0.7);box-shadow:0 0 12px rgba(61,139,255,0.4)"></div>
+        </div>
+        <div class="chart-labels">
+          <span class="chart-label">Jan</span><span class="chart-label">Feb</span><span class="chart-label">Mar</span>
+          <span class="chart-label">Apr</span><span class="chart-label">May</span><span class="chart-label" style="color:var(--blue)">Jun</span>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text3)">Net position this month: <span style="color:#4ade80;font-weight:600">+£6,420</span></div>
+      </div>
+
+      <!-- Invoices -->
+      <p class="section-label">Outstanding Invoices</p>
+      <div class="card" style="margin-bottom:20px">
+        <div class="row" style="cursor:pointer">
+          <div style="flex:1">
+            <div class="row-label">FineGuard · Accuracy Ltd</div>
+            <div class="row-sub">Sent Jun 12 · 14 days overdue</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:600;color:#FFC145">£4,800</div>
+            <div style="font-size:10px;color:#f87171">Overdue</div>
+          </div>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div style="flex:1">
+            <div class="row-label">Monthly retainer · BBJ Ltd</div>
+            <div class="row-sub">Sent Jun 20 · Due Jul 4</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:600;color:var(--text)">£1,200</div>
+            <div style="font-size:10px;color:var(--text3)">Pending</div>
+          </div>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div style="flex:1">
+            <div class="row-label">Setup fee · New client</div>
+            <div class="row-sub">Draft</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:600;color:var(--text2)">£600</div>
+            <div style="font-size:10px;color:var(--text3)">Draft</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="margin-bottom:24px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New invoice
+      </button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: TASKS ════════════ -->
+  <div id="tasks" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('launcher')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">Tasks</span>
+      <div class="mod-header-right">
+        <div class="badge">5</div>
+      </div>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <!-- Tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:16px">
+        <button onclick="taskTab(this,'today-tasks')" id="tab-today" class="pill active-tab" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Today</button>
+        <button onclick="taskTab(this,'all-tasks')" id="tab-all" class="pill" style="background:var(--surface);color:var(--text3);border:1px solid var(--border)">All open</button>
+        <button onclick="taskTab(this,'done-tasks')" id="tab-done" class="pill" style="background:var(--surface);color:var(--text3);border:1px solid var(--border)">Done</button>
+      </div>
+
+      <div id="today-tasks">
+        <div class="card">
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check" id="tc1"></div>
+            <div style="flex:1">
+              <div class="row-label">BBJ pipeline review</div>
+              <div class="row-sub">Due today · Companies</div>
+            </div>
+            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
+          </div>
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check" id="tc2"></div>
+            <div style="flex:1">
+              <div class="row-label">Send proposal — Accuracy Ltd</div>
+              <div class="row-sub">Due today · Sales</div>
+            </div>
+            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
+          </div>
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check done"></div>
+            <div style="flex:1">
+              <div class="row-label" style="text-decoration:line-through;color:var(--text3)">Morning emails reviewed</div>
+              <div class="row-sub">Done · 8:32 am</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="all-tasks" style="display:none">
+        <div class="card">
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check"></div>
+            <div style="flex:1"><div class="row-label">BBJ pipeline review</div><div class="row-sub">Due today</div></div>
+            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
+          </div>
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check"></div>
+            <div style="flex:1"><div class="row-label">Send proposal — Accuracy Ltd</div><div class="row-sub">Due today</div></div>
+            <span class="tag" style="background:rgba(255,138,52,0.15);color:#FF8A34">High</span>
+          </div>
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check"></div>
+            <div style="flex:1"><div class="row-label">Call James Hartley — follow up</div><div class="row-sub">Due tomorrow</div></div>
+            <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Normal</span>
+          </div>
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check"></div>
+            <div style="flex:1"><div class="row-label">Review H&S policy signatures</div><div class="row-sub">Due Fri</div></div>
+            <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">Normal</span>
+          </div>
+          <div class="row" onclick="toggleTask(this)">
+            <div class="task-check"></div>
+            <div style="flex:1"><div class="row-label">Chase overdue invoice — Accuracy Ltd</div><div class="row-sub">Overdue 14 days</div></div>
+            <span class="tag" style="background:rgba(248,113,113,0.15);color:#f87171">Urgent</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="done-tasks" style="display:none">
+        <div class="card">
+          <div class="row">
+            <div class="task-check done"></div>
+            <div style="flex:1"><div class="row-label" style="text-decoration:line-through;color:var(--text3)">Morning emails reviewed</div><div class="row-sub">Done 8:32 am</div></div>
+          </div>
+          <div class="row">
+            <div class="task-check done"></div>
+            <div style="flex:1"><div class="row-label" style="text-decoration:line-through;color:var(--text3)">Onboard Clare Webb to FineGuard</div><div class="row-sub">Done Jun 24</div></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:16px;margin-bottom:24px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add task
+      </button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: CONTACTS ════════════ -->
+  <div id="contacts" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('launcher')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">Contacts</span>
+      <div class="mod-header-right">
+        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></button>
+      </div>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <p class="section-label">Recent</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#3D8BFF,#20AFFF)">JH</div>
+          <div style="flex:1"><div class="row-label">James Hartley</div><div class="row-sub">BBJ Installations · Lead</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#A855F7,#7A5AF8)">CW</div>
+          <div style="flex:1"><div class="row-label">Clare Webb</div><div class="row-sub">Accuracy Ltd · Client</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#28C76F,#20AFFF)">MT</div>
+          <div style="flex:1"><div class="row-label">Mark Thompson</div><div class="row-sub">Thompson Plumbing · Prospect</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <p class="section-label">All contacts — A</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#FFC145,#FF8A34)">AP</div>
+          <div style="flex:1"><div class="row-label">Alissa Parker</div><div class="row-sub">UltraTech · Operations</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <p class="section-label">B</p>
+      <div class="card" style="margin-bottom:24px">
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#3D8BFF,#20AFFF)">BS</div>
+          <div style="flex:1"><div class="row-label">Ben Stephens</div><div class="row-sub">Stephens Electrical · Client</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: COMPANIES ════════════ -->
+  <div id="companies" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('home')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">Companies</span>
+      <div class="mod-header-right">
+        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></button>
+      </div>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <p class="section-label">Active clients</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#A855F7,#7A5AF8);font-size:12px">ACC</div>
+          <div style="flex:1"><div class="row-label">Accuracy Ltd</div><div class="row-sub">FineGuard client · Invoice overdue</div></div>
+          <span style="font-size:10px;color:#FFC145;font-weight:600">!</span>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#28C76F,#20AFFF);font-size:12px">STE</div>
+          <div style="flex:1"><div class="row-label">Stephens Electrical</div><div class="row-sub">Retainer · All up to date</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <p class="section-label">Leads</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3D8BFF,#20AFFF);font-size:12px">BBJ</div>
+          <div style="flex:1"><div class="row-label">BBJ Installations</div><div class="row-sub">New enquiry · Pipeline review today</div></div>
+          <span class="tag" style="background:rgba(61,139,255,0.15);color:#3D8BFF">New</span>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#FFC145,#FF8A34);font-size:12px">THP</div>
+          <div style="flex:1"><div class="row-label">Thompson Plumbing</div><div class="row-sub">Proposal sent Jun 20</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="margin-bottom:24px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add company
+      </button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: MESSAGES ════════════ -->
+  <div id="messages" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('home')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">Messages</span>
+      <div class="mod-header-right"><div class="badge">3</div></div>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <div class="card">
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#A855F7,#7A5AF8)">CW</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="row-label" style="font-size:13px">Clare Webb</div>
+              <div style="font-size:10px;color:var(--text3)">9:14 am</div>
+            </div>
+            <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Thanks for the renewal quote, looks good to me...</div>
+          </div>
+          <div class="msg-unread" style="margin-left:8px"></div>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#3D8BFF,#20AFFF)">JH</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="row-label" style="font-size:13px">James Hartley</div>
+              <div style="font-size:10px;color:var(--text3)">8:50 am</div>
+            </div>
+            <div style="font-size:12px;color:var(--text2)">Hi, I'd like to discuss a compliance audit...</div>
+          </div>
+          <div class="msg-unread" style="margin-left:8px"></div>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#28C76F,#20AFFF)">BS</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="row-label" style="font-size:13px">Ben Stephens</div>
+              <div style="font-size:10px;color:var(--text3)">Yesterday</div>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">All good here, see you Thursday</div>
+          </div>
+        </div>
+        <div class="row" style="cursor:pointer">
+          <div class="contact-avatar" style="background:linear-gradient(135deg,#FFC145,#FF8A34)">MT</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="row-label" style="font-size:13px">Mark Thompson</div>
+              <div style="font-size:10px;color:var(--text3)">Jun 24</div>
+            </div>
+            <div style="font-size:12px;color:var(--text3)">Received your proposal, will review tomorrow</div>
+          </div>
+          <div class="msg-unread" style="background:var(--orange);margin-left:8px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: CALLS ════════════ -->
+  <div id="calls" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('launcher')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">Calls</span>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px">
+        <div class="card" style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:#28C76F">12</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Today</div></div>
+        <div class="card" style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:var(--text)">1</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Missed</div></div>
+        <div class="card" style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:700;color:#FFC145">3</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Follow-ups</div></div>
+      </div>
+
+      <p class="section-label">Today</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row">
+          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div style="flex:1"><div class="row-label">James Hartley · BBJ</div><div class="row-sub">9:14 am · 3m 22s · Compliance enquiry</div></div>
+          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">AI</span>
+        </div>
+        <div class="row">
+          <div class="call-icon" style="background:rgba(40,199,111,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div style="flex:1"><div class="row-label">Clare Webb · Accuracy Ltd</div><div class="row-sub">8:50 am · 1m 47s · Renewal query</div></div>
+          <span class="tag" style="background:rgba(40,199,111,0.12);color:#28C76F">AI</span>
+        </div>
+        <div class="row">
+          <div class="call-icon" style="background:rgba(248,113,113,0.12)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 .02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+          <div style="flex:1"><div class="row-label">Unknown</div><div class="row-sub">8:02 am · No message left</div></div>
+          <span class="tag" style="background:rgba(248,113,113,0.12);color:#f87171">Missed</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+  <!-- ════════════ SCREEN: ALERTS ════════════ -->
+  <div id="alerts" class="screen" style="flex:1;overflow:hidden">
+    <div class="mod-header" style="padding-bottom:14px">
+      <button class="mod-header-back" onclick="goTo('launcher')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <span class="mod-header-title">Alerts</span>
+      <div class="mod-header-right"><div class="badge" style="background:#FF8A34">4</div></div>
+    </div>
+    <div class="content page-pad" style="padding-top:8px">
+      <p class="section-label">Action required</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row" style="cursor:pointer" onclick="goTo('money')">
+          <div class="alert-icon" style="background:rgba(248,113,113,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="color:#f87171">Invoice overdue — Accuracy Ltd</div><div class="row-sub">£4,800 · 14 days overdue</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="row" style="cursor:pointer" onclick="goTo('fineguard')">
+          <div class="alert-icon" style="background:rgba(255,193,69,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC145" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="color:#FFC145">Contract review overdue</div><div class="row-sub">Last reviewed 14 months ago</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="row" style="cursor:pointer" onclick="goTo('fineguard')">
+          <div class="alert-icon" style="background:rgba(255,193,69,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC145" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="color:#FFC145">H&S policy — 2 unsigned</div><div class="row-sub">Requires staff action</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="row" style="cursor:pointer" onclick="goTo('tasks')">
+          <div class="alert-icon" style="background:rgba(61,139,255,0.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3D8BFF" strokeWidth="2" strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+          <div style="flex:1"><div class="row-label">BBJ pipeline review due</div><div class="row-sub">Scheduled for today</div></div>
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <p class="section-label">Recent — no action needed</p>
+      <div class="card">
+        <div class="row">
+          <div class="alert-icon" style="background:rgba(40,199,111,0.10)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="font-size:12px">GDPR records updated automatically</div><div class="row-sub">Jun 24 · FineGuard</div></div>
+        </div>
+        <div class="row">
+          <div class="alert-icon" style="background:rgba(40,199,111,0.10)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#28C76F" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+          <div style="flex:1"><div class="row-label" style="font-size:12px">New lead captured — James Hartley</div><div class="row-sub">Today · UltAi</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="goTo('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="13" height="14" rx="1"/><path d="M16 3h5v18h-5"/><path d="M7 11h5M7 15h5"/></svg><span class="nav-label">Companies</span></button>
+      <div style="flex:1;display:flex;justify-content:center;align-items:center"><button class="nav-add" onclick="goTo('launcher')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="nav-item" onclick="goTo('messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="nav-label">Messages</span></button>
+      <button class="nav-item" onclick="goTo('launcher')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span class="nav-label">More</span></button>
+    </div>
+  </div>
+
+</div><!-- /device -->
+</div><!-- /device-wrap -->
+
+<script>
+  // ─── Clock ───
+  function tick(){
+    const d=new Date();
+    const h=d.getHours().toString().padStart(2,'0');
+    const m=d.getMinutes().toString().padStart(2,'0');
+    document.getElementById('clock').textContent=h+':'+m;
+  }
+  tick(); setInterval(tick,30000);
+
+  // ─── Date ───
+  const dn=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const now=new Date();
+  const el=document.getElementById('home-date');
+  if(el) el.textContent=dn[now.getDay()]+', '+now.getDate()+' '+mn[now.getMonth()];
+
+  // ─── Navigation ───
+  function goTo(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    const t=document.getElementById(id);
+    if(t){t.classList.add('active');t.querySelector('.content')?.scrollTo(0,0)}
+  }
+
+  // ─── Task toggles ───
+  function toggleTask(row){
+    const check=row.querySelector('.task-check');
+    const label=row.querySelector('.row-label');
+    if(!check) return;
+    const done=check.classList.toggle('done');
+    if(label){
+      label.style.textDecoration=done?'line-through':'none';
+      label.style.color=done?'var(--text3)':'var(--text)';
+    }
+    if(done){
+      check.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    } else {
+      check.innerHTML='';
+    }
+  }
+
+  // ─── Task tabs ───
+  function taskTab(btn,showId){
+    ['today-tasks','all-tasks','done-tasks'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display=(id===showId)?'block':'none';
+    });
+    document.querySelectorAll('#tasks .pill').forEach(p=>{
+      p.style.background='var(--surface)';
+      p.style.color='var(--text3)';
+      p.style.border='1px solid var(--border)';
+    });
+    btn.style.background='rgba(61,139,255,0.15)';
+    btn.style.color='#3D8BFF';
+    btn.style.border='none';
+  }
+</script>
+</body>
+</html>
