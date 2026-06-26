@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UltraTech AI — Grant Application Pack</title>
+<style>
+  :root{
+    --bg:#05091a;--surface:#0d1530;--border:#1e2d50;--card:#111827;
+    --text:#f0f4ff;--text2:#94a3b8;--text3:#4b5a7a;
+    --purple:#7C3AED;--blue:#2563EB;--green:#059669;--yellow:#D97706;
+    --red:#DC2626;--teal:#0891B2;
+    --grad:linear-gradient(135deg,#7C3AED,#2563EB);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
+    font-size:14px;line-height:1.6}
+
+  /* ── NAV ── */
+  .top-nav{position:sticky;top:0;z-index:50;background:rgba(5,9,26,0.92);
+    backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:56px}
+  .top-nav-brand{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--grad);border-radius:9px;
+    display:flex;align-items:center;justify-content:center}
+  .brand-name{font-size:15px;font-weight:700;color:var(--text)}
+  .brand-sub{font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
+  .nav-links{display:flex;gap:4px}
+  .nav-link{padding:5px 10px;border-radius:6px;font-size:12px;color:var(--text2);
+    cursor:pointer;border:none;background:none;font:inherit;text-decoration:none;
+    transition:all .15s;white-space:nowrap}
+  .nav-link:hover{color:var(--text);background:rgba(255,255,255,0.06)}
+  .nav-link.active{color:#fff;background:rgba(124,58,237,0.2)}
+  .print-btn{padding:7px 16px;background:var(--grad);border-radius:8px;border:none;
+    color:#fff;font:inherit;font-size:12px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;gap:6px}
+
+  /* ── LAYOUT ── */
+  .main{max-width:900px;margin:0 auto;padding:0 24px 80px}
+
+  /* ── COVER ── */
+  .cover{padding:80px 0 60px;border-bottom:1px solid var(--border);margin-bottom:60px}
+  .cover-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
+    border-radius:99px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);
+    font-size:11px;font-weight:600;color:#a78bfa;margin-bottom:20px;letter-spacing:.04em}
+  .cover-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:#7C3AED;display:block}
+  .cover-title{font-size:44px;font-weight:800;line-height:1.1;letter-spacing:-.03em;margin-bottom:16px}
+  .cover-title span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .cover-sub{font-size:17px;color:var(--text2);max-width:560px;line-height:1.6;margin-bottom:36px}
+  .cover-meta{display:flex;gap:32px;flex-wrap:wrap}
+  .meta-item{display:flex;flex-direction:column;gap:2px}
+  .meta-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+  .meta-value{font-size:14px;font-weight:600;color:var(--text)}
+
+  /* ── SECTIONS ── */
+  .section{margin-bottom:72px;scroll-margin-top:72px}
+  .section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+  .section-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .section-num{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:4px}
+  .section-title{font-size:24px;font-weight:700;color:var(--text)}
+
+  /* ── CARDS ── */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+  .card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+  .card-sub{font-size:12px;color:var(--text2)}
+  .card-grid{display:grid;gap:12px}
+  .card-grid-2{grid-template-columns:1fr 1fr}
+  .card-grid-3{grid-template-columns:1fr 1fr 1fr}
+  .card-grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+  @media(max-width:640px){.card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}}
+
+  /* ── STAT CARDS ── */
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .stat-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:6px}
+  .stat-val{font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
+  .stat-sub{font-size:11px;color:var(--text2)}
+
+  /* ── TABLES ── */
+  .tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+  th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--text3);background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border)}
+  td{padding:11px 14px;color:var(--text2);border-bottom:1px solid rgba(30,45,80,0.6)}
+  tr:last-child td{border-bottom:none}
+  td:first-child{font-weight:500;color:var(--text)}
+  tr:hover td{background:rgba(255,255,255,0.02)}
+  .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700}
+  .badge-red{background:rgba(220,38,38,0.15);color:#f87171}
+  .badge-yellow{background:rgba(217,119,6,0.15);color:#fbbf24}
+  .badge-green{background:rgba(5,150,105,0.15);color:#34d399}
+  .badge-blue{background:rgba(37,99,235,0.15);color:#60a5fa}
+  .badge-purple{background:rgba(124,58,237,0.15);color:#a78bfa}
+
+  /* ── RISK ── */
+  .risk-cat{margin-bottom:8px}
+  .risk-cat-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--text3);padding:10px 0 6px;border-bottom:1px solid var(--border);margin-bottom:0}
+  .risk-row{display:grid;grid-template-columns:52px 1fr 70px 60px 100px;gap:8px;
+    padding:10px 0;border-bottom:1px solid rgba(30,45,80,0.5);align-items:start;font-size:12px}
+  .risk-row:last-child{border-bottom:none}
+  .risk-id{font-size:11px;font-weight:700;color:var(--text3)}
+  .risk-desc{color:var(--text)}
+  .risk-mit{color:var(--text2);font-size:11px;line-height:1.5}
+  .risk-header{display:grid;grid-template-columns:52px 1fr 70px 60px 100px;gap:8px;
+    padding:8px 0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+
+  /* ── BUDGET ── */
+  .budget-bar-wrap{margin-bottom:24px}
+  .budget-bar{display:flex;height:36px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .budget-segment{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;
+    color:rgba(255,255,255,0.85);cursor:pointer;transition:opacity .15s;letter-spacing:.04em}
+  .budget-segment:hover{opacity:.85}
+  .budget-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+  .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+  /* ── FINANCIAL SCENARIOS ── */
+  .scenario-tabs{display:flex;gap:8px;margin-bottom:20px}
+  .stab{padding:7px 16px;border-radius:8px;border:1px solid var(--border);font-size:12px;
+    font-weight:600;cursor:pointer;background:var(--card);color:var(--text2);
+    transition:all .15s;font-family:inherit}
+  .stab.active{background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.4);color:#a78bfa}
+
+  /* ── CHART ── */
+  .bar-chart{display:flex;align-items:flex-end;gap:10px;height:120px;padding:8px 0 0}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .3s}
+  .bar-label{font-size:10px;color:var(--text3);white-space:nowrap}
+  .bar-val{font-size:10px;font-weight:600;color:var(--text2)}
+
+  /* ── CASH FLOW ── */
+  .cf-row{display:grid;grid-template-columns:180px 1fr 1fr 1fr 1fr 1fr;gap:0;font-size:12px}
+  .cf-row.header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);
+    border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:4px}
+  .cf-row.data{padding:7px 0;border-bottom:1px solid rgba(30,45,80,0.4)}
+  .cf-row.data:last-child{border-bottom:none}
+  .cf-row.subtotal{padding:8px 0 4px;border-top:1px solid var(--border);margin-top:4px;font-weight:700}
+  .cf-row.net{padding:10px 0 0;border-top:2px solid var(--border);margin-top:4px;font-weight:800;color:var(--text)}
+  .cf-cell{padding:0 8px}
+  .cf-cell:first-child{padding-left:0;color:var(--text)}
+  .pos{color:#34d399}.neg{color:#f87171}
+
+  /* ── SENSITIVITY ── */
+  .sens-row{display:grid;grid-template-columns:1fr 120px 160px;gap:0;font-size:12px}
+  .sens-row.header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text3);border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:4px}
+  .sens-row.data{padding:9px 0;border-bottom:1px solid rgba(30,45,80,0.4)}
+  .sens-row.data:last-child{border-bottom:none}
+  .sens-cell{padding:0 8px}
+  .sens-cell:first-child{padding-left:0;color:var(--text)}
+  .sens-bar{height:6px;border-radius:3px;margin-top:4px;transition:width .4s}
+
+  /* ── SPEND TIMELINE ── */
+  .timeline{position:relative;padding-left:28px}
+  .timeline::before{content:'';position:absolute;left:9px;top:8px;bottom:8px;
+    width:2px;background:var(--border);border-radius:2px}
+  .tl-item{position:relative;margin-bottom:20px}
+  .tl-dot{position:absolute;left:-24px;top:4px;width:10px;height:10px;border-radius:50%;
+    border:2px solid var(--bg);background:var(--purple)}
+  .tl-month{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text3);margin-bottom:2px}
+  .tl-spend{font-size:18px;font-weight:700;color:var(--text)}
+  .tl-cum{font-size:11px;color:var(--text2);margin-bottom:4px}
+  .tl-desc{font-size:12px;color:var(--text2);line-height:1.5}
+
+  /* ── BREAK-EVEN ── */
+  .be-chart{position:relative;height:180px;background:var(--card);border:1px solid var(--border);
+    border-radius:12px;overflow:hidden;margin-bottom:16px}
+  .be-chart svg{width:100%;height:100%}
+
+  /* ── PRINT ── */
+  @media print{
+    .top-nav,.print-btn{display:none!important}
+    body{background:#fff;color:#111;font-size:12px}
+    .cover-title{font-size:32px}
+    .cover-title span{-webkit-text-fill-color:#5b21b6;color:#5b21b6}
+    .card,.stat-card,.tbl-wrap,.be-chart{border-color:#ddd;background:#fafafa}
+    th{background:#f5f5f5}
+    td{color:#444}
+    td:first-child{color:#111}
+    .section-title{color:#111}
+    .cover-sub,.card-sub,.risk-mit,.tl-desc,.stat-sub,.bar-label{color:#666}
+    .cover,.section{border-color:#ddd}
+    .cover-badge{border-color:#ddd;background:#ede9fe;color:#5b21b6}
+    .tl-dot{background:#5b21b6;border-color:#fff}
+    .timeline::before{background:#ddd}
+    .nav-links{display:none}
+    a{color:inherit;text-decoration:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="top-nav">
+  <div class="top-nav-brand">
+    <div class="logo">
+      <svg width="18" height="18" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">UltraTech AI</div>
+      <div class="brand-sub">Grant Application Pack</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="#overview">Overview</a>
+    <a class="nav-link" href="#risk">Risk</a>
+    <a class="nav-link" href="#budget">Budget</a>
+    <a class="nav-link" href="#financial">Financials</a>
+    <a class="nav-link" href="#cashflow">Cash Flow</a>
+    <a class="nav-link" href="#breakeven">Break-even</a>
+    <a class="nav-link" href="#spend">Spend</a>
+    <a class="nav-link" href="#sensitivity">Sensitivity</a>
+  </div>
+  <button class="print-btn" onclick="window.print()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+    Print / PDF
+  </button>
+</nav>
+
+<div class="main">
+
+  <!-- ═══ COVER ═══ -->
+  <div class="cover" id="overview">
+    <div class="cover-badge">Grant-ready · Version 1.0 · June 2026</div>
+    <h1 class="cover-title">UltraTech AI<br><span>Commercial Validation</span><br>Grant Pack</h1>
+    <p class="cover-sub">A complete grant application pack covering risk management, budget justification, three-year financial modelling, cash flow, break-even analysis, spend schedule, and sensitivity testing — derived from the Master Business Plan, Pilot Programme Plan, and Commercial Assumptions v1.0.</p>
+    <div class="cover-meta">
+      <div class="meta-item"><div class="meta-label">Programme</div><div class="meta-value">Commercial Validation Pilot</div></div>
+      <div class="meta-item"><div class="meta-label">Duration</div><div class="meta-value">6 months + reporting</div></div>
+      <div class="meta-item"><div class="meta-label">Cohort size</div><div class="meta-value">10–20 UK SMEs</div></div>
+      <div class="meta-item"><div class="meta-label">Illustrative total</div><div class="meta-value">£32,000</div></div>
+      <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" style="color:#34d399">Platform built · Validation phase</div></div>
+    </div>
+
+    <!-- Document index -->
+    <div class="card-grid card-grid-4" style="margin-top:36px">
+      <a href="#risk" style="text-decoration:none"><div class="stat-card" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+        <div class="stat-label">Document 1</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Risk Register</div>
+        <div class="stat-sub">17 risks · All mitigated</div>
+      </div></a>
+      <a href="#budget" style="text-decoration:none"><div class="stat-card" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+        <div class="stat-label">Document 2</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Budget Justification</div>
+        <div class="stat-sub">5 categories · Value for money</div>
+      </div></a>
+      <a href="#financial" style="text-decoration:none"><div class="stat-card" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+        <div class="stat-label">Document 3</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Financial Model</div>
+        <div class="stat-sub">3-year · 3 scenarios</div>
+      </div></a>
+      <a href="#cashflow" style="text-decoration:none"><div class="stat-card" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+        <div class="stat-label">Document 4</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Cash Flow</div>
+        <div class="stat-sub">Year 1 quarterly</div>
+      </div></a>
+      <a href="#breakeven" style="text-decoration:none"><div class="stat-card" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+        <div class="stat-label">Document 5</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Break-even</div>
+        <div class="stat-sub">Month 20–24 base case</div>
+      </div></a>
+      <a href="#spend" style="text-decoration:none"><div class="stat-card" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+        <div class="stat-label">Document 6</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Spend Schedule</div>
+        <div class="stat-sub">8-month programme</div>
+      </div></a>
+      <a href="#sensitivity" style="text-decoration:none"><div class="stat-card" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+        <div class="stat-label">Document 7</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Sensitivity</div>
+        <div class="stat-sub">7 scenarios tested</div>
+      </div></a>
+      <div class="stat-card">
+        <div class="stat-label">Funding principle</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text2);line-height:1.5;margin-top:4px">Platform is built. Grant bridges validation to commercial sustainability.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 1 — RISK REGISTER ═══ -->
+  <div class="section" id="risk">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(220,38,38,0.12)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="section-num">Document 1</div>
+        <div class="section-title">Risk Register</div>
+      </div>
+    </div>
+
+    <div class="card-grid card-grid-4" style="margin-bottom:28px">
+      <div class="stat-card"><div class="stat-label">Total risks</div><div class="stat-val" style="color:var(--text)">17</div><div class="stat-sub">All owned & mitigated</div></div>
+      <div class="stat-card"><div class="stat-label">High/Critical</div><div class="stat-val" style="color:#f87171">4</div><div class="stat-sub">T3, T4, S1, R1</div></div>
+      <div class="stat-card"><div class="stat-label">Categories</div><div class="stat-val" style="color:var(--text)">5</div><div class="stat-sub">Strategic · Commercial · Operational · Technical · Regulatory</div></div>
+      <div class="stat-card"><div class="stat-label">Unmitigated</div><div class="stat-val" style="color:#34d399">0</div><div class="stat-sub">All risks have mitigations</div></div>
+    </div>
+
+    <!-- Strategic -->
+    <div style="margin-bottom:24px">
+      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Strategic Risks</p>
+      <div class="tbl-wrap"><table>
+        <tr><th style="width:48px">ID</th><th>Risk</th><th style="width:90px">Likelihood</th><th style="width:80px">Impact</th><th style="width:110px">Proximity</th><th>Mitigation</th><th style="width:64px">Owner</th></tr>
+        <tr><td>S1</td><td>Funding not secured, delaying pilot</td><td><span class="badge badge-yellow">Medium</span></td><td><span class="badge badge-red">High</span></td><td>Pre-pilot</td><td style="color:var(--text2)">Multiple grant applications in parallel; reduced-form pilot with 5 design partners if delayed</td><td>George</td></tr>
+        <tr><td>S2</td><td>Insufficient pilot participants</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-yellow">Medium</span></td><td>Pre-pilot</td><td style="color:var(--text2)">Target 15 to allow dropout; backup list maintained; professional network recruitment</td><td>George</td></tr>
+        <tr><td>S3</td><td>Pilot results insufficient for commercial case</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-red">High</span></td><td>Post-pilot</td><td style="color:var(--text2)">Measurement captures modest improvements; mid-pilot review allows course correction</td><td>George</td></tr>
+      </table></div>
+    </div>
+
+    <!-- Commercial -->
+    <div style="margin-bottom:24px">
+      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Commercial Risks</p>
+      <div class="tbl-wrap"><table>
+        <tr><th style="width:48px">ID</th><th>Risk</th><th style="width:90px">Likelihood</th><th style="width:80px">Impact</th><th style="width:110px">Proximity</th><th>Mitigation</th><th style="width:64px">Owner</th></tr>
+        <tr><td>C1</td><td>Low willingness to pay at pilot end</td><td><span class="badge badge-yellow">Medium</span></td><td><span class="badge badge-yellow">Medium</span></td><td>Post-pilot</td><td style="color:var(--text2)">Pricing tested during exit interviews; value demonstrated before payment requested</td><td>George</td></tr>
+        <tr><td>C2</td><td>Partner channels fail to materialise</td><td><span class="badge badge-yellow">Medium</span></td><td><span class="badge badge-yellow">Medium</span></td><td>Ongoing</td><td style="color:var(--text2)">Multiple partner types; no single dependency; direct-to-SME viable independently</td><td>George</td></tr>
+        <tr><td>C3</td><td>Competitor launches similar service</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-yellow">Medium</span></td><td>Ongoing</td><td style="color:var(--text2)">Architectural moat: permanent records + replaceable engines; data ownership switching costs</td><td>George</td></tr>
+      </table></div>
+    </div>
+
+    <!-- Operational -->
+    <div style="margin-bottom:24px">
+      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Operational Risks</p>
+      <div class="tbl-wrap"><table>
+        <tr><th style="width:48px">ID</th><th>Risk</th><th style="width:90px">Likelihood</th><th style="width:80px">Impact</th><th style="width:110px">Proximity</th><th>Mitigation</th><th style="width:64px">Owner</th></tr>
+        <tr><td>O1</td><td>Low participant engagement</td><td><span class="badge badge-yellow">Medium</span></td><td><span class="badge badge-yellow">Medium</span></td><td>During pilot</td><td style="color:var(--text2)">&lt;2-min surveys; automated reminders; immediate daily service value</td><td>Alissa</td></tr>
+        <tr><td>O2</td><td>Survey fatigue reducing data quality</td><td><span class="badge badge-yellow">Medium</span></td><td><span class="badge badge-yellow">Medium</span></td><td>During pilot</td><td style="color:var(--text2)">6 core questions max; consistent format; optional free-text</td><td>Alissa</td></tr>
+        <tr><td>O3</td><td>Participant withdrawal</td><td><span class="badge badge-yellow">Medium</span></td><td><span class="badge badge-green">Low</span></td><td>During pilot</td><td style="color:var(--text2)">Target 15–20; 30% dropout budgeted; exit interview captures reasons</td><td>Alissa</td></tr>
+        <tr><td>O4</td><td>Single point of failure in team</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-yellow">Medium</span></td><td>Ongoing</td><td style="color:var(--text2)">Clear role separation; all processes documented in Knowledge System</td><td>Both</td></tr>
+      </table></div>
+    </div>
+
+    <!-- Technical -->
+    <div style="margin-bottom:24px">
+      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Technical Risks</p>
+      <div class="tbl-wrap"><table>
+        <tr><th style="width:48px">ID</th><th>Risk</th><th style="width:90px">Likelihood</th><th style="width:80px">Impact</th><th style="width:110px">Proximity</th><th>Mitigation</th><th style="width:64px">Owner</th></tr>
+        <tr><td>T1</td><td>Platform downtime during pilot</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-red">High</span></td><td>During pilot</td><td style="color:var(--text2)">CI/CD with build verification; Supabase proven uptime; incident response plan</td><td>George</td></tr>
+        <tr><td>T2</td><td>AI/voice service degradation</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-yellow">Medium</span></td><td>During pilot</td><td style="color:var(--text2)">Replaceable engine architecture; graceful fallback to basic message-taking</td><td>George</td></tr>
+        <tr><td>T3</td><td>Data loss or corruption</td><td><span class="badge badge-green">Very Low</span></td><td><span class="badge badge-red">Critical</span></td><td>Ongoing</td><td style="color:var(--text2)">Supabase backups; encryption at rest and in transit; regular restore testing</td><td>George</td></tr>
+        <tr><td>T4</td><td>Security breach</td><td><span class="badge badge-green">Very Low</span></td><td><span class="badge badge-red">Critical</span></td><td>Ongoing</td><td style="color:var(--text2)">OWASP-informed practices; JWT auth; security review cycle; incident response plan</td><td>George</td></tr>
+      </table></div>
+    </div>
+
+    <!-- Regulatory -->
+    <div>
+      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">Regulatory Risks</p>
+      <div class="tbl-wrap"><table>
+        <tr><th style="width:48px">ID</th><th>Risk</th><th style="width:90px">Likelihood</th><th style="width:80px">Impact</th><th style="width:110px">Proximity</th><th>Mitigation</th><th style="width:64px">Owner</th></tr>
+        <tr><td>R1</td><td>GDPR non-compliance in pilot data handling</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-red">High</span></td><td>Ongoing</td><td style="color:var(--text2)">Consent in plain English; right to withdraw; DPIA before launch; ICO registration confirmed</td><td>Both</td></tr>
+        <tr><td>R2</td><td>Financial Visibility perceived as financial advice</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-yellow">Medium</span></td><td>Ongoing</td><td style="color:var(--text2)">Explicit disclaimer in all materials: "Not financial, accounting, or regulated advice"</td><td>George</td></tr>
+        <tr><td>R3</td><td>Regulatory change affecting compliance services</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-yellow">Medium</span></td><td>Ongoing</td><td style="color:var(--text2)">Replaceable engine architecture adapts to new regulatory sources without rebuilding UX</td><td>George</td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ═══ 2 — BUDGET JUSTIFICATION ═══ -->
+  <div class="section" id="budget">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(5,150,105,0.12)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>
+      </div>
+      <div>
+        <div class="section-num">Document 2</div>
+        <div class="section-title">Budget Justification</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <p style="font-size:15px;font-weight:600;color:var(--text);line-height:1.6;margin-bottom:8px">UltraTech AI is not seeking funding to begin building. The platform is built.</p>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7">Funding is requested to accelerate the structured commercial validation that converts technical readiness into measured SME impact and recurring revenue. Grant funding is the bridge between platform completion and commercial sustainability.</p>
+    </div>
+
+    <!-- Budget bar -->
+    <div class="budget-bar-wrap">
+      <div class="budget-bar">
+        <div class="budget-segment" style="flex:40;background:#7C3AED" title="Pilot delivery 40%">40%</div>
+        <div class="budget-segment" style="flex:25;background:#2563EB" title="Product completion 25%">25%</div>
+        <div class="budget-segment" style="flex:15;background:#0891B2" title="Measurement 15%">15%</div>
+        <div class="budget-segment" style="flex:10;background:#059669" title="Commercial prep 10%">10%</div>
+        <div class="budget-segment" style="flex:10;background:#4b5a7a" title="Contingency 10%">10%</div>
+      </div>
+      <div class="budget-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#7C3AED"></div>Pilot delivery (40%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2563EB"></div>Product completion (25%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#0891B2"></div>Measurement &amp; evaluation (15%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#059669"></div>Commercial launch prep (10%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4b5a7a"></div>Contingency (10%)</div>
+      </div>
+    </div>
+
+    <div class="card-grid card-grid-2" style="margin-top:24px">
+      <div class="card">
+        <div class="card-title">Pilot Programme Delivery — 40%</div>
+        <div class="card-sub" style="margin-top:8px;line-height:1.7">Recruitment and onboarding of 10–20 UK SMEs. Participant support during 3–6 month pilot. Weekly surveys, exit interviews, and case study production. <strong style="color:var(--text)">Without this, commercial validation cannot occur.</strong></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Product Completion — 25%</div>
+        <div class="card-sub" style="margin-top:8px;line-height:1.7">AI Receptionist and Financial Visibility to pilot-ready state. FineGuard is already pilot-ready. <strong style="color:var(--text)">Completion work only</strong> — the framework is built. Replaceable engine architecture reduces integration cost.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Measurement &amp; Evaluation — 15%</div>
+        <div class="card-sub" style="margin-top:8px;line-height:1.7">Grant funders require credible measured evidence. Produces publishable data on time saved, compliance improvements, and satisfaction. <strong style="color:var(--text)">Evaluation report is a permanent, reusable asset</strong> for all future applications.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Commercial Launch Preparation — 10%</div>
+        <div class="card-sub" style="margin-top:8px;line-height:1.7">Pricing validation, partner packs for banks/accountants/white-label, sales materials from case studies. Ensures UltraTech AI can <strong style="color:var(--text)">immediately convert learning into revenue</strong> when the pilot ends.</div>
+      </div>
+    </div>
+
+    <!-- Value for money -->
+    <div style="margin-top:24px">
+      <p class="section-num" style="margin-bottom:12px">Value for money — £32,000 delivers</p>
+      <div class="tbl-wrap"><table>
+        <tr><th>Output</th><th>Quantity</th></tr>
+        <tr><td>SMEs participating in structured pilot</td><td>10–20</td></tr>
+        <tr><td>Services tested in real business environments</td><td>3</td></tr>
+        <tr><td>Weeks of continuous usage data</td><td>12–24</td></tr>
+        <tr><td>Published case studies</td><td>3+</td></tr>
+        <tr><td>Productivity measurement report</td><td>1</td></tr>
+        <tr><td>Evidence base for future funding and partners</td><td>Permanent asset</td></tr>
+      </table></div>
+    </div>
+
+    <!-- What funding does not pay for -->
+    <div class="card" style="margin-top:16px;border-color:rgba(5,150,105,0.3);background:rgba(5,150,105,0.06)">
+      <p style="font-size:12px;font-weight:700;color:#34d399;margin-bottom:8px">What grant funding does NOT pay for</p>
+      <p style="font-size:12px;color:var(--text2);line-height:1.7">Ongoing platform maintenance · Business-as-usual operating costs beyond the pilot · Large-scale marketing spend · Equity-style returns or profit distribution. The grant funds a time-bound, outcome-specific programme: the commercial validation of an already-built platform.</p>
+    </div>
+  </div>
+
+  <!-- ═══ 3 — FINANCIAL MODEL ═══ -->
+  <div class="section" id="financial">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(37,99,235,0.12)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"><path d="M3 3v18h18"/><polyline points="7 16 11 11 15 14 19 9"/></svg>
+      </div>
+      <div>
+        <div class="section-num">Document 3</div>
+        <div class="section-title">Three-Year Financial Model</div>
+      </div>
+    </div>
+
+    <!-- Scenario tabs -->
+    <div class="scenario-tabs">
+      <button class="stab active" onclick="showScenario('cons')">Conservative</button>
+      <button class="stab" onclick="showScenario('base')">Base Case</button>
+      <button class="stab" onclick="showScenario('stretch')">Stretch</button>
+    </div>
+
+    <!-- Year revenue bars -->
+    <div class="card" style="margin-bottom:20px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:16px">Total Revenue by Year</p>
+      <div class="bar-chart" id="rev-bars">
+        <div class="bar-col">
+          <div class="bar-val" id="y1-val">£8,200</div>
+          <div class="bar-fill" id="y1-bar" style="height:10%;background:rgba(124,58,237,0.5);border-top:2px solid #7C3AED"></div>
+          <div class="bar-label">Year 1</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-val" id="y2-val">£50,600</div>
+          <div class="bar-fill" id="y2-bar" style="height:48%;background:rgba(37,99,235,0.5);border-top:2px solid #2563EB"></div>
+          <div class="bar-label">Year 2</div>
+        </div>
+        <div class="bar-col">
+          <div class="bar-val" id="y3-val">£154,600</div>
+          <div class="bar-fill" id="y3-bar" style="height:100%;background:rgba(8,145,178,0.5);border-top:2px solid #0891B2"></div>
+          <div class="bar-label">Year 3</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Year 1 -->
+    <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Year 1 — Pilot + Early Commercial</p>
+    <div class="tbl-wrap" style="margin-bottom:20px" id="y1-table">
+      <table>
+        <tr><th>Item</th><th>Conservative</th><th>Base Case</th><th>Stretch</th></tr>
+        <tr><td>Paying subscribers (end of year)</td><td>30</td><td>50</td><td>75</td></tr>
+        <tr><td>ARPU per month</td><td>£20</td><td>£25</td><td>£30</td></tr>
+        <tr><td>Annual recurring revenue</td><td>£7,200</td><td>£15,000</td><td>£27,000</td></tr>
+        <tr><td>One-time/setup revenue</td><td>£1,000</td><td>£2,000</td><td>£3,000</td></tr>
+        <tr><td>Partner/white-label revenue</td><td>£0</td><td>£2,000</td><td>£5,000</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total revenue</strong></td><td><strong>£8,200</strong></td><td><strong>£19,000</strong></td><td><strong>£35,000</strong></td></tr>
+        <tr><td>Infrastructure &amp; hosting</td><td>£3,600</td><td>£3,600</td><td>£3,600</td></tr>
+        <tr><td>AI/voice API usage</td><td>£1,200</td><td>£2,000</td><td>£3,000</td></tr>
+        <tr><td>Customer support &amp; ops</td><td>£6,000</td><td>£8,000</td><td>£10,000</td></tr>
+        <tr><td>Sales &amp; marketing</td><td>£3,000</td><td>£5,000</td><td>£8,000</td></tr>
+        <tr><td>Professional services &amp; compliance</td><td>£1,500</td><td>£2,000</td><td>£2,500</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total costs</strong></td><td><strong>£15,300</strong></td><td><strong>£20,600</strong></td><td><strong>£27,100</strong></td></tr>
+        <tr><td>Net (before team)</td><td class="neg">-£7,100</td><td class="neg">-£1,600</td><td class="pos">£7,900</td></tr>
+        <tr><td>Team costs</td><td>£24,000</td><td>£24,000</td><td>£24,000</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Net (all costs)</strong></td><td class="neg"><strong>-£31,100</strong></td><td class="neg"><strong>-£25,600</strong></td><td class="neg"><strong>-£16,100</strong></td></tr>
+      </table>
+    </div>
+
+    <!-- Year 2 -->
+    <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Year 2 — Growth</p>
+    <div class="tbl-wrap" style="margin-bottom:20px">
+      <table>
+        <tr><th>Item</th><th>Conservative</th><th>Base Case</th><th>Stretch</th></tr>
+        <tr><td>Paying subscribers (end of year)</td><td>150</td><td>250</td><td>400</td></tr>
+        <tr><td>ARPU per month</td><td>£22</td><td>£27</td><td>£32</td></tr>
+        <tr><td>Annual recurring revenue</td><td>£39,600</td><td>£81,000</td><td>£153,600</td></tr>
+        <tr><td>Partner/white-label revenue</td><td>£8,000</td><td>£15,000</td><td>£25,000</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total revenue</strong></td><td><strong>£50,600</strong></td><td><strong>£101,000</strong></td><td><strong>£186,600</strong></td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total costs</strong></td><td><strong>£40,000</strong></td><td><strong>£58,400</strong></td><td><strong>£77,400</strong></td></tr>
+        <tr><td>Net (before team)</td><td class="pos">£10,600</td><td class="pos">£42,600</td><td class="pos">£109,200</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Net (all costs)</strong></td><td class="neg"><strong>-£25,400</strong></td><td class="neg"><strong>-£5,400</strong></td><td class="pos"><strong>£49,200</strong></td></tr>
+      </table>
+    </div>
+
+    <!-- Year 3 -->
+    <p style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Year 3 — Scale</p>
+    <div class="tbl-wrap" style="margin-bottom:20px">
+      <table>
+        <tr><th>Item</th><th>Conservative</th><th>Base Case</th><th>Stretch</th></tr>
+        <tr><td>Paying subscribers (end of year)</td><td>450</td><td>750</td><td>1,200</td></tr>
+        <tr><td>ARPU per month</td><td>£24</td><td>£29</td><td>£34</td></tr>
+        <tr><td>Annual recurring revenue</td><td>£129,600</td><td>£261,000</td><td>£489,600</td></tr>
+        <tr><td>Partner/white-label revenue</td><td>£20,000</td><td>£35,000</td><td>£60,000</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total revenue</strong></td><td><strong>£154,600</strong></td><td><strong>£304,000</strong></td><td><strong>£561,600</strong></td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total costs</strong></td><td><strong>£72,800</strong></td><td><strong>£108,400</strong></td><td><strong>£148,600</strong></td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Net (all costs)</strong></td><td class="pos"><strong>£21,800</strong></td><td class="pos"><strong>£115,600</strong></td><td class="pos"><strong>£313,000</strong></td></tr>
+      </table>
+    </div>
+
+    <div class="card" style="border-color:rgba(37,99,235,0.3);background:rgba(37,99,235,0.06)">
+      <p style="font-weight:700;color:#60a5fa;margin-bottom:6px">Path to sustainability</p>
+      <p style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">Conservative:</strong> profitable Year 3 &nbsp;·&nbsp; <strong style="color:var(--text)">Base Case:</strong> break-even Year 2–3 &nbsp;·&nbsp; <strong style="color:var(--text)">Stretch:</strong> profitable mid Year 2. Framework architecture delivers sub-linear cost growth — customer numbers grow 3× from Y2, costs grow ~2×.</p>
+    </div>
+  </div>
+
+  <!-- ═══ 4 — CASH FLOW ═══ -->
+  <div class="section" id="cashflow">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(8,145,178,0.12)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <div>
+        <div class="section-num">Document 4</div>
+        <div class="section-title">Cash Flow Forecast — Year 1</div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap" style="margin-bottom:24px">
+      <table>
+        <tr><th>Item</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Year 1 Total</th></tr>
+        <tr style="background:rgba(255,255,255,0.02)"><td colspan="6" style="padding:8px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)">Inflows</td></tr>
+        <tr><td>Grant funding received</td><td class="pos">£20,000</td><td class="pos">£15,000</td><td class="pos">£5,000</td><td>£0</td><td class="pos">£40,000</td></tr>
+        <tr><td>Customer subscriptions</td><td>£0</td><td>£0</td><td class="pos">£1,500</td><td class="pos">£5,000</td><td class="pos">£6,500</td></tr>
+        <tr><td>One-time/setup revenue</td><td>£0</td><td>£0</td><td class="pos">£500</td><td class="pos">£1,000</td><td class="pos">£1,500</td></tr>
+        <tr><td>Partner revenue</td><td>£0</td><td>£0</td><td>£0</td><td class="pos">£500</td><td class="pos">£500</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total inflows</strong></td><td class="pos"><strong>£20,000</strong></td><td class="pos"><strong>£15,000</strong></td><td class="pos"><strong>£7,000</strong></td><td class="pos"><strong>£6,500</strong></td><td class="pos"><strong>£48,500</strong></td></tr>
+        <tr style="background:rgba(255,255,255,0.02)"><td colspan="6" style="padding:8px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)">Outflows</td></tr>
+        <tr><td>Pilot delivery</td><td class="neg">£2,000</td><td class="neg">£3,000</td><td class="neg">£3,000</td><td class="neg">£2,000</td><td class="neg">£10,000</td></tr>
+        <tr><td>Product completion</td><td class="neg">£5,000</td><td class="neg">£3,000</td><td class="neg">£1,000</td><td>£0</td><td class="neg">£9,000</td></tr>
+        <tr><td>Measurement &amp; evaluation</td><td class="neg">£1,000</td><td class="neg">£2,000</td><td class="neg">£2,000</td><td class="neg">£3,000</td><td class="neg">£8,000</td></tr>
+        <tr><td>Commercial launch prep</td><td class="neg">£1,000</td><td class="neg">£1,000</td><td class="neg">£2,000</td><td class="neg">£2,000</td><td class="neg">£6,000</td></tr>
+        <tr><td>Infrastructure &amp; hosting</td><td class="neg">£900</td><td class="neg">£900</td><td class="neg">£900</td><td class="neg">£900</td><td class="neg">£3,600</td></tr>
+        <tr><td>AI/voice API usage</td><td class="neg">£300</td><td class="neg">£400</td><td class="neg">£600</td><td class="neg">£700</td><td class="neg">£2,000</td></tr>
+        <tr><td>Sales &amp; marketing</td><td class="neg">£500</td><td class="neg">£1,000</td><td class="neg">£1,500</td><td class="neg">£2,000</td><td class="neg">£5,000</td></tr>
+        <tr><td>Professional services</td><td class="neg">£500</td><td class="neg">£500</td><td class="neg">£500</td><td class="neg">£500</td><td class="neg">£2,000</td></tr>
+        <tr><td>Team</td><td class="neg">£6,000</td><td class="neg">£6,000</td><td class="neg">£6,000</td><td class="neg">£6,000</td><td class="neg">£24,000</td></tr>
+        <tr><td>Contingency</td><td class="neg">£1,000</td><td class="neg">£1,000</td><td class="neg">£1,000</td><td class="neg">£1,000</td><td class="neg">£4,000</td></tr>
+        <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total outflows</strong></td><td class="neg"><strong>£18,200</strong></td><td class="neg"><strong>£18,800</strong></td><td class="neg"><strong>£18,500</strong></td><td class="neg"><strong>£18,100</strong></td><td class="neg"><strong>£73,600</strong></td></tr>
+        <tr style="background:rgba(255,255,255,0.04)"><td><strong>Net cash flow</strong></td><td class="pos"><strong>£1,800</strong></td><td class="neg"><strong>-£3,800</strong></td><td class="neg"><strong>-£11,500</strong></td><td class="neg"><strong>-£11,600</strong></td><td class="neg"><strong>-£25,100</strong></td></tr>
+        <tr style="background:rgba(255,255,255,0.04)"><td><strong>Cumulative</strong></td><td class="pos"><strong>£1,800</strong></td><td class="neg"><strong>-£2,000</strong></td><td class="neg"><strong>-£13,500</strong></td><td class="neg"><strong>-£25,100</strong></td><td style="color:var(--text3)">—</td></tr>
+      </table>
+    </div>
+
+    <div class="card" style="border-color:rgba(8,145,178,0.3);background:rgba(8,145,178,0.06)">
+      <p style="font-size:12px;color:var(--text2);line-height:1.7">Grant funding is front-loaded for setup and product completion. Customer revenue begins in Q3 as pilot converts. Cash position is negative by year-end — <strong style="color:var(--text)">this is the investment gap the grant bridges.</strong> By Year 2, customer revenue covers operating costs and cash flow turns positive.</p>
+    </div>
+  </div>
+
+  <!-- ═══ 5 — BREAK-EVEN ═══ -->
+  <div class="section" id="breakeven">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(217,119,6,0.12)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><path d="M3 6l9-4 9 4M3 18l9 4 9-4"/></svg>
+      </div>
+      <div>
+        <div class="section-num">Document 5</div>
+        <div class="section-title">Break-even Analysis</div>
+      </div>
+    </div>
+
+    <!-- Break-even chart -->
+    <div class="be-chart" style="margin-bottom:24px">
+      <svg viewBox="0 0 860 180" preserveAspectRatio="none">
+        <!-- Axes -->
+        <line x1="60" y1="10" x2="60" y2="155" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        <line x1="60" y1="155" x2="840" y2="155" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        <!-- Grid lines -->
+        <line x1="60" y1="50" x2="840" y2="50" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="60" y1="100" x2="840" y2="100" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="4,4"/>
+        <!-- Revenue line (growing) -->
+        <polyline points="60,155 155,152 250,148 345,138 440,122 535,100 630,72 725,42 840,14"
+          fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Cost line (gentler slope) -->
+        <polyline points="60,80 155,85 250,90 345,96 440,100 535,104 630,108 725,111 840,113"
+          fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6,3"/>
+        <!-- Break-even crossover indicator -->
+        <line x1="622" y1="10" x2="622" y2="155" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="3,3"/>
+        <circle cx="622" cy="108" r="5" fill="#fbbf24"/>
+        <text x="626" y="98" fill="#fbbf24" font-size="11" font-family="system-ui" font-weight="700">Month ~22</text>
+        <!-- Labels -->
+        <text x="25" y="158" fill="rgba(255,255,255,0.3)" font-size="10" font-family="system-ui">M0</text>
+        <text x="240" y="170" fill="rgba(255,255,255,0.3)" font-size="10" font-family="system-ui">Month 12</text>
+        <text x="440" y="170" fill="rgba(255,255,255,0.3)" font-size="10" font-family="system-ui">Month 18</text>
+        <text x="620" y="170" fill="rgba(255,255,255,0.3)" font-size="10" font-family="system-ui">Month 22</text>
+        <text x="790" y="170" fill="rgba(255,255,255,0.3)" font-size="10" font-family="system-ui">M30</text>
+        <!-- Legend -->
+        <rect x="65" y="14" width="12" height="3" rx="1.5" fill="#34d399"/>
+        <text x="82" y="19" fill="rgba(255,255,255,0.6)" font-size="10" font-family="system-ui">Revenue</text>
+        <rect x="150" y="14" width="12" height="3" rx="1.5" fill="#f87171"/>
+        <text x="167" y="19" fill="rgba(255,255,255,0.6)" font-size="10" font-family="system-ui">Costs (incl. team)</text>
+      </svg>
+    </div>
+
+    <!-- Monthly costs -->
+    <div class="card-grid card-grid-2" style="margin-bottom:24px">
+      <div>
+        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Monthly Operating Costs (Steady State)</p>
+        <div class="tbl-wrap"><table>
+          <tr><th>Category</th><th>Monthly</th></tr>
+          <tr><td>Infrastructure &amp; hosting</td><td>£700</td></tr>
+          <tr><td>AI/voice API usage</td><td>£500</td></tr>
+          <tr><td>Customer support &amp; ops</td><td>£1,500</td></tr>
+          <tr><td>Sales &amp; marketing</td><td>£1,000</td></tr>
+          <tr><td>Professional services</td><td>£300</td></tr>
+          <tr><td>Team (founder + ops)</td><td>£3,000</td></tr>
+          <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total monthly</strong></td><td><strong>£7,000</strong></td></tr>
+        </table></div>
+      </div>
+      <div>
+        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Subscribers Required</p>
+        <div class="tbl-wrap"><table>
+          <tr><th>ARPU</th><th>Subscribers needed</th></tr>
+          <tr><td>£20/month (entry)</td><td>350</td></tr>
+          <tr><td style="color:#fbbf24;font-weight:600">£25/month (base)</td><td style="color:#fbbf24;font-weight:600">280</td></tr>
+          <tr><td>£30/month (bundled)</td><td>234</td></tr>
+        </table></div>
+        <div class="tbl-wrap" style="margin-top:12px"><table>
+          <tr><th>Milestone</th><th>Subscribers</th><th>Month</th></tr>
+          <tr><td>First paying</td><td>10–15</td><td>7</td></tr>
+          <tr><td>Early growth</td><td>50</td><td>12</td></tr>
+          <tr><td>Approaching break-even</td><td>200</td><td>18</td></tr>
+          <tr><td style="color:#fbbf24;font-weight:600">Break-even</td><td style="color:#fbbf24;font-weight:600">280</td><td style="color:#fbbf24;font-weight:600">20–24</td></tr>
+        </table></div>
+      </div>
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card" style="border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.06)">
+        <div class="card-title" style="color:#fbbf24">ARPU: primary lever</div>
+        <div class="card-sub" style="margin-top:6px">A £5 ARPU increase improves Year 2 net by ~£20,000 and pulls break-even forward 4–6 months.</div>
+      </div>
+      <div class="card" style="border-color:rgba(8,145,178,0.3);background:rgba(8,145,178,0.06)">
+        <div class="card-title" style="color:#22d3ee">Infrastructure: not a risk</div>
+        <div class="card-sub" style="margin-top:6px">Shared framework architecture keeps cost growth sub-linear. Marginal cost per additional subscriber is low.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 6 — SPEND SCHEDULE ═══ -->
+  <div class="section" id="spend">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(124,58,237,0.12)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div>
+        <div class="section-num">Document 6</div>
+        <div class="section-title">Grant Spend Schedule</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-month">Month 1</div>
+            <div class="tl-spend">£6,500 <span style="font-size:13px;font-weight:400;color:var(--text3)">(cumulative £6,500)</span></div>
+            <div class="tl-desc">Pilot setup: consent, DPIA, recruitment. Product completion begins: AI Receptionist, Financial Visibility.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#2563EB"></div>
+            <div class="tl-month">Month 2</div>
+            <div class="tl-spend">£5,000 <span style="font-size:13px;font-weight:400;color:var(--text3)">(cumulative £11,500)</span></div>
+            <div class="tl-desc">Onboarding first cohort. Product completion finalisation. Survey instruments live.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#0891B2"></div>
+            <div class="tl-month">Month 3</div>
+            <div class="tl-spend">£4,500 <span style="font-size:13px;font-weight:400;color:var(--text3)">(cumulative £16,000)</span></div>
+            <div class="tl-desc">Full pilot operation. Weekly surveys, platform monitoring. Mid-pilot preparation.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#059669"></div>
+            <div class="tl-month">Month 4</div>
+            <div class="tl-spend">£4,500 <span style="font-size:13px;font-weight:400;color:var(--text3)">(cumulative £20,500)</span></div>
+            <div class="tl-desc">Mid-pilot review. Case study candidate identification. Continued measurement.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#D97706"></div>
+            <div class="tl-month">Month 5</div>
+            <div class="tl-spend">£4,500 <span style="font-size:13px;font-weight:400;color:var(--text3)">(cumulative £25,000)</span></div>
+            <div class="tl-desc">Exit interviews begin. Case study interviews. Data analysis.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#DC2626"></div>
+            <div class="tl-month">Month 6</div>
+            <div class="tl-spend">£4,000 <span style="font-size:13px;font-weight:400;color:var(--text3)">(cumulative £29,000)</span></div>
+            <div class="tl-desc">Final exit interviews. Data analysis. Pilot report drafting. Commercial preparation.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#4b5a7a"></div>
+            <div class="tl-month">Post-pilot (Months 7–8)</div>
+            <div class="tl-spend">£3,000 <span style="font-size:13px;font-weight:400;color:var(--text3)">(cumulative £32,000)</span></div>
+            <div class="tl-desc">Final report. Case study publication. Grant reporting. Commercial launch materials.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px">Spend by Category</p>
+        <div class="tbl-wrap" style="margin-bottom:20px">
+          <table>
+            <tr><th>Category</th><th>Amount</th><th>%</th></tr>
+            <tr><td>Pilot programme delivery</td><td>£12,800</td><td>40%</td></tr>
+            <tr><td>Product completion</td><td>£8,000</td><td>25%</td></tr>
+            <tr><td>Measurement &amp; evaluation</td><td>£4,800</td><td>15%</td></tr>
+            <tr><td>Commercial launch prep</td><td>£3,200</td><td>10%</td></tr>
+            <tr><td>Contingency</td><td>£3,200</td><td>10%</td></tr>
+            <tr style="background:rgba(255,255,255,0.03)"><td><strong>Total</strong></td><td><strong>£32,000</strong></td><td><strong>100%</strong></td></tr>
+          </table>
+        </div>
+
+        <!-- Cumulative spend visual -->
+        <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Cumulative spend (%)</p>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:56px;color:var(--text3)">Month 1</span>
+            <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden"><div style="height:100%;width:20%;background:var(--purple);border-radius:3px"></div></div>
+            <span style="width:30px;color:var(--text2)">20%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:56px;color:var(--text3)">Month 2</span>
+            <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden"><div style="height:100%;width:36%;background:#2563EB;border-radius:3px"></div></div>
+            <span style="width:30px;color:var(--text2)">36%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:56px;color:var(--text3)">Month 3</span>
+            <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden"><div style="height:100%;width:50%;background:#0891B2;border-radius:3px"></div></div>
+            <span style="width:30px;color:var(--text2)">50%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:56px;color:var(--text3)">Month 4</span>
+            <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden"><div style="height:100%;width:64%;background:#059669;border-radius:3px"></div></div>
+            <span style="width:30px;color:var(--text2)">64%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:56px;color:var(--text3)">Month 5</span>
+            <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden"><div style="height:100%;width:78%;background:#D97706;border-radius:3px"></div></div>
+            <span style="width:30px;color:var(--text2)">78%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:56px;color:var(--text3)">Month 6</span>
+            <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden"><div style="height:100%;width:91%;background:#DC2626;border-radius:3px"></div></div>
+            <span style="width:30px;color:var(--text2)">91%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+            <span style="width:56px;color:var(--text3)">Post</span>
+            <div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden"><div style="height:100%;width:100%;background:#a78bfa;border-radius:3px"></div></div>
+            <span style="width:30px;color:var(--text2)">100%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 7 — SENSITIVITY ═══ -->
+  <div class="section" id="sensitivity">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(5,150,105,0.12)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div>
+        <div class="section-num">Document 7</div>
+        <div class="section-title">Sensitivity Analysis</div>
+      </div>
+    </div>
+
+    <!-- Variables -->
+    <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Variables Tested</p>
+    <div class="tbl-wrap" style="margin-bottom:24px">
+      <table>
+        <tr><th>Variable</th><th>Base Case</th><th>Pessimistic</th><th>Optimistic</th></tr>
+        <tr><td>ARPU (£/month)</td><td style="color:#fbbf24;font-weight:600">£25</td><td class="neg">£20</td><td class="pos">£30</td></tr>
+        <tr><td>Pilot-to-paid conversion</td><td style="color:#fbbf24;font-weight:600">30%</td><td class="neg">20%</td><td class="pos">50%</td></tr>
+        <tr><td>Monthly churn</td><td style="color:#fbbf24;font-weight:600">3%</td><td class="neg">5%</td><td class="pos">2%</td></tr>
+        <tr><td>Customer acquisition cost (direct)</td><td style="color:#fbbf24;font-weight:600">£80</td><td class="neg">£120</td><td class="pos">£50</td></tr>
+        <tr><td>Partner revenue contribution (Year 2)</td><td style="color:#fbbf24;font-weight:600">£15,000</td><td class="neg">£5,000</td><td class="pos">£30,000</td></tr>
+        <tr><td>Infrastructure cost growth (vs customer growth)</td><td style="color:#fbbf24;font-weight:600">0.5×</td><td class="neg">0.7×</td><td class="pos">0.3×</td></tr>
+      </table>
+    </div>
+
+    <!-- Scenario outcomes -->
+    <p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Year 2 Net Position by Scenario</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Optimistic all variables</span>
+          <span class="pos" style="font-size:14px;font-weight:700">+£52,000</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px"><div style="height:100%;width:100%;background:#34d399;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Break-even: Month 10–12</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Optimistic partner revenue + lower churn</span>
+          <span class="pos" style="font-size:14px;font-weight:700">+£31,000</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px"><div style="height:100%;width:80%;background:#34d399;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Break-even: Month 12–14</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Optimistic ARPU + higher conversion</span>
+          <span class="pos" style="font-size:14px;font-weight:700">+£22,000</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px"><div style="height:100%;width:64%;background:#22d3ee;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Break-even: Month 14–16</div>
+      </div>
+      <div class="card" style="padding:14px 16px;border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;color:#fbbf24">Base Case ← primary projection</span>
+          <span class="neg" style="font-size:14px;font-weight:700">-£5,400</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px"><div style="height:100%;width:48%;background:#fbbf24;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Break-even: Month 20–24</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Pessimistic conversion + higher CAC</span>
+          <span class="neg" style="font-size:14px;font-weight:700">-£19,000</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px"><div style="height:100%;width:38%;background:#f87171;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Break-even: Month 26–30</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Pessimistic infrastructure + low ARPU</span>
+          <span class="neg" style="font-size:14px;font-weight:700">-£24,000</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px"><div style="height:100%;width:28%;background:#f87171;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Break-even: Month 28–32</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:var(--text)">Pessimistic ARPU + higher churn (worst combo)</span>
+          <span class="neg" style="font-size:14px;font-weight:700">-£28,000</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:6px"><div style="height:100%;width:16%;background:#DC2626;border-radius:3px"></div></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Break-even: Month 30+</div>
+      </div>
+    </div>
+
+    <!-- Key findings -->
+    <div class="card-grid card-grid-2">
+      <div class="card" style="border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.06)">
+        <div class="card-title" style="color:#fbbf24">1. ARPU is the most powerful lever</div>
+        <div class="card-sub" style="margin-top:6px">£5 increase in ARPU → +£20k Year 2 net and 4–6 months earlier break-even. Tested during pilot exit interviews.</div>
+      </div>
+      <div class="card" style="border-color:rgba(220,38,38,0.25);background:rgba(220,38,38,0.06)">
+        <div class="card-title" style="color:#f87171">2. Churn is the silent killer</div>
+        <div class="card-sub" style="margin-top:6px">At 5% monthly churn, the subscriber base erodes faster than acquisition replaces it. Retention investment is critical.</div>
+      </div>
+      <div class="card" style="border-color:rgba(5,150,105,0.3);background:rgba(5,150,105,0.06)">
+        <div class="card-title" style="color:#34d399">3. Partner revenue: high impact, low cost</div>
+        <div class="card-sub" style="margin-top:6px">Even modest partner success significantly improves financial position without increasing direct acquisition spend.</div>
+      </div>
+      <div class="card" style="border-color:rgba(8,145,178,0.3);background:rgba(8,145,178,0.06)">
+        <div class="card-title" style="color:#22d3ee">4. Base Case is robust</div>
+        <div class="card-sub" style="margin-top:6px">Only a combination of pessimistic variables pushes break-even beyond 24 months. Any single adverse variable is absorbable.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <p style="font-size:13px;font-weight:600;color:var(--text);line-height:1.7">The grant-funded pilot is designed to reduce uncertainty on the most critical variable — <strong style="color:#fbbf24">ARPU and willingness to pay</strong> — before significant commercial investment is made. The sensitivity analysis confirms the Base Case is achievable and the business has levers to respond if key assumptions move against it.</p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="border-top:1px solid var(--border);padding:32px 0;text-align:center">
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+      <div class="logo" style="width:24px;height:24px;border-radius:7px">
+        <svg width="13" height="13" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:700;color:var(--text)">UltraTech AI</span>
+    </div>
+    <p style="font-size:12px;color:var(--text3)">Grant Application Pack · Version 1.0 · June 2026</p>
+    <p style="font-size:11px;color:var(--text3);margin-top:4px">This document is grant-ready and designed to be adapted for specific funders by inserting the requested grant amount.</p>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+  // Highlight active section in nav
+  const sections=['overview','risk','budget','financial','cashflow','breakeven','spend','sensitivity'];
+  const navLinks=document.querySelectorAll('.nav-link');
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        navLinks.forEach(l=>l.classList.remove('active'));
+        const a=document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if(a) a.classList.add('active');
+      }
+    });
+  },{threshold:.2,rootMargin:'-20% 0px -60% 0px'});
+  sections.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el)});
+
+  // Scenario switcher
+  const scenData={
+    cons:{y1:'£8,200',y2:'£50,600',y3:'£154,600',h1:'10%',h2:'48%',h3:'100%'},
+    base:{y1:'£19,000',y2:'£101,000',y3:'£304,000',h1:'6%',h2:'33%',h3:'100%'},
+    stretch:{y1:'£35,000',y2:'£186,600',y3:'£561,600',h1:'6%',h2:'33%',h3:'100%'}
+  };
+  function showScenario(key){
+    const d=scenData[key];
+    document.getElementById('y1-val').textContent=d.y1;
+    document.getElementById('y2-val').textContent=d.y2;
+    document.getElementById('y3-val').textContent=d.y3;
+    document.getElementById('y1-bar').style.height=d.h1;
+    document.getElementById('y2-bar').style.height=d.h2;
+    document.getElementById('y3-bar').style.height=d.h3;
+    document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  }
+</script>
+</body>
+</html>
