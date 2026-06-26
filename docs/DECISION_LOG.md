@@ -131,4 +131,28 @@ governance), CI linting rules (too brittle), PR templates only (too easy to skip
 
 ---
 
+## [2026-06-26] — Keep defensive JSON-body handling in app/api/auth/login/route.ts
+
+**Decision:** Retain the `req.json().catch(() => null)` guard and null-body 400
+response added to `app/api/auth/login/route.ts`. Do not revert.
+
+**Reason:** The change is reliability and security hardening only. It prevents
+a malformed JSON request body from propagating as an unhandled exception and
+returning a 500, replacing it with a controlled 400. It does not alter auth
+logic, session semantics, cookie behaviour, permissions, or any product
+behaviour.
+
+**Governance note:** The change was made during an AI session before approval,
+in violation of the `app/api/auth/` confirmation requirement in `ANTI_DRIFT.md`.
+The breach was immediately disclosed and approved retrospectively by George.
+The `CLAUDE.md` protected-file rule has been reinforced to require immediate
+reporting of any emergency defensive fix to a protected file.
+
+**Alternatives Considered:** Revert the change — rejected because it would
+restore avoidable 500 errors on the login endpoint with no safety benefit.
+
+**Approved By:** George.
+
+---
+
 <!-- Add new decisions above this line -->
