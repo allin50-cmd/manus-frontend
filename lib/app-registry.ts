@@ -21,7 +21,6 @@ export const APP_REGISTRY: AppDefinition[] = [
     category: 'compliance',
     status: 'live',
     color: '#00A86B',
-    externalRoute: '/os/companies/fineguard',
   },
   {
     id: 'autolawclerk',

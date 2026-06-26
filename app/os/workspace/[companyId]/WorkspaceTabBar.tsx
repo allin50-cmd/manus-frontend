@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const TABS = [
-  { label: 'Overview', suffix: '' },
-  { label: 'Apps', suffix: '/apps' },
-  { label: 'People', suffix: '/people' },
-  { label: 'Documents', suffix: '/documents' },
-  { label: 'Activity', suffix: '/activity' },
-  { label: 'Settings', suffix: '/settings' },
+  { label: 'Overview',      suffix: '' },
+  { label: 'Apps',          suffix: '/apps' },
+  { label: 'People',        suffix: '/people' },
+  { label: 'Documents',     suffix: '/documents' },
+  { label: 'Notifications', suffix: '/notifications' },
+  { label: 'Activity',      suffix: '/activity' },
+  { label: 'Settings',      suffix: '/settings' },
 ]
 
 export default function WorkspaceTabBar({ base }: { base: string }) {
