@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb, builderBigJobsLeads } from '@/lib/db'
 import { desc } from 'drizzle-orm'
-import { jwtVerify } from 'jose'
-import { cookies } from 'next/headers'
+import { getSession } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,24 +94,16 @@ export async function POST(req: NextRequest) {
 }
 
 // GET — protected: list leads for internal OS view
-export async function GET(req: NextRequest) {
-  const jwtSecret = process.env.JWT_SECRET
-  if (!jwtSecret) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const token = req.cookies.get('session')?.value
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  try {
-    await jwtVerify(token, new TextEncoder().encode(jwtSecret))
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function GET(_req: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const db = await getDb()
   const leads = await db
     .select()
     .from(builderBigJobsLeads)
     .orderBy(desc(builderBigJobsLeads.leadScore), desc(builderBigJobsLeads.createdAt))
+    .limit(500)
 
   return NextResponse.json(leads)
 }

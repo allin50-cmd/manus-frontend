@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const [itemActions, itemLogs, itemDecisions] = await Promise.all([
     db.select().from(actions).where(eq(actions.workItemId, params.id)).orderBy(desc(actions.createdAt)).limit(20),
     db.select().from(activityLogs).where(eq(activityLogs.workItemId, params.id)).orderBy(desc(activityLogs.createdAt)).limit(50),
-    db.select().from(decisions).where(eq(decisions.workItemId, params.id)).orderBy(desc(decisions.createdAt)),
+    db.select().from(decisions).where(eq(decisions.workItemId, params.id)).orderBy(desc(decisions.createdAt)).limit(50),
   ])
 
   return NextResponse.json({ ...item, actions: itemActions, activityLogs: itemLogs, decisions: itemDecisions })

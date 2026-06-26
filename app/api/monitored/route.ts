@@ -16,6 +16,7 @@ export async function GET() {
     .select()
     .from(monitoredCompanies)
     .orderBy(desc(monitoredCompanies.activatedAt))
+    .limit(1000)
 
   return NextResponse.json(items)
 }

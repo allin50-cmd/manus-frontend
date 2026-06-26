@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     .from(workItems)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(asc(workItems.priority), asc(workItems.dueDate), desc(workItems.createdAt))
+    .limit(500)
 
   return NextResponse.json(items)
 }
