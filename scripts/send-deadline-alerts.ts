@@ -33,8 +33,8 @@ function requireEnv(name: string): string {
 function daysUntil(dateStr: string): number {
   const due = new Date(dateStr)
   const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  due.setHours(0, 0, 0, 0)
+  now.setUTCHours(0, 0, 0, 0)
+  due.setUTCHours(0, 0, 0, 0)
   return Math.round((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 }
 
