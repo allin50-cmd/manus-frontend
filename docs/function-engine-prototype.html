@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UltraTech Function Engine — Prototype</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0A0A0F;
+      --surface:   rgba(255,255,255,0.04);
+      --border:    rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.12);
+      --text:      rgba(255,255,255,0.88);
+      --text-2:    rgba(255,255,255,0.5);
+      --text-3:    rgba(255,255,255,0.28);
+      --label:     rgba(255,255,255,0.22);
+      --green:     #28C76F;
+      --orange:    #FF9F0A;
+      --red:       #FF3B30;
+      --blue:      #3D8BFF;
+      --purple:    #818CF8;
+      --live:      #00A86B;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: grid;
+      grid-template-columns: 260px 1fr 320px;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      grid-column: 1 / -1;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+    .header-logo {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #818CF8, #4338CA);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .header-title { font-weight: 700; font-size: 15px; }
+    .header-sub   { font-size: 11px; color: var(--text-3); }
+    .badge {
+      margin-left: auto;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 999px;
+      background: rgba(0,168,107,0.15);
+      color: var(--live);
+      border: 1px solid rgba(0,168,107,0.25);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px 0;
+    }
+    .dept-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--label);
+      padding: 12px 16px 4px;
+    }
+    .fn-row {
+      display: flex; align-items: center; gap-8;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.1s;
+      gap: 8px;
+    }
+    .fn-row:hover  { background: rgba(255,255,255,0.04); }
+    .fn-row.active { background: rgba(129,140,248,0.1); }
+    .fn-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .fn-name { font-size: 13px; flex: 1; color: var(--text); }
+    .fn-status {
+      font-size: 9px; font-weight: 700;
+      padding: 1px 5px; border-radius: 999px;
+    }
+    .fn-status.live    { background: rgba(0,168,107,0.15); color: var(--live); }
+    .fn-status.beta    { background: rgba(122,90,248,0.15); color: #7A5AF8; }
+    .fn-status.planned { background: rgba(255,255,255,0.06); color: var(--text-3); }
+    .fn-status.runner  { background: rgba(61,139,255,0.15); color: var(--blue); }
+
+    /* ── Main ── */
+    .main {
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+    .panel-title {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 14px;
+    }
+
+    /* Context form */
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: 11px; color: var(--text-3);
+      margin-bottom: 5px;
+    }
+    .field input, .field textarea, .field select {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-hi);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: rgba(129,140,248,0.45);
+      background: rgba(129,140,248,0.06);
+    }
+    .field textarea { min-height: 72px; resize: vertical; font-family: 'Menlo', monospace; font-size: 12px; }
+
+    /* Run button */
+    .run-btn {
+      width: 100%;
+      padding: 11px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #818CF8, #4338CA);
+      color: #fff;
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .run-btn:hover   { opacity: 0.9; }
+    .run-btn:active  { transform: scale(0.98); }
+    .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Definition card */
+    .def-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 5px 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .def-row:first-child { border-top: none; }
+    .def-key   { font-size: 11px; color: var(--text-3); }
+    .def-val   { font-size: 12px; color: var(--text-2); text-align: right; max-width: 58%; }
+    .def-val code { font-family: 'Menlo', monospace; font-size: 11px; color: var(--purple); }
+    .pill-list { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+    .pill {
+      font-size: 10px; padding: 1px 6px; border-radius: 999px;
+      background: rgba(255,255,255,0.07); color: var(--text-3);
+    }
+
+    /* ── Output panel ── */
+    .output { border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; }
+    .output-header {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 12px;
+    }
+
+    .log-entry {
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .log-top {
+      display: flex; align-items: center; gap-8;
+      padding: 10px 12px; gap: 8px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+    .log-icon { font-size: 14px; }
+    .log-fn   { font-size: 12px; font-weight: 600; flex: 1; }
+    .log-time { font-size: 10px; color: var(--text-3); }
+    .log-body { padding: 10px 12px; }
+    .log-section { margin-bottom: 8px; }
+    .log-section:last-child { margin-bottom: 0; }
+    .log-section-label {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    .log-section-label.events  { color: var(--green); }
+    .log-section-label.warnings { color: var(--orange); }
+    .log-section-label.errors  { color: var(--red); }
+    .log-section-label.data    { color: var(--purple); }
+    .log-item {
+      font-size: 11px;
+      color: var(--text-2);
+      padding: 2px 0 2px 8px;
+      border-left: 2px solid rgba(255,255,255,0.08);
+    }
+    .log-item.green  { border-color: rgba(40,199,111,0.35); }
+    .log-item.orange { border-color: rgba(255,159,10,0.35); }
+    .log-item.red    { border-color: rgba(255,59,48,0.35); }
+    .log-item.purple { border-color: rgba(129,140,248,0.35); font-family: monospace; font-size: 10px; }
+
+    .result-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 999px;
+    }
+    .result-badge.ok  { background: rgba(40,199,111,0.15); color: var(--green); }
+    .result-badge.fail { background: rgba(255,59,48,0.15); color: var(--red); }
+    .result-badge.warn { background: rgba(255,159,10,0.15); color: var(--orange); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-3);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .empty-state span { display: block; font-size: 24px; margin-bottom: 8px; }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; grid-template-rows: 56px auto auto auto; height: auto; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+      .output { border-right: none; border-top: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logo">⚙</div>
+    <div>
+      <div class="header-title">UltraTech Function Engine</div>
+      <div class="header-sub">Deterministic Business Function Runner · Prototype</div>
+    </div>
+    <span class="badge">v1 · No AI · No Queues</span>
+  </header>
+
+  <!-- Sidebar: function list -->
+  <nav class="sidebar" id="sidebar"></nav>
+
+  <!-- Main: context + definition -->
+  <main class="main">
+
+    <div class="panel">
+      <div class="panel-title">Execution Context</div>
+      <div class="field">
+        <label>companyId <span style="color:var(--red)">*</span></label>
+        <select id="ctx-company">
+          <option value="fineguard">fineguard</option>
+          <option value="ultratech">ultratech</option>
+          <option value="builder-big-jobs">builder-big-jobs</option>
+          <option value="accuracy">accuracy</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>userId <span style="color:var(--text-3)">(optional)</span></label>
+        <input type="text" id="ctx-user" value="george" placeholder="george" />
+      </div>
+      <div class="field">
+        <label>payload <span style="color:var(--text-3)">(JSON, optional)</span></label>
+        <textarea id="ctx-payload" placeholder='{ "name": "Alex", "phone": "07700900000" }'></textarea>
+      </div>
+      <button class="run-btn" id="run-btn" disabled>Select a function to run</button>
+    </div>
+
+    <div class="panel" id="def-panel" style="display:none">
+      <div class="panel-title">Function Definition</div>
+      <div id="def-body"></div>
+    </div>
+
+    <div class="panel" style="background:rgba(40,199,111,0.03); border-color:rgba(40,199,111,0.1)">
+      <div class="panel-title" style="color:rgba(40,199,111,0.5)">Engine Contract</div>
+      <div style="font-size:12px; color:var(--text-3); line-height:1.7">
+        1 · <strong style="color:var(--text-2)">Verify</strong> — function exists in definition registry<br>
+        2 · <strong style="color:var(--text-2)">Validate</strong> — companyId present<br>
+        3 · <strong style="color:var(--text-2)">Resolve</strong> — runner registered for id<br>
+        4 · <strong style="color:var(--text-2)">Execute</strong> — runner.execute(context)<br>
+        5 · <strong style="color:var(--text-2)">Return</strong> — FunctionResult (never throws)
+        <br><br>
+        <span style="color:rgba(255,159,10,0.7)">AI is optional · runs after step 4 · never controls execution</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Output: run log -->
+  <aside class="output" id="output-panel">
+    <div class="output-header">Execution Log</div>
+    <div id="log-list">
+      <div class="empty-state">
+        <span>⚙</span>
+        Select a function from the left panel<br>
+        and press Run to see a result.
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+// ── In-browser simulation of lib/business-functions.ts + lib/function-engine.ts ──
+
+const DEPT_ORDER = [
+  'Executive','Sales','Operations','Finance',
+  'Compliance','Documents','Technology','Marketing','Support',
+]
+
+const DEPT_COLOR = {
+  Executive: '#818CF8', Sales: '#3D8BFF', Operations: '#28C76F',
+  Finance: '#FFC145', Compliance: '#00A86B', Documents: '#818CF8',
+  Technology: '#20AFFF', Marketing: '#FF8A34', Support: '#FF6B9D',
+}
+
+const FUNCTIONS = [
+  // Executive
+  { id:'business-health',  name:'Business Health',   department:'Executive', status:'planned', owner:'Jobe',    watches:['os_work_items','os_alerts','ut_daily_metrics','fg_alerts'] },
+  { id:'kpi-dashboard',    name:'KPI Dashboard',     department:'Executive', status:'planned', owner:'Jobe',    watches:['ut_daily_metrics','ut_weekly_reports'] },
+  { id:'decision-register',name:'Decision Register', department:'Executive', status:'planned', owner:'Jobe',    watches:['os_decisions'], writesTo:['os_decisions'] },
+  // Sales
+  { id:'lead-capture',     name:'Lead Capture',      department:'Sales',     status:'planned', owner:'Devin',   watches:['os_leads'], writesTo:['os_leads','os_work_items'] },
+  { id:'quote-builder',    name:'Quote Builder',     department:'Sales',     status:'beta',    owner:'Devin',   app:'business-anywhere', watches:['os_quotes','os_contacts'], writesTo:['os_quotes'] },
+  { id:'crm',              name:'CRM',               department:'Sales',     status:'planned', owner:'Devin',   watches:['os_contacts','os_people','os_calls'], writesTo:['os_contacts','os_people'] },
+  { id:'follow-ups',       name:'Follow-ups',        department:'Sales',     status:'planned', owner:'Devin',   watches:['os_leads','os_quotes','os_tasks'], writesTo:['os_tasks'] },
+  // Operations
+  { id:'scheduler',        name:'Scheduler',         department:'Operations',status:'planned', owner:'Lola',    app:'business-anywhere', watches:['os_work_items','os_tasks'], writesTo:['os_tasks'] },
+  { id:'job-tracker',      name:'Job Tracker',       department:'Operations',status:'beta',    owner:'Lola',    app:'business-anywhere', watches:['os_work_items','os_tasks'], writesTo:['os_work_items'] },
+  { id:'procurement',      name:'Procurement',       department:'Operations',status:'planned', owner:'Lola',    watches:['os_work_items'], writesTo:['os_work_items'] },
+  { id:'workforce',        name:'Workforce',         department:'Operations',status:'planned', owner:'Lola',    watches:['os_people','os_tasks'], writesTo:['os_tasks'] },
+  // Finance
+  { id:'invoicing',        name:'Invoicing',         department:'Finance',   status:'planned', owner:'Vincent', watches:['os_invoices','os_quotes'], writesTo:['os_invoices'] },
+  { id:'cash-flow',        name:'Cash Flow',         department:'Finance',   status:'planned', owner:'Vincent', watches:['os_invoices'] },
+  { id:'expenses',         name:'Expenses',          department:'Finance',   status:'planned', owner:'Vincent', watches:['os_work_items'], writesTo:['os_work_items'] },
+  // Compliance
+  { id:'fineguard-compliance', name:'FineGuard',     department:'Compliance',status:'live',    owner:'Adonis',  app:'fineguard', watches:['fg_companies','fg_alerts','fg_audit_runs'], writesTo:['fg_alerts','fg_audit_runs'] },
+  { id:'companies-house',  name:'Companies House',   department:'Compliance',status:'live',    owner:'Adonis',  app:'fineguard', watches:['fg_companies'] },
+  { id:'hmrc',             name:'HMRC',              department:'Compliance',status:'planned', owner:'Adonis',  watches:['os_alerts'], writesTo:['os_alerts'] },
+  // Documents
+  { id:'vaultline',        name:'VaultLine',         department:'Documents', status:'planned', owner:'Adonis',  app:'vaultline', watches:['os_documents'], writesTo:['os_documents','os_alerts'] },
+  { id:'contracts',        name:'Contracts',         department:'Documents', status:'planned', owner:'Adonis',  watches:['os_documents'], writesTo:['os_documents','os_alerts'] },
+  // Technology
+  { id:'deployments',      name:'Deployments',       department:'Technology',status:'planned', owner:'Jobe',    watches:['ut_activity_events'], writesTo:['ut_activity_events'] },
+  { id:'monitoring',       name:'Monitoring',        department:'Technology',status:'planned', owner:'Jobe',    watches:['os_alerts'], writesTo:['os_alerts'] },
+  // Marketing
+  { id:'campaigns',        name:'Campaigns',         department:'Marketing', status:'planned', owner:'Lola',    watches:['os_leads','ut_activity_events'], writesTo:['os_leads'] },
+  // Support
+  { id:'customer-support', name:'Customer Support',  department:'Support',   status:'planned', owner:'Devin',   watches:['os_work_items','os_messages','os_alerts'], writesTo:['os_work_items','os_tasks'] },
+]
+
+// Simulated runner registry (mirrors lib/function-engine.ts placeholder registrations)
+const RUNNERS = new Set(['lead-capture','quote-builder','scheduler','invoicing','fineguard-compliance'])
+
+// ── Engine simulation ──
+
+async function runFunction(id, context) {
+  const def = FUNCTIONS.find(f => f.id === id)
+  if (!def) return { success: false, events: [], warnings: [], errors: [`Unknown function id: '${id}'`] }
+  if (!context.companyId) return { success: false, events: [], warnings: [], errors: ['FunctionContext.companyId is required'] }
+
+  if (!RUNNERS.has(id)) {
+    return {
+      success: false,
+      events: [],
+      warnings: [`Function '${id}' (${def.name}) has no runner. Status: ${def.status}. Call registerFunction() to provide an implementation.`],
+      errors: [],
+    }
+  }
+
+  // Simulate execution latency
+  await new Promise(r => setTimeout(r, 180 + Math.random() * 120))
+
+  return {
+    success: true,
+    events: ['Function executed'],
+    warnings: [],
+    errors: [],
+    data: { functionId: id, companyId: context.companyId, timestamp: new Date().toISOString() },
+  }
+}
+
+// ── Sidebar ──
+
+let selectedId = null
+
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar')
+  sidebar.innerHTML = ''
+
+  const byDept = {}
+  FUNCTIONS.forEach(f => { (byDept[f.department] = byDept[f.department] || []).push(f) })
+
+  DEPT_ORDER.forEach(dept => {
+    if (!byDept[dept]) return
+    const label = document.createElement('div')
+    label.className = 'dept-label'
+    label.textContent = dept
+    sidebar.appendChild(label)
+
+    byDept[dept].forEach(fn => {
+      const row = document.createElement('div')
+      row.className = 'fn-row'
+      row.dataset.id = fn.id
+
+      const color = DEPT_COLOR[dept] || '#818CF8'
+      const hasRunner = RUNNERS.has(fn.id)
+      const statusLabel = hasRunner ? 'runner' : fn.status
+
+      row.innerHTML = `
+        <div class="fn-dot" style="background:${color};${fn.status === 'planned' ? 'opacity:0.35' : ''}"></div>
+        <span class="fn-name" style="${fn.status === 'planned' ? 'color:var(--text-3)' : ''}">${fn.name}</span>
+        <span class="fn-status ${statusLabel}">${hasRunner ? 'runner' : fn.status}</span>
+      `
+      row.addEventListener('click', () => selectFunction(fn.id))
+      sidebar.appendChild(row)
+    })
+  })
+}
+
+function selectFunction(id) {
+  selectedId = id
+  document.querySelectorAll('.fn-row').forEach(r => r.classList.toggle('active', r.dataset.id === id))
+
+  const fn = FUNCTIONS.find(f => f.id === id)
+  const hasRunner = RUNNERS.has(id)
+
+  // Update run button
+  const btn = document.getElementById('run-btn')
+  btn.disabled = false
+  btn.textContent = `Run  ${fn.name}`
+
+  // Show definition
+  const defPanel = document.getElementById('def-panel')
+  defPanel.style.display = 'block'
+
+  const color = DEPT_COLOR[fn.department] || '#818CF8'
+  const watches = (fn.watches || []).map(t => `<span class="pill">${t}</span>`).join('')
+  const writesTo = (fn.writesTo || []).map(t => `<span class="pill">${t}</span>`).join('')
+
+  document.getElementById('def-body').innerHTML = `
+    <div class="def-row">
+      <span class="def-key">id</span>
+      <span class="def-val"><code>${fn.id}</code></span>
+    </div>
+    <div class="def-row">
+      <span class="def-key">department</span>
+      <span class="def-val" style="color:${color}">${fn.department}</span>
+    </div>
+    <div class="def-row">
+      <span class="def-key">status</span>
+      <span class="def-val">
+        <span class="fn-status ${fn.status}">${fn.status}</span>
+        ${hasRunner ? '<span class="fn-status runner" style="margin-left:4px">runner ✓</span>' : ''}
+      </span>
+    </div>
+    <div class="def-row">
+      <span class="def-key">owner</span>
+      <span class="def-val">${fn.owner}</span>
+    </div>
+    ${fn.app ? `<div class="def-row"><span class="def-key">app</span><span class="def-val"><code>${fn.app}</code></span></div>` : ''}
+    ${fn.watches ? `<div class="def-row"><span class="def-key">watches</span><span class="def-val"><div class="pill-list">${watches}</div></span></div>` : ''}
+    ${fn.writesTo ? `<div class="def-row"><span class="def-key">writesTo</span><span class="def-val"><div class="pill-list">${writesTo}</div></span></div>` : ''}
+    <div class="def-row">
+      <span class="def-key">description</span>
+      <span class="def-val" style="font-size:11px">${fn.description || '—'}</span>
+    </div>
+  `
+}
+
+// ── Run ──
+
+document.getElementById('run-btn').addEventListener('click', async () => {
+  if (!selectedId) return
+  const fn = FUNCTIONS.find(f => f.id === selectedId)
+
+  // Parse payload
+  let payload = undefined
+  const raw = document.getElementById('ctx-payload').value.trim()
+  if (raw) {
+    try { payload = JSON.parse(raw) }
+    catch { addLog(fn, null, null, 'Payload is not valid JSON') ; return }
+  }
+
+  const context = {
+    companyId: document.getElementById('ctx-company').value,
+    userId: document.getElementById('ctx-user').value || undefined,
+    app: fn.app,
+    payload,
+  }
+
+  const btn = document.getElementById('run-btn')
+  btn.disabled = true
+  btn.textContent = 'Running…'
+
+  const t0 = Date.now()
+  const result = await runFunction(selectedId, context)
+  const ms = Date.now() - t0
+
+  btn.disabled = false
+  btn.textContent = `Run  ${fn.name}`
+
+  addLog(fn, context, result, null, ms)
+})
+
+function addLog(fn, context, result, parseError, ms) {
+  const list = document.getElementById('log-list')
+  const empty = list.querySelector('.empty-state')
+  if (empty) empty.remove()
+
+  const time = new Date().toLocaleTimeString()
+  const entry = document.createElement('div')
+  entry.className = 'log-entry'
+
+  if (parseError) {
+    entry.innerHTML = `
+      <div class="log-top">
+        <span class="log-icon">⚠</span>
+        <span class="log-fn">${fn ? fn.name : '?'}</span>
+        <span class="result-badge fail">error</span>
+        <span class="log-time">${time}</span>
+      </div>
+      <div class="log-body">
+        <div class="log-section">
+          <div class="log-section-label errors">Error</div>
+          <div class="log-item red">${parseError}</div>
+        </div>
+      </div>`
+    list.prepend(entry)
+    return
+  }
+
+  const badge = result.success
+    ? '<span class="result-badge ok">success</span>'
+    : result.warnings.length && !result.errors.length
+      ? '<span class="result-badge warn">warning</span>'
+      : '<span class="result-badge fail">failure</span>'
+
+  const icon = result.success ? '✓' : result.warnings.length ? '⚠' : '✗'
+
+  let body = ''
+
+  if (result.events.length) {
+    body += `<div class="log-section">
+      <div class="log-section-label events">Events</div>
+      ${result.events.map(e => `<div class="log-item green">${e}</div>`).join('')}
+    </div>`
+  }
+  if (result.warnings.length) {
+    body += `<div class="log-section">
+      <div class="log-section-label warnings">Warnings</div>
+      ${result.warnings.map(w => `<div class="log-item orange">${w}</div>`).join('')}
+    </div>`
+  }
+  if (result.errors.length) {
+    body += `<div class="log-section">
+      <div class="log-section-label errors">Errors</div>
+      ${result.errors.map(e => `<div class="log-item red">${e}</div>`).join('')}
+    </div>`
+  }
+  if (result.data) {
+    body += `<div class="log-section">
+      <div class="log-section-label data">Data</div>
+      <div class="log-item purple">${JSON.stringify(result.data, null, 2)}</div>
+    </div>`
+  }
+
+  body += `<div style="font-size:10px;color:var(--text-3);margin-top:6px">
+    companyId: ${context.companyId} · ${ms}ms
+  </div>`
+
+  entry.innerHTML = `
+    <div class="log-top">
+      <span class="log-icon">${icon}</span>
+      <span class="log-fn">${fn.name}</span>
+      ${badge}
+      <span class="log-time">${time}</span>
+    </div>
+    <div class="log-body">${body}</div>`
+
+  list.prepend(entry)
+}
+
+// ── Boot ──
+buildSidebar()
+</script>
+</body>
+</html>
