@@ -7,6 +7,7 @@ import StatusBadge from '../../../components/StatusBadge'
 import WorkItemActions from '../../../components/WorkItemActions'
 import CompleteActionButton from '../../../components/CompleteActionButton'
 import AlertDeliveriesSection from '../../../components/AlertDeliveriesSection'
+import OutreachLogSection from '../../../components/OutreachLogSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -221,6 +222,9 @@ const item = await db.workItem.findUnique({
           </div>
         </section>
       )}
+
+      {/* Outreach log */}
+      <OutreachLogSection logs={item.outreachLogs} />
 
       {/* Alert deliveries — shown for ComplianceAlert work items */}
       {item.type === 'ComplianceAlert' && (

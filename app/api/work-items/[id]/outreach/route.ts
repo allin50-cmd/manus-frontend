@@ -2,53 +2,65 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const logs = await db.outreachLog.findMany({
+      where: { workItemId: params.id },
+      orderBy: { occurredAt: 'desc' },
+      take: 50,
+    })
+    return NextResponse.json(logs)
+  } catch {
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+  }
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const session = await getSession()
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  let body: { channel?: unknown; summary?: unknown; occurredAt?: unknown; pipelineStage?: unknown }
+  try { body = await req.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const body = await req.json()
+  const channel = typeof body.channel === 'string' ? body.channel.trim() : ''
+  const summary = typeof body.summary === 'string' ? body.summary.trim() : ''
+  if (!channel) return NextResponse.json({ error: 'channel is required' }, { status: 400 })
+  if (!summary) return NextResponse.json({ error: 'summary is required' }, { status: 400 })
 
-  if (!body.summary) {
-    return NextResponse.json(
-      { error: 'summary required' },
-      { status: 400 }
-    )
-  }
+  const occurredAt =
+    typeof body.occurredAt === 'string' ? new Date(body.occurredAt) : new Date()
+  const pipelineStage =
+    typeof body.pipelineStage === 'string' ? body.pipelineStage.trim() : undefined
 
   try {
-    const outreach = await db.$transaction(async (tx) => {
+    const log = await db.$transaction(async (tx) => {
       const record = await tx.outreachLog.create({
-        data: {
-          workItemId: params.id,
-          person: session.person,
-          channel: body.channel ?? 'Email',
-          summary: body.summary,
-        },
+        data: { workItemId: params.id, person: session.person, channel, summary, occurredAt },
       })
-
       await tx.workItem.update({
         where: { id: params.id },
         data: {
-          lastTouchedAt: new Date(),
-          ...(body.pipelineStage
-            ? { pipelineStage: body.pipelineStage }
-            : {}),
+          lastTouchedAt: occurredAt,
+          ...(pipelineStage ? { pipelineStage } : {}),
         },
       })
-
       return record
     })
-
-    return NextResponse.json(outreach, { status: 201 })
+    return NextResponse.json(log, { status: 201 })
   } catch {
-    return NextResponse.json(
-      { error: 'Could not create outreach record' },
-      { status: 503 }
-    )
+    return NextResponse.json({ error: 'Could not create outreach record' }, { status: 503 })
   }
 }

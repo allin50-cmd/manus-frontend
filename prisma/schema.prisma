@@ -142,9 +142,9 @@ model WorkItem {
   dueDate        DateTime?
   decisionNeeded Boolean        @default(false)
   notes          String?
-  createdAt      DateTime       @default(now())
   pipelineStage  PipelineStage?
   lastTouchedAt  DateTime?
+  createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   actions         Action[]
@@ -190,18 +190,6 @@ model ActivityLog {
 
   workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
   action   Action?  @relation(fields: [actionId], references: [id])
-}
-
-model OutreachLog {
-  id         String   @id @default(cuid())
-  workItemId String
-  person     String
-  channel    String
-  summary    String
-  occurredAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-
-  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
 }
 
 model Decision {
@@ -346,6 +334,19 @@ model VoiceIntake {
   approvedBy           String?
   linkedWorkItemId     String?
   linkedWorkItem       WorkItem?         @relation(fields: [linkedWorkItemId], references: [id], onDelete: SetNull)
+}
+
+// ── Outreach Log ─────────────────────────────────────────────────────────────
+
+model OutreachLog {
+  id         String   @id @default(cuid())
+  workItemId String
+  person     String
+  channel    String
+  summary    String
+  occurredAt DateTime @default(now())
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
 }
 
 // ── Contacts & Companies ─────────────────────────────────────────────────────
