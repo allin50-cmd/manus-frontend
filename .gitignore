@@ -74,3 +74,4 @@ Thumbs.db
 credentials.json
 .vercel
 .env*
+.claude/
