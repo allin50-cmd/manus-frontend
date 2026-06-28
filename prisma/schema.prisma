@@ -143,9 +143,12 @@ model WorkItem {
   decisionNeeded Boolean        @default(false)
   notes          String?
   createdAt      DateTime       @default(now())
+  pipelineStage  PipelineStage?
+  lastTouchedAt  DateTime?
   updatedAt      DateTime       @updatedAt
 
   actions         Action[]
+  outreachLogs    OutreachLog[]
   activityLogs    ActivityLog[]
   decisions       Decision[]
   alertDeliveries AlertDelivery[]
@@ -187,6 +190,18 @@ model ActivityLog {
 
   workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
   action   Action?  @relation(fields: [actionId], references: [id])
+}
+
+model OutreachLog {
+  id         String   @id @default(cuid())
+  workItemId String
+  person     String
+  channel    String
+  summary    String
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
 }
 
 model Decision {
@@ -285,6 +300,17 @@ model UserPassword {
 }
 
 // ── Voice Intake ──────────────────────────────────────────────────────────────
+
+enum PipelineStage {
+  Prospect
+  Contacted
+  Qualified
+  Proposal
+  Negotiation
+  Won
+  Lost
+  Dormant
+}
 
 enum TemplateCategory {
   Compliance
