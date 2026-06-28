@@ -1,6 +1,7 @@
 import { getDb } from '@/lib/db'
 import { osDocuments } from '@/db/schema'
 import { desc, sql } from 'drizzle-orm'
+import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,12 +95,13 @@ export default async function DocumentsPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button
+          <Link
+            href="/os/documents/upload"
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
             style={{ background: 'linear-gradient(135deg, #818CF8, #4338CA)' }}
           >
             Upload
-          </button>
+          </Link>
           <button
             className="px-4 py-2 rounded-xl text-sm font-medium"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.7)' }}
