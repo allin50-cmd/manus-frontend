@@ -13,19 +13,38 @@ export const dynamic = 'force-dynamic'
 export default async function WorkItemDetailPage({ params }: { params: { id: string } }) {
   const session = await requireAuth()
 
-  const item = await db.workItem.findUnique({
-    where: { id: params.id },
-    include: {
-      actions: { orderBy: { createdAt: 'desc' }, take: 20 },
-      activityLogs: { orderBy: { createdAt: 'desc' }, take: 30 },
-      decisions: { orderBy: { createdAt: 'desc' }, take: 10 },
-      alertDeliveries: {
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-        include: { recipient: true },
+const item = await db.workItem.findUnique({
+  where: { id: params.id },
+  include: {
+    actions: {
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    },
+
+    activityLogs: {
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+    },
+
+    outreachLogs: {
+      orderBy: { occurredAt: 'desc' },
+      take: 20,
+    },
+
+    decisions: {
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    },
+
+    alertDeliveries: {
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        recipient: true,
       },
     },
-  })
+  },
+})
 
   if (!item) notFound()
 
@@ -72,21 +91,55 @@ export default async function WorkItemDetailPage({ params }: { params: { id: str
 
       {/* Detail grid */}
       <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
-        {[
-          { label: 'Company', value: item.company },
-          { label: 'Contact', value: item.contactName },
-          { label: 'Owner', value: item.owner },
-          { label: 'Status', value: statusLabel(item.status) },
-          { label: 'Priority', value: item.priority },
-          { label: 'Due Date', value: formatUKDate(item.dueDate) },
-          { label: 'Created', value: formatUKDate(item.createdAt) },
-          { label: 'Updated', value: formatUKDate(item.updatedAt) },
-        ].map(({ label, value }) => value ? (
-          <div key={label} className="flex gap-3 px-4 py-3">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-28 shrink-0 pt-0.5">{label}</span>
-            <span className={`text-sm flex-1 ${label === 'Due Date' && item.dueDate && new Date(item.dueDate) < new Date() ? 'text-red-600 font-semibold' : 'text-slate-900'}`}>{value}</span>
-          </div>
-        ) : null)}
+{[
+  { label: 'Company', value: item.company },
+  { label: 'Contact', value: item.contactName },
+  { label: 'Owner', value: item.owner },
+
+  {
+    label: 'Pipeline',
+    value: item.pipelineStage
+      ? item.pipelineStage.replace(/([A-Z])/g, ' $1').trim()
+      : null,
+  },
+
+  { label: 'Status', value: statusLabel(item.status) },
+
+  { label: 'Priority', value: item.priority },
+
+  {
+    label: 'Last Contact',
+    value: item.lastTouchedAt
+      ? formatUKDate(item.lastTouchedAt)
+      : null,
+  },
+
+  { label: 'Due Date', value: formatUKDate(item.dueDate) },
+
+  { label: 'Created', value: formatUKDate(item.createdAt) },
+
+  { label: 'Updated', value: formatUKDate(item.updatedAt) },
+].map(({ label, value }) =>
+  value ? (
+    <div key={label} className="flex gap-3 px-4 py-3">
+      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-28 shrink-0 pt-0.5">
+        {label}
+      </span>
+
+      <span
+        className={`text-sm flex-1 ${
+          label === 'Due Date' &&
+          item.dueDate &&
+          new Date(item.dueDate) < new Date()
+            ? 'text-red-600 font-semibold'
+            : 'text-slate-900'
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  ) : null
+)}
         {item.notes && (
           <div className="px-4 py-3">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Notes</span>
