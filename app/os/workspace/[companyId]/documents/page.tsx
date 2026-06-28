@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getDb } from '@/lib/db'
 import { osDocuments } from '@/db/schema'
 import { getCompany } from '@/lib/company-registry'
-import { desc, sql } from 'drizzle-orm'
+import { desc, sql, or, eq, isNull } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +11,19 @@ function fmtBytes(b: number) {
   if (b > 1_048_576) return `${(b / 1_048_576).toFixed(1)} MB`
   if (b > 1024) return `${Math.round(b / 1024)} KB`
   return `${b} B`
+}
+
+function docTypeLabel(mimeType: string | null, filename: string): string {
+  if (mimeType) {
+    if (mimeType.includes('pdf'))          return 'PDF'
+    if (mimeType.includes('word') || mimeType.includes('msword')) return 'Word'
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'Excel'
+    if (mimeType.includes('image'))        return 'Image'
+    if (mimeType.includes('text/plain'))   return 'Text'
+    if (mimeType.includes('zip') || mimeType.includes('compressed')) return 'Archive'
+  }
+  const ext = filename.split('.').pop()?.toUpperCase()
+  return ext ?? 'File'
 }
 
 const STATUS_COLOR: Record<string, { bg: string; text: string }> = {
@@ -30,8 +43,15 @@ export default async function WorkspaceDocumentsPage({
 
   const db = await getDb()
 
+  // osDocuments.linkedCompany is free-text; include null docs as legacy/unscoped.
+  // TODO: enforce strict company scoping once linkedCompany is populated consistently.
+  const companyFilter = or(
+    eq(osDocuments.linkedCompany, params.companyId),
+    isNull(osDocuments.linkedCompany),
+  )
+
   const [docs, agg] = await Promise.all([
-    db.select().from(osDocuments).orderBy(desc(osDocuments.createdAt)).limit(20),
+    db.select().from(osDocuments).where(companyFilter).orderBy(desc(osDocuments.createdAt)).limit(20),
     db
       .select({
         total:         sql<number>`count(*)`,
@@ -39,7 +59,8 @@ export default async function WorkspaceDocumentsPage({
         approved:      sql<number>`count(*) filter (where status = 'Approved')`,
         totalBytes:    sql<number>`coalesce(sum(file_size_bytes), 0)`,
       })
-      .from(osDocuments),
+      .from(osDocuments)
+      .where(companyFilter),
   ])
 
   const s = agg[0] ?? { total: 0, pendingReview: 0, approved: 0, totalBytes: 0 }
@@ -61,7 +82,7 @@ export default async function WorkspaceDocumentsPage({
           className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
           style={{ background: 'rgba(129,140,248,0.12)', color: '#818CF8', border: '1px solid rgba(129,140,248,0.2)' }}
         >
-          + Upload
+          Upload Document
         </Link>
       </div>
 
@@ -107,14 +128,10 @@ export default async function WorkspaceDocumentsPage({
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.08)' }}
         >
           <span className="text-3xl mb-3" aria-hidden>📄</span>
-          <p className="text-sm font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.6)' }}>No documents yet</p>
-          <Link
-            href="/os/documents"
-            className="mt-3 text-xs font-semibold px-4 py-2 rounded-xl"
-            style={{ background: 'rgba(129,140,248,0.12)', color: '#818CF8', border: '1px solid rgba(129,140,248,0.2)' }}
-          >
-            Upload first document
-          </Link>
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.6)' }}>No documents yet.</p>
+          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            Uploaded contracts, filings, reports, and evidence packs will appear here.
+          </p>
         </div>
       ) : (
         <div>
@@ -144,16 +161,26 @@ export default async function WorkspaceDocumentsPage({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
                   </svg>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: 'rgba(255,255,255,0.88)' }}>
-                      {doc.filename}
-                    </p>
-                    {doc.source && (
-                      <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                        {doc.source}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold truncate" style={{ color: 'rgba(255,255,255,0.88)' }}>
+                        {doc.filename}
                       </p>
-                    )}
+                      <span
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                        style={{ background: 'rgba(129,140,248,0.12)', color: '#818CF8' }}
+                      >
+                        {docTypeLabel(doc.mimeType ?? null, doc.filename)}
+                      </span>
+                    </div>
+                    <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      {[
+                        doc.source,
+                        doc.linkedCompany,
+                        new Date(doc.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+                      ].filter(Boolean).join(' · ')}
+                    </p>
                   </div>
-                  {doc.fileSizeBytes && (
+                  {doc.fileSizeBytes != null && (
                     <span className="text-xs hidden sm:block shrink-0" style={{ color: 'rgba(255,255,255,0.32)' }}>
                       {fmtBytes(doc.fileSizeBytes)}
                     </span>
@@ -177,6 +204,20 @@ export default async function WorkspaceDocumentsPage({
           </Link>
         </div>
       )}
+
+      {/* ── VaultLine placeholder ────────────────────────────── */}
+      <div
+        className="rounded-2xl p-4"
+        style={{ background: 'rgba(129,140,248,0.03)', border: '1px dashed rgba(129,140,248,0.15)' }}
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-base" aria-hidden>🔒</span>
+          <p className="text-xs font-semibold" style={{ color: 'rgba(129,140,248,0.7)' }}>VaultLine</p>
+        </div>
+        <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.28)' }}>
+          Secure storage and retention controls will appear here when VaultLine is enabled.
+        </p>
+      </div>
     </div>
   )
 }
