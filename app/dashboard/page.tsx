@@ -1,7 +1,9 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
+import { getBriefingItems } from '../../lib/queries/briefing'
 import Link from 'next/link'
 import type { WorkItemStatus } from '@/lib/types'
+import MorningBriefing, { type BriefingItemClient } from './DashboardClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,8 +78,19 @@ export default async function DashboardPage() {
   const session = await requireAuth()
 
   let data: Awaited<ReturnType<typeof getDashboardData>>
+  let briefingItems: BriefingItemClient[] = []
   try {
-    data = await getDashboardData()
+    const [dashData, rawBriefing] = await Promise.all([
+      getDashboardData(),
+      session.person === 'George' ? getBriefingItems() : Promise.resolve([]),
+    ])
+    data = dashData
+    briefingItems = rawBriefing.map((item) => ({
+      ...item,
+      status: item.status as string,
+      priority: item.priority as string,
+      dueDate: item.dueDate ? item.dueDate.toISOString() : null,
+    }))
   } catch {
     return (
       <div className="space-y-6">
@@ -115,6 +128,11 @@ export default async function DashboardPage() {
           Welcome back, <span className="font-medium text-slate-700">{session.person}</span>
         </p>
       </div>
+
+      {/* ── Morning Briefing (George only) ── */}
+      {session.person === 'George' && briefingItems.length > 0 && (
+        <MorningBriefing items={briefingItems} />
+      )}
 
       {/* ── Compliance status bar ── */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

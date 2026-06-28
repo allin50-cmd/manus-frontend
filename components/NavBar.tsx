@@ -5,11 +5,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const BOTTOM_TABS = [
-  { href: '/dashboard',  label: 'Dashboard', icon: '⊞' },
-  { href: '/alerts',     label: 'Alerts',    icon: '🔔' },
-  { href: '/filings',    label: 'Filings',   icon: '📄' },
-  { href: '/portfolio',  label: 'Portfolio', icon: '🏢' },
-  { href: '/decisions',  label: 'Decisions', icon: '⚖️' },
+  { href: '/dashboard',    label: 'Dashboard', icon: '⊞' },
+  { href: '/alerts',       label: 'Alerts',    icon: '🔔' },
+  { href: '/portfolio',    label: 'Portfolio', icon: '🏢' },
+  { href: '/decisions',    label: 'Decisions', icon: '⚖️' },
+  { href: '/voice-intake', label: 'Voice',     icon: '🎤' },
 ]
 
 const DESKTOP_LINKS = [
@@ -23,14 +23,17 @@ const DESKTOP_LINKS = [
 ]
 
 const MORE_MENU = [
+  { href: '/my-tasks',          label: 'My Tasks' },
+  { href: '/team',              label: 'Team Capacity' },
+  { href: '/filings',           label: 'Filings' },
   { href: '/teams',             label: 'Teams' },
   { href: '/contacts',          label: 'Contacts' },
+  { href: '/partnerships',      label: 'Pipeline' },
   { href: '/work-items',        label: 'All Work Items' },
   { href: '/alert-recipients',  label: 'Alert Recipients' },
   { href: '/alert-events',      label: 'Alert Audit Log' },
   { href: '/activity',          label: 'Activity Log' },
   { href: '/templates',         label: 'Templates' },
-  { href: '/voice-intake',      label: 'Voice Intake' },
 ]
 
 export default function NavBar({ person }: { person: string | null }) {
