@@ -1,9 +1,10 @@
 # Phase 6 — Vercel Consolidation
 
-**Date:** 2026-06-28  
+**Date:** 2026-06-28 (updated after canonical branch correction)  
 **Source:** Live data from PR #27 Vercel webhook notifications  
 **Project:** allin50-cmd/manus-frontend  
-**Status:** Confirmed from webhooks — no guesswork
+**Status:** Confirmed from webhooks — no guesswork  
+**Action hold:** Do NOT delete any Vercel projects yet — pending canonical branch promotion to main
 
 ---
 
@@ -123,7 +124,13 @@ Both failed on the same commit. This project is not recoverable without investig
 
 ---
 
-## Immediate Action: j8i7 Can Be Removed Now
+## Hold: No Deletions Until Canonical Branch Is on Main
+
+**Do NOT delete any Vercel projects yet.** Wait until `chore/drizzle-full-migration` is promoted to main and the deployment is stable. Once the canonical branch is live on the primary project (`manus-frontend`), then proceed with the removal plan below.
+
+---
+
+## Future Action: j8i7 Can Be Removed (After Promotion Stable)
 
 `manus-frontend-j8i7` is broken in both environments and has no preview URL. No users can access it. It's safe to remove without any investigation.
 

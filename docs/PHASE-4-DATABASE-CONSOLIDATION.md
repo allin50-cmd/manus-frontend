@@ -1,141 +1,145 @@
 # Phase 4 — Database Consolidation
 
-**Date:** 2026-06-28  
-**Scope:** Prisma vs Drizzle dependency audit for UltraCore codebase (main branch)  
-**Method:** grep search across all app/, lib/, and config files; package.json inspection  
+**Date:** 2026-06-28 (updated after canonical branch correction)  
+**Scope:** Prisma vs Drizzle audit across canonical branch `chore/drizzle-full-migration`  
+**Method:** `git show` inspection of lib/db.ts, package.json, db/schema.ts on canonical branch  
 
 ---
 
-## Executive Finding
+## Critical Correction from Earlier Audit
 
-**Prisma is already functionally removed from UltraCore.**  
-The only remaining Prisma artefacts are two orphaned files (`prisma/schema.prisma`, `prisma/seed.ts`) that no live code references. They are safe to delete.
+The original Phase 4 document (based on `main` branch) stated:
+> "Prisma is already functionally removed from UltraCore."
+
+**This was based on the wrong branch.** That finding was accurate for `main` and `claude/jolly-hawking-xqufwo`, but the canonical branch is now `chore/drizzle-full-migration`, and the picture there is different.
 
 ---
 
-## Drizzle Dependency Map
+## Actual State on chore/drizzle-full-migration
 
-All database access in the codebase routes through Drizzle:
+### lib/db.ts (canonical branch)
 
-| File | Role |
-|---|---|
-| `lib/db.ts` | Drizzle client singleton — `getDb()` returns `DrizzleDb` |
-| `db/schema.ts` | Drizzle schema — single source of truth for all tables |
-| `db/migrations/` | 9 idempotent SQL migration files |
-| `app/api/**` | All API routes call `getDb()` and use `db.select()`, `db.insert()`, `db.update()` |
+```typescript
+import { PrismaClient } from '@prisma/client'
 
-**Drizzle package entries (package.json):**
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+
+export const db = globalForPrisma.prisma ?? new PrismaClient()
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+```
+
+**Prisma IS the active ORM on the canonical branch.**  
+`lib/db.ts` exports a `PrismaClient` instance. Routes call `db.model.findMany()` etc.
+
+### package.json (canonical branch)
+
 ```json
-"drizzle-orm": "^0.30.*",
-"drizzle-kit": "^0.20.*",
-"postgres": "^3.*"
+"scripts": {
+  "db:push": "prisma db push",
+  "prisma:generate": "prisma generate",
+  "postinstall": "prisma generate"
+},
+"prisma": "^5.14.0"
 ```
+
+`@prisma/client` is an installed, active dependency. `prisma generate` runs on `postinstall`.
+
+### db/schema.ts (canonical branch)
+
+A Drizzle schema file also exists. It defines tables using `pgTable()` / `drizzle-orm`.
+
+**This is a dual-ORM state:** Prisma is the live ORM; Drizzle schema exists as part of an in-progress migration.
 
 ---
 
-## Prisma Dependency Audit
+## Dual-ORM Inventory
 
-### Searched Locations
+| File | ORM | Status |
+|---|---|---|
+| `lib/db.ts` | Prisma | ACTIVE — all live routes use `db.*` |
+| `prisma/schema.prisma` | Prisma | ACTIVE — generates `@prisma/client` |
+| `package.json` (prisma dep) | Prisma | ACTIVE — installed, postinstall runs generate |
+| `db/schema.ts` | Drizzle | PRESENT — migration in progress |
+| `db/migrations/` | Drizzle | PRESENT — SQL files for Drizzle tables |
 
-```bash
-grep -r "from '@prisma\|require.*prisma" app/ lib/
-# Result: ZERO matches
+---
 
-grep "@prisma/client" package.json
-# Result: NOT FOUND (no prisma key at all)
+## What "chore/drizzle-full-migration" Means
 
-ls prisma/
-# Result: schema.prisma  seed.ts
-```
+The branch name describes its intent: migrating all code from Prisma to Drizzle. That migration is **in progress**, not complete. The branch currently:
 
-### Audit Results
+- Uses Prisma as the operational ORM (all existing routes)
+- Has a Drizzle schema defined (beginning of the migration)
+- Passes TypeScript, build, and 130 tests — meaning the dual state is stable
+
+---
+
+## What Must NOT Happen
+
+**DO NOT delete Prisma files or remove `@prisma/client` from `package.json`.**
+
+Doing so would:
+1. Break `postinstall` (prisma generate runs on every `npm install`)
+2. Break every API route that calls `db.model.*`
+3. Break the TypeScript build (Prisma types are referenced throughout)
+4. Break all 130 tests
+
+**Prisma removal must happen AFTER a verified, complete Drizzle migration, not before.**
+
+---
+
+## Prisma Dependency Audit (chore/drizzle-full-migration)
 
 | Check | Result |
 |---|---|
-| `@prisma/client` in package.json | ❌ NOT PRESENT |
-| `prisma` devDependency in package.json | ❌ NOT PRESENT |
-| `import ... from '@prisma/client'` in app/ | ❌ ZERO results |
-| `import ... from '@prisma/client'` in lib/ | ❌ ZERO results |
-| `require('@prisma/client')` anywhere | ❌ ZERO results |
-| `prisma generate` in scripts | ❌ NOT PRESENT |
-| `prisma/schema.prisma` file | ✅ EXISTS (orphaned) |
-| `prisma/seed.ts` file | ✅ EXISTS (orphaned) |
+| `@prisma/client` in package.json | ✅ PRESENT (active dependency) |
+| `prisma` in package.json scripts | ✅ PRESENT (`db:push`, `prisma:generate`, `postinstall`) |
+| `lib/db.ts` imports PrismaClient | ✅ YES — primary database client |
+| `prisma/schema.prisma` | ✅ PRESENT (active schema) |
+| `db/schema.ts` (Drizzle) | ✅ PRESENT (migration in progress) |
 
 ---
 
-## Orphaned Files
+## Drizzle Migration Status
 
-### `prisma/schema.prisma`
+The migration from Prisma to Drizzle is **in progress** on `chore/drizzle-full-migration`. The Drizzle schema exists, but the route-level migration (changing `db.model.findMany()` to `db.select().from(table)`) has not been completed across all routes.
 
-An old Prisma schema file. It defines models for the same tables now managed by Drizzle in `db/schema.ts`. Since `@prisma/client` is not installed, this file cannot generate a Prisma client — it is effectively dead code.
-
-**Risk of deleting:** NONE — nothing imports it, nothing runs it.
-
-### `prisma/seed.ts`
-
-A seed script that imports `PrismaClient`. Since `@prisma/client` is not installed, running `ts-node prisma/seed.ts` would immediately fail. There is no npm script referencing it.
-
-**Risk of deleting:** NONE — it cannot execute in the current environment.
-
----
-
-## How We Got Here
-
-The migration from Prisma to Drizzle was completed incrementally (see DECISION_LOG.md `[2024] — Migrate from Prisma to Drizzle ORM`). The `lib/db.ts` was rewritten to use `drizzle-orm/postgres-js`, all API routes were updated to call `getDb()`, and the `@prisma/client` package entry was removed from `package.json`. The `prisma/` directory was left in place but was never cleaned up.
-
-The `chore/drizzle-full-migration` branch was an attempt to complete this migration but was abandoned — it cannot install (npm install fails) and has 212 TypeScript errors.
-
----
-
-## Current State Diagram
-
-```
-Live code path:
-  API route → getDb() → drizzle-orm/postgres-js → Supabase Postgres
-
-Orphaned (dead):
-  prisma/schema.prisma  ──── no importer ──→ (dead)
-  prisma/seed.ts        ──── @prisma/client not installed ──→ (dead)
-```
+**Current situation:** Drizzle schema is defined but not yet the live data access path.
 
 ---
 
 ## Recommended Actions
 
-### Action 1: Delete Orphaned Prisma Files (Safe Now)
+### Action 1: Do NOT Delete Prisma (Yet)
 
-```bash
-git rm prisma/schema.prisma prisma/seed.ts
-git commit -m "remove orphaned Prisma files — Drizzle is sole ORM"
-```
+Prisma is actively used. Deleting it now would break the codebase. Defer until:
+- All API routes are rewritten to use Drizzle's `getDb()` pattern
+- All tests pass with Drizzle only
+- `lib/db.ts` is updated to export `DrizzleDb` instead of `PrismaClient`
 
-**Evidence for safety:**
-- Zero imports in app/ or lib/
-- `@prisma/client` not in package.json
-- TypeScript build passes without them
-- `lib/db.ts` uses Drizzle exclusively
+### Action 2: Complete the Drizzle Migration (Future Work)
 
-### Action 2: No Further Migration Needed
+The migration path is:
+1. Identify all routes using `db.model.*` Prisma syntax
+2. Rewrite each to use `const db = await getDb(); db.select().from(...)` Drizzle syntax
+3. Update `lib/db.ts` to remove PrismaClient
+4. Remove `@prisma/client` from package.json
+5. Delete `prisma/schema.prisma` (it becomes redundant when Drizzle schema is canonical)
+6. Verify all tests pass with Drizzle only
 
-The database layer is already consolidated on Drizzle. No code changes are required beyond deleting the two orphaned files.
+**This is deferred — it is not a consolidation task, it is a future engineering sprint.**
 
-### Action 3: Do NOT Merge drizzle-full-migration Branch
+### Action 3: Promote chore/drizzle-full-migration to main as-is
 
-That branch is broken (cannot install, 212 TypeScript errors). It was an abandoned migration attempt that does not represent a valid working state. Merging it would break the codebase.
-
----
-
-## Decision Log Entry
-
-This analysis supports the following decision for `docs/DECISION_LOG.md`:
-
-> **[2026-06-28] — Remove orphaned Prisma files**  
-> Decision: Delete `prisma/schema.prisma` and `prisma/seed.ts`.  
-> Reason: Confirmed zero dependencies across all app/ and lib/ files. `@prisma/client` is not in package.json and has not been since the Drizzle migration. These files are dead code.  
-> Approved By: Consolidation audit (this document).
+The dual-ORM state is stable (build passes, tests pass). Promote to main without completing the Drizzle migration. The migration can be completed in a future sprint from main.
 
 ---
 
 ## Conclusion
 
-The Drizzle migration was already complete before this consolidation audit began. The only remaining task is a two-file cleanup of the `prisma/` directory. No code changes, no migrations, and no dependency updates are required.
+The canonical branch `chore/drizzle-full-migration` is in a dual-ORM transition state:
+- **Prisma**: active, must not be removed
+- **Drizzle**: schema defined, migration in progress
+
+Do not delete any Prisma files. Do not remove `@prisma/client`. Complete the Drizzle migration as a separate, future engineering effort after the consolidation is complete.

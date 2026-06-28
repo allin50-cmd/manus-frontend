@@ -1,9 +1,16 @@
 # Phase 5 — SheetOps Assessment
 
-**Date:** 2026-06-28  
+**Date:** 2026-06-28 (confirmed 2026-06-28 after canonical branch correction)  
 **Branch assessed:** `origin/claude/ultracore-sheetops-mvp-wAwwp`  
-**Compared against:** `origin/main`  
+**Compared against:** `origin/main` and `origin/chore/drizzle-full-migration`  
 **Method:** `git diff --name-only` for file inventory; `git show` for code inspection  
+**Status:** Verdict unchanged — SheetOps remains archive/reference only  
+
+---
+
+## Status After Canonical Branch Correction
+
+The canonical branch is now `chore/drizzle-full-migration`, not `claude/jolly-hawking-xqufwo`. This does not change the SheetOps verdict: SheetOps is still Prisma-only and incompatible. Note that `chore/drizzle-full-migration` appears to have incorporated some SheetOps-origin routes already — do not re-import routes that are already present.
 
 ---
 

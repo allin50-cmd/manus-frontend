@@ -122,13 +122,18 @@ Pattern: `db/migrations/NNNN_description.sql`
 
 ## Prisma Status
 
-**Prisma is fully removed from active code.**
+**Prisma IS the active ORM on the canonical branch (`chore/drizzle-full-migration`).**
 
-Orphaned files that remain:
-- `prisma/schema.prisma` — not imported anywhere, safe to delete
-- `prisma/seed.ts` — references `@prisma/client` which is not installed, safe to delete
+| Item | State |
+|---|---|
+| `@prisma/client` in package.json | ✅ PRESENT (active dependency, `prisma: ^5.14.0`) |
+| `lib/db.ts` | Uses `PrismaClient` — all routes call `db.model.*` |
+| `prisma/schema.prisma` | ✅ PRESENT — active schema, generates Prisma client |
+| `postinstall` script | Runs `prisma generate` on every `npm install` |
 
-`@prisma/client` is not in `package.json`. Zero Prisma imports in `app/` or `lib/`.
+**DO NOT delete Prisma.** It is actively used across the codebase.
+
+The Drizzle migration (`db/schema.ts`, `db/migrations/`) is in progress but not complete. Prisma remains the operational data layer until the migration is finished.
 
 ---
 
