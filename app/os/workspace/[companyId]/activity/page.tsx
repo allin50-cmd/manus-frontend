@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { getDb } from '@/lib/db'
 import { fgActivityLog, osAlerts } from '@/db/schema'
 import { getCompany } from '@/lib/company-registry'
-import { desc } from 'drizzle-orm'
+import { desc, or, eq, isNull } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,7 +46,12 @@ export default async function WorkspaceActivityPage({
     hasFineGuard
       ? db.select().from(fgActivityLog).orderBy(desc(fgActivityLog.occurredAt)).limit(20)
       : Promise.resolve([]),
-    db.select().from(osAlerts).orderBy(desc(osAlerts.createdAt)).limit(15),
+    db
+      .select()
+      .from(osAlerts)
+      .where(or(eq(osAlerts.companyId, params.companyId), isNull(osAlerts.companyId)))
+      .orderBy(desc(osAlerts.createdAt))
+      .limit(15),
   ])
 
   const feed: FeedItem[] = [

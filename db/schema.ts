@@ -810,6 +810,7 @@ export const osAlerts = pgTable('os_alerts', {
   body: text('body'),
   source: text('source'),
   isRead: boolean('is_read').notNull().default(false),
+  companyId: text('company_id'),
   linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   resolvedAt: timestamp('resolved_at'),

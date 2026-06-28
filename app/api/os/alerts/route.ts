@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
       title: body.title,
       body: body.body || null,
       source: body.source || null,
+      // TODO: require callers to pass companyId once all clients are updated
+      companyId: body.companyId || null,
       linkedWorkItemId: body.linkedWorkItemId || null,
     })
     .returning()

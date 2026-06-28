@@ -4,7 +4,7 @@ import { getCompany } from '@/lib/company-registry'
 import { getApps } from '@/lib/app-registry'
 import { getDb } from '@/lib/db'
 import { utActivityEvents, osAlerts, workItems, fgAlerts } from '@/db/schema'
-import { desc, eq, and, lt, notInArray, isNotNull } from 'drizzle-orm'
+import { desc, eq, and, lt, notInArray, isNotNull, or, isNull } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,7 +76,12 @@ export default async function WorkspaceOverviewPage({
         createdAt: osAlerts.createdAt,
       })
       .from(osAlerts)
-      .where(eq(osAlerts.isRead, false))
+      .where(
+        and(
+          eq(osAlerts.isRead, false),
+          or(eq(osAlerts.companyId, params.companyId), isNull(osAlerts.companyId)),
+        ),
+      )
       .orderBy(desc(osAlerts.createdAt))
       .limit(10),
 

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getDb } from '@/lib/db'
 import { osAlerts } from '@/db/schema'
 import { getCompany } from '@/lib/company-registry'
-import { desc, sql } from 'drizzle-orm'
+import { desc, sql, or, eq, isNull } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +27,14 @@ export default async function WorkspaceNotificationsPage({
 
   const db = await getDb()
 
+  // Show alerts for this company + legacy alerts with no company assigned.
+  const companyFilter = or(
+    eq(osAlerts.companyId, params.companyId),
+    isNull(osAlerts.companyId),
+  )
+
   const [alerts, agg] = await Promise.all([
-    db.select().from(osAlerts).orderBy(desc(osAlerts.createdAt)).limit(30),
+    db.select().from(osAlerts).where(companyFilter).orderBy(desc(osAlerts.createdAt)).limit(30),
     db
       .select({
         total:    sql<number>`count(*)`,
@@ -36,7 +42,8 @@ export default async function WorkspaceNotificationsPage({
         critical: sql<number>`count(*) filter (where severity = 'Critical')`,
         warning:  sql<number>`count(*) filter (where severity = 'Warning')`,
       })
-      .from(osAlerts),
+      .from(osAlerts)
+      .where(companyFilter),
   ])
 
   const s = agg[0] ?? { total: 0, unread: 0, critical: 0, warning: 0 }
