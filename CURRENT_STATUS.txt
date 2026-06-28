@@ -18,6 +18,8 @@ Repository state:
 Completed:
   ✔ Phase 2a - VoiceIntake quality fields
   ✔ Phase 2b - Action reassignment fields
+  ✔ Phase 2c - Template workflow fields
+  ✔ Phase 2d - Company CRM fields
 
 Database:
   Migration SQL files created.
@@ -28,7 +30,7 @@ Reason:
   Pooler connection fails with prepared statement "s0" already exists.
 
 Next task:
-  Continue with Phase 2c - Template workflow fields.
+  Review before starting Phase 2e/2f - OutreachLog + PipelineStage.
 
 Do NOT:
   - Merge to main
