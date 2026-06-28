@@ -1,6 +1,7 @@
 import { getDb } from '@/lib/db'
 import { osInvoices } from '@/db/schema'
 import { desc, sql } from 'drizzle-orm'
+import Link from 'next/link'
 
 function pence(p: number) {
   return `£${(p / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -190,18 +191,20 @@ export default async function MoneyPage() {
 
         {/* Action buttons */}
         <div className="flex gap-3">
-          <button
-            className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+          <Link
+            href="/os/money/invoices/new"
+            className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 text-center"
             style={{ background: 'linear-gradient(135deg, #FFD000, #FFA500)', color: '#3A1800', boxShadow: '0 4px 16px rgba(255,193,69,0.3)' }}
           >
             New Invoice
-          </button>
-          <button
-            className="px-5 py-3 rounded-xl text-sm font-medium"
+          </Link>
+          <Link
+            href="/os/money/quotes/new"
+            className="px-5 py-3 rounded-xl text-sm font-medium text-center"
             style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.7)' }}
           >
-            View All
-          </button>
+            New Quote
+          </Link>
         </div>
 
       </div>
