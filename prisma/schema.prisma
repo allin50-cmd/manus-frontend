@@ -325,10 +325,14 @@ model VoiceIntake {
 // ── Contacts & Companies ─────────────────────────────────────────────────────
 
 model Company {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  name                 String    @unique
+  isActive             Boolean   @default(true)
+  companiesHouseNumber String?
+  incorporationDate    DateTime?
+  jurisdiction         String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   contacts Contact[]
 }
