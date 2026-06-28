@@ -24,9 +24,36 @@ export default function WorkspaceOverviewPage({
   if (!company) notFound()
 
   const apps = getApps(company.enabledApps)
+  const activeApps = apps.filter((a) => a.status !== 'coming_soon').length
+  // TODO: fetch real values from DB (osPeople, osAlerts.isRead, utActivityEvents)
+  const teamMembers = '—'
+  const unreadNotifications = '—'
+  const recentActivity = '—'
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: 'Active Apps',     value: activeApps,           color: '#7A5AF8' },
+          { label: 'Team Members',    value: teamMembers,          color: '#3D8BFF' },
+          { label: 'Notifications',   value: unreadNotifications,  color: '#FF9F0A' },
+          { label: 'Recent Activity', value: recentActivity,       color: '#00A86B' },
+        ].map((card) => (
+          <div
+            key={card.label}
+            className="rounded-2xl p-4 text-center"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            <div className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</div>
+            <div className="text-[10px] mt-1 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              {card.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-3">
       <p
         className="text-[10px] font-semibold uppercase tracking-widest mb-3"
         style={{ color: 'rgba(255,255,255,0.22)' }}
@@ -112,6 +139,7 @@ export default function WorkspaceOverviewPage({
           </div>
         )
       })}
+      </div>
     </div>
   )
 }
