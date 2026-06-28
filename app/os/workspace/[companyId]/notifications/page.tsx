@@ -143,6 +143,14 @@ export default async function WorkspaceNotificationsPage({
                           Unread
                         </span>
                       )}
+                      {alert.companyId === null && (
+                        <span
+                          className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.35)' }}
+                        >
+                          Global
+                        </span>
+                      )}
                     </div>
                     {alert.body && (
                       <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: 'rgba(255,255,255,0.38)' }}>

@@ -15,6 +15,7 @@ type FeedItem = {
   badgeLabel: string
   badgeColor: string
   date: Date
+  isLegacy?: boolean
 }
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -74,6 +75,7 @@ export default async function WorkspaceActivityPage({
       badgeLabel: a.severity,
       badgeColor: SEVERITY_COLOR[a.severity] ?? '#3D8BFF',
       date: new Date(a.createdAt),
+      isLegacy: a.companyId === null,
     })),
   ]
 
@@ -141,6 +143,14 @@ export default async function WorkspaceActivityPage({
                 >
                   {item.badgeLabel}
                 </span>
+                {item.isLegacy && (
+                  <span
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.35)' }}
+                  >
+                    Global
+                  </span>
+                )}
                 <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.28)' }}>
                   {relativeDate(item.date)}
                 </p>

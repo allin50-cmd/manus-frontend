@@ -73,6 +73,7 @@ export default async function WorkspaceOverviewPage({
         severity: osAlerts.severity,
         title: osAlerts.title,
         body: osAlerts.body,
+        companyId: osAlerts.companyId,
         createdAt: osAlerts.createdAt,
       })
       .from(osAlerts)
@@ -339,15 +340,25 @@ export default async function WorkspaceOverviewPage({
                     </p>
                   )}
                 </div>
-                <span
-                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
-                  style={{
-                    background: `${SEVERITY_COLOR[alert.severity] ?? '#3D8BFF'}20`,
-                    color: SEVERITY_COLOR[alert.severity] ?? '#3D8BFF',
-                  }}
-                >
-                  {alert.severity}
-                </span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: `${SEVERITY_COLOR[alert.severity] ?? '#3D8BFF'}20`,
+                      color: SEVERITY_COLOR[alert.severity] ?? '#3D8BFF',
+                    }}
+                  >
+                    {alert.severity}
+                  </span>
+                  {alert.companyId === null && (
+                    <span
+                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                      style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.35)' }}
+                    >
+                      Global
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
 
