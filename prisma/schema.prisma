@@ -154,16 +154,20 @@ model WorkItem {
 }
 
 model Action {
-  id          String       @id @default(cuid())
-  workItemId  String
-  actionType  ActionType
-  label       String
-  status      ActionStatus @default(Open)
-  assignedTo  String?
-  dueDate     DateTime?
-  result      String?
-  createdAt   DateTime     @default(now())
-  completedAt DateTime?
+  id             String       @id @default(cuid())
+  workItemId     String
+  actionType     ActionType
+  label          String
+  status         ActionStatus @default(Open)
+  assignedTo     String?
+  dueDate        DateTime?
+  result         String?
+  reassignedFrom String?
+  reassignedAt   DateTime?
+  reassignedBy   String?
+  handoffNote    String?
+  createdAt      DateTime     @default(now())
+  completedAt    DateTime?
 
   workItem     WorkItem      @relation(fields: [workItemId], references: [id], onDelete: Cascade)
   activityLogs ActivityLog[]
