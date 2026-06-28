@@ -206,13 +206,19 @@ model Decision {
 }
 
 model Template {
-  id        String   @id @default(cuid())
-  name      String
-  useCase   String
-  body      String
-  approved  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String           @id @default(cuid())
+  name          String
+  useCase       String
+  body          String
+  approved      Boolean          @default(true)
+  category      TemplateCategory @default(General)
+  variables     String[]         @default([])
+  pendingReview Boolean          @default(false)
+  approvedBy    String?
+  approvedAt    DateTime?
+  reviewNote    String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
 
 // ── Alert Recipient models ────────────────────────────────────────────────────
@@ -279,6 +285,15 @@ model UserPassword {
 }
 
 // ── Voice Intake ──────────────────────────────────────────────────────────────
+
+enum TemplateCategory {
+  Compliance
+  Outreach
+  Operations
+  Finance
+  Legal
+  General
+}
 
 enum VoiceIntakeStatus {
   UPLOADED
