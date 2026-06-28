@@ -8,7 +8,7 @@ import {
   type AlertInput,
 } from '@/lib/alert-recipient-selector'
 import { escHtml } from '@/lib/utils'
-import type { WorkItem } from '@prisma/client'
+import type { WorkItem } from '@/lib/types'
 
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'https://ultracore-ops.vercel.app'

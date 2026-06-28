@@ -1,6 +1,6 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
-import { WorkItemStatus } from '@prisma/client'
+import { WorkItemStatus } from '@/lib/types'
 import Link from 'next/link'
 import AddCompanyForm from './AddCompanyForm'
 

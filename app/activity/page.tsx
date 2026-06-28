@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export default async function ActivityPage() {
   await requireAuth()
 
-  let logs: Awaited<ReturnType<typeof db.activityLog.findMany<{ include: { workItem: { select: { id: true; title: true } } } }>>> = []
+  let logs: Array<{ id: string; workItemId: string; person: string; eventType: string; summary: string; oldStatus?: string | null; newStatus?: string | null; createdAt: Date; workItem?: { id: string; title: string } | null }> = []
   try {
     logs = await db.activityLog.findMany({
       include: { workItem: { select: { id: true, title: true } } },

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export default async function DecisionsPage() {
   const session = await requireAuth()
 
-  let decisions: Awaited<ReturnType<typeof db.decision.findMany<{ include: { workItem: { select: { id: true; title: true; company: true } } } }>>> = []
+  let decisions: Array<{ id: string; question: string; status: string; options?: string | null; recommendation?: string | null; decisionBy: string; dueDate?: Date | null; createdAt: Date; workItem?: { id: string; title: string; company: string | null } | null }> = []
   try {
     decisions = await db.decision.findMany({
       where: { status: 'Open' },

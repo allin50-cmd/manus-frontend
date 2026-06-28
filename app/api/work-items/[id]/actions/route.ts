@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { ActionType } from '@prisma/client'
+import { ActionType } from '@/lib/types'
 
 const VALID_ACTION_TYPES: ActionType[] = [
   'LogNote', 'CreateFollowUp', 'ChangeStatus', 'DraftMessage',

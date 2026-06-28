@@ -5,8 +5,8 @@ import ContactsClient from './ContactsClient'
 export default async function ContactsPage() {
   await requireAuth()
 
-  let contacts: Awaited<ReturnType<typeof db.contact.findMany<{ include: { company: true } }>>> = []
-  let companies: Awaited<ReturnType<typeof db.company.findMany>> = []
+  let contacts: any[] = []
+  let companies: any[] = []
   try {
     ;[contacts, companies] = await Promise.all([
       db.contact.findMany({

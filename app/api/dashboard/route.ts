@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import type { WorkItemStatus } from '@prisma/client'
+import type { WorkItemStatus } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 

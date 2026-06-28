@@ -4,7 +4,7 @@ import { formatUKDate, statusLabel, typeLabel } from '../../lib/utils'
 import Link from 'next/link'
 import StatusBadge from '../../components/StatusBadge'
 import WorkItemFilters from '../../components/WorkItemFilters'
-import { WorkItemStatus, WorkItemType, Priority } from '@prisma/client'
+import { WorkItemStatus, WorkItemType, Priority } from '@/lib/types'
 import { isValidType, isValidStatus, isValidPriority } from '../../lib/work-item-enums'
 
 export const dynamic = 'force-dynamic'

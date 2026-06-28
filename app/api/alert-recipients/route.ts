@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { ALERT_CATEGORIES } from '@/lib/alert-recipient-selector'
-import { RecipientRole, DeliveryChannel } from '@prisma/client'
+import { RecipientRole, DeliveryChannel } from '@/lib/types'
 
 const VALID_ROLES: RecipientRole[] = ['Director', 'Accountant', 'CompanySecretary', 'Admin', 'ComplianceManager', 'ExternalAdviser', 'Custom']
 const VALID_CHANNELS: DeliveryChannel[] = ['Email', 'Dashboard', 'Sms', 'WhatsApp']

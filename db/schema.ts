@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm'
 import {
   boolean,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -173,8 +174,20 @@ export const alertEvents = pgTable('alert_events', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+export const osMessageThreads = pgTable('os_message_threads', {
+  id: text('id').primaryKey().$defaultFn(id),
+  subject: text('subject').notNull(),
+  participantNames: jsonb('participant_names').$type<string[]>().default([]),
+  lastMessageAt: timestamp('last_message_at').notNull().defaultNow(),
+  unreadCount: integer('unread_count').notNull().default(0),
+  isPinned: boolean('is_pinned').notNull().default(false),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
 export type WorkItem = typeof workItems.$inferSelect
 export type Action = typeof actions.$inferSelect
 export type ActivityLog = typeof activityLogs.$inferSelect
 export type Decision = typeof decisions.$inferSelect
 export type Template = typeof templates.$inferSelect
+export type OsMessageThread = typeof osMessageThreads.$inferSelect

@@ -1,7 +1,7 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
 import Link from 'next/link'
-import type { WorkItemStatus } from '@prisma/client'
+import type { WorkItemStatus } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
