@@ -286,28 +286,30 @@ enum VoiceIntakeStatus {
 }
 
 model VoiceIntake {
-  id               String            @id @default(cuid())
-  createdAt        DateTime          @default(now())
-  createdBy        String
-  audioData        Bytes?
-  mimeType         String            @default("audio/webm")
-  transcript       String?
-  parsedJson       Json?
-  status           VoiceIntakeStatus @default(UPLOADED)
-  reviewNotes      String?
-  approvedAt       DateTime?
-  approvedBy       String?
-  linkedWorkItemId String?
-  linkedWorkItem   WorkItem?         @relation(fields: [linkedWorkItemId], references: [id], onDelete: SetNull)
+  id                   String            @id @default(cuid())
+  createdAt            DateTime          @default(now())
+  createdBy            String
+  audioData            Bytes?
+  mimeType             String            @default("audio/webm")
+  transcript           String?
+  transcriptConfidence Float?
+  qualityFlags         String[]          @default([])
+  parsedJson           Json?
+  status               VoiceIntakeStatus @default(UPLOADED)
+  reviewNotes          String?
+  approvedAt           DateTime?
+  approvedBy           String?
+  linkedWorkItemId     String?
+  linkedWorkItem       WorkItem?         @relation(fields: [linkedWorkItemId], references: [id], onDelete: SetNull)
 }
 
 // ── Contacts & Companies ─────────────────────────────────────────────────────
 
 model Company {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   contacts Contact[]
 }
