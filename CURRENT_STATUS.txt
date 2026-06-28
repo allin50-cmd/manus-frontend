@@ -1,0 +1,38 @@
+UltraCore Consolidation Status
+==============================
+
+Date: 2026-06-28
+
+Branch:
+  chore/drizzle-full-migration
+
+Last good commit:
+  59577166
+
+Repository state:
+  ✔ git status clean
+  ✔ TypeScript passes
+  ✔ Production build passes
+  ✔ 130/130 tests pass
+
+Completed:
+  ✔ Phase 2a - VoiceIntake quality fields
+  ✔ Phase 2b - Action reassignment fields
+
+Database:
+  Migration SQL files created.
+  Prisma migrations NOT applied.
+
+Reason:
+  Supabase direct connection fails (P1001).
+  Pooler connection fails with prepared statement "s0" already exists.
+
+Next task:
+  Resolve Supabase direct database connection.
+  Apply pending Prisma migrations.
+  Only then continue with Phase 2c.
+
+Do NOT:
+  - Merge to main
+  - Start more schema migrations
+  - Delete Prisma
