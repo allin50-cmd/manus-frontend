@@ -6,7 +6,6 @@ import Link from 'next/link'
 import StatusBadge from '../../../components/StatusBadge'
 import WorkItemActions from '../../../components/WorkItemActions'
 import CompleteActionButton from '../../../components/CompleteActionButton'
-<OutreachLogSection logs={item.outreachLogs} />
 import AlertDeliveriesSection from '../../../components/AlertDeliveriesSection'
 import OutreachLogSection from '../../../components/OutreachLogSection'
 
@@ -37,10 +36,6 @@ const item = await db.workItem.findUnique({
       orderBy: { createdAt: 'desc' },
       take: 10,
     },
-outreachLogs: {
-  orderBy: { occurredAt: 'desc' },
-  take: 20,
-},
     alertDeliveries: {
       orderBy: { createdAt: 'desc' },
       take: 20,
