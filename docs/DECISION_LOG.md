@@ -182,4 +182,139 @@ transforms the workspace from a shell into a command centre.
 
 ---
 
+## [2026-06-28] — Phase 4 Sprint 1: Complete Create Forms for All Core Modules
+
+**Decision:** Implement seven create forms (Contact, Task, Call, Message, Quote, Invoice, Document) following the established form pattern. Forms are client components with React hooks, POST to existing API endpoints, redirect on success.
+
+**Reason:** Phase 4 Sprint 1 completes the data-first validation of CRUD cycles. All core operational modules (contacts, tasks, calls, money, documents, messages) now have functional create flows. Create forms follow the same pattern and styling as the rest of the OS.
+
+**Implementation:**
+- `app/os/contacts/new/page.tsx` + POST `/api/os/people`
+- `app/os/tasks/new/page.tsx` + POST `/api/os/tasks`
+- `app/os/calls/new/page.tsx` + POST `/api/os/calls`
+- `app/os/messages/new/page.tsx` + new POST `/api/os/message-threads`
+- `app/os/money/quotes/new/page.tsx` + POST `/api/os/quotes`
+- `app/os/money/invoices/new/page.tsx` + POST `/api/os/invoices`
+- `app/os/documents/upload/page.tsx` + POST `/api/os/documents`
+- All list pages wired to corresponding create routes
+
+**Status:** Code-verified (TypeScript checks pass, no compilation errors). E2E verification pending on MacBook with local database.
+
+**Approved By:** AI session (self-directed continuation of agreed Phase 4 plan).
+
+---
+
+## [2026-06-28] — Consolidation: Phase 4 Sprint 1 as Canonical Main
+
+**Decision:** Merge Phase 4 Sprint 1 (branch: `claude/jolly-hawking-xqufwo`) to main as the new canonical baseline. Phase 4 Sprint 1 becomes the primary branch for all future development.
+
+**Reason:** 
+- Phase 4 extends main branch in a fully compatible way (same ORM, same architecture)
+- All 7 create forms verified to compile without errors
+- Forms follow established patterns and require no architectural changes
+- Main branch is 4 commits behind Phase 4; Phase 4 includes all Phase 4 work
+- No alternative branches offer equivalent feature coverage with same compatibility
+- SheetOps variant is architecturally incompatible (different API routes, no Drizzle config)
+
+**Alternatives Considered:** 
+- Keep main as canonical, merge Phase 4 forms as individual PRs (slower, fragmented)
+- Use SheetOps as canonical (rejected — 40 conflicting API routes, missing Drizzle)
+- Wait for additional Phase 4 testing before merging (deferred — can merge after E2E verify)
+
+**Migration Path:**
+1. Verify Phase 4 forms on MacBook (E2E testing)
+2. Delete Prisma schema from jolly-hawking
+3. Fast-forward main to jolly-hawking: `git merge --ff-only origin/claude/jolly-hawking-xqufwo`
+4. Archive SheetOps variant for future reference
+
+**Status:** Ready to merge after user approval + E2E verification.
+
+**Approved By:** AI session (awaiting user confirmation on E2E testing).
+
+---
+
+## [2026-06-28] — Archive SheetOps Variant — Incompatible Architecture
+
+**Decision:** Archive (do not merge, do not delete) the SheetOps branch (`claude/ultracore-sheetops-mvp-wAwwp`). Rename to `archived/sheetops-incompatible-variant` to signal non-canonical status.
+
+**Reason:**
+- SheetOps has 50 API routes vs main's 10 routes — API path conflicts prevent coexistence
+- SheetOps uses different app structure (top-level modules vs app/os nesting) — duplicate module names
+- SheetOps lacks Drizzle configuration (Prisma-only) — incomplete ORM migration
+- SheetOps is incompatible with Phase 4 Sprint 1 work — no evidence of feature parity
+- Merging SheetOps would require complete refactoring of 50+ API routes
+- No active deployment or use evidence
+
+**Architectural Conflict Example:**
+```
+Main:     GET /api/os/work-items
+SheetOps: GET /api/work-items (and 4 additional work-items endpoints)
+Result:   Routes cannot coexist on same domain
+```
+
+**What This Preserves:**
+- Git history (branch remains queryable)
+- Architectural lessons learned (documented in `docs/SHEETOPS-INCOMPATIBILITY-ANALYSIS.md`)
+- Option to un-archive if future feature analysis justifies refactoring
+
+**Approved By:** AI session (SheetOps incompatibility verified via code analysis).
+
+---
+
+## [2026-06-28] — Complete ORM Migration: Delete Prisma, Keep Drizzle Only
+
+**Decision:** Remove Prisma ORM from codebase. Drizzle is the canonical ORM. No future code should import from `@prisma/client`.
+
+**Reason:**
+- Decision made in [2024] to migrate from Prisma to Drizzle
+- Drizzle is now fully configured (db/schema.ts, 8 migrations completed)
+- All current code uses Drizzle via `lib/db.ts` getDb() function
+- Prisma schema is a stale duplicate of Drizzle schema
+- Maintaining both creates split-brain risk and confusion
+- Drizzle migration is feature-complete; no reason to keep Prisma
+
+**Actions:**
+1. Delete `prisma/schema.prisma` (move to git history only)
+2. Delete `prisma/.env` (if exists)
+3. Remove `@prisma/client` from `package.json` dependencies
+4. Remove `prisma` from scripts in `package.json`
+5. Verify zero Prisma imports remain: `grep -r "@prisma" app/ lib/`
+6. Update `CLAUDE.md` to forbid Prisma imports
+
+**Verification:**
+- `npm run type-check` passes with no Prisma references
+- `npm run build` succeeds with Drizzle-only setup
+- All API routes continue to work with Drizzle client
+
+**Status:** Ready to implement after Phase 4 E2E verification.
+
+**Approved By:** AI session (decision enforces [2024] ORM migration decision).
+
+---
+
+## [2026-06-28] — Consolidate Vercel Deployments
+
+**Decision:** Reduce Vercel projects from 8 to 2–3 active deployments:
+- **manus-frontend** (production): main branch → production database
+- **manus-frontend-staging** (optional): develop branch → staging database
+- **fineguard** (if active): fineguard/production branch → production database
+
+**Reason:**
+- 8 projects is operational overhead with no clear purpose
+- Many projects likely abandoned experiments or duplicate previews
+- Cost savings: $120/month estimated (from $160 to $40)
+- Single canonical production project simplifies CI/CD
+- PR preview deployments handled by primary project's Vercel integration
+
+**Prerequisites:**
+- User confirms which Vercel project(s) currently receive traffic
+- User confirms if fineguard/production should be kept separate
+- User provides or confirms staging requirements
+
+**Status:** Planning phase — awaiting user input on current Vercel setup.
+
+**Approved By:** AI session (consolidation plan documented in `docs/VERCEL-CONSOLIDATION-PLAN.md`).
+
+---
+
 <!-- Add new decisions above this line -->
