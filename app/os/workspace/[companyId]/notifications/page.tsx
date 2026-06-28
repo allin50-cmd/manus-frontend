@@ -13,6 +13,10 @@ const SEVERITY_STYLE: Record<string, { bg: string; color: string; dot: string }>
   Info:     { bg: 'rgba(61,139,255,0.12)',  color: '#3D8BFF', dot: '#3D8BFF' },
 }
 
+function isFineGuardSource(source: string | null): boolean {
+  return !!source && source.toLowerCase().includes('fineguard')
+}
+
 export default async function WorkspaceNotificationsPage({
   params,
 }: {
@@ -38,6 +42,7 @@ export default async function WorkspaceNotificationsPage({
   const s = agg[0] ?? { total: 0, unread: 0, critical: 0, warning: 0 }
   const total = Number(s.total)
   const unread = Number(s.unread)
+  const base = `/os/workspace/${params.companyId}`
 
   return (
     <div className="space-y-6">
@@ -123,6 +128,14 @@ export default async function WorkspaceNotificationsPage({
                       >
                         {alert.severity}
                       </span>
+                      {!alert.isRead && (
+                        <span
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ background: 'rgba(61,139,255,0.15)', color: '#3D8BFF' }}
+                        >
+                          Unread
+                        </span>
+                      )}
                     </div>
                     {alert.body && (
                       <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: 'rgba(255,255,255,0.38)' }}>
@@ -130,9 +143,19 @@ export default async function WorkspaceNotificationsPage({
                       </p>
                     )}
                     {alert.source && (
-                      <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                        {alert.source}
-                      </p>
+                      isFineGuardSource(alert.source) ? (
+                        <Link
+                          href={`${base}/apps/fineguard`}
+                          className="text-[10px] mt-0.5 inline-flex items-center gap-1 hover:underline"
+                          style={{ color: '#00A86B' }}
+                        >
+                          🛡️ {alert.source}
+                        </Link>
+                      ) : (
+                        <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                          {alert.source}
+                        </p>
+                      )
                     )}
                   </div>
                   <p className="text-[10px] shrink-0 mt-0.5" style={{ color: 'rgba(255,255,255,0.28)' }}>
