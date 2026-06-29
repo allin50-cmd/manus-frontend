@@ -1,6 +1,6 @@
 # Old Express/Vite API entrypoint — no longer used, packages removed from package.json.
 # Vercel auto-detects root api/ as serverless functions; excluding prevents build failure.
-api/
+/api/
 
 # Old server source — imports tRPC, cors, drizzle which are no longer installed
 server/
