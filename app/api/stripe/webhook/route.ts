@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Stripe webhook secret not configured' }, { status: 500 })
   }
 
-  const stripe = new Stripe(secretKey, { apiVersion: '2026-06-24.dahlia' })
+  const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' })
 
   // Signature verification requires the exact raw request body.
   const rawBody = await req.text()
