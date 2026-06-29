@@ -4,6 +4,11 @@ import { getSession } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
+const VALID_PIPELINE_STAGES = [
+  'Prospect', 'Contacted', 'Qualified', 'Proposal',
+  'Negotiation', 'Won', 'Lost', 'Dormant'
+] as const
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
@@ -42,8 +47,12 @@ export async function POST(
 
   const occurredAt =
     typeof body.occurredAt === 'string' ? new Date(body.occurredAt) : new Date()
-  const pipelineStage =
+  const pipelineStageRaw =
     typeof body.pipelineStage === 'string' ? body.pipelineStage.trim() : undefined
+  const pipelineStage =
+    pipelineStageRaw && VALID_PIPELINE_STAGES.includes(pipelineStageRaw as any)
+      ? pipelineStageRaw
+      : undefined
 
   try {
     const log = await db.$transaction(async (tx) => {
@@ -54,7 +63,7 @@ export async function POST(
         where: { id: params.id },
         data: {
           lastTouchedAt: occurredAt,
-          ...(pipelineStage ? { pipelineStage } : {}),
+          ...(pipelineStage ? { pipelineStage: pipelineStage as any } : {}),
         },
       })
       return record
