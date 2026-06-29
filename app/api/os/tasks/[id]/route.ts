@@ -4,6 +4,53 @@ import { getSession } from '@/lib/auth'
 import { eq } from 'drizzle-orm'
 import { trackEvent } from '@/lib/ut-tracker'
 
+export const dynamic = 'force-dynamic'
+
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const db = await getDb()
+  const [task] = await db.select().from(osTasks).where(eq(osTasks.id, params.id)).limit(1)
+
+  if (!task) {
+    return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+  }
+
+  return NextResponse.json(task)
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const body = await req.json()
+  if (!body.title) return NextResponse.json({ error: 'title is required' }, { status: 400 })
+
+  const db = await getDb()
+
+  const [task] = await db
+    .update(osTasks)
+    .set({
+      title: body.title,
+      priority: body.priority || 'Medium',
+      status: body.status || 'Open',
+      assignedTo: body.assignedTo || session.person,
+      dueAt: body.dueAt ? new Date(body.dueAt) : null,
+      linkedWorkItemId: body.linkedWorkItemId || null,
+      notes: body.notes || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(osTasks.id, params.id))
+    .returning()
+
+  if (!task) {
+    return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+  }
+
+  return NextResponse.json(task)
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
