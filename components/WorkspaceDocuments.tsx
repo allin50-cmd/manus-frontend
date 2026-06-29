@@ -1,6 +1,6 @@
 import { getDb } from '@/lib/db'
 import { osDocuments, workItems } from '@/db/schema'
-import { inArray, eq, or } from 'drizzle-orm'
+import { inArray, eq } from 'drizzle-orm'
 import Link from 'next/link'
 
 export default async function WorkspaceDocuments({ companyName }: { companyName: string }) {
@@ -16,12 +16,7 @@ export default async function WorkspaceDocuments({ companyName }: { companyName:
   const docs = await db
     .select()
     .from(osDocuments)
-    .where(
-      or(
-        inArray(osDocuments.linkedWorkItemId, workItemIds.length > 0 ? workItemIds : ['']),
-        eq(osDocuments.linkedCompany, companyName),
-      )
-    )
+    .where(inArray(osDocuments.linkedWorkItemId, workItemIds.length > 0 ? workItemIds : ['']))
     .limit(10)
 
   if (docs.length === 0) {

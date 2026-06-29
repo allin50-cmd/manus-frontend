@@ -4,7 +4,6 @@ import { getApps } from '@/lib/app-registry'
 import WorkspaceOverview from '@/components/WorkspaceOverview'
 import ComplianceStatus from '@/components/ComplianceStatus'
 import RecentActivity from '@/components/RecentActivity'
-import WorkspaceContacts from '@/components/WorkspaceContacts'
 import WorkspaceTasks from '@/components/WorkspaceTasks'
 import WorkspaceCalls from '@/components/WorkspaceCalls'
 import WorkspaceMessages from '@/components/WorkspaceMessages'
@@ -35,14 +34,6 @@ export default function WorkspaceOverviewPage({
       <section className="space-y-4">
         <h2 className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>Operations</h2>
         <div className="grid grid-cols-1 gap-8">
-          {/* Contacts */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              Contacts
-            </h3>
-            <WorkspaceContacts companyName={company.name} />
-          </div>
-
           {/* Tasks */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
