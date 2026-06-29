@@ -160,8 +160,9 @@ export default async function DocumentsPage() {
             {listDocs.map((doc) => {
               const sc = STATUS_COLOR[doc.status] ?? STATUS_COLOR.Archived
               return (
-                <div
+                <Link
                   key={doc.id}
+                  href={`/os/documents/${doc.id}`}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl"
                   style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
                 >
@@ -186,7 +187,7 @@ export default async function DocumentsPage() {
                   <div className="text-[10px] shrink-0 ml-1" style={{ color: 'rgba(255,255,255,0.28)' }}>
                     {timeLabel(new Date(doc.createdAt))}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>

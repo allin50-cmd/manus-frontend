@@ -157,8 +157,9 @@ export default async function MessagesPage() {
                 const participants = (t.participantNames as string[]) ?? []
                 const initials = participants[0]?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() ?? '?'
                 return (
-                  <div
+                  <Link
                     key={t.id}
+                    href={`/os/messages/${t.id}`}
                     className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
                     style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.06)' : undefined }}
                   >
@@ -197,7 +198,7 @@ export default async function MessagesPage() {
                         {t.unreadCount}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 )
               })}
             </div>

@@ -269,8 +269,9 @@ export default async function TasksPage() {
             const dueLabelText = dueAt ? dueDateLabel(dueAt, now) : null
 
             return (
-              <div
+              <Link
                 key={task.id}
+                href={`/os/tasks/${task.id}`}
                 className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
                 style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
               >
@@ -307,7 +308,7 @@ export default async function TasksPage() {
                     {task.priority}
                   </span>
                 )}
-              </div>
+              </Link>
             )
           })}
         </div>

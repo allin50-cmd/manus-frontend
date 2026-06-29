@@ -172,8 +172,9 @@ export default async function CallsPage() {
                 const badge = outcomeBadge(c.outcome)
                 const isInbound = c.direction === 'Inbound'
                 return (
-                  <div
+                  <Link
                     key={c.id}
+                    href={`/os/calls/${c.id}`}
                     className="flex items-center gap-3 px-4 py-3.5"
                     style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.06)' : undefined }}
                   >
@@ -216,7 +217,7 @@ export default async function CallsPage() {
                         Call Back
                       </button>
                     )}
-                  </div>
+                  </Link>
                 )
               })}
             </div>

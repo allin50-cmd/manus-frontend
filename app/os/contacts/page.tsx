@@ -167,8 +167,9 @@ export default async function ContactsPage() {
           const badge = categoryBadge(person.category)
 
           return (
-            <div
+            <Link
               key={person.id}
+              href={`/os/contacts/${person.id}`}
               className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.03] transition-colors"
               style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : undefined }}
             >
@@ -240,7 +241,7 @@ export default async function ContactsPage() {
               >
                 <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </div>
+            </Link>
           )
         })}
       </div>
