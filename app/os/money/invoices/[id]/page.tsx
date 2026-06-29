@@ -131,6 +131,38 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  async function sendInvoice() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/os/invoices/${invoiceId}/send`, { method: 'POST' })
+      if (res.ok) {
+        await fetchInvoice()
+      } else {
+        setError('Failed to send invoice')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function cancelInvoice() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/os/invoices/${invoiceId}/cancel`, { method: 'POST' })
+      if (res.ok) {
+        await fetchInvoice()
+      } else {
+        setError('Failed to cancel invoice')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleDelete() {
     if (!confirm('Are you sure you want to delete this invoice?')) return
 
@@ -293,6 +325,26 @@ export default function InvoiceDetailPage() {
               className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
             >
               {saving ? 'Processing…' : 'Mark as Paid'}
+            </button>
+          )}
+          {invoice.status !== 'Sent' && invoice.status !== 'Paid' && (
+            <button
+              type="button"
+              onClick={sendInvoice}
+              disabled={saving}
+              className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+            >
+              Send Invoice
+            </button>
+          )}
+          {invoice.status !== 'Cancelled' && invoice.status !== 'Paid' && (
+            <button
+              type="button"
+              onClick={cancelInvoice}
+              disabled={saving}
+              className="w-full py-2 bg-slate-400 hover:bg-slate-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+            >
+              Cancel Invoice
             </button>
           )}
         </div>

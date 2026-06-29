@@ -142,6 +142,38 @@ export default function QuoteDetailPage() {
     }
   }
 
+  async function draftQuote() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/os/quotes/${quoteId}/draft`, { method: 'POST' })
+      if (res.ok) {
+        await fetchQuote()
+      } else {
+        setError('Failed to change status to Draft')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function sendQuote() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/os/quotes/${quoteId}/send`, { method: 'POST' })
+      if (res.ok) {
+        await fetchQuote()
+      } else {
+        setError('Failed to send quote')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleDelete() {
     if (!confirm('Are you sure you want to delete this quote?')) return
 
@@ -303,6 +335,26 @@ export default function QuoteDetailPage() {
                 Decline
               </button>
             </div>
+          )}
+          {quote.status !== 'Draft' && (
+            <button
+              type="button"
+              onClick={draftQuote}
+              disabled={saving}
+              className="w-full py-2 bg-slate-500 hover:bg-slate-600 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+            >
+              Mark as Draft
+            </button>
+          )}
+          {quote.status !== 'Sent' && quote.status !== 'Accepted' && quote.status !== 'Declined' && (
+            <button
+              type="button"
+              onClick={sendQuote}
+              disabled={saving}
+              className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+            >
+              Send Quote
+            </button>
           )}
         </div>
       </form>

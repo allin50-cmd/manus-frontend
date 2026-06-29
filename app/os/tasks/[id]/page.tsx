@@ -122,6 +122,54 @@ export default function TaskDetailPage() {
     }
   }
 
+  async function completeTask() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/os/tasks/${taskId}/complete`, { method: 'POST' })
+      if (res.ok) {
+        await fetchTask()
+      } else {
+        setError('Failed to complete task')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function reopenTask() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/os/tasks/${taskId}/reopen`, { method: 'POST' })
+      if (res.ok) {
+        await fetchTask()
+      } else {
+        setError('Failed to reopen task')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function archiveTask() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/os/tasks/${taskId}/archive`, { method: 'POST' })
+      if (res.ok) {
+        await fetchTask()
+      } else {
+        setError('Failed to archive task')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8 text-slate-600">Loading task…</div>
   }
@@ -229,6 +277,36 @@ export default function TaskDetailPage() {
           </button>
         </div>
       </form>
+
+      <div className="space-y-3">
+        {task.status !== 'Done' && (
+          <button
+            onClick={completeTask}
+            disabled={saving}
+            className="w-full py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+          >
+            Mark Complete
+          </button>
+        )}
+        {task.status === 'Done' && (
+          <button
+            onClick={reopenTask}
+            disabled={saving}
+            className="w-full py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+          >
+            Reopen
+          </button>
+        )}
+        {task.status !== 'Cancelled' && (
+          <button
+            onClick={archiveTask}
+            disabled={saving}
+            className="w-full py-2 bg-slate-400 hover:bg-slate-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+          >
+            Archive
+          </button>
+        )}
+      </div>
 
       <div className="text-xs text-slate-500 space-y-1 bg-slate-50 p-3 rounded-lg">
         <p>Created: {new Date(task.createdAt).toLocaleString()}</p>

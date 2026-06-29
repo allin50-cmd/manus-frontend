@@ -73,6 +73,56 @@ export default function DocumentDetailPage() {
     return '📄'
   }
 
+  const [processing, setProcessing] = useState(false)
+
+  async function approveDocument() {
+    setProcessing(true)
+    try {
+      const res = await fetch(`/api/os/documents/${docId}/approve`, { method: 'POST' })
+      if (res.ok) {
+        await fetchDocument()
+      } else {
+        setError('Failed to approve document')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  async function rejectDocument() {
+    setProcessing(true)
+    try {
+      const res = await fetch(`/api/os/documents/${docId}/reject`, { method: 'POST' })
+      if (res.ok) {
+        await fetchDocument()
+      } else {
+        setError('Failed to reject document')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  async function archiveDocument() {
+    setProcessing(true)
+    try {
+      const res = await fetch(`/api/os/documents/${docId}/archive`, { method: 'POST' })
+      if (res.ok) {
+        await fetchDocument()
+      } else {
+        setError('Failed to archive document')
+      }
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">Loading document…</div>
   }
@@ -178,6 +228,39 @@ export default function DocumentDetailPage() {
           Back to Documents
         </Link>
       </div>
+
+      {/* Workflow actions */}
+      <div className="space-y-2">
+        {doc.status === 'PendingReview' && (
+          <>
+            <button
+              onClick={approveDocument}
+              disabled={processing}
+              className="w-full py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+            >
+              Approve Document
+            </button>
+            <button
+              onClick={rejectDocument}
+              disabled={processing}
+              className="w-full py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+            >
+              Reject Document
+            </button>
+          </>
+        )}
+        {doc.status !== 'Archived' && (
+          <button
+            onClick={archiveDocument}
+            disabled={processing}
+            className="w-full py-2 bg-slate-400 hover:bg-slate-500 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm"
+          >
+            Archive Document
+          </button>
+        )}
+      </div>
+
+      {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
     </div>
   )
 }
