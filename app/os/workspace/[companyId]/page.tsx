@@ -4,6 +4,13 @@ import { getApps } from '@/lib/app-registry'
 import WorkspaceOverview from '@/components/WorkspaceOverview'
 import ComplianceStatus from '@/components/ComplianceStatus'
 import RecentActivity from '@/components/RecentActivity'
+import WorkspaceContacts from '@/components/WorkspaceContacts'
+import WorkspaceTasks from '@/components/WorkspaceTasks'
+import WorkspaceCalls from '@/components/WorkspaceCalls'
+import WorkspaceMessages from '@/components/WorkspaceMessages'
+import WorkspaceQuotes from '@/components/WorkspaceQuotes'
+import WorkspaceInvoices from '@/components/WorkspaceInvoices'
+import WorkspaceDocuments from '@/components/WorkspaceDocuments'
 
 export default function WorkspaceOverviewPage({
   params,
@@ -23,6 +30,68 @@ export default function WorkspaceOverviewPage({
       <ComplianceStatus companyId={params.companyId} />
 
       <RecentActivity companyId={params.companyId} companyName={company.name} />
+
+      {/* Related Records */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>Operations</h2>
+        <div className="grid grid-cols-1 gap-8">
+          {/* Contacts */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Contacts
+            </h3>
+            <WorkspaceContacts companyName={company.name} />
+          </div>
+
+          {/* Tasks */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Tasks
+            </h3>
+            <WorkspaceTasks companyName={company.name} />
+          </div>
+
+          {/* Calls */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Calls
+            </h3>
+            <WorkspaceCalls companyName={company.name} />
+          </div>
+
+          {/* Messages */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Messages
+            </h3>
+            <WorkspaceMessages companyName={company.name} />
+          </div>
+
+          {/* Quotes */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Quotes
+            </h3>
+            <WorkspaceQuotes companyName={company.name} />
+          </div>
+
+          {/* Invoices */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Invoices
+            </h3>
+            <WorkspaceInvoices companyName={company.name} />
+          </div>
+
+          {/* Documents */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Documents
+            </h3>
+            <WorkspaceDocuments companyName={company.name} />
+          </div>
+        </div>
+      </section>
 
       {/* Coming soon */}
       {comingApps.length > 0 && (
