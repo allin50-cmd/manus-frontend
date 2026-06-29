@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { PipelineStage } from '@prisma/client'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 
@@ -63,7 +64,13 @@ export async function POST(
         where: { id: params.id },
         data: {
           lastTouchedAt: occurredAt,
+<<<<<<< Updated upstream
           ...(pipelineStage ? { pipelineStage: pipelineStage as any } : {}),
+=======
+          ...(pipelineStage && Object.values(PipelineStage).includes(pipelineStage as PipelineStage)
+            ? { pipelineStage: pipelineStage as PipelineStage }
+            : {}),
+>>>>>>> Stashed changes
         },
       })
       return record

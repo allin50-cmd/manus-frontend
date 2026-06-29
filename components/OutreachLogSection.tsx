@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 interface OutreachLog {
   id: string
   person: string
@@ -42,6 +43,35 @@ export default function OutreachLogSection({ logs }: Props) {
                 <span className="text-xs text-slate-500">{log.channel}</span>
                 <p className="text-sm text-slate-800">{log.summary}</p>
               </div>
+=======
+type OutreachLog = {
+  id: string
+  channel?: string | null
+  direction?: string | null
+  summary?: string | null
+  outcome?: string | null
+  createdAt?: Date | string | null
+}
+
+export default function OutreachLogSection({ logs }: { logs?: OutreachLog[] }) {
+  const safeLogs = logs ?? []
+
+  return (
+    <section className="rounded-lg border bg-white p-4">
+      <h2 className="text-lg font-semibold">Outreach history</h2>
+
+      {safeLogs.length === 0 ? (
+        <p className="mt-2 text-sm text-gray-500">No outreach logged yet.</p>
+      ) : (
+        <div className="mt-3 space-y-3">
+          {safeLogs.map((log) => (
+            <div key={log.id} className="rounded-md border p-3">
+              <div className="text-sm font-medium">
+                {log.channel ?? 'Outreach'} {log.direction ? `· ${log.direction}` : ''}
+              </div>
+              {log.summary && <p className="mt-1 text-sm text-gray-700">{log.summary}</p>}
+              {log.outcome && <p className="mt-1 text-xs text-gray-500">Outcome: {log.outcome}</p>}
+>>>>>>> Stashed changes
             </div>
           ))}
         </div>
