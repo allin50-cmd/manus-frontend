@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const stripe = new Stripe(secretKey, { apiVersion: '2023-10-16' })
+  const stripe = new Stripe(secretKey)
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||

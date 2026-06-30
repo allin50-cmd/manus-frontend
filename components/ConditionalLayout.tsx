@@ -51,7 +51,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <NavBar />
+      <NavBar person={null} />
       <main className="max-w-5xl mx-auto px-4 py-6 pb-20 sm:pb-6">{children}</main>
     </>
   )

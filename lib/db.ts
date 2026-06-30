@@ -52,5 +52,35 @@ export function getDb(): DrizzleDb {
   return g.__drizzle_db
 }
 
-// Re-export Drizzle schema tables needed by /api/os/ routes
-export { osMessageThreads } from '../db/schema'
+// Re-export Drizzle schema tables needed by /api routes
+export {
+  workItems,
+  actions,
+  activityLogs,
+  decisions,
+  templates,
+  alertRecipients,
+  alertDeliveries,
+  alertEvents,
+  osMessageThreads,
+  osAlerts,
+  osPeople,
+  osTasks,
+  osCallLogs,
+  osMessages,
+  osQuotes,
+  osInvoices,
+  osDocuments,
+  fineguardLeads,
+  builderBigJobsLeads,
+  utDailyMetrics,
+  utWeeklyReports,
+  voiceDraft,
+  fgCompanySnapshots,
+  fgAlerts,
+  fgReminderEvents,
+  fgMessageLogs,
+  fgActivityLog,
+  utActivityEvents,
+  monitoredCompanies,
+} from '../db/schema'
