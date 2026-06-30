@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>FineGuard Pro — Companies House Monitoring</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0c2340;--blue:#1d4ed8;--blue-lt:#3b82f6;--blue-xlt:#dbeafe;
+  --bg:#eff6ff;--white:#fff;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;
+  --green:#16a34a;--green-lt:#dcfce7;--green-dot:#22c55e;
+  --amber:#d97706;--amber-lt:#fef3c7;--orange:#ea580c;--orange-lt:#ffedd5;
+  --red:#dc2626;--red-lt:#fee2e2;--purple:#7c3aed;--purple-lt:#f5f3ff;
+  --nav-h:56px;--bottom-h:66px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a,button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+#topbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--navy);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:50}
+.tb-logo{width:32px;height:32px;background:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tb-brand{color:#fff;font-size:17px;font-weight:800;letter-spacing:-.3px}
+.tb-sub{font-size:10px;color:rgba(255,255,255,.45);font-weight:400}
+.tb-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0;cursor:pointer}
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--bottom-h);background:var(--white);border-top:1px solid var(--border);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+.bn-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--muted);font-weight:500;padding:8px 2px 6px;border:none;background:none;position:relative;transition:color .15s}
+.bn-icon{font-size:19px;line-height:1}
+.bn-tab.active{color:var(--blue)}
+.bn-dot{position:absolute;top:7px;right:calc(50% - 16px);width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--white)}
+#main{margin-top:var(--nav-h);padding:14px 12px calc(var(--bottom-h)+16px);max-width:540px;margin-left:auto;margin-right:auto}
+.section{display:none}.section.active{display:block}
+.card{background:var(--white);border-radius:16px;box-shadow:0 1px 4px rgba(15,23,42,.08);overflow:hidden;margin-bottom:12px;border:1px solid var(--border)}
+.card-pad{padding:16px}
+.card-hd{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-hd-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.chlink{font-size:12px;font-weight:600;color:var(--blue);cursor:pointer;border:none;background:none}
+.page-hd{margin-bottom:14px}
+.page-hd h1{font-size:22px;font-weight:800;line-height:1.2}
+.page-hd p{font-size:13px;color:var(--muted);margin-top:3px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-box{border-radius:14px;padding:14px;border:1px solid}
+.stat-n{font-size:28px;font-weight:800}
+.stat-l{font-size:11px;font-weight:500;margin-top:3px;opacity:.85}
+.urgent-banner{display:flex;align-items:center;gap:12px;background:var(--red);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;cursor:pointer}
+.urgent-banner:active{opacity:.9}
+.ub-body{flex:1}
+.ub-title{font-size:14px;font-weight:700}
+.ub-sub{font-size:11px;opacity:.8;margin-top:2px}
+/* Deadline row */
+.dl-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.dl-row:last-child{border-bottom:none}
+.dl-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.dl-body{flex:1;min-width:0}
+.dl-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.dl-right{text-align:right;flex-shrink:0}
+.dl-days{font-size:13px;font-weight:800}
+.dl-due{font-size:10px;font-weight:600;margin-top:1px}
+/* Company card */
+.co-card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s}
+.co-card:active{box-shadow:0 4px 12px rgba(15,23,42,.1)}
+.co-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.co-avatar{width:44px;height:44px;border-radius:12px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:800;flex-shrink:0}
+.co-name{font-size:15px;font-weight:800;line-height:1.2}
+.co-ch{font-size:11px;color:var(--muted);margin-top:2px;font-family:monospace}
+.co-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.co-stat{border-radius:10px;padding:10px;text-align:center;background:var(--bg)}
+.co-stat-n{font-size:18px;font-weight:800}
+.co-stat-l{font-size:10px;color:var(--muted);margin-top:2px}
+.co-next{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.co-actions{display:flex;gap:8px}
+/* Deadline card (full) */
+.fc{background:var(--white);border-radius:12px;border:1px solid var(--border);border-left-width:4px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:flex-start;gap:12px}
+.fc:active{opacity:.85}
+.fc-body{flex:1;min-width:0}
+.fc-title{font-size:14px;font-weight:700;margin-bottom:3px}
+.fc-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
+.fc-right{text-align:right;flex-shrink:0}
+.fc-days{font-size:16px;font-weight:800}
+.fc-date{font-size:11px;color:var(--muted);margin-top:2px}
+/* Alert row */
+.al-row{display:flex;align-items:flex-start;gap:10px;padding:13px;border-bottom:1px solid var(--border)}
+.al-row:last-child{border-bottom:none}
+.al-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.al-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.al-body{flex:1;min-width:0}
+.al-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.al-meta{font-size:11px;color:var(--muted);margin-top:2px}
+/* Recipient row */
+.rc-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.rc-row:last-child{border-bottom:none}
+.rc-av{width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+.rc-body{flex:1;min-width:0}
+.rc-name{font-size:13px;font-weight:700}
+.rc-detail{font-size:11px;color:var(--muted);margin-top:2px}
+/* Timeline */
+.tl-item{display:flex;gap:10px;margin-bottom:14px}
+.tl-dot-wrap{display:flex;flex-direction:column;align-items:center;gap:0}
+.tl-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.tl-line{width:2px;flex:1;background:var(--border);margin:4px auto}
+.tl-content{flex:1;padding-bottom:4px}
+.tl-date{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.tl-title{font-size:13px;font-weight:600}
+.tl-sub{font-size:11px;color:var(--muted);margin-top:1px}
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-green{background:var(--green-lt);color:var(--green)}
+.b-amber{background:var(--amber-lt);color:var(--amber)}
+.b-orange{background:var(--orange-lt);color:var(--orange)}
+.b-red{background:var(--red-lt);color:var(--red)}
+.b-blue{background:var(--blue-xlt);color:var(--blue)}
+.b-gray{background:#f1f5f9;color:var(--muted)}
+.b-navy{background:var(--navy);color:#fff}
+/* Pills / filter */
+.pills{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;background:var(--white);color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:opacity .15s}
+.btn:active{opacity:.8}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-danger{background:var(--red);color:#fff}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn-full{width:100%;justify-content:center;margin-bottom:8px}
+/* Forms */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--white);color:var(--text);-webkit-appearance:none;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--blue)}
+.form-group textarea{resize:vertical;min-height:72px;line-height:1.5}
+/* Search */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-wrap input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;background:#fff;outline:none}
+.search-wrap input:focus{border-color:var(--blue)}
+/* Toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;border-radius:12px;background:var(--border);transition:.2s;cursor:pointer}
+.slider:before{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;left:3px;top:3px;transition:.2s}
+.toggle input:checked+.slider{background:var(--blue)}
+.toggle input:checked+.slider:before{transform:translateX(20px)}
+/* Toast */
+#toast{position:fixed;bottom:calc(var(--bottom-h)+12px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:200}
+#toast.show{opacity:1}
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end}
+.modal{background:var(--white);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-hd h3{font-size:17px;font-weight:700}
+.modal-close{width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.empty-state{background:#fff;border-radius:16px;padding:48px 20px;text-align:center;border:1px solid var(--border)}
+.es-icon{font-size:48px;margin-bottom:12px}
+.es-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.es-sub{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- Shown if JS is not running; hidden by first line of script -->
+<div id="nojs-warn" style="position:fixed;inset:0;background:#0c2340;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;z-index:9999;gap:16px">
+  <div style="font-size:48px">⚠️</div>
+  <div style="font-size:20px;font-weight:800">JavaScript is not running</div>
+  <div style="font-size:14px;opacity:.7;max-width:320px;line-height:1.6">This app requires JavaScript. You must open this file directly in <strong>Safari</strong> or <strong>Chrome</strong> — not inside another app's preview.</div>
+  <div style="background:#fff;color:#0c2340;border-radius:12px;padding:16px 24px;font-size:13px;font-weight:600;max-width:320px;line-height:1.8">
+    <strong>iPhone:</strong> Tap Share → Open in Safari<br>
+    <strong>Android:</strong> Long-press → Open with Chrome<br>
+    <strong>Computer:</strong> Double-click the file
+  </div>
+</div>
+
+<div id="topbar">
+  <div class="tb-logo">🛡️</div>
+  <div style="flex:1">
+    <div class="tb-brand">FineGuard</div>
+    <div class="tb-sub">Companies House Monitoring</div>
+  </div>
+  <span id="tb-badge" class="tb-badge" style="display:none"></span>
+  <div class="tb-avatar" onclick="openSettings()">G</div>
+</div>
+
+<div id="main">
+  <div class="section active" id="s-dashboard"></div>
+  <div class="section" id="s-companies"></div>
+  <div class="section" id="s-deadlines"></div>
+  <div class="section" id="s-alerts"></div>
+  <div class="section" id="s-settings"></div>
+</div>
+
+<nav id="bottom-nav">
+  <button class="bn-tab active" id="tab-dashboard" onclick="showSection('dashboard')">
+    <span class="bn-icon">⊞</span>Dashboard
+  </button>
+  <button class="bn-tab" id="tab-companies" onclick="showSection('companies')">
+    <span class="bn-icon">🏢</span>Companies
+  </button>
+  <button class="bn-tab" id="tab-deadlines" onclick="showSection('deadlines')">
+    <span class="bn-icon">📅</span>Deadlines
+    <span class="bn-dot" id="dl-dot"></span>
+  </button>
+  <button class="bn-tab" id="tab-alerts" onclick="showSection('alerts')">
+    <span class="bn-icon">🔔</span>Alerts
+  </button>
+  <button class="bn-tab" id="tab-settings" onclick="showSection('settings')">
+    <span class="bn-icon">⚙️</span>Settings
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+// Hide the "no JS" warning — if we get here, JS is running fine
+document.getElementById('nojs-warn').style.display='none'
+// ── Default data ──────────────────────────────────────────────────────────────
+var DEFAULT = {
+  companies: [
+    {id:'c1',name:'Acme Manufacturing Ltd',ch:'12345678',sic:'25110',sicDesc:'Structural metal products',incorporated:'2018-03-15',status:'overdue',contacts:2,notes:'Main client. George handles.'},
+    {id:'c2',name:'Bright Futures Consulting Ltd',ch:'98765432',sic:'70220',sicDesc:'Management consultancy',incorporated:'2019-07-22',status:'due-soon',contacts:3,notes:'Quarterly review due.'},
+    {id:'c3',name:'Tech Corp Solutions Ltd',ch:'11223344',sic:'62020',sicDesc:'IT consultancy activities',incorporated:'2020-01-10',status:'due-soon',contacts:1,notes:'Director change pending.'},
+    {id:'c4',name:'Sunset Retail Group Ltd',ch:'55667788',sic:'47190',sicDesc:'Other retail sale in non-specialised stores',incorporated:'2017-11-08',status:'compliant',contacts:2,notes:''},
+    {id:'c5',name:'Northern Properties Ltd',ch:'44556677',sic:'68100',sicDesc:'Buying and selling of own real estate',incorporated:'2015-05-30',status:'compliant',contacts:4,notes:'Large portfolio company.'},
+    {id:'c6',name:'GreenLeaf Catering Ltd',ch:'33445566',sic:'56290',sicDesc:'Other food service activities',incorporated:'2021-09-14',status:'upcoming',contacts:1,notes:''},
+    {id:'c7',name:'Apex Legal Services Ltd',ch:'22334455',sic:'69102',sicDesc:'Solicitors',incorporated:'2016-02-28',status:'compliant',contacts:3,notes:''},
+    {id:'c8',name:'Blue Wave Digital Ltd',ch:'77889900',sic:'73110',sicDesc:'Advertising agencies',incorporated:'2022-04-01',status:'upcoming',contacts:2,notes:'New client.'},
+  ],
+  deadlines: [
+    {id:'d1',companyId:'c1',type:'accounts',dueDate:'2026-06-05',status:'overdue',filedAt:null,ref:'AA',notes:'FY ended 31 Mar 2025'},
+    {id:'d2',companyId:'c2',type:'confirmation',dueDate:'2026-06-28',status:'due-soon',filedAt:null,ref:'CS01',notes:'Annual review date: 14 Jun 2026'},
+    {id:'d3',companyId:'c3',type:'accounts',dueDate:'2026-07-10',status:'due-soon',filedAt:null,ref:'AA',notes:'FY ended 31 Oct 2025'},
+    {id:'d4',companyId:'c3',type:'director',dueDate:'2026-06-20',status:'due-soon',filedAt:null,ref:'AP01',notes:'New director: Sarah Chen. Appointed 06 Jun 2026.'},
+    {id:'d5',companyId:'c6',type:'confirmation',dueDate:'2026-07-28',status:'upcoming',filedAt:null,ref:'CS01',notes:'Annual review date: 14 Jul 2026'},
+    {id:'d6',companyId:'c8',type:'accounts',dueDate:'2026-10-01',status:'upcoming',filedAt:null,ref:'AA',notes:'FY ended 31 Mar 2026'},
+    {id:'d7',companyId:'c4',type:'confirmation',dueDate:'2026-08-15',status:'upcoming',filedAt:null,ref:'CS01',notes:''},
+    {id:'d8',companyId:'c5',type:'accounts',dueDate:'2026-11-30',status:'ok',filedAt:null,ref:'AA',notes:'FY ended 28 Feb 2026'},
+    {id:'d9',companyId:'c7',type:'confirmation',dueDate:'2026-12-20',status:'ok',filedAt:null,ref:'CS01',notes:''},
+    {id:'d10',companyId:'c2',type:'psc',dueDate:'2026-06-25',status:'due-soon',filedAt:null,ref:'PSC04',notes:'PSC details updated. Filing required within 14 days.'},
+    {id:'d11',companyId:'c1',type:'confirmation',dueDate:'2026-09-12',status:'upcoming',filedAt:null,ref:'CS01',notes:''},
+    {id:'d12',companyId:'c5',type:'confirmation',dueDate:'2026-07-05',status:'upcoming',filedAt:null,ref:'CS01',notes:''},
+  ],
+  alerts: [
+    {id:'a1',companyId:'c1',deadlineId:'d1',type:'overdue',channel:'email',status:'sent',recipient:'george@firm.co.uk',sentAt:'2026-06-06T09:00:00Z',subject:'OVERDUE: Annual Accounts — Acme Manufacturing Ltd'},
+    {id:'a2',companyId:'c1',deadlineId:'d1',type:'overdue',channel:'sms',status:'sent',recipient:'+44 7700 900123',sentAt:'2026-06-06T09:01:00Z',subject:'FineGuard: Acme Manufacturing annual accounts OVERDUE'},
+    {id:'a3',companyId:'c2',deadlineId:'d2',type:'14-day',channel:'email',status:'sent',recipient:'george@firm.co.uk',sentAt:'2026-06-14T08:00:00Z',subject:'14 days: Confirmation Statement — Bright Futures Consulting Ltd'},
+    {id:'a4',companyId:'c3',deadlineId:'d4',type:'7-day',channel:'email',status:'sent',recipient:'george@firm.co.uk',sentAt:'2026-06-13T08:00:00Z',subject:'7 days: Director Appointment — Tech Corp Solutions Ltd'},
+    {id:'a5',companyId:'c4',deadlineId:'d7',type:'60-day',channel:'email',status:'sent',recipient:'george@firm.co.uk',sentAt:'2026-06-16T08:00:00Z',subject:'60 days: Confirmation Statement — Sunset Retail Group Ltd'},
+    {id:'a6',companyId:'c2',deadlineId:'d10',type:'14-day',channel:'sms',status:'sent',recipient:'+44 7700 900123',sentAt:'2026-06-11T08:05:00Z',subject:'FineGuard: PSC change filing due in 14 days'},
+    {id:'a7',companyId:'c6',deadlineId:'d5',type:'30-day',channel:'email',status:'failed',recipient:'contact@greenleaf.co.uk',sentAt:'2026-06-13T08:00:00Z',subject:'30 days: Confirmation Statement — GreenLeaf Catering Ltd'},
+    {id:'a8',companyId:'c1',deadlineId:'d1',type:'30-day',channel:'email',status:'sent',recipient:'george@firm.co.uk',sentAt:'2026-05-06T09:00:00Z',subject:'30 days: Annual Accounts — Acme Manufacturing Ltd'},
+  ],
+  recipients: [
+    {id:'r1',companyId:'all',name:'George',email:'george@firm.co.uk',phone:'+44 7700 900123',channels:['email','sms']},
+    {id:'r2',companyId:'c2',name:'Emma Wilson',email:'emma@brightfutures.co.uk',phone:'',channels:['email']},
+    {id:'r3',companyId:'c5',name:'Priya Kumar',email:'priya@northernproperties.co.uk',phone:'+44 7700 900456',channels:['email','sms']},
+  ],
+  settings: {
+    alertDays: [90,60,30,14,7,1],
+    overdueRepeat: 7,
+    channels: {email:true, sms:true, whatsapp:false},
+  }
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+function loadState() {
+  try { var s=localStorage.getItem('fgpro'); return s?JSON.parse(s):clone(DEFAULT) } catch(e) { return clone(DEFAULT) }
+}
+function saveState() { try { localStorage.setItem('fgpro',JSON.stringify(state)) } catch(e){} }
+function clone(o) { return JSON.parse(JSON.stringify(o)) }
+var state = loadState()
+var ui = { section:'dashboard', dlFilter:'all', dlSearch:'', alFilter:'all', coSearch:'' }
+
+// ── Lookups ───────────────────────────────────────────────────────────────────
+var TYPE_INFO = {
+  accounts:     {label:'Annual Accounts',     short:'Accounts',  icon:'📋', color:'var(--blue)',   bg:'var(--blue-xlt)',    badge:'b-blue'},
+  confirmation: {label:'Confirmation Statement',short:'CS01',    icon:'✅', color:'var(--green)',  bg:'var(--green-lt)',    badge:'b-green'},
+  director:     {label:'Director Change',      short:'Director', icon:'👤', color:'var(--purple)', bg:'var(--purple-lt)',   badge:'b-purple'},
+  psc:          {label:'PSC Change',           short:'PSC',      icon:'🔑', color:'var(--amber)',  bg:'var(--amber-lt)',    badge:'b-amber'},
+  'reg-office': {label:'Registered Office',   short:'Reg. Office',icon:'📍',color:'var(--orange)','bg':'var(--orange-lt)', badge:'b-orange'},
+}
+var STATUS_INFO = {
+  overdue:  {label:'Overdue',     badge:'b-red',    border:'var(--red)',       color:'var(--red)'},
+  'due-soon':{label:'Due Soon',   badge:'b-orange',  border:'var(--orange)',    color:'var(--orange)'},
+  upcoming: {label:'Upcoming',    badge:'b-amber',  border:'var(--amber)',     color:'var(--amber)'},
+  ok:       {label:'On Track',    badge:'b-green',  border:'var(--green-dot)', color:'var(--green)'},
+  done:     {label:'Filed',       badge:'b-gray',   border:'var(--border)',    color:'var(--muted)'},
+}
+var ALERT_TYPE_LABEL = {'overdue':'Overdue Notice','90-day':'90-Day Reminder','60-day':'60-Day Reminder','30-day':'30-Day Reminder','14-day':'14-Day Reminder','7-day':'7-Day Reminder','1-day':'Final Reminder'}
+var CHANNEL_ICON = {email:'✉️', sms:'💬', whatsapp:'📱'}
+var STATUS_ORDER = {overdue:0,'due-soon':1,upcoming:2,ok:3,done:4}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function uid() { return 'x'+Math.random().toString(36).slice(2,8)+Date.now().toString(36) }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function fmtDate(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) }
+function fmtShort(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) }
+function fmtDateTime(d) { if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) }
+function daysUntil(d) { if(!d) return null; return Math.ceil((new Date(d)-new Date())/86400000) }
+function daysLabel(d) {
+  var n = daysUntil(d)
+  if (n===null) return {text:'—',color:'var(--muted)'}
+  if (n<0) return {text:Math.abs(n)+'d overdue',color:'var(--red)'}
+  if (n===0) return {text:'Due today',color:'var(--red)'}
+  if (n===1) return {text:'1 day',color:'var(--orange)'}
+  if (n<=7) return {text:n+' days',color:'var(--orange)'}
+  if (n<=30) return {text:n+' days',color:'var(--amber)'}
+  return {text:n+' days',color:'var(--muted)'}
+}
+function coName(id) { var c=state.companies.find(function(x){return x.id===id}); return c?c.name:'Unknown' }
+function computeCoStatus(coId) {
+  var dls = state.deadlines.filter(function(d){return d.companyId===coId&&d.status!=='done'})
+  if (dls.some(function(d){return d.status==='overdue'})) return 'overdue'
+  if (dls.some(function(d){return d.status==='due-soon'})) return 'due-soon'
+  if (dls.some(function(d){return d.status==='upcoming'})) return 'upcoming'
+  return 'compliant'
+}
+function activeDls(coId) { return state.deadlines.filter(function(d){return d.companyId===coId&&d.status!=='done'}) }
+
+var toastTimer
+function toast(msg) {
+  clearTimeout(toastTimer)
+  var t=document.getElementById('toast')
+  t.textContent='✓ '+msg; t.classList.add('show')
+  toastTimer=setTimeout(function(){t.classList.remove('show')},2400)
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')})
+  document.querySelectorAll('.bn-tab').forEach(function(t){t.classList.remove('active')})
+  var sec=document.getElementById('s-'+name), tab=document.getElementById('tab-'+name)
+  if(sec) sec.classList.add('active')
+  if(tab) tab.classList.add('active')
+  window.scrollTo(0,0); ui.section=name
+  var fn={dashboard:renderDashboard,companies:renderCompanies,deadlines:renderDeadlines,alerts:renderAlerts,settings:renderSettings}
+  if(fn[name]) fn[name]()
+}
+
+function updateTopBar() {
+  var overdue = state.deadlines.filter(function(d){return d.status==='overdue'}).length
+  var badge=document.getElementById('tb-badge'), dot=document.getElementById('dl-dot')
+  if(badge){badge.style.display=overdue>0?'':'none'; badge.textContent=overdue+' overdue'}
+  if(dot) dot.style.display=overdue>0?'':'none'
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  var overdue   = state.deadlines.filter(function(d){return d.status==='overdue'}).length
+  var dueSoon   = state.deadlines.filter(function(d){return d.status==='due-soon'}).length
+  var upcoming  = state.deadlines.filter(function(d){return d.status==='upcoming'}).length
+  var totalCo   = state.companies.length
+  var alertsSent= state.alerts.filter(function(a){return a.status==='sent'}).length
+  var today = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).toUpperCase()
+
+  // Upcoming deadlines (next 60 days), sorted
+  var soon = state.deadlines
+    .filter(function(d){return d.status!=='done' && d.status!=='ok'})
+    .sort(function(a,b){return new Date(a.dueDate)-new Date(b.dueDate)})
+    .slice(0,6)
+
+  var h = ''
+  h += '<div class="page-hd"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">'+today+'</div><h1>Compliance Overview</h1><p>'+totalCo+' companies monitored</p></div>'
+
+  // Urgent banner
+  if (overdue > 0) {
+    h += '<div class="urgent-banner" onclick="filterDl(\'overdue\')">'
+    h += '<span style="font-size:22px">🚨</span>'
+    h += '<div class="ub-body"><div class="ub-title">'+overdue+' filing'+(overdue>1?'s':'')+' OVERDUE — action required</div><div class="ub-sub">Tap to view overdue deadlines</div></div>'
+    h += '<span style="font-size:18px;opacity:.7">→</span></div>'
+  }
+
+  // Key metrics
+  h += '<div class="stat-grid">'
+  h += statBox(overdue,'Overdue Filings',overdue>0?'var(--red-lt)':'var(--green-lt)',overdue>0?'#fca5a5':'#86efac',overdue>0?'var(--red)':'var(--green)')
+  h += statBox(dueSoon,'Due This Month','#fff7ed','#fed7aa','var(--orange)')
+  h += statBox(totalCo,'Companies Monitored','var(--blue-xlt)','#93c5fd','var(--blue)')
+  h += statBox(alertsSent,'Alerts Sent','var(--purple-lt)','#ddd6fe','var(--purple)')
+  h += '</div>'
+
+  // Upcoming deadlines list
+  h += '<div class="card"><div class="card-hd"><span class="card-hd-title">Upcoming Deadlines</span><button class="chlink" onclick="showSection(\'deadlines\')">View all →</button></div><div style="padding:0 16px 4px">'
+  if (soon.length === 0) {
+    h += '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No upcoming deadlines</div>'
+  } else {
+    soon.forEach(function(dl,i){
+      var ti = TYPE_INFO[dl.type]||TYPE_INFO.accounts
+      var si = STATUS_INFO[dl.status]||STATUS_INFO.ok
+      var dl_label = daysLabel(dl.dueDate)
+      h += '<div class="dl-row" style="'+(i===soon.length-1?'border-bottom:none':'')+'" onclick="openDeadlineModal(\''+dl.id+'\')">'
+      h += '<div class="dl-icon" style="background:'+ti.bg+'">'+ti.icon+'</div>'
+      h += '<div class="dl-body"><div class="dl-title">'+esc(coName(dl.companyId))+'</div><div class="dl-sub">'+ti.label+' · '+dl.ref+'</div></div>'
+      h += '<div class="dl-right"><div class="dl-days" style="color:'+dl_label.color+'">'+dl_label.text+'</div><div class="dl-due" style="color:'+dl_label.color+'">'+fmtShort(dl.dueDate)+'</div></div>'
+      h += '</div>'
+    })
+  }
+  h += '</div></div>'
+
+  // Companies at risk
+  var atRisk = state.companies.filter(function(c){return c.status==='overdue'||c.status==='due-soon'})
+  if (atRisk.length > 0) {
+    h += '<div class="card"><div class="card-hd"><span class="card-hd-title">Companies Needing Attention</span><button class="chlink" onclick="showSection(\'companies\')">Portfolio →</button></div><div style="padding:0 16px 4px">'
+    atRisk.forEach(function(c,i){
+      var st = computeCoStatus(c.id)
+      var si = STATUS_INFO[st]||STATUS_INFO.ok
+      var nextDl = state.deadlines.filter(function(d){return d.companyId===c.id&&d.status!=='done'}).sort(function(a,b){return new Date(a.dueDate)-new Date(b.dueDate)})[0]
+      h += '<div class="dl-row" style="'+(i===atRisk.length-1?'border-bottom:none':'')+'" onclick="openCompanyModal(\''+c.id+'\')">'
+      h += '<div class="dl-icon" style="background:var(--bg);font-size:20px;font-weight:800;color:var(--navy)">'+c.name[0]+'</div>'
+      h += '<div class="dl-body"><div class="dl-title">'+esc(c.name)+'</div><div class="dl-sub">CH '+c.ch+'</div></div>'
+      h += '<div class="dl-right"><span class="badge '+si.badge+'">'+si.label+'</span>'
+      if (nextDl) { var dl_l=daysLabel(nextDl.dueDate); h+='<div class="dl-due" style="color:'+dl_l.color+';margin-top:4px">Next: '+fmtShort(nextDl.dueDate)+'</div>' }
+      h += '</div></div>'
+    })
+    h += '</div></div>'
+  }
+
+  // Quick actions
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+  h += '<button class="btn btn-primary" style="justify-content:center;padding:14px" onclick="openAddCompany()">+ Add Company</button>'
+  h += '<button class="btn" style="background:var(--orange);color:#fff;justify-content:center;padding:14px" onclick="filterDl(\'overdue\')">View Overdue</button>'
+  h += '<button class="btn btn-secondary" style="justify-content:center;padding:14px" onclick="showSection(\'alerts\')">Alert History</button>'
+  h += '<button class="btn btn-secondary" style="justify-content:center;padding:14px" onclick="showSection(\'settings\')">⚙️ Settings</button>'
+  h += '</div>'
+
+  document.getElementById('s-dashboard').innerHTML = h
+  updateTopBar()
+}
+
+function statBox(n,label,bg,border,color) {
+  return '<div class="stat-box" style="background:'+bg+';border-color:'+border+'"><div class="stat-n" style="color:'+color+'">'+n+'</div><div class="stat-l" style="color:'+color+'">'+label+'</div></div>'
+}
+
+// ── COMPANIES ─────────────────────────────────────────────────────────────────
+function renderCompanies() {
+  var search = ui.coSearch.toLowerCase().trim()
+  var compliant=0, atRisk=0, overdueCount=0
+
+  // Update computed statuses
+  state.companies.forEach(function(c){ c.status = computeCoStatus(c.id) })
+
+  var list = state.companies.filter(function(c){
+    if (!search) return true
+    return c.name.toLowerCase().includes(search)||c.ch.includes(search)||(c.sicDesc||'').toLowerCase().includes(search)
+  }).sort(function(a,b){
+    return (STATUS_ORDER[a.status]||99)-(STATUS_ORDER[b.status]||99)
+  })
+
+  state.companies.forEach(function(c){
+    if(c.status==='overdue') overdueCount++
+    else if(c.status==='due-soon'||c.status==='upcoming') atRisk++
+    else compliant++
+  })
+
+  var h = '<div class="page-hd"><h1>Portfolio</h1><p>'+state.companies.length+' companies · '+overdueCount+' overdue · '+compliant+' compliant</p></div>'
+
+  // Banner
+  h += '<div style="background:linear-gradient(135deg,var(--navy) 0%,#1a3a6c 100%);border-radius:16px;padding:18px;margin-bottom:14px;color:#fff">'
+  h += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:10px">🛡️ Companies House Portfolio</div>'
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
+  h += '<div style="text-align:center"><div style="font-size:26px;font-weight:800">'+state.companies.length+'</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.5;margin-top:2px">Monitored</div></div>'
+  h += '<div style="text-align:center"><div style="font-size:26px;font-weight:800;color:#4ade80">'+compliant+'</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.5;margin-top:2px">Compliant</div></div>'
+  h += '<div style="text-align:center"><div style="font-size:26px;font-weight:800;color:#f87171">'+(overdueCount+atRisk)+'</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.5;margin-top:2px">Attention</div></div>'
+  h += '</div></div>'
+
+  // Search
+  h += '<div class="search-wrap"><input type="search" id="cosearch" placeholder="🔍  Search companies, CH numbers, SIC codes…" value="'+esc(ui.coSearch)+'" oninput="onCoSearch(this.value)"></div>'
+
+  if (list.length === 0) {
+    h += '<div class="empty-state"><div class="es-icon">🏢</div><div class="es-title">No companies found</div><div class="es-sub">Try a different search term</div></div>'
+  } else {
+    list.forEach(function(c){
+      var st = c.status
+      var si = STATUS_INFO[st]||STATUS_INFO.ok
+      var dls = activeDls(c.id)
+      var nextDl = dls.sort(function(a,b){return new Date(a.dueDate)-new Date(b.dueDate)})[0]
+      var dl_label = nextDl ? daysLabel(nextDl.dueDate) : null
+      var overdueNum = dls.filter(function(d){return d.status==='overdue'}).length
+      h += '<div class="co-card" onclick="openCompanyModal(\''+c.id+'\')">'
+      h += '<div class="co-top">'
+      h += '<div class="co-avatar">'+c.name[0]+'</div>'
+      h += '<div style="flex:1;min-width:0">'
+      h += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><div class="co-name">'+esc(c.name)+'</div><span class="badge '+si.badge+'">'+si.label+'</span></div>'
+      h += '<div class="co-ch">CH '+c.ch+'</div>'
+      h += '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(c.sicDesc)+'</div>'
+      h += '</div></div>'
+
+      if (nextDl) {
+        var ti = TYPE_INFO[nextDl.type]||TYPE_INFO.accounts
+        h += '<div class="co-next">'+ti.icon+' <span style="font-size:12px;color:var(--muted)">Next:</span> <span style="font-weight:700;flex:1">'+ti.label+'</span> <span style="font-weight:700;color:'+dl_label.color+'">'+fmtShort(nextDl.dueDate)+'</span></div>'
+      }
+
+      h += '<div class="co-stats">'
+      h += '<div class="co-stat"><div class="co-stat-n" style="color:var(--blue)">'+dls.length+'</div><div class="co-stat-l">Active Filings</div></div>'
+      h += '<div class="co-stat"><div class="co-stat-n">'+c.contacts+'</div><div class="co-stat-l">Contacts</div></div>'
+      h += '<div class="co-stat" style="background:'+(overdueNum>0?'var(--red-lt)':'var(--green-lt)')+'"><div class="co-stat-n" style="color:'+(overdueNum>0?'var(--red)':'var(--green)')+'">'+overdueNum+'</div><div class="co-stat-l">Overdue</div></div>'
+      h += '</div>'
+      h += '<div class="co-actions">'
+      h += '<button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();filterDlByCompany(\''+c.id+'\')">View Filings</button>'
+      h += '<button class="btn btn-secondary btn-sm" style="flex:1;justify-content:center" onclick="event.stopPropagation();openAddDeadline(\''+c.id+'\')">+ Deadline</button>'
+      h += '</div></div>'
+    })
+  }
+
+  h += '<button class="btn btn-primary btn-full" style="margin-top:4px" onclick="openAddCompany()">+ Add Company</button>'
+  document.getElementById('s-companies').innerHTML = h
+
+  if (ui.coSearch) {
+    var inp = document.getElementById('cosearch')
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length) }
+  }
+}
+
+// ── DEADLINES ─────────────────────────────────────────────────────────────────
+function renderDeadlines() {
+  var search = ui.dlSearch.toLowerCase().trim()
+  var filter = ui.dlFilter
+
+  var overdueCnt   = state.deadlines.filter(function(d){return d.status==='overdue'}).length
+  var dueSoonCnt   = state.deadlines.filter(function(d){return d.status==='due-soon'}).length
+  var upcomingCnt  = state.deadlines.filter(function(d){return d.status==='upcoming'}).length
+  var doneCnt      = state.deadlines.filter(function(d){return d.status==='done'}).length
+
+  var filtered = state.deadlines.filter(function(d){
+    if (filter==='done') return d.status==='done'
+    if (filter==='accounts') return d.type==='accounts'&&d.status!=='done'
+    if (filter==='confirmation') return d.type==='confirmation'&&d.status!=='done'
+    if (filter==='director') return (d.type==='director'||d.type==='psc')&&d.status!=='done'
+    if (filter==='overdue') return d.status==='overdue'
+    if (filter!=='all' && d.status!==filter && filter!=='accounts' && filter!=='confirmation' && filter!=='director') return false
+    if (filter==='all' && d.status==='done') return false
+    var name = coName(d.companyId).toLowerCase()
+    if (search && !name.includes(search) && !((TYPE_INFO[d.type]||{}).label||'').toLowerCase().includes(search) && !d.ref.toLowerCase().includes(search)) return false
+    return true
+  }).sort(function(a,b){
+    var so = (STATUS_ORDER[a.status]||99)-(STATUS_ORDER[b.status]||99)
+    return so!==0 ? so : new Date(a.dueDate)-new Date(b.dueDate)
+  })
+
+  var active = state.deadlines.filter(function(d){return d.status!=='done'}).length
+  var h = ''
+  h += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:10px">'
+  h += '<div class="page-hd" style="margin-bottom:0"><h1>Deadlines</h1><p>'+active+' active · '+doneCnt+' filed</p></div>'
+  h += '<button class="btn btn-sm" style="background:var(--navy);color:#fff;flex-shrink:0;margin-top:4px" onclick="openAddDeadline(null)">+ Add</button>'
+  h += '</div>'
+
+  // Summary tiles
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px">'
+  h += dlTile('overdue',overdueCnt,'var(--red)','var(--red-lt)','#fca5a5','Overdue')
+  h += dlTile('due-soon',dueSoonCnt,'var(--orange)','#fff7ed','#fed7aa','Due Soon')
+  h += dlTile('upcoming',upcomingCnt,'var(--amber)','#fefce8','#fde68a','Upcoming')
+  h += dlTile('done',doneCnt,'var(--green)','var(--green-lt)','#86efac','Filed')
+  h += '</div>'
+
+  // Search
+  h += '<div class="search-wrap"><input type="search" id="dlsearch" placeholder="🔍  Search company name, filing type…" value="'+esc(ui.dlSearch)+'" oninput="onDlSearch(this.value)"></div>'
+
+  // Filter pills
+  h += '<div class="pills">'
+  h += dlPill('all','All ('+active+')')
+  h += dlPill('overdue','🔴 Overdue')
+  h += dlPill('due-soon','⚠ Due Soon')
+  h += dlPill('accounts','📋 Accounts')
+  h += dlPill('confirmation','✅ Conf. Statement')
+  h += dlPill('director','👤 Director/PSC')
+  h += dlPill('done','✓ Filed')
+  h += '</div>'
+
+  if (filtered.length === 0) {
+    h += '<div class="empty-state"><div class="es-icon">📅</div><div class="es-title">No deadlines found</div><div class="es-sub">Try a different filter</div></div>'
+  } else {
+    filtered.forEach(function(dl){
+      var ti = TYPE_INFO[dl.type]||TYPE_INFO.accounts
+      var si = STATUS_INFO[dl.status]||STATUS_INFO.ok
+      var dl_label = daysLabel(dl.dueDate)
+      h += '<div class="fc" style="border-left-color:'+si.border+(dl.status==='done'?';opacity:.65':'')+';" onclick="openDeadlineModal(\''+dl.id+'\')">'
+      h += '<div class="fc-body">'
+      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:16px">'+ti.icon+'</span><div class="fc-title">'+ti.label+'</div></div>'
+      h += '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">'+esc(coName(dl.companyId))+'</div>'
+      h += '<div class="fc-meta"><span class="badge b-gray">'+dl.ref+'</span><span class="badge '+si.badge+'">'+si.label+'</span></div>'
+      h += '</div>'
+      h += '<div class="fc-right">'
+      h += '<div class="fc-days" style="color:'+dl_label.color+'">'+dl_label.text+'</div>'
+      h += '<div class="fc-date">'+fmtShort(dl.dueDate)+'</div>'
+      if (dl.status==='done'&&dl.filedAt) h += '<div style="font-size:10px;color:var(--green);font-weight:600;margin-top:2px">Filed ✓</div>'
+      h += '</div></div>'
+    })
+  }
+
+  document.getElementById('s-deadlines').innerHTML = h
+  if (ui.dlSearch) {
+    var inp = document.getElementById('dlsearch')
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length) }
+  }
+}
+
+function dlTile(f,n,color,bg,border,label) {
+  var active = ui.dlFilter===f
+  return '<div onclick="setDlFilter(\''+f+'\')" style="background:'+bg+';border:'+(active?'2px solid var(--navy)':'1px solid '+border)+';border-radius:12px;padding:10px;text-align:center;cursor:pointer">'
+    +'<div style="font-size:20px;font-weight:800;color:'+color+'">'+n+'</div>'
+    +'<div style="font-size:10px;font-weight:600;color:'+color+';margin-top:2px">'+label+'</div>'
+    +'</div>'
+}
+function dlPill(f,label) { return '<button class="pill'+(ui.dlFilter===f?' active':'')+'" onclick="setDlFilter(\''+f+'\')">'+label+'</button>' }
+
+// ── ALERTS ────────────────────────────────────────────────────────────────────
+function renderAlerts() {
+  var filter = ui.alFilter
+  var sentCnt   = state.alerts.filter(function(a){return a.status==='sent'}).length
+  var failedCnt = state.alerts.filter(function(a){return a.status==='failed'}).length
+  var filtered  = state.alerts.filter(function(a){
+    if (filter==='sent') return a.status==='sent'
+    if (filter==='failed') return a.status==='failed'
+    if (filter==='email') return a.channel==='email'
+    if (filter==='sms') return a.channel==='sms'
+    return true
+  }).sort(function(a,b){return new Date(b.sentAt)-new Date(a.sentAt)})
+
+  var h = '<div class="page-hd"><h1>Alert History</h1><p>'+sentCnt+' sent · '+failedCnt+' failed</p></div>'
+
+  // Summary
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'
+  h += '<div style="background:var(--green-lt);border:1px solid #86efac;border-radius:14px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--green)">'+sentCnt+'</div><div style="font-size:11px;font-weight:600;color:var(--green);margin-top:2px">Sent</div></div>'
+  h += '<div style="background:var(--red-lt);border:1px solid #fca5a5;border-radius:14px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--red)">'+failedCnt+'</div><div style="font-size:11px;font-weight:600;color:var(--red);margin-top:2px">Failed</div></div>'
+  h += '<div style="background:var(--blue-xlt);border:1px solid #93c5fd;border-radius:14px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--blue)">'+state.alerts.length+'</div><div style="font-size:11px;font-weight:600;color:var(--blue);margin-top:2px">Total</div></div>'
+  h += '</div>'
+
+  // Filter pills
+  h += '<div class="pills">'
+  h += alPill('all','All')
+  h += alPill('sent','✓ Sent')
+  h += alPill('failed','✗ Failed')
+  h += alPill('email','✉️ Email')
+  h += alPill('sms','💬 SMS')
+  h += '</div>'
+
+  h += '<div class="card">'
+  if (filtered.length === 0) {
+    h += '<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">No alerts in this filter</div>'
+  } else {
+    filtered.forEach(function(al){
+      var isSent = al.status==='sent'
+      var chIcon = CHANNEL_ICON[al.channel]||'📡'
+      var typeLabel = ALERT_TYPE_LABEL[al.type]||al.type
+      h += '<div class="al-row">'
+      h += '<div class="al-dot" style="background:'+(isSent?'var(--green)':'var(--red)')+'"></div>'
+      h += '<div class="al-icon" style="background:'+(isSent?'var(--green-lt)':'var(--red-lt)')+'">'+chIcon+'</div>'
+      h += '<div class="al-body">'
+      h += '<div class="al-title">'+esc(coName(al.companyId))+'</div>'
+      h += '<div style="font-size:12px;color:var(--muted);margin-top:1px">'+esc(al.subject)+'</div>'
+      h += '<div class="al-meta">'+fmtDateTime(al.sentAt)+' · '+typeLabel+' · <span class="badge '+(isSent?'b-green':'b-red')+'">'+esc(al.status)+'</span></div>'
+      h += '<div style="font-size:11px;color:var(--muted);margin-top:3px">To: '+esc(al.recipient)+'</div>'
+      h += '</div></div>'
+    })
+  }
+  h += '</div>'
+  document.getElementById('s-alerts').innerHTML = h
+}
+function alPill(f,label) { return '<button class="pill'+(ui.alFilter===f?' active':'')+'" onclick="setAlFilter(\''+f+'\')">'+label+'</button>' }
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function renderSettings() {
+  var s = state.settings
+  var h = '<div class="page-hd"><h1>Settings</h1><p>Alert preferences &amp; recipients</p></div>'
+
+  // Alert schedule
+  h += '<div class="card card-pad" style="margin-bottom:12px">'
+  h += '<div class="card-hd" style="margin:-16px -16px 14px;border-radius:0"><span class="card-hd-title">Alert Schedule</span></div>'
+  h += '<p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">FineGuard sends alerts at these intervals before each deadline:</p>'
+  h += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'
+  ;[90,60,30,14,7,1].forEach(function(n){
+    var active = s.alertDays.includes(n)
+    h += '<button onclick="toggleAlertDay('+n+')" style="padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;border:2px solid '+(active?'var(--blue)':'var(--border)')+';background:'+(active?'var(--blue)':'#fff')+';color:'+(active?'#fff':'var(--muted)')+';cursor:pointer">'+n+' days</button>'
+  })
+  h += '</div>'
+  h += '<div style="font-size:12px;color:var(--muted)">Overdue notices repeat every <strong>'+s.overdueRepeat+' days</strong></div>'
+  h += '</div>'
+
+  // Channels
+  h += '<div class="card card-pad" style="margin-bottom:12px">'
+  h += '<div class="card-hd" style="margin:-16px -16px 14px;border-radius:0"><span class="card-hd-title">Alert Channels</span></div>'
+  ;[['email','✉️ Email'],['sms','💬 SMS'],['whatsapp','📱 WhatsApp']].forEach(function(ch){
+    h += '<div class="toggle-row"><div><div style="font-size:14px;font-weight:600">'+ch[1]+'</div><div style="font-size:12px;color:var(--muted)">'+( ch[0]==='email'?'Deadline reminders by email':ch[0]==='sms'?'Text message alerts':' Coming soon')+'</div></div>'
+    h += '<label class="toggle"><input type="checkbox" '+(s.channels[ch[0]]?'checked':'')+' onchange="toggleChannel(\''+ch[0]+'\')"><span class="slider"></span></label></div>'
+  })
+  h += '</div>'
+
+  // Recipients
+  h += '<div class="card" style="margin-bottom:12px">'
+  h += '<div class="card-hd"><span class="card-hd-title">Alert Recipients</span><button class="chlink" onclick="openAddRecipient()">+ Add</button></div>'
+  h += '<div style="padding:0 16px 4px">'
+  if (state.recipients.length === 0) {
+    h += '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No recipients configured</div>'
+  } else {
+    state.recipients.forEach(function(r){
+      h += '<div class="rc-row">'
+      h += '<div class="rc-av">'+r.name[0]+'</div>'
+      h += '<div class="rc-body"><div class="rc-name">'+esc(r.name)+(r.companyId==='all'?' <span class="badge b-navy" style="font-size:9px;padding:1px 6px">All companies</span>':'')+'</div>'
+      h += '<div class="rc-detail">'+(r.email?'✉️ '+esc(r.email):'')+''+(r.phone?' · 💬 '+esc(r.phone):'')+'</div>'
+      h += '<div style="display:flex;gap:4px;margin-top:4px">'+r.channels.map(function(ch){return '<span class="badge b-gray">'+CHANNEL_ICON[ch]+' '+ch+'</span>'}).join('')+'</div>'
+      h += '</div>'
+      h += '<button style="border:none;background:none;font-size:18px;color:var(--muted);padding:4px 6px;cursor:pointer;flex-shrink:0" onclick="deleteRecipient(\''+r.id+'\')">×</button>'
+      h += '</div>'
+    })
+  }
+  h += '</div></div>'
+
+  // Account
+  h += '<div class="card card-pad" style="margin-bottom:12px">'
+  h += '<div class="card-hd" style="margin:-16px -16px 14px;border-radius:0"><span class="card-hd-title">Account</span></div>'
+  h += settingsRow('Plan','Pro — 8 companies monitored')
+  h += settingsRow('Billing','£'+state.companies.length+'/mo (£1 per company monitored)')
+  h += settingsRow('Email','george@firm.co.uk')
+  h += '</div>'
+
+  h += '<button class="btn btn-danger btn-full" style="margin-top:4px" onclick="if(confirm(\'Reset demo data?\'))resetData()">↺ Reset Demo Data</button>'
+
+  document.getElementById('s-settings').innerHTML = h
+}
+
+function settingsRow(k,v) {
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:600;color:var(--muted)">'+k+'</span><span style="font-size:13px;font-weight:600">'+v+'</span></div>'
+}
+
+function toggleAlertDay(n) {
+  var idx = state.settings.alertDays.indexOf(n)
+  if (idx>=0) state.settings.alertDays.splice(idx,1); else state.settings.alertDays.push(n)
+  saveState(); renderSettings()
+}
+function toggleChannel(ch) {
+  state.settings.channels[ch] = !state.settings.channels[ch]
+  saveState(); renderSettings()
+}
+
+// ── Deadline modal ────────────────────────────────────────────────────────────
+function openDeadlineModal(id) {
+  var dl = state.deadlines.find(function(d){return d.id===id})
+  if (!dl) return
+  var ti = TYPE_INFO[dl.type]||TYPE_INFO.accounts
+  var si = STATUS_INFO[dl.status]||STATUS_INFO.ok
+  var dl_label = daysLabel(dl.dueDate)
+  var isDone = dl.status==='done'
+  var cName = coName(dl.companyId)
+  var co = state.companies.find(function(c){return c.id===dl.companyId})
+
+  var relatedAlerts = state.alerts.filter(function(a){return a.deadlineId===id})
+
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>'+ti.icon+' '+ti.label+'</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="badge '+si.badge+'">'+si.label+'</span><span class="badge b-gray">'+dl.ref+'</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+    +infoBox('Company','<span style="font-weight:700">'+esc(cName)+'</span>'+(co?'<br><span style="font-size:11px;font-family:monospace;color:var(--muted)">CH '+co.ch+'</span>':''))
+    +infoBox('Due Date','<span style="font-size:16px;font-weight:800;color:'+dl_label.color+'">'+dl_label.text+'</span><br>'+fmtDate(dl.dueDate))
+    +(dl.notes?infoBox('Notes',esc(dl.notes)):'')
+    +(isDone&&dl.filedAt?infoBox('Filed On','<span style="color:var(--green);font-weight:700">'+fmtDate(dl.filedAt)+' ✓</span>'):'')
+    +'</div>'
+    +(relatedAlerts.length>0?'<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Alerts Sent ('+relatedAlerts.length+')</div>'
+      +relatedAlerts.map(function(a){return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+CHANNEL_ICON[a.channel]+' <span style="font-size:12px;flex:1">'+esc(a.recipient)+'</span><span class="badge '+(a.status==='sent'?'b-green':'b-red')+'">'+a.status+'</span><span style="font-size:11px;color:var(--muted)">'+fmtShort(a.sentAt)+'</span></div>'}).join('')+'</div>':'')
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +(!isDone?'<button class="btn btn-green" onclick="this.closest(\'.modal-bg\').remove();markFiled(\''+id+'\')">✅ Mark as Filed</button>':'')
+    +'<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove();sendTestAlert(\''+id+'\')">📧 Send Alert Now</button>'
+    +'<button class="btn btn-secondary" style="color:var(--red)" onclick="this.closest(\'.modal-bg\').remove();deleteDeadline(\''+id+'\')">🗑 Delete</button>'
+    +'<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Close</button>'
+    +'</div>'
+  document.body.appendChild(m)
+}
+
+// ── Company modal ─────────────────────────────────────────────────────────────
+function openCompanyModal(id) {
+  var co = state.companies.find(function(c){return c.id===id})
+  if (!co) return
+  var st = computeCoStatus(id)
+  var si = STATUS_INFO[st]||STATUS_INFO.ok
+  var dls = activeDls(id).sort(function(a,b){return new Date(a.dueDate)-new Date(b.dueDate)})
+  var overdueNum = dls.filter(function(d){return d.status==='overdue'}).length
+  var incDate = co.incorporated ? new Date(co.incorporated).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'
+
+  var dlRows = dls.map(function(d){
+    var ti=TYPE_INFO[d.type]||TYPE_INFO.accounts
+    var si2=STATUS_INFO[d.status]||STATUS_INFO.ok
+    var dl_l=daysLabel(d.dueDate)
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="document.querySelector(\'.modal-bg\').remove();openDeadlineModal(\''+d.id+'\')">'
+      +ti.icon+' <span style="font-size:13px;flex:1">'+ti.label+'</span>'
+      +'<span style="font-size:12px;font-weight:700;color:'+dl_l.color+'">'+dl_l.text+'</span>'
+      +'<span class="badge '+si2.badge+'">'+si2.label+'</span>'
+      +'</div>'
+  }).join('')
+
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>'+esc(co.name)+'</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+    +'<div style="width:52px;height:52px;border-radius:14px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;flex-shrink:0">'+co.name[0]+'</div>'
+    +'<div><div style="font-size:16px;font-weight:800">'+esc(co.name)+'</div>'
+    +'<div style="font-size:12px;font-family:monospace;color:var(--muted)">CH '+co.ch+'</div>'
+    +'<span class="badge '+si.badge+'" style="margin-top:5px;display:inline-flex">'+si.label+'</span>'
+    +'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +infoBox('Incorporated',incDate)
+    +infoBox('SIC Code','<span style="font-weight:700">'+co.sic+'</span><br><span style="font-size:11px;color:var(--muted)">'+esc(co.sicDesc)+'</span>')
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
+    +'<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--blue)">'+dls.length+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Active</div></div>'
+    +'<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800">'+co.contacts+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Contacts</div></div>'
+    +'<div style="background:'+(overdueNum>0?'var(--red-lt)':'var(--green-lt)')+';border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:'+(overdueNum>0?'var(--red)':'var(--green)')+'">'+overdueNum+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Overdue</div></div>'
+    +'</div>'
+    +(dls.length>0?'<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Active Filings</div>'+dlRows+'</div>':'')
+    +(co.notes?'<p style="font-size:13px;color:var(--muted);margin-bottom:14px">'+esc(co.notes)+'</p>':'')
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn btn-primary" onclick="this.closest(\'.modal-bg\').remove();filterDlByCompany(\''+id+'\')">View Deadlines</button>'
+    +'<button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove();openAddDeadline(\''+id+'\')">+ Add Deadline</button>'
+    +'<button class="btn btn-secondary" style="color:var(--red)" onclick="this.closest(\'.modal-bg\').remove();deleteCompany(\''+id+'\')">Remove</button>'
+    +'</div>'
+  document.body.appendChild(m)
+}
+
+// ── Add Company modal ─────────────────────────────────────────────────────────
+function openAddCompany() {
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>Add Company</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +'<div style="background:var(--blue-xlt);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--blue)">💡 Enter the Companies House number to automatically track deadlines</div>'
+    +fg('Company Name *','<input id="ac-name" placeholder="e.g. Acme Ltd" autocomplete="off">')
+    +fg('Companies House Number *','<input id="ac-ch" placeholder="e.g. 12345678" maxlength="8" autocomplete="off" style="font-family:monospace">')
+    +fg('SIC Code','<input id="ac-sic" placeholder="e.g. 62020">')
+    +fg('Business Activity','<input id="ac-sicd" placeholder="e.g. IT consultancy activities">')
+    +fg('Incorporated Date','<input id="ac-inc" type="date">')
+    +fg('Notes','<textarea id="ac-notes" placeholder="Internal notes…"></textarea>')
+    +'<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="submitCompany()">Add Company</button><button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>'
+  document.body.appendChild(m)
+  setTimeout(function(){ var i=document.getElementById('ac-name'); if(i)i.focus() },50)
+}
+
+function submitCompany() {
+  var name = (document.getElementById('ac-name')||{}).value||''
+  var ch = (document.getElementById('ac-ch')||{}).value||''
+  if (!name.trim()) { toast('Company name is required'); return }
+  if (!ch.trim()) { toast('CH number is required'); return }
+  var sic = (document.getElementById('ac-sic')||{}).value||''
+  var sicd = (document.getElementById('ac-sicd')||{}).value||''
+  var inc = (document.getElementById('ac-inc')||{}).value||''
+  var notes = (document.getElementById('ac-notes')||{}).value||''
+  var newCo = {id:uid(),name:name.trim(),ch:ch.trim(),sic:sic.trim(),sicDesc:sicd.trim(),incorporated:inc,status:'compliant',contacts:0,notes:notes.trim()}
+  state.companies.push(newCo)
+  saveState()
+  document.querySelector('.modal-bg').remove()
+  toast('Company added — now add its filing deadlines')
+  renderCompanies(); renderDashboard(); updateTopBar()
+  setTimeout(function(){ openAddDeadline(newCo.id) }, 400)
+}
+
+// ── Add Deadline modal ────────────────────────────────────────────────────────
+function openAddDeadline(coId) {
+  var opts = state.companies.map(function(c){return '<option value="'+c.id+'"'+(coId===c.id?' selected':'')+'>'+esc(c.name)+'</option>'}).join('')
+  var refMap = {accounts:'AA',confirmation:'CS01',director:'AP01',psc:'PSC04','reg-office':'AD01'}
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>Add Deadline</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +fg('Company','<select id="ad-co">'+opts+'</select>')
+    +fg('Filing Type','<select id="ad-type" onchange="updateRef(this)"><option value="accounts">📋 Annual Accounts</option><option value="confirmation">✅ Confirmation Statement</option><option value="director">👤 Director Change</option><option value="psc">🔑 PSC Change</option><option value="reg-office">📍 Registered Office</option></select>')
+    +fg('CH Reference','<input id="ad-ref" placeholder="e.g. AA" value="AA" style="font-family:monospace">')
+    +fg('Due Date *','<input id="ad-due" type="date">')
+    +fg('Notes','<textarea id="ad-notes" placeholder="e.g. FY ended 31 Mar 2025, director appointed 01 Jun 2026…"></textarea>')
+    +'<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="submitDeadline()">Add Deadline</button><button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>'
+  document.body.appendChild(m)
+  setTimeout(function(){ var i=document.getElementById('ad-due'); if(i)i.focus() },50)
+}
+
+function updateRef(sel) {
+  var refMap = {accounts:'AA',confirmation:'CS01',director:'AP01',psc:'PSC04','reg-office':'AD01'}
+  var inp = document.getElementById('ad-ref')
+  if (inp) inp.value = refMap[sel.value]||''
+}
+
+function submitDeadline() {
+  var coId = (document.getElementById('ad-co')||{}).value||''
+  var type = (document.getElementById('ad-type')||{}).value||'accounts'
+  var due = (document.getElementById('ad-due')||{}).value||''
+  if (!due) { toast('Due date is required'); return }
+  var ref = (document.getElementById('ad-ref')||{}).value||''
+  var notes = (document.getElementById('ad-notes')||{}).value||''
+  var n = daysUntil(due)
+  var status = n<0?'overdue':n<=30?'due-soon':n<=90?'upcoming':'ok'
+  state.deadlines.push({id:uid(),companyId:coId,type:type,dueDate:due,status:status,filedAt:null,ref:ref.trim()||type,notes:notes.trim()})
+  saveState()
+  document.querySelector('.modal-bg').remove()
+  toast('Deadline added')
+  renderDeadlines(); renderDashboard(); renderCompanies(); updateTopBar()
+}
+
+// ── Add Recipient modal ───────────────────────────────────────────────────────
+function openAddRecipient() {
+  var opts = '<option value="all">All companies</option>'+state.companies.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>'}).join('')
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>Add Recipient</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +fg('Name *','<input id="nr-name" placeholder="Contact name" autocomplete="off">')
+    +fg('Email','<input id="nr-email" type="email" placeholder="name@company.co.uk">')
+    +fg('Mobile (for SMS)','<input id="nr-phone" type="tel" placeholder="+44 7700 900000">')
+    +fg('Company','<select id="nr-co">'+opts+'</select>')
+    +'<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="submitRecipient()">Add Recipient</button><button class="btn btn-secondary" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>'
+  document.body.appendChild(m)
+  setTimeout(function(){ var i=document.getElementById('nr-name'); if(i)i.focus() },50)
+}
+
+function submitRecipient() {
+  var name = (document.getElementById('nr-name')||{}).value||''
+  if (!name.trim()) { toast('Name is required'); return }
+  var email = (document.getElementById('nr-email')||{}).value||''
+  var phone = (document.getElementById('nr-phone')||{}).value||''
+  var coId = (document.getElementById('nr-co')||{}).value||'all'
+  var channels = []
+  if (email) channels.push('email')
+  if (phone) channels.push('sms')
+  if (!channels.length) channels.push('email')
+  state.recipients.push({id:uid(),companyId:coId,name:name.trim(),email:email.trim(),phone:phone.trim(),channels})
+  saveState(); document.querySelector('.modal-bg').remove(); toast('Recipient added'); renderSettings()
+}
+
+// ── Settings modal ────────────────────────────────────────────────────────────
+function openSettings() {
+  var m = mkModal()
+  m.querySelector('.modal').innerHTML =
+    '<div class="modal-hd"><h3>Account</h3><button class="modal-close" onclick="this.closest(\'.modal-bg\').remove()">×</button></div>'
+    +'<div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg);border-radius:12px;margin-bottom:16px">'
+    +'<div style="width:52px;height:52px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800">G</div>'
+    +'<div><div style="font-size:16px;font-weight:700">George</div><div style="font-size:12px;color:var(--muted)">Compliance Manager · Pro Plan</div><div style="font-size:12px;color:var(--blue);margin-top:2px">george@firm.co.uk</div></div>'
+    +'</div>'
+    +'<div style="background:var(--blue-xlt);border-radius:12px;padding:14px;margin-bottom:16px;text-align:center">'
+    +'<div style="font-size:22px;font-weight:800;color:var(--blue)">£'+state.companies.length+'<span style="font-size:14px;font-weight:600">/mo</span></div>'
+    +'<div style="font-size:12px;color:var(--blue);margin-top:4px">'+state.companies.length+' companies × £1 per company</div>'
+    +'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">'
+    +setRow('⚙️','Full Settings',"this.closest('.modal-bg').remove();showSection('settings')")
+    +setRow('📊','Export Data','exportData()')
+    +setRow('↺','Reset Demo Data',"this.closest('.modal-bg').remove();if(confirm('Reset all data?'))resetData()",'var(--red)')
+    +'</div>'
+    +'<button class="btn btn-danger btn-full" onclick="this.closest(\'.modal-bg\').remove();toast(\'Signed out — prototype only\')">Sign Out</button>'
+  document.body.appendChild(m)
+}
+function setRow(icon,label,action,color){
+  return '<div onclick="'+action+'" style="padding:14px;background:#fff;border:1px solid var(--border);border-radius:12px;font-size:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center"><span style="'+(color?'color:'+color:'')+'">'+icon+' '+label+'</span><span style="color:var(--muted)">›</span></div>'
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function markFiled(id) {
+  var dl = state.deadlines.find(function(d){return d.id===id})
+  if (dl) { dl.status='done'; dl.filedAt=new Date().toISOString(); saveState() }
+  state.companies.forEach(function(c){ c.status=computeCoStatus(c.id) })
+  saveState(); toast('Marked as filed ✅')
+  renderDeadlines(); renderDashboard(); renderCompanies(); updateTopBar()
+}
+
+function deleteDeadline(id) {
+  if (!confirm('Delete this deadline?')) return
+  state.deadlines = state.deadlines.filter(function(d){return d.id!==id})
+  saveState(); toast('Deadline deleted')
+  renderDeadlines(); renderDashboard(); renderCompanies(); updateTopBar()
+}
+
+function deleteCompany(id) {
+  if (!confirm('Remove this company and all its deadlines?')) return
+  state.companies = state.companies.filter(function(c){return c.id!==id})
+  state.deadlines = state.deadlines.filter(function(d){return d.companyId!==id})
+  state.alerts = state.alerts.filter(function(a){return a.companyId!==id})
+  saveState(); toast('Company removed')
+  renderCompanies(); renderDashboard(); updateTopBar()
+}
+
+function deleteRecipient(id) {
+  if (!confirm('Remove this recipient?')) return
+  state.recipients = state.recipients.filter(function(r){return r.id!==id})
+  saveState(); renderSettings(); toast('Recipient removed')
+}
+
+function sendTestAlert(dlId) {
+  var dl = state.deadlines.find(function(d){return d.id===dlId})
+  if (!dl) return
+  var ti = TYPE_INFO[dl.type]||TYPE_INFO.accounts
+  var newAlert = {id:uid(),companyId:dl.companyId,deadlineId:dlId,type:'manual',channel:'email',status:'sent',recipient:'george@firm.co.uk',sentAt:new Date().toISOString(),subject:'Manual alert: '+ti.label+' — '+coName(dl.companyId)}
+  state.alerts.unshift(newAlert)
+  saveState(); toast('Alert sent to george@firm.co.uk')
+}
+
+function exportData() {
+  var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'})
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='fineguard-export.json'; a.click()
+  toast('Data exported')
+}
+
+function resetData() {
+  localStorage.removeItem('fgpro'); state=clone(DEFAULT)
+  ui.dlFilter='all'; ui.dlSearch=''; ui.alFilter='all'; ui.coSearch=''
+  renderAll(); toast('Demo data restored')
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+function setDlFilter(f) { ui.dlFilter=f; ui.dlSearch=''; renderDeadlines() }
+function onDlSearch(v) { ui.dlSearch=v; ui.dlFilter='all'; renderDeadlines() }
+function setAlFilter(f) { ui.alFilter=f; renderAlerts() }
+function onCoSearch(v) { ui.coSearch=v; renderCompanies() }
+function filterDl(f) { ui.dlFilter=f; ui.dlSearch=''; showSection('deadlines') }
+function filterDlByCompany(coId) {
+  ui.dlSearch = coName(coId)
+  ui.dlFilter = 'all'
+  showSection('deadlines')
+}
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
+function mkModal() {
+  var bg=document.createElement('div'); bg.className='modal-bg'
+  bg.innerHTML='<div class="modal"></div>'
+  bg.addEventListener('click',function(e){if(e.target===bg)bg.remove()})
+  return bg
+}
+function infoBox(label,val) {
+  return '<div style="background:var(--bg);border-radius:10px;padding:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">'+label+'</div><div style="font-size:13px;line-height:1.4">'+val+'</div></div>'
+}
+function fg(label,input) { return '<div class="form-group"><label>'+label+'</label>'+input+'</div>' }
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+function renderAll() {
+  try {
+    renderDashboard(); renderCompanies(); renderDeadlines(); renderAlerts(); renderSettings(); updateTopBar()
+  } catch(e) {
+    var el = document.getElementById('s-dashboard')
+    if (el) el.innerHTML = '<div style="padding:24px;color:#dc2626;font-size:13px;background:#fee2e2;border-radius:12px;margin:12px">⚠ Load error: '+e.message+'<br><small style="opacity:.7">Open in Chrome or Safari browser</small></div>'
+  }
+}
+renderAll()
+</script>
+</body>
+</html>
