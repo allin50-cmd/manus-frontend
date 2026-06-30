@@ -53,4 +53,13 @@ export function getDb(): DrizzleDb {
 }
 
 // Re-export Drizzle schema tables needed by /api/os/ routes
-export { osMessageThreads } from '../db/schema'
+export {
+  osMessageThreads,
+  osPeople,
+  osTasks,
+  osCallLogs,
+  osMessages,
+  osQuotes,
+  osInvoices,
+  osDocuments,
+} from '../db/schema'

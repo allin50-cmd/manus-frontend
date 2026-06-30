@@ -185,9 +185,108 @@ export const osMessageThreads = pgTable('os_message_threads', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+export const osPeople = pgTable('os_people', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyId: text('company_id').notNull(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  email: varchar('email', { length: 255 }),
+  phone: varchar('phone', { length: 20 }),
+  title: text('title'),
+  department: text('department'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osTasks = pgTable('os_tasks', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyId: text('company_id').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  status: text('status').notNull().default('Open'),
+  priority: priority('priority').notNull().default('Medium'),
+  assignedTo: text('assigned_to'),
+  dueDate: timestamp('due_date'),
+  createdBy: text('created_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osCallLogs = pgTable('os_call_logs', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyId: text('company_id').notNull(),
+  personId: text('person_id').references(() => osPeople.id, { onDelete: 'set null' }),
+  direction: text('direction').notNull(),
+  duration: integer('duration'),
+  transcript: text('transcript'),
+  notes: text('notes'),
+  recordedAt: timestamp('recorded_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const osMessages = pgTable('os_messages', {
+  id: text('id').primaryKey().$defaultFn(id),
+  threadId: text('thread_id').notNull().references(() => osMessageThreads.id, { onDelete: 'cascade' }),
+  fromPerson: text('from_person').notNull(),
+  body: text('body').notNull(),
+  attachments: jsonb('attachments').$type<string[]>().default([]),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const osQuotes = pgTable('os_quotes', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyId: text('company_id').notNull(),
+  quoteNumber: varchar('quote_number', { length: 50 }).notNull(),
+  amount: integer('amount').notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+  status: text('status').notNull().default('Draft'),
+  issueDate: timestamp('issue_date').notNull(),
+  expiryDate: timestamp('expiry_date'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osInvoices = pgTable('os_invoices', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyId: text('company_id').notNull(),
+  invoiceNumber: varchar('invoice_number', { length: 50 }).notNull(),
+  amount: integer('amount').notNull(),
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+  status: text('status').notNull().default('Draft'),
+  issueDate: timestamp('issue_date').notNull(),
+  dueDate: timestamp('due_date'),
+  paidAt: timestamp('paid_at'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osDocuments = pgTable('os_documents', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyId: text('company_id').notNull(),
+  fileName: text('file_name').notNull(),
+  fileType: varchar('file_type', { length: 50 }).notNull(),
+  fileSize: integer('file_size'),
+  storageUrl: text('storage_url').notNull(),
+  category: text('category'),
+  tags: jsonb('tags').$type<string[]>().default([]),
+  uploadedBy: text('uploaded_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
 export type WorkItem = typeof workItems.$inferSelect
 export type Action = typeof actions.$inferSelect
 export type ActivityLog = typeof activityLogs.$inferSelect
 export type Decision = typeof decisions.$inferSelect
 export type Template = typeof templates.$inferSelect
 export type OsMessageThread = typeof osMessageThreads.$inferSelect
+export type OsPerson = typeof osPeople.$inferSelect
+export type OsTask = typeof osTasks.$inferSelect
+export type OsCallLog = typeof osCallLogs.$inferSelect
+export type OsMessage = typeof osMessages.$inferSelect
+export type OsQuote = typeof osQuotes.$inferSelect
+export type OsInvoice = typeof osInvoices.$inferSelect
+export type OsDocument = typeof osDocuments.$inferSelect
