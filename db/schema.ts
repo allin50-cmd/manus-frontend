@@ -185,6 +185,89 @@ export const osMessageThreads = pgTable('os_message_threads', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+// FineGuard workflow tables
+export const fgCompanySnapshots = pgTable('fg_company_snapshots', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  rawData: jsonb('raw_data').notNull(),
+  companyName: varchar('company_name', { length: 255 }),
+  companyStatus: varchar('company_status', { length: 50 }),
+  accountsNextDue: date('accounts_next_due'),
+  confirmationStatementNextDue: date('confirmation_statement_next_due'),
+  lastAccountsMadeUpTo: date('last_accounts_made_up_to'),
+  lastConfirmationStatementDate: date('last_confirmation_statement_date'),
+  fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
+})
+
+export const fgAlerts = pgTable('fg_alerts', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  alertType: varchar('alert_type', { length: 50 }).notNull(),
+  dueDate: date('due_date').notNull(),
+  reminderDate: date('reminder_date').notNull(),
+  daysBefore: integer('days_before').notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  processedAt: timestamp('processed_at'),
+})
+
+export const fgReminderEvents = pgTable('fg_reminder_events', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  alertId: uuid('alert_id').references(() => fgAlerts.id, { onDelete: 'cascade' }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  detail: text('detail'),
+  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+})
+
+export const fgMessageLogs = pgTable('fg_message_logs', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  channel: varchar('channel', { length: 20 }).notNull().default('email'),
+  recipient: varchar('recipient', { length: 255 }),
+  subject: varchar('subject', { length: 500 }),
+  body: text('body'),
+  status: varchar('status', { length: 20 }).notNull().default('logged'),
+  sentAt: timestamp('sent_at').notNull().defaultNow(),
+})
+
+export const fgActivityLog = pgTable('fg_activity_log', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  entityType: varchar('entity_type', { length: 50 }),
+  entityId: varchar('entity_id', { length: 255 }),
+  action: varchar('action', { length: 100 }).notNull(),
+  detail: jsonb('detail'),
+  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+})
+
+// UltraCore tracking
+export const utActivityEvents = pgTable('ut_activity_events', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  workItemId: text('work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  userId: text('user_id'),
+  companyId: text('company_id'),
+  source: varchar('source', { length: 50 }),
+  notes: text('notes'),
+  metadata: jsonb('metadata'),
+  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+})
+
+// Monitored companies registry
+export const monitoredCompanies = pgTable('monitored_companies', {
+  id: text('id').primaryKey(),
+  companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  lastProcessedAt: timestamp('last_processed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
 export type WorkItem = typeof workItems.$inferSelect
 export type Action = typeof actions.$inferSelect
 export type ActivityLog = typeof activityLogs.$inferSelect
