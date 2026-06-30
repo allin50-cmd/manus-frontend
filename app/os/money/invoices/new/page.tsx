@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const STATUSES = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled']
+const CURRENCIES = ['USD', 'GBP', 'EUR']
 
 function generateInvoiceNumber(): string {
   const now = new Date()
@@ -14,26 +15,22 @@ function generateInvoiceNumber(): string {
   return `INV-${y}${m}${d}-${rand}`
 }
 
-function parsePence(val: string): number {
-  const n = parseFloat(val.replace(/[^0-9.]/g, ''))
-  return isNaN(n) ? 0 : Math.round(n * 100)
-}
-
 export default function NewInvoicePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('companyId')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
-    clientName: '',
-    clientEmail: '',
-    description: '',
+    invoiceNumber: generateInvoiceNumber(),
     amount: '',
+    currency: 'USD',
     status: 'Sent',
-    dueAt: '',
-    linkedWorkItemId: '',
+    issueDate: new Date().toISOString().split('T')[0],
+    dueDate: '',
     notes: '',
-    number: generateInvoiceNumber(),
   })
 
   function set(field: string, value: string) {
@@ -42,29 +39,33 @@ export default function NewInvoicePage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!companyId) {
+      setError('Company context is required')
+      return
+    }
+
     setError('')
     setLoading(true)
     try {
-      const amountPence = parsePence(form.amount)
+      const amount = parseFloat(form.amount)
 
       const res = await fetch('/api/os/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientName: form.clientName,
-          clientEmail: form.clientEmail || undefined,
-          description: form.description || undefined,
-          amountPence,
+          companyId,
+          invoiceNumber: form.invoiceNumber,
+          amount,
+          currency: form.currency,
           status: form.status,
-          dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
-          linkedWorkItemId: form.linkedWorkItemId || undefined,
+          issueDate: form.issueDate,
+          dueDate: form.dueDate || undefined,
           notes: form.notes || undefined,
-          number: form.number,
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        router.push('/os/money')
+        router.push(`/os/money/invoices?companyId=${companyId}`)
       } else {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'Failed to create invoice')
@@ -74,6 +75,17 @@ export default function NewInvoicePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!companyId) {
+    return (
+      <div className="max-w-lg space-y-6">
+        <h1 className="text-xl font-bold text-slate-900">Create Invoice</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+          <p>Please access this form from a workspace context with a company ID.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -89,45 +101,15 @@ export default function NewInvoicePage() {
         <Field label="Invoice Number *">
           <input
             required
-            value={form.number}
-            onChange={(e) => set('number', e.target.value)}
+            value={form.invoiceNumber}
+            onChange={(e) => set('invoiceNumber', e.target.value)}
             placeholder="Auto-generated"
             className={inputClass}
           />
         </Field>
 
-        <Field label="Client Name *">
-          <input
-            required
-            value={form.clientName}
-            onChange={(e) => set('clientName', e.target.value)}
-            placeholder="Client or company name"
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Client Email">
-          <input
-            type="email"
-            value={form.clientEmail}
-            onChange={(e) => set('clientEmail', e.target.value)}
-            placeholder="client@example.com"
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Description">
-          <textarea
-            value={form.description}
-            onChange={(e) => set('description', e.target.value)}
-            rows={3}
-            placeholder="Description of work or items…"
-            className={inputClass}
-          />
-        </Field>
-
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Amount (£) *">
+          <Field label="Amount *">
             <input
               required
               type="number"
@@ -139,34 +121,46 @@ export default function NewInvoicePage() {
             />
           </Field>
 
-          <Field label="Status">
-            <select value={form.status} onChange={(e) => set('status', e.target.value)} className={inputClass}>
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
+          <Field label="Currency">
+            <select value={form.currency} onChange={(e) => set('currency', e.target.value)} className={inputClass}>
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
                 </option>
               ))}
             </select>
           </Field>
         </div>
 
-        <Field label="Due Date *">
-          <input
-            required
-            type="date"
-            value={form.dueAt}
-            onChange={(e) => set('dueAt', e.target.value)}
-            className={inputClass}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Issue Date *">
+            <input
+              required
+              type="date"
+              value={form.issueDate}
+              onChange={(e) => set('issueDate', e.target.value)}
+              className={inputClass}
+            />
+          </Field>
 
-        <Field label="Linked Work Item">
-          <input
-            value={form.linkedWorkItemId}
-            onChange={(e) => set('linkedWorkItemId', e.target.value)}
-            placeholder="Work item ID (optional)"
-            className={inputClass}
-          />
+          <Field label="Due Date">
+            <input
+              type="date"
+              value={form.dueDate}
+              onChange={(e) => set('dueDate', e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+
+        <Field label="Status">
+          <select value={form.status} onChange={(e) => set('status', e.target.value)} className={inputClass}>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <Field label="Notes">
@@ -183,7 +177,7 @@ export default function NewInvoicePage() {
 
         <button
           type="submit"
-          disabled={loading || !form.clientName || !form.amount || !form.dueAt}
+          disabled={loading || !form.invoiceNumber || !form.amount || !form.issueDate}
           className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
         >
           {loading ? 'Creating…' : 'Create Invoice'}

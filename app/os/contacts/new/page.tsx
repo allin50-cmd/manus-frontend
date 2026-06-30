@@ -1,22 +1,23 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-
-const CATEGORIES = ['Team', 'Client', 'Partner', 'Supplier', 'Prospect']
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function NewContactPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('companyId')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    category: 'Client',
-    company: '',
-    role: '',
+    title: '',
+    department: '',
     notes: '',
   })
 
@@ -26,17 +27,31 @@ export default function NewContactPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!companyId) {
+      setError('Company context is required')
+      return
+    }
+
     setError('')
     setLoading(true)
     try {
       const res = await fetch('/api/os/people', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          companyId,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email || undefined,
+          phone: form.phone || undefined,
+          title: form.title || undefined,
+          department: form.department || undefined,
+          notes: form.notes || undefined,
+        }),
       })
       if (res.ok) {
         const data = await res.json()
-        router.push('/os/contacts')
+        router.push(`/os/contacts?companyId=${companyId}`)
       } else {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'Failed to create contact')
@@ -46,6 +61,17 @@ export default function NewContactPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!companyId) {
+    return (
+      <div className="max-w-lg space-y-6">
+        <h1 className="text-xl font-bold text-slate-900">Add Contact</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+          <p>Please access this form from a workspace context with a company ID.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -58,25 +84,26 @@ export default function NewContactPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-        <Field label="Name *">
-          <input
-            required
-            value={form.name}
-            onChange={(e) => set('name', e.target.value)}
-            placeholder="Full name"
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Category *">
-          <select value={form.category} onChange={(e) => set('category', e.target.value)} className={inputClass}>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="First Name *">
+            <input
+              required
+              value={form.firstName}
+              onChange={(e) => set('firstName', e.target.value)}
+              placeholder="First name"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Last Name *">
+            <input
+              required
+              value={form.lastName}
+              onChange={(e) => set('lastName', e.target.value)}
+              placeholder="Last name"
+              className={inputClass}
+            />
+          </Field>
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Email">
@@ -99,23 +126,24 @@ export default function NewContactPage() {
           </Field>
         </div>
 
-        <Field label="Company">
-          <input
-            value={form.company}
-            onChange={(e) => set('company', e.target.value)}
-            placeholder="Company name"
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Role">
-          <input
-            value={form.role}
-            onChange={(e) => set('role', e.target.value)}
-            placeholder="Job title or role"
-            className={inputClass}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Title">
+            <input
+              value={form.title}
+              onChange={(e) => set('title', e.target.value)}
+              placeholder="Job title"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Department">
+            <input
+              value={form.department}
+              onChange={(e) => set('department', e.target.value)}
+              placeholder="Department"
+              className={inputClass}
+            />
+          </Field>
+        </div>
 
         <Field label="Notes">
           <textarea
@@ -131,7 +159,7 @@ export default function NewContactPage() {
 
         <button
           type="submit"
-          disabled={loading || !form.name}
+          disabled={loading || !form.firstName || !form.lastName}
           className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
         >
           {loading ? 'Creating…' : 'Create Contact'}

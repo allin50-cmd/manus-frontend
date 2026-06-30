@@ -1,17 +1,19 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function NewMessagePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('companyId')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
     subject: '',
     body: '',
-    linkedWorkItemId: '',
   })
 
   function set(field: string, value: string) {
@@ -20,6 +22,11 @@ export default function NewMessagePage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!companyId) {
+      setError('Company context is required')
+      return
+    }
+
     setError('')
     setLoading(true)
     try {
@@ -29,7 +36,6 @@ export default function NewMessagePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject: form.subject,
-          linkedWorkItemId: form.linkedWorkItemId || undefined,
         }),
       })
 
@@ -48,12 +54,13 @@ export default function NewMessagePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           threadId: thread.id,
+          fromPerson: 'System',
           body: form.body,
         }),
       })
 
       if (msgRes.ok) {
-        router.push('/os/messages')
+        router.push(`/os/messages?companyId=${companyId}`)
       } else {
         const data = await msgRes.json().catch(() => ({}))
         setError(data.error ?? 'Failed to send message')
@@ -63,6 +70,17 @@ export default function NewMessagePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!companyId) {
+    return (
+      <div className="max-w-lg space-y-6">
+        <h1 className="text-xl font-bold text-slate-900">New Message</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+          <p>Please access this form from a workspace context with a company ID.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -92,15 +110,6 @@ export default function NewMessagePage() {
             onChange={(e) => set('body', e.target.value)}
             rows={5}
             placeholder="Write your message…"
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Linked Work Item">
-          <input
-            value={form.linkedWorkItemId}
-            onChange={(e) => set('linkedWorkItemId', e.target.value)}
-            placeholder="Work item ID (optional)"
             className={inputClass}
           />
         </Field>

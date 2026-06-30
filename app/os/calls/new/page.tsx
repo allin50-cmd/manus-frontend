@@ -1,25 +1,25 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const DIRECTIONS = ['Inbound', 'Outbound']
-const OUTCOMES = ['Answered', 'Missed', 'Voicemail', 'NoAnswer']
 
 export default function NewCallPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('companyId')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
     direction: 'Inbound',
-    callerName: '',
-    callerPhone: '',
-    durationMinutes: '',
-    outcome: 'Answered',
+    personId: '',
+    duration: '',
+    transcript: '',
     notes: '',
-    linkedWorkItemId: '',
-    calledAt: new Date().toISOString().slice(0, 16),
+    recordedAt: new Date().toISOString().slice(0, 16),
   })
 
   function set(field: string, value: string) {
@@ -28,28 +28,34 @@ export default function NewCallPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!companyId) {
+      setError('Company context is required')
+      return
+    }
+    if (!form.personId.trim()) {
+      setError('Person ID is required')
+      return
+    }
+
     setError('')
     setLoading(true)
     try {
-      const durationSeconds = form.durationMinutes ? parseInt(form.durationMinutes, 10) * 60 : 0
-
-      const res = await fetch('/api/os/calls', {
+      const res = await fetch('/api/os/call-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          companyId,
+          personId: form.personId,
           direction: form.direction,
-          callerName: form.callerName,
-          callerPhone: form.callerPhone || undefined,
-          durationSeconds,
-          outcome: form.outcome,
+          duration: form.duration ? parseInt(form.duration, 10) : undefined,
+          transcript: form.transcript || undefined,
           notes: form.notes || undefined,
-          linkedWorkItemId: form.linkedWorkItemId || undefined,
-          calledAt: form.calledAt ? new Date(form.calledAt).toISOString() : undefined,
+          recordedAt: form.recordedAt ? new Date(form.recordedAt).toISOString() : undefined,
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        router.push('/os/calls')
+        router.push(`/os/calls?companyId=${companyId}`)
       } else {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'Failed to log call')
@@ -59,6 +65,17 @@ export default function NewCallPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!companyId) {
+    return (
+      <div className="max-w-lg space-y-6">
+        <h1 className="text-xl font-bold text-slate-900">Log Call</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+          <p>Please access this form from a workspace context with a company ID.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -71,17 +88,17 @@ export default function NewCallPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-        <Field label="Caller Name *">
+        <Field label="Person ID *">
           <input
             required
-            value={form.callerName}
-            onChange={(e) => set('callerName', e.target.value)}
-            placeholder="Name of the person who called"
+            value={form.personId}
+            onChange={(e) => set('personId', e.target.value)}
+            placeholder="ID of the person involved in this call"
             className={inputClass}
           />
         </Field>
 
-        <Field label="Direction">
+        <Field label="Direction *">
           <select value={form.direction} onChange={(e) => set('direction', e.target.value)} className={inputClass}>
             {DIRECTIONS.map((d) => (
               <option key={d} value={d}>
@@ -91,53 +108,32 @@ export default function NewCallPage() {
           </select>
         </Field>
 
-        <Field label="Phone Number">
+        <Field label="Duration (seconds)">
           <input
-            type="tel"
-            value={form.callerPhone}
-            onChange={(e) => set('callerPhone', e.target.value)}
-            placeholder="+44 20 1234 5678"
+            type="number"
+            value={form.duration}
+            onChange={(e) => set('duration', e.target.value)}
+            placeholder="0"
+            min="0"
             className={inputClass}
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Duration (minutes)">
-            <input
-              type="number"
-              value={form.durationMinutes}
-              onChange={(e) => set('durationMinutes', e.target.value)}
-              placeholder="0"
-              min="0"
-              className={inputClass}
-            />
-          </Field>
-
-          <Field label="Outcome">
-            <select value={form.outcome} onChange={(e) => set('outcome', e.target.value)} className={inputClass}>
-              {OUTCOMES.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-
-        <Field label="Call Date & Time">
+        <Field label="Recorded At">
           <input
             type="datetime-local"
-            value={form.calledAt}
-            onChange={(e) => set('calledAt', e.target.value)}
+            value={form.recordedAt}
+            onChange={(e) => set('recordedAt', e.target.value)}
             className={inputClass}
           />
         </Field>
 
-        <Field label="Linked Work Item">
-          <input
-            value={form.linkedWorkItemId}
-            onChange={(e) => set('linkedWorkItemId', e.target.value)}
-            placeholder="Work item ID (optional)"
+        <Field label="Transcript">
+          <textarea
+            value={form.transcript}
+            onChange={(e) => set('transcript', e.target.value)}
+            rows={3}
+            placeholder="Call transcript (optional)…"
             className={inputClass}
           />
         </Field>
@@ -146,8 +142,8 @@ export default function NewCallPage() {
           <textarea
             value={form.notes}
             onChange={(e) => set('notes', e.target.value)}
-            rows={3}
-            placeholder="Call notes…"
+            rows={2}
+            placeholder="Additional notes…"
             className={inputClass}
           />
         </Field>
@@ -156,7 +152,7 @@ export default function NewCallPage() {
 
         <button
           type="submit"
-          disabled={loading || !form.callerName}
+          disabled={loading || !form.personId}
           className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
         >
           {loading ? 'Logging…' : 'Log Call'}

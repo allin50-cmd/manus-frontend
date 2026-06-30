@@ -1,23 +1,27 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
 const STATUSES = ['Open', 'InProgress', 'Done', 'Cancelled']
 
 export default function NewTaskPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('companyId')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
     title: '',
+    description: '',
     priority: 'Medium',
     status: 'Open',
     assignedTo: '',
-    dueAt: '',
-    linkedWorkItemId: '',
+    dueDate: '',
+    createdBy: '',
     notes: '',
   })
 
@@ -27,6 +31,15 @@ export default function NewTaskPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!companyId) {
+      setError('Company context is required')
+      return
+    }
+    if (!form.createdBy.trim()) {
+      setError('Created by is required')
+      return
+    }
+
     setError('')
     setLoading(true)
     try {
@@ -34,18 +47,20 @@ export default function NewTaskPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          companyId,
           title: form.title,
+          description: form.description || undefined,
           priority: form.priority,
           status: form.status,
           assignedTo: form.assignedTo || undefined,
-          dueAt: form.dueAt || undefined,
-          linkedWorkItemId: form.linkedWorkItemId || undefined,
+          dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
+          createdBy: form.createdBy,
           notes: form.notes || undefined,
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        router.push('/os/tasks')
+        router.push(`/os/tasks?companyId=${companyId}`)
       } else {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'Failed to create task')
@@ -55,6 +70,17 @@ export default function NewTaskPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!companyId) {
+    return (
+      <div className="max-w-lg space-y-6">
+        <h1 className="text-xl font-bold text-slate-900">Add Task</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+          <p>Please access this form from a workspace context with a company ID.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -73,6 +99,16 @@ export default function NewTaskPage() {
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="Task title"
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Description">
+          <textarea
+            value={form.description}
+            onChange={(e) => set('description', e.target.value)}
+            rows={2}
+            placeholder="Task description…"
             className={inputClass}
           />
         </Field>
@@ -111,17 +147,18 @@ export default function NewTaskPage() {
         <Field label="Due Date">
           <input
             type="datetime-local"
-            value={form.dueAt}
-            onChange={(e) => set('dueAt', e.target.value)}
+            value={form.dueDate}
+            onChange={(e) => set('dueDate', e.target.value)}
             className={inputClass}
           />
         </Field>
 
-        <Field label="Linked Work Item">
+        <Field label="Created By *">
           <input
-            value={form.linkedWorkItemId}
-            onChange={(e) => set('linkedWorkItemId', e.target.value)}
-            placeholder="Work item ID (optional)"
+            required
+            value={form.createdBy}
+            onChange={(e) => set('createdBy', e.target.value)}
+            placeholder="Your name or user ID"
             className={inputClass}
           />
         </Field>
@@ -140,7 +177,7 @@ export default function NewTaskPage() {
 
         <button
           type="submit"
-          disabled={loading || !form.title}
+          disabled={loading || !form.title || !form.createdBy}
           className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
         >
           {loading ? 'Creating…' : 'Create Task'}

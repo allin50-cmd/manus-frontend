@@ -1,24 +1,24 @@
 'use client'
 
 import { useState, FormEvent, ChangeEvent } from 'react'
-import { useRouter } from 'next/navigation'
-
-const STATUSES = ['PendingReview', 'Approved', 'Rejected', 'Archived']
-const SOURCES = ['Upload', 'Email', 'Generated']
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function DocumentUploadPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('companyId')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fileName, setFileName] = useState('')
   const [fileSize, setFileSize] = useState(0)
-  const [fileMime, setFileMime] = useState('')
+  const [fileType, setFileType] = useState('')
 
   const [form, setForm] = useState({
-    status: 'PendingReview',
-    source: 'Upload',
-    linkedWorkItemId: '',
-    linkedCompany: '',
+    uploadedBy: '',
+    storageUrl: '',
+    category: '',
+    tags: '',
   })
 
   function set(field: string, value: string) {
@@ -30,40 +30,58 @@ export default function DocumentUploadPage() {
     if (file) {
       setFileName(file.name)
       setFileSize(file.size)
-      setFileMime(file.type)
+      setFileType(file.type)
     } else {
       setFileName('')
       setFileSize(0)
-      setFileMime('')
+      setFileType('')
     }
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!companyId) {
+      setError('Company context is required')
+      return
+    }
     if (!fileName) {
-      setError('Please select a file to upload')
+      setError('Please select a file')
+      return
+    }
+    if (!form.uploadedBy.trim()) {
+      setError('Uploaded by is required')
+      return
+    }
+    if (!form.storageUrl.trim()) {
+      setError('Storage URL is required')
       return
     }
 
     setError('')
     setLoading(true)
     try {
+      const tags = form.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0)
+
       const res = await fetch('/api/os/documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename: fileName,
-          mimeType: fileMime || undefined,
-          fileSizeBytes: fileSize,
-          status: form.status,
-          source: form.source,
-          linkedWorkItemId: form.linkedWorkItemId || undefined,
-          linkedCompany: form.linkedCompany || undefined,
+          companyId,
+          fileName,
+          fileType: fileType || 'application/octet-stream',
+          fileSize: fileSize > 0 ? fileSize : undefined,
+          storageUrl: form.storageUrl,
+          category: form.category || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+          uploadedBy: form.uploadedBy,
         }),
       })
       if (res.ok) {
         const data = await res.json()
-        router.push('/os/documents')
+        router.push(`/os/documents?companyId=${companyId}`)
       } else {
         const data = await res.json().catch(() => ({}))
         setError(data.error ?? 'Failed to upload document')
@@ -73,6 +91,17 @@ export default function DocumentUploadPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!companyId) {
+    return (
+      <div className="max-w-lg space-y-6">
+        <h1 className="text-xl font-bold text-slate-900">Upload Document</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+          <p>Please access this form from a workspace context with a company ID.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -100,42 +129,40 @@ export default function DocumentUploadPage() {
           </div>
         </Field>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Status">
-            <select value={form.status} onChange={(e) => set('status', e.target.value)} className={inputClass}>
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Source">
-            <select value={form.source} onChange={(e) => set('source', e.target.value)} className={inputClass}>
-              {SOURCES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-
-        <Field label="Linked Work Item">
+        <Field label="Uploaded By *">
           <input
-            value={form.linkedWorkItemId}
-            onChange={(e) => set('linkedWorkItemId', e.target.value)}
-            placeholder="Work item ID (optional)"
+            required
+            value={form.uploadedBy}
+            onChange={(e) => set('uploadedBy', e.target.value)}
+            placeholder="Your name or user ID"
             className={inputClass}
           />
         </Field>
 
-        <Field label="Linked Company">
+        <Field label="Storage URL *">
           <input
-            value={form.linkedCompany}
-            onChange={(e) => set('linkedCompany', e.target.value)}
-            placeholder="Company name or ID (optional)"
+            required
+            value={form.storageUrl}
+            onChange={(e) => set('storageUrl', e.target.value)}
+            placeholder="https://..."
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Category">
+          <input
+            value={form.category}
+            onChange={(e) => set('category', e.target.value)}
+            placeholder="e.g., Contract, Invoice, Report (optional)"
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Tags">
+          <input
+            value={form.tags}
+            onChange={(e) => set('tags', e.target.value)}
+            placeholder="Comma-separated tags (optional)"
             className={inputClass}
           />
         </Field>
@@ -144,7 +171,7 @@ export default function DocumentUploadPage() {
 
         <button
           type="submit"
-          disabled={loading || !fileName}
+          disabled={loading || !fileName || !form.uploadedBy || !form.storageUrl}
           className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
         >
           {loading ? 'Uploading…' : 'Upload Document'}
