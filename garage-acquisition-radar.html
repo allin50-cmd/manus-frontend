@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garage Acquisition Radar</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#f0f4f8;
+  --bg1:#e4ecf4;
+  --bg2:#ffffff;
+  --bg3:#f5f8fc;
+  --border:#ccd6e4;
+  --border2:#a8bed4;
+  --cyan:#0077a0;
+  --green:#007a40;
+  --orange:#b84d00;
+  --red:#bb1133;
+  --yellow:#8a6800;
+  --purple:#7022bb;
+  --txt:#1a2535;
+  --txt2:#445f7a;
+  --txt3:#7a95b0;
+  --grid-line:rgba(0,100,150,.05);
+  --sidebar-bg:rgba(228,236,244,.97);
+  --topbar-bg:rgba(240,244,248,.96);
+  --logo-glow:rgba(0,119,160,.3);
+  --sw:220px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --mono:'SF Mono','Fira Code','Cascadia Code',monospace;
+}
+[data-theme="dark"]{
+  --bg0:#070b12;
+  --bg1:#0c1220;
+  --bg2:#111827;
+  --bg3:#1a2438;
+  --border:#1c2d44;
+  --border2:#2a4060;
+  --cyan:#00d4ff;
+  --green:#00e87a;
+  --orange:#ff8c00;
+  --red:#ff3355;
+  --yellow:#ffc300;
+  --purple:#c864ff;
+  --txt:#dce8f0;
+  --txt2:#7a9ab8;
+  --txt3:#3e5a78;
+  --grid-line:rgba(0,212,255,.025);
+  --sidebar-bg:rgba(10,16,28,.97);
+  --topbar-bg:rgba(10,16,28,.95);
+  --logo-glow:rgba(0,212,255,.4);
+}
+body{font-family:var(--font);background:var(--bg0);color:var(--txt);min-height:100vh;display:flex;font-size:14px;line-height:1.5;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:50px 50px;}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ─── SIDEBAR ─── */
+.sidebar{
+  width:var(--sw);background:var(--sidebar-bg);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;height:100vh;z-index:100;overflow-y:auto;
+  backdrop-filter:blur(10px);
+}
+.logo{padding:18px 16px;border-bottom:1px solid var(--border)}
+.logo h1{font-size:12px;font-weight:700;color:var(--cyan);letter-spacing:.08em;text-transform:uppercase;
+  text-shadow:0 0 12px var(--logo-glow)}
+.logo p{font-size:10px;color:var(--txt3);margin-top:3px;letter-spacing:.12em}
+.nav-label{font-size:9px;color:var(--txt3);letter-spacing:.15em;text-transform:uppercase;padding:14px 16px 6px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;
+  color:var(--txt2);font-size:13px;transition:all .15s;border-left:2px solid transparent;
+}
+.nav-item:hover{background:rgba(0,212,255,.05);color:var(--txt)}
+.nav-item.active{background:rgba(0,212,255,.08);color:var(--cyan);border-left-color:var(--cyan)}
+.nav-icon{width:16px;text-align:center;opacity:.7}
+.sidebar-footer{margin-top:auto;padding:14px 12px;border-top:1px solid var(--border)}
+
+/* ─── MAIN ─── */
+.main{margin-left:var(--sw);flex:1;min-height:100vh}
+.topbar{
+  background:var(--topbar-bg);border-bottom:1px solid var(--border);padding:13px 24px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(10px);
+}
+.topbar-title{font-size:15px;font-weight:600;color:var(--txt)}
+.content{padding:22px 24px;max-width:1440px}
+
+/* ─── BUTTONS ─── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;
+  font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;
+  font-family:var(--font);letter-spacing:.02em;text-decoration:none;
+}
+.btn-primary{background:var(--cyan);color:#000}
+.btn-primary:hover{background:#00b8d9;box-shadow:0 0 14px rgba(0,212,255,.3)}
+.btn-ghost{background:transparent;color:var(--txt2);border:1px solid var(--border2)}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(255,51,85,.25)}
+.btn-danger:hover{background:rgba(255,51,85,.08)}
+.btn-success{background:transparent;color:var(--green);border:1px solid rgba(0,232,122,.25)}
+.btn-success:hover{background:rgba(0,232,122,.07)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-xs{padding:2px 8px;font-size:10px;border-radius:4px}
+
+/* ─── STAT CARDS ─── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;
+  position:relative;overflow:hidden;
+}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc-cyan::after{background:var(--cyan)} .sc-green::after{background:var(--green)}
+.sc-orange::after{background:var(--orange)} .sc-red::after{background:var(--red)}
+.sc-yellow::after{background:var(--yellow)} .sc-purple::after{background:var(--purple)}
+.stat-label{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px}
+.stat-value{font-size:26px;font-weight:700;font-family:var(--mono)}
+.sc-cyan .stat-value{color:var(--cyan)} .sc-green .stat-value{color:var(--green)}
+.sc-orange .stat-value{color:var(--orange)} .sc-red .stat-value{color:var(--red)}
+.sc-yellow .stat-value{color:var(--yellow)} .sc-purple .stat-value{color:var(--purple)}
+.stat-sub{font-size:11px;color:var(--txt3);margin-top:4px}
+
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.06em}
+.b-hot{background:rgba(255,51,85,.15);color:var(--red);border:1px solid rgba(255,51,85,.3)}
+.b-warm{background:rgba(255,140,0,.15);color:var(--orange);border:1px solid rgba(255,140,0,.3)}
+.b-cold{background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid rgba(0,212,255,.2)}
+.b-dudrich{background:rgba(255,51,85,.1);color:#ff6680;border:1px solid rgba(255,51,85,.2)}
+.b-score{background:rgba(0,232,122,.08);color:var(--green);border:1px solid rgba(0,232,122,.2);font-family:var(--mono)}
+.b-develop{background:rgba(112,34,187,.12);color:var(--purple);border:1px solid rgba(112,34,187,.25)}
+.b-legal{background:rgba(255,140,0,.12);color:var(--orange);border:1px solid rgba(255,140,0,.25)}
+.b-acq{background:rgba(0,119,160,.12);color:var(--cyan);border:1px solid rgba(0,119,160,.25)}
+.b-assess{background:rgba(122,154,184,.1);color:var(--txt3);border:1px solid var(--border)}
+
+/* ─── STATUS PILLS ─── */
+.st-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.st-FOUND{background:rgba(122,154,184,.12);color:#7a9ab8}
+.st-OWNERSHIP_CHECKED{background:rgba(0,212,255,.1);color:var(--cyan)}
+.st-VALUED{background:rgba(255,195,0,.1);color:var(--yellow)}
+.st-OFFER_SENT{background:rgba(255,140,0,.15);color:var(--orange)}
+.st-FOLLOW_UP{background:rgba(255,160,60,.15);color:#ffaa44}
+.st-NEGOTIATION{background:rgba(200,100,255,.15);color:var(--purple)}
+.st-WON{background:rgba(0,232,122,.15);color:var(--green)}
+.st-LOST{background:rgba(255,51,85,.15);color:var(--red)}
+
+/* ─── SITE CARDS ─── */
+.sites-grid{display:grid;gap:12px}
+.site-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;transition:all .2s}
+.site-card:hover{border-color:var(--border2);background:var(--bg3)}
+.sc-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.sc-title{font-size:14px;font-weight:600;color:var(--txt)}
+.sc-addr{font-size:11px;color:var(--txt3);margin-top:2px}
+.badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.score-bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.score-bar-lbl{font-size:10px;color:var(--txt3);width:34px;flex-shrink:0}
+.score-bar-track{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+.sf-hot{background:var(--red)} .sf-warm{background:var(--orange)} .sf-cold{background:var(--cyan)}
+.sc-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em}
+.meta-val{font-size:12px;color:var(--txt);font-family:var(--mono)}
+.meta-val.no-mono{font-family:var(--font)}
+.sc-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.sc-note{font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);border-left:2px solid var(--border2);border-radius:6px;padding:8px 10px;margin-top:10px;line-height:1.6}
+.status-sel{background:var(--bg0);border:1px solid var(--border2);border-radius:4px;color:var(--txt);font-size:11px;padding:3px 6px;cursor:pointer;font-family:var(--font)}
+
+/* ─── DEV CONTRACT PANEL ─── */
+.dev-panel{background:rgba(112,34,187,.04);border:1px solid rgba(112,34,187,.15);border-radius:8px;padding:14px;margin-top:10px}
+[data-theme="dark"] .dev-panel{background:rgba(112,34,187,.07);border-color:rgba(200,100,255,.18)}
+.dev-panel-title{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+
+/* ─── OFFER PANEL ─── */
+.offer-panel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px}
+.offer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
+.offer-item{display:flex;flex-direction:column;gap:2px}
+.offer-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em}
+.offer-val{font-size:14px;font-weight:600;font-family:var(--mono);color:var(--cyan)}
+.offer-sub{font-size:11px;color:var(--txt3)}
+
+/* ─── FILTERS BAR ─── */
+.filters-bar{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+
+/* ─── FORM ─── */
+.form-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+label{font-size:11px;color:var(--txt2);font-weight:500;letter-spacing:.03em}
+input,select,textarea{
+  background:var(--bg0);border:1px solid var(--border);border-radius:6px;
+  color:var(--txt);font-size:13px;padding:8px 11px;font-family:var(--font);
+  transition:border-color .15s;width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,212,255,.1)}
+select option{background:var(--bg1)}
+textarea{resize:vertical;min-height:80px}
+
+/* ─── PIPELINE ─── */
+.pipe-stages{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:20px;overflow-x:auto}
+.pipe-stage{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .15s;min-width:90px}
+.pipe-stage:hover,.pipe-stage.active-st{border-color:var(--cyan);background:rgba(0,212,255,.07)}
+.pipe-stage .ps-name{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3)}
+.pipe-stage .ps-count{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--cyan);margin:4px 0 2px}
+
+/* ─── KANBAN ─── */
+.kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kb-col{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.kb-header{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.kb-cnt{background:var(--border);color:var(--txt2);border-radius:8px;padding:1px 6px;font-size:10px}
+.kb-item{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.kb-item:hover{border-color:var(--border2)}
+.kb-item-title{font-size:12px;font-weight:600;color:var(--txt);margin-bottom:3px}
+.kb-item-sub{font-size:10px;color:var(--txt3)}
+.kb-empty{color:var(--txt3);font-size:11px;text-align:center;padding:14px 0}
+
+/* ─── MODAL ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--border2);border-radius:12px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;position:relative}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--bg1);z-index:1}
+.modal-title{font-size:15px;font-weight:600}
+.modal-body{padding:22px}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ─── SECTION HEADER ─── */
+.section-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.section-title{font-size:15px;font-weight:600;color:var(--txt)}
+.section-sub{font-size:11px;color:var(--txt3);margin-top:2px}
+
+/* ─── DATA CARDS ─── */
+.data-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px}
+.data-card h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--txt)}
+.data-card p{font-size:12px;color:var(--txt2);margin-bottom:12px;line-height:1.6}
+
+/* ─── LETTER TEXTAREA ─── */
+.letter-ta{width:100%;min-height:340px;background:var(--bg0);border:1px solid var(--border);border-radius:6px;color:var(--txt);font-family:Georgia,serif;font-size:13px;padding:18px;line-height:1.8;resize:vertical}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:11px 16px;font-size:12px;z-index:1000;transform:translateY(80px);opacity:0;transition:all .25s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(0,232,122,.4);color:var(--green)}
+.toast.err{border-color:rgba(255,51,85,.4);color:var(--red)}
+
+/* ─── VIEWS ─── */
+.view{display:none}
+.view.active{display:block}
+
+/* ─── EMPTY STATE ─── */
+.empty{text-align:center;padding:52px 24px;color:var(--txt3)}
+.empty .ei{font-size:36px;margin-bottom:12px;opacity:.5}
+.empty p{font-size:13px}
+
+/* ─── DIVIDER ─── */
+hr{border:none;border-top:1px solid var(--border);margin:18px 0}
+
+/* ─── MOBILE ─── */
+.menu-btn{display:none;background:none;border:none;color:var(--txt);font-size:20px;cursor:pointer;padding:2px 6px}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform .3s}
+  .sidebar.open{transform:translateX(0)}
+  .sb-overlay.open{display:block}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .form-grid{grid-template-columns:1fr}
+  .pipe-stages{grid-template-columns:repeat(4,1fr)}
+  .content{padding:16px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .hide-mobile{display:none}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr}
+  .sc-header{flex-direction:column}
+  .badges{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div class="sb-overlay" id="sbOverlay" onclick="closeSb()"></div>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="logo">
+    <h1>⬡ Garage Radar</h1>
+    <p>Acquisition Intelligence · SE England</p>
+  </div>
+
+  <div>
+    <div class="nav-label">Overview</div>
+    <div class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">
+      <span class="nav-icon">◈</span> Dashboard
+    </div>
+  </div>
+  <div>
+    <div class="nav-label">Sites</div>
+    <div class="nav-item" data-view="targets" onclick="showView('targets')">
+      <span class="nav-icon">◎</span> Acquisition Targets
+    </div>
+    <div class="nav-item" data-view="excluded" onclick="showView('excluded')">
+      <span class="nav-icon">◯</span> Excluded Sites
+    </div>
+  </div>
+  <div>
+    <div class="nav-label">Operations</div>
+    <div class="nav-item" data-view="pipeline" onclick="showView('pipeline')">
+      <span class="nav-icon">◇</span> CRM Pipeline
+    </div>
+    <div class="nav-item" data-view="outreach" onclick="showView('outreach')">
+      <span class="nav-icon">◻</span> Outreach
+    </div>
+  </div>
+  <div>
+    <div class="nav-label">Data</div>
+    <div class="nav-item" data-view="data" onclick="showView('data')">
+      <span class="nav-icon">◴</span> Data Management
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openAddModal()">+ Add Site</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="menu-btn" onclick="toggleSb()">☰</button>
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm hide-mobile" onclick="showView('data')">⬇ Export</button>
+      <button class="btn btn-ghost btn-sm" id="themeToggle" onclick="toggleTheme()">◑ Dark</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Add Site</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="view active" id="view-dashboard">
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Top Acquisition Targets</div>
+          <div class="section-sub">Highest-scored non-excluded sites</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="showView('targets')">View All →</button>
+      </div>
+      <div id="dashTopTargets"></div>
+      <div class="section-hdr" style="margin-top:28px">
+        <div>
+          <div class="section-title">Development Contract Coverage</div>
+          <div class="section-sub">Sites assessed against development rights and planning potential</div>
+        </div>
+      </div>
+      <div class="stats-grid" id="devStatsGrid"></div>
+    </div>
+
+    <!-- ── TARGETS ── -->
+    <div class="view" id="view-targets">
+      <div class="filters-bar">
+        <div class="fg">
+          <label>Search</label>
+          <input type="text" id="fSearch" placeholder="Name, address, town…" oninput="renderTargets()">
+        </div>
+        <div class="fg">
+          <label>County</label>
+          <select id="fCounty" onchange="renderTargets()">
+            <option value="">All Counties</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Priority</label>
+          <select id="fPriority" onchange="renderTargets()">
+            <option value="">All</option>
+            <option>HOT</option><option>WARM</option><option>COLD</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Owner Type</label>
+          <select id="fOwnerType" onchange="renderTargets()">
+            <option value="">All</option>
+            <option>Individual</option><option>Company</option><option>Council</option>
+            <option>Housing Association</option><option>Charity</option><option>Unknown</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Status</label>
+          <select id="fStatus" onchange="renderTargets()">
+            <option value="">All</option>
+            <option>FOUND</option><option>OWNERSHIP_CHECKED</option><option>VALUED</option>
+            <option>OFFER_SENT</option><option>FOLLOW_UP</option><option>NEGOTIATION</option>
+            <option>WON</option><option>LOST</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Dudrich Status</label>
+          <select id="fDudrich" onchange="renderTargets()">
+            <option value="">All</option>
+            <option>Unknown</option><option>Not Dudrich</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Recommended Action</label>
+          <select id="fRecAction" onchange="renderTargets()">
+            <option value="">All</option>
+            <option value="ACQUISITION_TARGET">Acquisition Target</option>
+            <option value="DEVELOP_UNDER_EXISTING_CONTRACT">Develop Under Contract</option>
+            <option value="LEGAL_REVIEW">Legal Review</option>
+            <option value="NEEDS_ASSESSMENT">Needs Assessment</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Min Score</label>
+          <input type="number" id="fMinScore" placeholder="0" min="0" max="100" oninput="renderTargets()">
+        </div>
+        <div class="fg" style="display:flex;align-items:flex-end">
+          <button class="btn btn-ghost btn-sm" style="width:100%" onclick="clearFilters()">✕ Clear Filters</button>
+        </div>
+      </div>
+      <div id="targetsContainer"></div>
+    </div>
+
+    <!-- ── EXCLUDED ── -->
+    <div class="view" id="view-excluded">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Excluded Sites</div>
+          <div class="section-sub">Confirmed Dudrich / LockUpGarages owned — removed from acquisition pipeline</div>
+        </div>
+      </div>
+      <div id="excludedContainer"></div>
+    </div>
+
+    <!-- ── PIPELINE ── -->
+    <div class="view" id="view-pipeline">
+      <div class="pipe-stages" id="pipeStages"></div>
+      <div id="kanbanContainer"></div>
+    </div>
+
+    <!-- ── OUTREACH ── -->
+    <div class="view" id="view-outreach">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title">Owner Outreach Generator</div>
+          <div class="section-sub">Generate professional acquisition letters for non-excluded sites</div>
+        </div>
+      </div>
+      <div class="filters-bar" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="fg">
+          <label>Search</label>
+          <input type="text" id="oSearch" placeholder="Name or town…" oninput="renderOutreach()">
+        </div>
+        <div class="fg">
+          <label>Priority</label>
+          <select id="oPriority" onchange="renderOutreach()">
+            <option value="">All</option>
+            <option>HOT</option><option>WARM</option><option>COLD</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Status</label>
+          <select id="oStatus" onchange="renderOutreach()">
+            <option value="">All</option>
+            <option>FOUND</option><option>OWNERSHIP_CHECKED</option><option>VALUED</option>
+            <option>OFFER_SENT</option><option>FOLLOW_UP</option><option>NEGOTIATION</option>
+          </select>
+        </div>
+      </div>
+      <div id="outreachContainer"></div>
+    </div>
+
+    <!-- ── DATA ── -->
+    <div class="view" id="view-data">
+      <div class="data-card">
+        <h3>⬇ Export Data</h3>
+        <p>Download all garage site data as a JSON file for backup or transfer to another device.</p>
+        <button class="btn btn-ghost" onclick="exportData()">Export JSON</button>
+      </div>
+      <div class="data-card">
+        <h3>⬆ Import Data</h3>
+        <p>Paste exported JSON below to import. New sites are merged; existing IDs are skipped.</p>
+        <textarea id="importTA" placeholder="Paste JSON here…" style="margin-bottom:10px;min-height:120px"></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="importData()">Import</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('importTA').value=''">Clear</button>
+        </div>
+      </div>
+      <div class="data-card">
+        <h3>◈ Load Sample Data</h3>
+        <p>Populate the app with 24 realistic South East England garage sites across Surrey, Kent, Greater London, East Sussex, West Sussex and Essex — including HOT targets, Dudrich-excluded, won/acquired, and sites under negotiation.</p>
+        <button class="btn btn-success" onclick="loadSeed()">Load Sample Data</button>
+      </div>
+      <div class="data-card" style="border-color:rgba(255,51,85,.2)">
+        <h3 style="color:var(--red)">✕ Danger Zone</h3>
+        <p>Permanently delete all stored garage site data. This cannot be undone.</p>
+        <button class="btn btn-danger" onclick="clearAll()">Clear All Data</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ═══════════════ ADD/EDIT MODAL ═══════════════ -->
+<div class="modal-overlay" id="siteModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modalTitle">Add Garage Site</span>
+      <button class="btn btn-ghost btn-xs" onclick="closeModal()">✕ Close</button>
+    </div>
+    <div class="modal-body">
+      <form id="siteForm" onsubmit="saveSite(event)">
+        <div class="form-grid">
+          <div class="fg"><label>Site Name *</label><input id="fn" required placeholder="e.g. Bromley Lock-Up Block"></div>
+          <div class="fg"><label>Town *</label><input id="ftown" required placeholder="e.g. Bromley"></div>
+          <div class="fg full"><label>Address</label><input id="faddr" placeholder="Street address or description"></div>
+          <div class="fg"><label>County</label><input id="fcounty" placeholder="e.g. Kent"></div>
+          <div class="fg"><label>Postcode</label><input id="fpost" placeholder="e.g. BR1 1AA"></div>
+          <div class="fg"><label>No. of Garages (estimated)</label><input type="number" id="fgar" min="1" placeholder="e.g. 20"></div>
+          <div class="fg"><label>Market Value £ (estimated)</label><input type="number" id="fmv" min="0" placeholder="e.g. 250000"></div>
+          <div class="fg"><label>Monthly Rent per Garage £</label><input type="number" id="frent" min="0" placeholder="e.g. 75"></div>
+          <div class="fg"><label>Owner Name</label><input id="fowner" placeholder="e.g. John Smith"></div>
+          <div class="fg"><label>Owner Type</label>
+            <select id="fownertype">
+              <option>Unknown</option><option>Individual</option><option>Company</option>
+              <option>Council</option><option>Housing Association</option><option>Charity</option>
+            </select>
+          </div>
+          <div class="fg"><label>Ownership Status</label>
+            <select id="fownership">
+              <option>Unknown</option><option>Land Registry needed</option><option>Confirmed</option>
+            </select>
+          </div>
+          <div class="fg"><label>Dudrich Status</label>
+            <select id="fdudrich">
+              <option>Unknown</option><option>Confirmed Dudrich</option><option>Not Dudrich</option>
+            </select>
+          </div>
+          <div class="fg"><label>Condition</label>
+            <select id="fcond">
+              <option>Good</option><option>Average</option><option>Poor</option><option>Derelict</option>
+            </select>
+          </div>
+          <div class="fg"><label>Vacancy Level</label>
+            <select id="fvac">
+              <option>Unknown</option><option>Low</option><option>Medium</option><option>High</option>
+            </select>
+          </div>
+          <div class="fg"><label>Pipeline Status</label>
+            <select id="fstatus">
+              <option>FOUND</option><option>OWNERSHIP_CHECKED</option><option>VALUED</option>
+              <option>OFFER_SENT</option><option>FOLLOW_UP</option><option>NEGOTIATION</option>
+              <option>WON</option><option>LOST</option>
+            </select>
+          </div>
+          <div class="fg full"><label>Notes</label><textarea id="fnotes" placeholder="Any additional notes…"></textarea></div>
+          <div class="fg full" style="margin-top:6px">
+            <div style="font-size:11px;font-weight:600;color:var(--purple);letter-spacing:.04em;padding:10px 0 4px;border-top:1px solid var(--border)">◈ Development Contract Coverage</div>
+          </div>
+          <div class="fg"><label>Covered by Development Contract</label>
+            <select id="fcoveredByContract">
+              <option>Unknown</option><option>Yes</option><option>No</option><option>Needs Review</option>
+            </select>
+          </div>
+          <div class="fg"><label>Contract Reference</label>
+            <input id="fcontractRef" placeholder="e.g. DC/2024/001">
+          </div>
+          <div class="fg"><label>Development Rights</label>
+            <select id="fdevRights">
+              <option>Unknown</option><option>Full</option><option>Partial</option>
+            </select>
+          </div>
+          <div class="fg"><label>Future Site Rights</label>
+            <select id="ffutureRights">
+              <option>Unknown</option><option>Yes</option><option>No</option>
+            </select>
+          </div>
+          <div class="fg"><label>Planning Potential</label>
+            <select id="fplanningPotential">
+              <option>Unknown</option><option>High</option><option>Medium</option><option>Low</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" id="fid">
+        <hr>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Site</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ LETTER MODAL ═══════════════ -->
+<div class="modal-overlay" id="letterModal">
+  <div class="modal" style="max-width:660px">
+    <div class="modal-hdr">
+      <span class="modal-title">✉ Outreach Letter</span>
+      <button class="btn btn-ghost btn-xs" onclick="closeLetterModal()">✕ Close</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:11px;color:var(--txt3);margin-bottom:12px;line-height:1.6">
+        Review and edit the letter below. Replace <strong>[Buyer Name]</strong>, <strong>[Phone Number]</strong>, and <strong>[Email Address]</strong> with real details before sending.
+      </p>
+      <textarea class="letter-ta" id="letterContent"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="copyLetter()">⧉ Copy to Clipboard</button>
+      <button class="btn btn-primary" onclick="closeLetterModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+<script>
+'use strict';
+
+// ── Constants ──
+const STAGES = ['FOUND','OWNERSHIP_CHECKED','VALUED','OFFER_SENT','FOLLOW_UP','NEGOTIATION','WON','LOST'];
+const STAGE_LABELS = {
+  FOUND:'Found', OWNERSHIP_CHECKED:'Ownership', VALUED:'Valued',
+  OFFER_SENT:'Offer Sent', FOLLOW_UP:'Follow Up',
+  NEGOTIATION:'Negotiation', WON:'Won', LOST:'Lost'
+};
+const VIEW_TITLES = {
+  dashboard:'Dashboard', targets:'Acquisition Targets', excluded:'Excluded Sites',
+  pipeline:'CRM Pipeline', outreach:'Owner Outreach', data:'Data Management'
+};
+const REC_ACTION_LABELS = {
+  DEVELOP_UNDER_EXISTING_CONTRACT: 'Develop Under Contract',
+  LEGAL_REVIEW: 'Legal Review',
+  ACQUISITION_TARGET: 'Acquisition Target',
+  NEEDS_ASSESSMENT: 'Needs Assessment',
+};
+
+// ── State ──
+let sites = [];
+let editingId = null;
+let pipeFilter = '';
+let curView = 'dashboard';
+
+// ── Storage ──
+function load() {
+  try { sites = JSON.parse(localStorage.getItem('gar_sites') || '[]'); } catch { sites = []; }
+}
+function save() { localStorage.setItem('gar_sites', JSON.stringify(sites)); }
+function uid() { return 'site_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+// ── Recommended Action ──
+function recAction(s) {
+  if (s.dudrichStatus === 'Confirmed Dudrich') {
+    if (s.coveredByContract === 'Yes') return 'DEVELOP_UNDER_EXISTING_CONTRACT';
+    if (s.coveredByContract === 'Needs Review') return 'LEGAL_REVIEW';
+  }
+  if (s.dudrichStatus === 'Not Dudrich') return 'ACQUISITION_TARGET';
+  return 'NEEDS_ASSESSMENT';
+}
+
+function recActionClass(ra) {
+  if (ra === 'DEVELOP_UNDER_EXISTING_CONTRACT') return 'b-develop';
+  if (ra === 'LEGAL_REVIEW') return 'b-legal';
+  if (ra === 'ACQUISITION_TARGET') return 'b-acq';
+  return 'b-assess';
+}
+
+// ── Scoring Engine ──
+function score(s) {
+  let p = 0;
+  const g = parseInt(s.garages) || 0;
+  if (g >= 50) p += 25; else if (g >= 21) p += 20; else if (g >= 11) p += 15;
+  else if (g >= 6) p += 10; else if (g >= 1) p += 5;
+
+  if (s.dudrichStatus === 'Not Dudrich') p += 15;
+  else if (s.dudrichStatus === 'Unknown') p += 5;
+
+  if (s.vacancyLevel === 'High') p += 15;
+  else if (s.vacancyLevel === 'Medium') p += 10;
+  else if (s.vacancyLevel === 'Unknown') p += 5;
+  else if (s.vacancyLevel === 'Low') p += 3;
+
+  if (s.condition === 'Derelict') p += 15;
+  else if (s.condition === 'Poor') p += 12;
+  else if (s.condition === 'Average') p += 7;
+  else if (s.condition === 'Good') p += 3;
+
+  if (s.ownerType === 'Individual') p += 10;
+  else if (s.ownerType === 'Company') p += 8;
+  else if (s.ownerType === 'Charity') p += 5;
+  else if (s.ownerType === 'Unknown') p += 3;
+  else if (s.ownerType === 'Housing Association') p += 2;
+  else if (s.ownerType === 'Council') p += 1;
+
+  if (s.ownershipStatus === 'Confirmed') p += 10;
+  else if (s.ownershipStatus === 'Land Registry needed') p += 5;
+  else p += 2;
+
+  const mv = parseFloat(s.marketValue) || 0;
+  const mr = parseFloat(s.monthlyRent) || 0;
+  if (mv > 0 && mr > 0 && g > 0) {
+    const yld = (mr * g * 12 / mv) * 100;
+    if (yld >= 10) p += 10; else if (yld >= 7) p += 8;
+    else if (yld >= 5) p += 6; else if (yld >= 3) p += 3; else p += 1;
+  }
+
+  // Planning potential + full development rights bonus
+  if (s.planningPotential === 'High' && s.developmentRights === 'Full') p += 10;
+
+  return Math.min(100, p);
+}
+
+function priority(sc) {
+  return sc >= 70 ? 'HOT' : sc >= 40 ? 'WARM' : 'COLD';
+}
+
+function priClass(pr) {
+  return pr === 'HOT' ? 'b-hot' : pr === 'WARM' ? 'b-warm' : 'b-cold';
+}
+
+// ── Offer Calculator ──
+function offers(s) {
+  const mv = parseFloat(s.marketValue) || 0;
+  const mr = parseFloat(s.monthlyRent) || 0;
+  const g  = parseInt(s.garages) || 0;
+  const o5  = mv * 0.95;
+  const o10 = mv * 0.90;
+  const ar  = mr * g * 12;
+  return {
+    mv, o5, o10, ar,
+    yMV: mv  > 0 ? ar / mv  * 100 : 0,
+    y5:  o5  > 0 ? ar / o5  * 100 : 0,
+    y10: o10 > 0 ? ar / o10 * 100 : 0,
+  };
+}
+
+// ── Formatting ──
+function fmtGBP(n) {
+  if (!n && n !== 0) return '—';
+  return '£' + Math.round(n).toLocaleString('en-GB');
+}
+function pct(n) { return (!n && n !== 0) ? '—' : n.toFixed(1) + '%'; }
+function addr(s) { return [s.address, s.town, s.county, s.postcode].filter(Boolean).join(' · '); }
+
+// ── Letter Generator ──
+function generateLetter(s) {
+  const d = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const salutation = s.ownerName ? `Dear ${s.ownerName},` : 'Dear Sir / Madam,';
+  const loc = addr(s);
+  return `[Buyer Name]
+[Your Address Line 1]
+[Town, Postcode]
+
+Telephone: [Phone Number]
+Email: [Email Address]
+
+${d}
+
+${salutation}
+
+Re: ${s.name}${loc ? '\n    ' + loc : ''}
+
+I am writing to you as a private investor with a particular interest in acquiring lock-up garages and garage blocks across South East England.
+
+I understand that you may be the owner of the above-mentioned site and I am writing to enquire, in a strictly confidential and without-obligation capacity, whether you would consider a sale.
+
+I am able to offer a fair price that reflects the property's current condition as well as its longer-term potential. As a cash buyer with funds readily available, I am in a position to move quickly and would aim to exchange and complete within four to six weeks of agreeing heads of terms — with no chain, no mortgage delays, and minimal disruption.
+
+Any offer I make would be subject to confirmation of title through the Land Registry and a brief inspection of the site. My intention is to retain and invest in the property as a going concern, not to redevelop it for other uses.
+
+If you have any interest in exploring a sale — even at an early, informal stage — I would be very glad to hear from you. There is absolutely no pressure and no obligation to proceed.
+
+Please feel free to telephone me on [Phone Number], or to reply to this letter at the address above. Alternatively, you may reach me by email at [Email Address].
+
+I look forward to hearing from you at your convenience.
+
+Yours sincerely,
+
+
+[Buyer Name]`;
+}
+
+// ── Views ──
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.view === v);
+  });
+  const el = document.getElementById('view-' + v);
+  if (el) el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = VIEW_TITLES[v] || v;
+  curView = v;
+  pipeFilter = '';
+  renderView(v);
+  closeSb();
+}
+
+function renderView(v) {
+  if (v === 'dashboard') renderDash();
+  if (v === 'targets') { refreshCountyFilter(); renderTargets(); }
+  if (v === 'excluded') renderExcluded();
+  if (v === 'pipeline') renderPipeline();
+  if (v === 'outreach') renderOutreach();
+}
+
+// ── Dashboard ──
+function renderDash() {
+  const nd  = sites.filter(s => s.dudrichStatus !== 'Confirmed Dudrich');
+  const exc = sites.length - nd.length;
+  const sc  = nd.map(s => score(s));
+  const hot = sc.filter(x => priority(x) === 'HOT').length;
+  const offers_sent = sites.filter(s => ['OFFER_SENT','FOLLOW_UP','NEGOTIATION'].includes(s.status)).length;
+  const won  = sites.filter(s => s.status === 'WON').length;
+  const lost = sites.filter(s => s.status === 'LOST').length;
+  const portVal = nd.reduce((sum,s) => sum + (parseFloat(s.marketValue)||0), 0);
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card sc-cyan">
+      <div class="stat-label">Total Sites Tracked</div>
+      <div class="stat-value">${sites.length}</div>
+      <div class="stat-sub">${exc} excluded (Dudrich)</div>
+    </div>
+    <div class="stat-card sc-green">
+      <div class="stat-label">Active Targets</div>
+      <div class="stat-value">${nd.length}</div>
+      <div class="stat-sub">Non-Dudrich sites</div>
+    </div>
+    <div class="stat-card sc-red">
+      <div class="stat-label">HOT Targets</div>
+      <div class="stat-value">${hot}</div>
+      <div class="stat-sub">Score ≥ 70 / 100</div>
+    </div>
+    <div class="stat-card sc-orange">
+      <div class="stat-label">Offers in Play</div>
+      <div class="stat-value">${offers_sent}</div>
+      <div class="stat-sub">Sent · Follow-up · Negotiation</div>
+    </div>
+    <div class="stat-card sc-yellow">
+      <div class="stat-label">Won / Lost</div>
+      <div class="stat-value">${won} / ${lost}</div>
+      <div class="stat-sub">Closed deals</div>
+    </div>
+    <div class="stat-card sc-purple">
+      <div class="stat-label">Est. Portfolio Value</div>
+      <div class="stat-value" style="font-size:19px">${fmtGBP(portVal)}</div>
+      <div class="stat-sub">Non-excluded sites combined</div>
+    </div>`;
+
+  const top = [...nd].map(s=>({...s,_sc:score(s)})).sort((a,b)=>b._sc-a._sc).slice(0,3);
+  const el = document.getElementById('dashTopTargets');
+  if (!top.length) {
+    el.innerHTML = `<div class="empty"><div class="ei">◎</div><p>No targets yet. Add sites or load sample data to get started.</p><br><button class="btn btn-primary" onclick="openAddModal()">+ Add First Site</button>&nbsp;<button class="btn btn-success" onclick="showView('data')">◈ Load Sample Data</button></div>`;
+    document.getElementById('devStatsGrid').innerHTML = '';
+    return;
+  }
+  el.innerHTML = `<div class="sites-grid">${top.map(s=>siteCard(s,s._sc,false)).join('')}</div>`;
+
+  const contracted   = sites.filter(s => s.coveredByContract === 'Yes').length;
+  const futureRights = sites.filter(s => s.futureRights === 'Yes').length;
+  const legalReview  = sites.filter(s => recAction(s) === 'LEGAL_REVIEW').length;
+  const devOpps      = sites.filter(s => s.planningPotential === 'High').length;
+  const acqOnly      = sites.filter(s => recAction(s) === 'ACQUISITION_TARGET').length;
+
+  document.getElementById('devStatsGrid').innerHTML = `
+    <div class="stat-card sc-purple">
+      <div class="stat-label">Contracted Sites</div>
+      <div class="stat-value">${contracted}</div>
+      <div class="stat-sub">Covered by development contract</div>
+    </div>
+    <div class="stat-card sc-cyan">
+      <div class="stat-label">Future-Rights Sites</div>
+      <div class="stat-value">${futureRights}</div>
+      <div class="stat-sub">Future site rights confirmed</div>
+    </div>
+    <div class="stat-card sc-orange">
+      <div class="stat-label">Legal Review Needed</div>
+      <div class="stat-value">${legalReview}</div>
+      <div class="stat-sub">Dudrich + contract unconfirmed</div>
+    </div>
+    <div class="stat-card sc-green">
+      <div class="stat-label">Development Opps</div>
+      <div class="stat-value">${devOpps}</div>
+      <div class="stat-sub">High planning potential</div>
+    </div>
+    <div class="stat-card sc-blue" style="--blue:var(--cyan)">
+      <div class="stat-label">Acquisition-Only Targets</div>
+      <div class="stat-value" style="color:var(--cyan)">${acqOnly}</div>
+      <div class="stat-sub">Not Dudrich · no contract</div>
+    </div>`;
+}
+
+// ── Targets ──
+function refreshCountyFilter() {
+  const counties = [...new Set(sites.filter(s=>s.county).map(s=>s.county))].sort();
+  const sel = document.getElementById('fCounty');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Counties</option>' + counties.map(c=>`<option${c===cur?' selected':''}>${c}</option>`).join('');
+}
+
+function clearFilters() {
+  ['fSearch','fMinScore'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['fCounty','fPriority','fOwnerType','fStatus','fDudrich','fRecAction'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  renderTargets();
+}
+
+function renderTargets() {
+  const search   = (document.getElementById('fSearch')?.value||'').toLowerCase();
+  const county   = document.getElementById('fCounty')?.value||'';
+  const pri      = document.getElementById('fPriority')?.value||'';
+  const owt      = document.getElementById('fOwnerType')?.value||'';
+  const st       = document.getElementById('fStatus')?.value||'';
+  const dud      = document.getElementById('fDudrich')?.value||'';
+  const recFil   = document.getElementById('fRecAction')?.value||'';
+  const minSc    = parseInt(document.getElementById('fMinScore')?.value)||0;
+
+  let list = sites
+    .filter(s => s.dudrichStatus !== 'Confirmed Dudrich')
+    .map(s => ({...s, _sc: score(s), _ra: recAction(s)}));
+
+  if (search) list = list.filter(s =>
+    (s.name||'').toLowerCase().includes(search) ||
+    (s.address||'').toLowerCase().includes(search) ||
+    (s.town||'').toLowerCase().includes(search));
+  if (county)  list = list.filter(s => s.county === county);
+  if (pri)     list = list.filter(s => priority(s._sc) === pri);
+  if (owt)     list = list.filter(s => s.ownerType === owt);
+  if (st)      list = list.filter(s => s.status === st);
+  if (dud)     list = list.filter(s => s.dudrichStatus === dud);
+  if (recFil)  list = list.filter(s => s._ra === recFil);
+  if (minSc)   list = list.filter(s => s._sc >= minSc);
+  list.sort((a,b) => b._sc - a._sc);
+
+  const c = document.getElementById('targetsContainer');
+  c.innerHTML = list.length
+    ? `<div class="sites-grid">${list.map(s=>siteCard(s,s._sc,false)).join('')}</div>`
+    : `<div class="empty"><div class="ei">◎</div><p>No targets match the current filters.</p></div>`;
+}
+
+// ── Excluded ──
+function renderExcluded() {
+  const exc = sites.filter(s => s.dudrichStatus === 'Confirmed Dudrich');
+  const c = document.getElementById('excludedContainer');
+  c.innerHTML = exc.length
+    ? `<div class="sites-grid">${exc.map(s=>siteCard(s,0,true)).join('')}</div>`
+    : `<div class="empty"><div class="ei">◯</div><p>No excluded sites. Sites marked as "Confirmed Dudrich" will appear here.</p></div>`;
+}
+
+// ── Pipeline ──
+function renderPipeline() {
+  const nd = sites.filter(s => s.dudrichStatus !== 'Confirmed Dudrich');
+  const counts = {};
+  STAGES.forEach(st => counts[st] = nd.filter(s=>s.status===st).length);
+
+  document.getElementById('pipeStages').innerHTML = STAGES.map(st=>`
+    <div class="pipe-stage${pipeFilter===st?' active-st':''}" onclick="togglePipeFilter('${st}')">
+      <div class="ps-name">${STAGE_LABELS[st]}</div>
+      <div class="ps-count">${counts[st]}</div>
+    </div>`).join('');
+
+  renderKanban(nd);
+}
+
+function togglePipeFilter(st) {
+  pipeFilter = pipeFilter === st ? '' : st;
+  document.querySelectorAll('.pipe-stage').forEach((el,i)=>{
+    el.classList.toggle('active-st', STAGES[i]===pipeFilter);
+  });
+  renderKanban(sites.filter(s=>s.dudrichStatus!=='Confirmed Dudrich'));
+}
+
+function renderKanban(nd) {
+  const cols = pipeFilter ? [pipeFilter] : STAGES;
+  document.getElementById('kanbanContainer').innerHTML = `
+    <div class="kanban">
+      ${cols.map(st=>{
+        const items = nd.filter(s=>s.status===st);
+        return `<div class="kb-col">
+          <div class="kb-header"><span>${STAGE_LABELS[st]}</span><span class="kb-cnt">${items.length}</span></div>
+          ${items.length===0?'<div class="kb-empty">—</div>':''}
+          ${items.map(s=>{
+            const sc = score(s);
+            const pr = priority(sc);
+            return `<div class="kb-item" onclick="openEditModal('${s.id}')">
+              <div class="kb-item-title">${s.name}</div>
+              <div class="kb-item-sub">${s.town||''}${s.county?' · '+s.county:''}</div>
+              <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
+                <span class="badge ${priClass(pr)}">${pr}</span>
+                <span class="badge b-score">${sc}</span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── Outreach ──
+function renderOutreach() {
+  const search = (document.getElementById('oSearch')?.value||'').toLowerCase();
+  const pri    = document.getElementById('oPriority')?.value||'';
+  const st     = document.getElementById('oStatus')?.value||'';
+
+  let list = sites
+    .filter(s => s.dudrichStatus !== 'Confirmed Dudrich')
+    .map(s => ({...s, _sc: score(s)}));
+
+  if (search) list = list.filter(s =>
+    (s.name||'').toLowerCase().includes(search) ||
+    (s.town||'').toLowerCase().includes(search));
+  if (pri) list = list.filter(s => priority(s._sc) === pri);
+  if (st)  list = list.filter(s => s.status === st);
+  list.sort((a,b) => b._sc - a._sc);
+
+  const c = document.getElementById('outreachContainer');
+  if (!list.length) {
+    c.innerHTML = `<div class="empty"><div class="ei">◻</div><p>No sites match the filters.</p></div>`;
+    return;
+  }
+  c.innerHTML = `<div class="sites-grid">${list.map(s=>{
+    const pr = priority(s._sc);
+    return `<div class="site-card">
+      <div class="sc-header">
+        <div>
+          <div class="sc-title">${s.name}</div>
+          <div class="sc-addr">${addr(s)||'No address recorded'}</div>
+        </div>
+        <div class="badges">
+          <span class="badge ${priClass(pr)}">${pr}</span>
+          <span class="badge b-score">${s._sc}/100</span>
+          <span class="st-pill st-${s.status}">${s.status.replace('_',' ')}</span>
+        </div>
+      </div>
+      <div class="sc-meta">
+        <div class="meta-item"><span class="meta-lbl">Owner</span><span class="meta-val no-mono">${s.ownerName||'—'}</span></div>
+        <div class="meta-item"><span class="meta-lbl">Owner Type</span><span class="meta-val no-mono">${s.ownerType}</span></div>
+        <div class="meta-item"><span class="meta-lbl">Garages</span><span class="meta-val">${s.garages||'—'}</span></div>
+        <div class="meta-item"><span class="meta-lbl">Ownership</span><span class="meta-val no-mono">${s.ownershipStatus}</span></div>
+      </div>
+      <div class="sc-actions">
+        <button class="btn btn-primary btn-sm" onclick="openLetterModal('${s.id}')">✉ Generate Letter</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">✎ Edit</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── Site Card ──
+function siteCard(s, sc, isExcl) {
+  const pr = priority(sc);
+  const prClass = priClass(pr);
+  const sfClass = pr==='HOT'?'sf-hot':pr==='WARM'?'sf-warm':'sf-cold';
+  const o = offers(s);
+  const a = addr(s);
+  const ra = recAction(s);
+  const raClass = recActionClass(ra);
+  const raLabel = REC_ACTION_LABELS[ra] || ra;
+  const hasDev = s.coveredByContract && s.coveredByContract !== 'Unknown';
+
+  return `<div class="site-card" id="card-${s.id}">
+    <div class="sc-header">
+      <div>
+        <div class="sc-title">${s.name}</div>
+        <div class="sc-addr">${a||'No address recorded'}</div>
+      </div>
+      <div class="badges">
+        ${isExcl
+          ? '<span class="badge b-dudrich">DUDRICH EXCL.</span>'
+          : `<span class="badge ${prClass}">${pr}</span>`}
+        ${!isExcl ? `<span class="badge b-score">${sc}/100</span>` : ''}
+        <span class="badge ${raClass}">${raLabel}</span>
+        <span class="st-pill st-${s.status}">${s.status.replace('_',' ')}</span>
+      </div>
+    </div>
+
+    ${!isExcl ? `
+    <div class="score-bar-wrap">
+      <span class="score-bar-lbl">Score</span>
+      <div class="score-bar-track"><div class="score-bar-fill ${sfClass}" style="width:${sc}%"></div></div>
+      <span style="font-size:11px;color:var(--txt3);font-family:var(--mono)">${sc}</span>
+    </div>` : ''}
+
+    <div class="sc-meta">
+      <div class="meta-item"><span class="meta-lbl">Garages</span><span class="meta-val">${s.garages||'—'}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Market Value</span><span class="meta-val">${fmtGBP(parseFloat(s.marketValue))}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Rent / Garage / Month</span><span class="meta-val">${s.monthlyRent?fmtGBP(parseFloat(s.monthlyRent)):'—'}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Owner</span><span class="meta-val no-mono">${s.ownerName||'—'}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Owner Type</span><span class="meta-val no-mono">${s.ownerType}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Condition</span><span class="meta-val no-mono">${s.condition}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Vacancy</span><span class="meta-val no-mono">${s.vacancyLevel}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Ownership</span><span class="meta-val no-mono">${s.ownershipStatus}</span></div>
+      <div class="meta-item"><span class="meta-lbl">Dudrich</span><span class="meta-val no-mono">${s.dudrichStatus}</span></div>
+    </div>
+
+    ${hasDev ? `
+    <div class="dev-panel">
+      <div class="dev-panel-title">◈ Development Contract</div>
+      <div class="sc-meta" style="margin-bottom:0">
+        <div class="meta-item"><span class="meta-lbl">Contract Coverage</span><span class="meta-val no-mono">${s.coveredByContract||'—'}</span></div>
+        ${s.contractRef?`<div class="meta-item"><span class="meta-lbl">Reference</span><span class="meta-val">${s.contractRef}</span></div>`:''}
+        <div class="meta-item"><span class="meta-lbl">Dev Rights</span><span class="meta-val no-mono">${s.developmentRights||'Unknown'}</span></div>
+        <div class="meta-item"><span class="meta-lbl">Future Rights</span><span class="meta-val no-mono">${s.futureRights||'Unknown'}</span></div>
+        <div class="meta-item"><span class="meta-lbl">Planning Potential</span><span class="meta-val no-mono">${s.planningPotential||'Unknown'}</span></div>
+      </div>
+    </div>` : ''}
+
+    ${!isExcl && o.mv > 0 ? `
+    <div class="offer-panel">
+      <div style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Offer Calculator</div>
+      <div class="offer-grid">
+        <div class="offer-item">
+          <span class="offer-lbl">Market Value</span>
+          <span class="offer-val">${fmtGBP(o.mv)}</span>
+          ${o.ar>0?`<span class="offer-sub">${pct(o.yMV)} gross yield</span>`:''}
+        </div>
+        <div class="offer-item">
+          <span class="offer-lbl">5% Below MV (fast-sale)</span>
+          <span class="offer-val">${fmtGBP(o.o5)}</span>
+          ${o.ar>0?`<span class="offer-sub">${pct(o.y5)} yield</span>`:''}
+        </div>
+        <div class="offer-item">
+          <span class="offer-lbl">10% Below MV (aggressive)</span>
+          <span class="offer-val">${fmtGBP(o.o10)}</span>
+          ${o.ar>0?`<span class="offer-sub">${pct(o.y10)} yield</span>`:''}
+        </div>
+        ${o.ar>0?`<div class="offer-item">
+          <span class="offer-lbl">Est. Annual Rent</span>
+          <span class="offer-val">${fmtGBP(o.ar)}</span>
+          <span class="offer-sub">${s.garages} garages × ${fmtGBP(parseFloat(s.monthlyRent))} × 12</span>
+        </div>`:''}
+      </div>
+    </div>` : ''}
+
+    ${s.notes ? `<div class="sc-note">${s.notes}</div>` : ''}
+
+    <div class="sc-actions">
+      <select class="status-sel" onchange="updateStatus('${s.id}',this.value)">
+        ${STAGES.map(st=>`<option value="${st}"${s.status===st?' selected':''}>${STAGE_LABELS[st]}</option>`).join('')}
+      </select>
+      ${!isExcl?`<button class="btn btn-ghost btn-sm" onclick="openLetterModal('${s.id}')">✉ Letter</button>`:''}
+      <button class="btn btn-ghost btn-sm" onclick="openEditModal('${s.id}')">✎ Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSite('${s.id}')">✕ Delete</button>
+    </div>
+  </div>`;
+}
+
+// ── Status update ──
+function updateStatus(id, status) {
+  const i = sites.findIndex(s=>s.id===id);
+  if (i<0) return;
+  sites[i].status = status;
+  save();
+  toast('Status updated','ok');
+  if (curView==='dashboard') renderDash();
+  if (curView==='pipeline') renderPipeline();
+}
+
+// ── Add/Edit Modal ──
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add Garage Site';
+  document.getElementById('siteForm').reset();
+  document.getElementById('fid').value = '';
+  document.getElementById('siteModal').classList.add('open');
+  setTimeout(() => document.getElementById('fn')?.focus(), 50);
+}
+
+function openEditModal(id) {
+  const s = sites.find(x=>x.id===id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Site';
+  document.getElementById('fid').value = s.id;
+  document.getElementById('fn').value = s.name||'';
+  document.getElementById('ftown').value = s.town||'';
+  document.getElementById('faddr').value = s.address||'';
+  document.getElementById('fcounty').value = s.county||'';
+  document.getElementById('fpost').value = s.postcode||'';
+  document.getElementById('fgar').value = s.garages||'';
+  document.getElementById('fmv').value = s.marketValue||'';
+  document.getElementById('frent').value = s.monthlyRent||'';
+  document.getElementById('fowner').value = s.ownerName||'';
+  document.getElementById('fownertype').value = s.ownerType||'Unknown';
+  document.getElementById('fownership').value = s.ownershipStatus||'Unknown';
+  document.getElementById('fdudrich').value = s.dudrichStatus||'Unknown';
+  document.getElementById('fcond').value = s.condition||'Good';
+  document.getElementById('fvac').value = s.vacancyLevel||'Unknown';
+  document.getElementById('fstatus').value = s.status||'FOUND';
+  document.getElementById('fnotes').value = s.notes||'';
+  document.getElementById('fcoveredByContract').value = s.coveredByContract||'Unknown';
+  document.getElementById('fcontractRef').value = s.contractRef||'';
+  document.getElementById('fdevRights').value = s.developmentRights||'Unknown';
+  document.getElementById('ffutureRights').value = s.futureRights||'Unknown';
+  document.getElementById('fplanningPotential').value = s.planningPotential||'Unknown';
+  document.getElementById('siteModal').classList.add('open');
+  setTimeout(() => document.getElementById('fn')?.focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('siteModal').classList.remove('open');
+  editingId = null;
+}
+
+function saveSite(e) {
+  e.preventDefault();
+  const now = new Date().toISOString();
+  const existing = editingId ? sites.find(s=>s.id===editingId) : null;
+  const s = {
+    id: editingId || uid(),
+    name: document.getElementById('fn').value.trim(),
+    town: document.getElementById('ftown').value.trim(),
+    address: document.getElementById('faddr').value.trim(),
+    county: document.getElementById('fcounty').value.trim(),
+    postcode: document.getElementById('fpost').value.trim(),
+    garages: document.getElementById('fgar').value,
+    marketValue: document.getElementById('fmv').value,
+    monthlyRent: document.getElementById('frent').value,
+    ownerName: document.getElementById('fowner').value.trim(),
+    ownerType: document.getElementById('fownertype').value,
+    ownershipStatus: document.getElementById('fownership').value,
+    dudrichStatus: document.getElementById('fdudrich').value,
+    condition: document.getElementById('fcond').value,
+    vacancyLevel: document.getElementById('fvac').value,
+    status: document.getElementById('fstatus').value,
+    notes: document.getElementById('fnotes').value.trim(),
+    coveredByContract: document.getElementById('fcoveredByContract').value,
+    contractRef: document.getElementById('fcontractRef').value.trim(),
+    developmentRights: document.getElementById('fdevRights').value,
+    futureRights: document.getElementById('ffutureRights').value,
+    planningPotential: document.getElementById('fplanningPotential').value,
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
+  if (editingId) {
+    const i = sites.findIndex(x=>x.id===editingId);
+    if (i>=0) sites[i] = s;
+  } else {
+    sites.push(s);
+  }
+  const wasEditing = !!editingId;
+  save();
+  closeModal();
+  toast(wasEditing ? 'Site updated' : 'Site added','ok');
+  renderView(curView);
+}
+
+// ── Delete ──
+function deleteSite(id) {
+  if (!confirm('Delete this site? This cannot be undone.')) return;
+  sites = sites.filter(s=>s.id!==id);
+  save();
+  toast('Site deleted','ok');
+  renderView(curView);
+}
+
+// ── Letter Modal ──
+function openLetterModal(id) {
+  const s = sites.find(x=>x.id===id);
+  if (!s) return;
+  document.getElementById('letterContent').value = generateLetter(s);
+  document.getElementById('letterModal').classList.add('open');
+}
+function closeLetterModal() { document.getElementById('letterModal').classList.remove('open'); }
+function copyLetter() {
+  const t = document.getElementById('letterContent').value;
+  navigator.clipboard?.writeText(t).then(()=>toast('Copied to clipboard','ok')).catch(()=>toast('Select all and copy manually','err'));
+}
+
+// ── Data Management ──
+function exportData() {
+  const data = JSON.stringify({version:1, exportedAt:new Date().toISOString(), sites}, null, 2);
+  const blob = new Blob([data],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `garage-radar-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Data exported','ok');
+}
+
+function importData() {
+  const raw = document.getElementById('importTA').value.trim();
+  if (!raw) { toast('Paste JSON first','err'); return; }
+  try {
+    const parsed = JSON.parse(raw);
+    const imported = Array.isArray(parsed) ? parsed : (parsed.sites || []);
+    if (!Array.isArray(imported)||!imported.length) { toast('No valid sites found in JSON','err'); return; }
+    const existing = new Set(sites.map(s=>s.id));
+    let added = 0;
+    imported.forEach(s => { if (s.id && !existing.has(s.id)) { sites.push(s); added++; } });
+    save();
+    document.getElementById('importTA').value = '';
+    toast(`Imported ${added} site${added!==1?'s':''}`, 'ok');
+    renderView(curView);
+  } catch { toast('Invalid JSON — check the format','err'); }
+}
+
+function clearAll() {
+  if (!confirm(`Delete all ${sites.length} sites? This cannot be undone.`)) return;
+  if (!confirm('Final confirmation: delete all data?')) return;
+  sites = [];
+  save();
+  toast('All data cleared','ok');
+  renderView(curView);
+}
+
+function loadSeed() {
+  if (sites.length > 0 && !confirm('Add sample data alongside existing records?')) return;
+  const now = new Date().toISOString();
+  const seed = [
+    // ── 2 DUDRICH EXCLUDED ──
+    {
+      id:'seed_d1', name:'Lockwood Road Garages', address:'14–22 Lockwood Road',
+      town:'Croydon', county:'Surrey', postcode:'CR0 3BT',
+      garages:'32', marketValue:'380000', monthlyRent:'80',
+      ownerName:'Apex Property Holdings Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Confirmed Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'FOUND',
+      coveredByContract:'Yes', contractRef:'DC/2019/CRY-001',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Confirmed LockUpGarages portfolio site. Covered by 2019 development contract with full rights. Development viable under existing contract.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_d2', name:'Elmfield Park Lock-Ups', address:'Elmfield Park Estate',
+      town:'Bromley', county:'Kent', postcode:'BR1 2TP',
+      garages:'18', marketValue:'210000', monthlyRent:'70',
+      ownerName:'Dudrich Estates Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Confirmed Dudrich',
+      condition:'Good', vacancyLevel:'Low', status:'FOUND',
+      coveredByContract:'Needs Review', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Dudrich-owned. Contract coverage unclear — legal review required before any development action.',
+      createdAt:now, updatedAt:now
+    },
+    // ── 2 HOT TARGETS ──
+    {
+      id:'seed_h1', name:'Blythe Hill Garage Block', address:'Off Blythe Hill Lane',
+      town:'Lewisham', county:'Greater London', postcode:'SE6 4UB',
+      garages:'48', marketValue:'520000', monthlyRent:'90',
+      ownerName:'Raymond Holloway', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Poor', vacancyLevel:'High', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Elderly individual owner, motivated to sell. Block in poor condition with significant vacancy. Very strong acquisition candidate. Solicitor details obtained.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_h2', name:'Station Approach Garages', address:'Station Approach Industrial Estate',
+      town:'Tunbridge Wells', county:'Kent', postcode:'TN1 2SZ',
+      garages:'55', marketValue:'640000', monthlyRent:'85',
+      ownerName:'Moorgate Property Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Derelict', vacancyLevel:'High', status:'OFFER_SENT',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Company in creditor voluntary arrangement. Solicitors handling disposal. Derelict block — significant upside post-refurb. Full dev rights confirmed. Offer submitted at £576,000.',
+      createdAt:now, updatedAt:now
+    },
+    // ── 1 WARM TARGET ──
+    {
+      id:'seed_w1', name:'Church Lane Lock-Ups', address:'Church Lane Estate',
+      town:'Horsham', county:'West Sussex', postcode:'RH12 1AA',
+      garages:'15', marketValue:'175000', monthlyRent:'60',
+      ownerName:'Horsham District Council', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Good', vacancyLevel:'Low', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'Low',
+      notes:'Council asset disposal review underway. Site in good condition but low vacancy makes it less urgent. Monitor for formal listing.',
+      createdAt:now, updatedAt:now
+    },
+    // ── 1 COLD TARGET ──
+    {
+      id:'seed_c1', name:'Reigate Road Garages', address:'22–40 Reigate Road',
+      town:'Redhill', county:'Surrey', postcode:'RH1 6PU',
+      garages:'12', marketValue:'145000', monthlyRent:'',
+      ownerName:'', ownerType:'Unknown',
+      ownershipStatus:'Land Registry needed', dudrichStatus:'Unknown',
+      condition:'Good', vacancyLevel:'Low', status:'FOUND',
+      coveredByContract:'Unknown', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Unknown',
+      notes:'Spotted during drive. Ownership completely unknown — Land Registry search required. Low vacancy and good condition make this lower priority but worth tracking.',
+      createdAt:now, updatedAt:now
+    },
+  ];
+
+  const expandedSeed = [
+    // ── SURREY ──
+    {
+      id:'seed_sur1', name:'Throwley Close Garages', address:'Throwley Close',
+      town:'Sutton', county:'Surrey', postcode:'SM1 4AA',
+      garages:'22', marketValue:'260000', monthlyRent:'75',
+      ownerName:'T. Bhatt', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Individual owner confirmed via Land Registry. Willing to discuss but not urgently selling. Worth a letter approach.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_sur2', name:'Goldsworth Park Garage Court', address:'Goldsworth Park Trading Estate',
+      town:'Woking', county:'Surrey', postcode:'GU21 3LQ',
+      garages:'38', marketValue:'440000', monthlyRent:'80',
+      ownerName:'Apex Garages Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Poor', vacancyLevel:'High', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Company-owned block in poor condition, high vacancy. Director has shown interest in disposal. Follow up with formal offer.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_sur3', name:'Ruxley Lane Lock-Ups', address:'Ruxley Lane',
+      town:'Epsom', county:'Surrey', postcode:'KT19 0JP',
+      garages:'14', marketValue:'162000', monthlyRent:'',
+      ownerName:'', ownerType:'Unknown',
+      ownershipStatus:'Land Registry needed', dudrichStatus:'Unknown',
+      condition:'Good', vacancyLevel:'Low', status:'FOUND',
+      coveredByContract:'Unknown', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Low',
+      notes:'Spotted on street. No ownership data yet. Low priority given good condition and low vacancy.',
+      createdAt:now, updatedAt:now
+    },
+    // ── KENT ──
+    {
+      id:'seed_ken1', name:'Luton Road Garage Block', address:'Luton Road Estate',
+      town:'Chatham', county:'Kent', postcode:'ME4 5LL',
+      garages:'31', marketValue:'320000', monthlyRent:'70',
+      ownerName:'Medway Housing Association', ownerType:'Housing Association',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'Medium',
+      notes:'Housing association undertaking portfolio review. May include garages in disposal. Worth monitoring and making informal approach.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ken2', name:'Dartford North Garages', address:'Bow Arrow Lane',
+      town:'Dartford', county:'Kent', postcode:'DA2 6PD',
+      garages:'44', marketValue:'510000', monthlyRent:'85',
+      ownerName:'P. Fairweather', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Derelict', vacancyLevel:'High', status:'OFFER_SENT',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Derelict block near Dartford Crossing retail corridor. Full development rights confirmed with planners. Offer submitted at £459,000. High-potential redevelopment site.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ken3', name:'Weald Road Garages', address:'Weald Road',
+      town:'Sevenoaks', county:'Kent', postcode:'TN13 1QB',
+      garages:'18', marketValue:'215000', monthlyRent:'72',
+      ownerName:'M. Hurst', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'FOLLOW_UP',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Owner initially said not selling but agreed to keep in touch. Follow up in 3 months.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ken4', name:'Coldharbour Road Lock-Ups', address:'Coldharbour Road',
+      town:'Gravesend', county:'Kent', postcode:'DA11 7LT',
+      garages:'27', marketValue:'295000', monthlyRent:'68',
+      ownerName:'Gravesham Borough Council', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'FOUND',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Low',
+      notes:'Council asset not yet listed for disposal. Monitor planning portal and council budget papers for signs of review.',
+      createdAt:now, updatedAt:now
+    },
+    // ── GREATER LONDON ──
+    {
+      id:'seed_glo1', name:'Eltham Green Garages', address:'Eltham Green Road',
+      town:'Eltham', county:'Greater London', postcode:'SE9 5LH',
+      garages:'36', marketValue:'420000', monthlyRent:'88',
+      ownerName:'Royal Borough of Greenwich', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'High',
+      notes:'Council asset in Eltham housing zone. High planning potential given TfL connectivity masterplan. Worth formal expression of interest.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_glo2', name:'Woolwich Arsenal Garage Court', address:'Plumstead Road',
+      town:'Woolwich', county:'Greater London', postcode:'SE18 1JH',
+      garages:'52', marketValue:'640000', monthlyRent:'92',
+      ownerName:'Berkley Estates Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Poor', vacancyLevel:'High', status:'NEGOTIATION',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'Active negotiation underway. Company seeking quick disposal ahead of a refinancing event. Full rights confirmed. Lawyers engaged on both sides.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_glo3', name:'Catford Road Garages', address:'Catford Road',
+      town:'Catford', county:'Greater London', postcode:'SE6 2EA',
+      garages:'24', marketValue:'290000', monthlyRent:'82',
+      ownerName:'Catford Property Co Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Company director responded positively to initial letter. Request valuation meeting.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_glo4', name:'Lausanne Road Lock-Ups', address:'Lausanne Road',
+      town:'New Cross', county:'Greater London', postcode:'SE15 2JD',
+      garages:'16', marketValue:'200000', monthlyRent:'86',
+      ownerName:'K. Okoro', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Good', vacancyLevel:'Low', status:'VALUED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Well-maintained block, low vacancy. Owner not actively selling. Keep as watch target — area regeneration may motivate future sale.',
+      createdAt:now, updatedAt:now
+    },
+    // ── EAST SUSSEX ──
+    {
+      id:'seed_essx1', name:'Hollingdean Garage Block', address:'Hollingdean Road',
+      town:'Brighton', county:'East Sussex', postcode:'BN1 7HB',
+      garages:'20', marketValue:'240000', monthlyRent:'75',
+      ownerName:'Brighton Garages Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'OFFER_SENT',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Offer sent at £216,000. Awaiting director response. Solicitor identified.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_essx2', name:'Moulsecoomb Lock-Ups', address:'Moulsecoomb Way',
+      town:'Brighton', county:'East Sussex', postcode:'BN2 4PA',
+      garages:'11', marketValue:'128000', monthlyRent:'',
+      ownerName:'', ownerType:'Unknown',
+      ownershipStatus:'Land Registry needed', dudrichStatus:'Unknown',
+      condition:'Derelict', vacancyLevel:'High', status:'FOUND',
+      coveredByContract:'Unknown', contractRef:'',
+      developmentRights:'Unknown', futureRights:'Unknown', planningPotential:'Low',
+      notes:'Derelict, completely unoccupied. Unknown ownership. Land Registry search required before any approach.',
+      createdAt:now, updatedAt:now
+    },
+    // ── WEST SUSSEX ──
+    {
+      id:'seed_wssx1', name:'Manor Royal Garage Court', address:'Manor Royal Business District',
+      town:'Crawley', county:'West Sussex', postcode:'RH10 9PY',
+      garages:'28', marketValue:'315000', monthlyRent:'72',
+      ownerName:'Crawley Borough Council', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'FOUND',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'Medium',
+      notes:'Council site near Gatwick employment zone. No formal disposal signals yet but worth monitoring.',
+      createdAt:now, updatedAt:now
+    },
+    // ── ESSEX ──
+    {
+      id:'seed_ess1', name:'Mawney Road Garages', address:'Mawney Road',
+      town:'Romford', county:'Essex', postcode:'RM7 7HU',
+      garages:'33', marketValue:'370000', monthlyRent:'78',
+      ownerName:'Romford Property Holdings Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Poor', vacancyLevel:'High', status:'FOLLOW_UP',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Partial', futureRights:'Unknown', planningPotential:'Medium',
+      notes:'Company director met informally at local property event. Interested but not ready to move. Follow up Q3.',
+      createdAt:now, updatedAt:now
+    },
+    {
+      id:'seed_ess2', name:'Vange Hill Garage Block', address:'Vange Hill Drive',
+      town:'Basildon', county:'Essex', postcode:'SS16 4JG',
+      garages:'40', marketValue:'430000', monthlyRent:'70',
+      ownerName:'Basildon Council', ownerType:'Council',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'High', status:'OWNERSHIP_CHECKED',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Unknown', futureRights:'No', planningPotential:'High',
+      notes:'Council listed this block in their asset review. High planning potential as it sits adjacent to residential zone marked for intensification.',
+      createdAt:now, updatedAt:now
+    },
+    // ── ADDITIONAL DUDRICH ──
+    {
+      id:'seed_d3', name:'Whitehorse Road Garage Court', address:'Whitehorse Road',
+      town:'Croydon', county:'Greater London', postcode:'CR0 2JH',
+      garages:'25', marketValue:'295000', monthlyRent:'78',
+      ownerName:'LockUpGarages Holdings Ltd', ownerType:'Company',
+      ownershipStatus:'Confirmed', dudrichStatus:'Confirmed Dudrich',
+      condition:'Good', vacancyLevel:'Low', status:'FOUND',
+      coveredByContract:'Yes', contractRef:'DC/2021/CRY-007',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'LockUpGarages branded site. Covered by 2021 development contract. Full rights in place. Develop under existing agreement.',
+      createdAt:now, updatedAt:now
+    },
+    // ── WON / ACQUIRED ──
+    {
+      id:'seed_won1', name:'Sternhall Lane Garages', address:'Sternhall Lane',
+      town:'Peckham', county:'Greater London', postcode:'SE15 4AQ',
+      garages:'19', marketValue:'235000', monthlyRent:'88',
+      ownerName:'J. Mbeki', ownerType:'Individual',
+      ownershipStatus:'Confirmed', dudrichStatus:'Not Dudrich',
+      condition:'Average', vacancyLevel:'Medium', status:'WON',
+      coveredByContract:'No', contractRef:'',
+      developmentRights:'Full', futureRights:'Yes', planningPotential:'High',
+      notes:'ACQUIRED at £193,500. Solicitor completion 14 Mar 2024. Keys received. Refurb plan in progress.',
+      createdAt:now, updatedAt:now
+    },
+  ];
+  seed.push(...expandedSeed);
+  const existing = new Set(sites.map(s=>s.id));
+  let added = 0;
+  seed.forEach(s => { if (!existing.has(s.id)) { sites.push(s); added++; } });
+  save();
+  toast(`Loaded ${added} sample site${added!==1?'s':''}`, 'ok');
+  renderView(curView);
+}
+
+// ── Sidebar (mobile) ──
+function toggleSb() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sbOverlay').classList.toggle('open');
+}
+function closeSb() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('open');
+}
+
+// ── Toast ──
+let toastTimer;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ── Keyboard Shortcuts ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeLetterModal(); }
+});
+
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) { closeModal(); closeLetterModal(); } });
+});
+
+// ── Theme ──
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('gar_theme', t);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = t === 'dark' ? '◑ Light' : '◑ Dark';
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  setTheme(cur === 'light' ? 'dark' : 'light');
+}
+
+// ── Init ──
+load();
+setTheme(localStorage.getItem('gar_theme') || 'light');
+showView('dashboard');
+</script>
+</body>
+</html>

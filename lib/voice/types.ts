@@ -10,3 +10,11 @@ export interface DraftRecord {
   dueDate?: string
   notes?: string
 }
+
+export interface VoiceDraft {
+  id: string
+  userId?: string
+  transcript?: string
+  parsedContent?: Record<string, unknown>
+  createdAt: Date
+}

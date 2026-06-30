@@ -1,12 +1,14 @@
 import { relations } from 'drizzle-orm'
 import {
   boolean,
+  date,
   integer,
   jsonb,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
 
@@ -182,6 +184,290 @@ export const osMessageThreads = pgTable('os_message_threads', {
   unreadCount: integer('unread_count').notNull().default(0),
   isPinned: boolean('is_pinned').notNull().default(false),
   linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// FineGuard workflow tables
+export const fgCompanySnapshots = pgTable('fg_company_snapshots', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  rawData: jsonb('raw_data').notNull(),
+  companyName: varchar('company_name', { length: 255 }),
+  companyStatus: varchar('company_status', { length: 50 }),
+  accountsNextDue: date('accounts_next_due'),
+  confirmationStatementNextDue: date('confirmation_statement_next_due'),
+  lastAccountsMadeUpTo: date('last_accounts_made_up_to'),
+  lastConfirmationStatementDate: date('last_confirmation_statement_date'),
+  fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
+})
+
+export const fgAlerts = pgTable('fg_alerts', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  alertType: varchar('alert_type', { length: 50 }).notNull(),
+  dueDate: date('due_date').notNull(),
+  reminderDate: date('reminder_date').notNull(),
+  daysBefore: integer('days_before').notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  processedAt: timestamp('processed_at'),
+})
+
+export const fgReminderEvents = pgTable('fg_reminder_events', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  alertId: uuid('alert_id').references(() => fgAlerts.id, { onDelete: 'cascade' }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  detail: text('detail'),
+  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+})
+
+export const fgMessageLogs = pgTable('fg_message_logs', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  channel: varchar('channel', { length: 20 }).notNull().default('email'),
+  recipient: varchar('recipient', { length: 255 }),
+  subject: varchar('subject', { length: 500 }),
+  body: text('body'),
+  status: varchar('status', { length: 20 }).notNull().default('logged'),
+  sentAt: timestamp('sent_at').notNull().defaultNow(),
+})
+
+export const fgActivityLog = pgTable('fg_activity_log', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  runId: varchar('run_id', { length: 36 }),
+  entityType: varchar('entity_type', { length: 50 }),
+  entityId: varchar('entity_id', { length: 255 }),
+  action: varchar('action', { length: 100 }).notNull(),
+  detail: jsonb('detail'),
+  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+})
+
+// UltraCore tracking
+export const utActivityEvents = pgTable('ut_activity_events', {
+  id: uuid('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  workItemId: text('work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  userId: text('user_id'),
+  companyId: text('company_id'),
+  source: varchar('source', { length: 50 }),
+  notes: text('notes'),
+  metadata: jsonb('metadata'),
+  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
+})
+
+// Monitored companies registry
+export const monitoredCompanies = pgTable('monitored_companies', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyNumber: varchar('company_number', { length: 50 }).notNull().unique(),
+  companyName: varchar('company_name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }),
+  isActive: boolean('is_active').notNull().default(true),
+  stripeSessionId: varchar('stripe_session_id', { length: 255 }),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+  activatedAt: timestamp('activated_at'),
+  cancelledAt: timestamp('cancelled_at'),
+  lastProcessedAt: timestamp('last_processed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// OS module tables
+export const osAlerts = pgTable('os_alerts', {
+  id: text('id').primaryKey().$defaultFn(id),
+  subject: text('subject'),
+  title: text('title'),
+  body: text('body'),
+  source: varchar('source', { length: 50 }),
+  severity: varchar('severity', { length: 20 }).notNull().default('Medium'),
+  isRead: boolean('is_read').notNull().default(false),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const osPeople = pgTable('os_people', {
+  id: text('id').primaryKey().$defaultFn(id),
+  name: text('name').notNull(),
+  email: varchar('email', { length: 255 }),
+  phone: varchar('phone', { length: 20 }),
+  company: text('company'),
+  role: text('role'),
+  category: varchar('category', { length: 50 }),
+  avatarInitials: varchar('avatar_initials', { length: 3 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osTasks = pgTable('os_tasks', {
+  id: text('id').primaryKey().$defaultFn(id),
+  title: text('title').notNull(),
+  description: text('description'),
+  status: varchar('status', { length: 50 }).notNull().default('Open'),
+  priority: priority('priority').notNull().default('Medium'),
+  dueDate: timestamp('due_date'),
+  dueAt: timestamp('due_at'),
+  assignedTo: text('assigned_to'),
+  notes: text('notes'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osCallLogs = pgTable('os_call_logs', {
+  id: text('id').primaryKey().$defaultFn(id),
+  callerName: text('caller_name').notNull(),
+  callerPhone: varchar('caller_phone', { length: 20 }),
+  direction: varchar('direction', { length: 20 }).notNull(),
+  outcome: varchar('outcome', { length: 50 }).notNull(),
+  duration: integer('duration'),
+  durationSeconds: integer('duration_seconds'),
+  notes: text('notes'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  calledAt: timestamp('called_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const osMessages = pgTable('os_messages', {
+  id: text('id').primaryKey().$defaultFn(id),
+  threadId: text('thread_id').references(() => osMessageThreads.id, { onDelete: 'cascade' }),
+  senderName: text('sender_name'),
+  fromName: text('from_name'),
+  body: text('body').notNull(),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const osQuotes = pgTable('os_quotes', {
+  id: text('id').primaryKey().$defaultFn(id),
+  number: varchar('number', { length: 50 }).notNull(),
+  clientName: text('client_name'),
+  clientEmail: varchar('client_email', { length: 255 }),
+  description: text('description'),
+  amountPence: integer('amount_pence').notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('Draft'),
+  validUntil: timestamp('valid_until'),
+  notes: text('notes'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  paidAt: timestamp('paid_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osInvoices = pgTable('os_invoices', {
+  id: text('id').primaryKey().$defaultFn(id),
+  number: varchar('number', { length: 50 }).notNull(),
+  clientName: text('client_name'),
+  clientEmail: varchar('client_email', { length: 255 }),
+  description: text('description'),
+  amountPence: integer('amount_pence').notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('Draft'),
+  validUntil: timestamp('valid_until'),
+  dueAt: timestamp('due_at'),
+  issuedAt: timestamp('issued_at'),
+  notes: text('notes'),
+  paidAt: timestamp('paid_at'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const osDocuments = pgTable('os_documents', {
+  id: text('id').primaryKey().$defaultFn(id),
+  filename: text('filename').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }),
+  status: varchar('status', { length: 50 }).notNull().default('PendingReview'),
+  fileSize: integer('file_size'),
+  fileSizeBytes: integer('file_size_bytes'),
+  source: varchar('source', { length: 50 }),
+  uploadedBy: text('uploaded_by'),
+  linkedWorkItemId: text('linked_work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+  linkedCompany: text('linked_company'),
+  storagePath: text('storage_path'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// Lead tables
+export const fineguardLeads = pgTable('fineguard_leads', {
+  id: text('id').primaryKey().$defaultFn(id),
+  companyNumber: varchar('company_number', { length: 50 }).notNull(),
+  companyName: varchar('company_name', { length: 255 }),
+  director: text('director'),
+  email: varchar('email', { length: 255 }),
+  status: varchar('status', { length: 50 }).notNull().default('New'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const builderBigJobsLeads = pgTable('builder_big_jobs_leads', {
+  id: text('id').primaryKey().$defaultFn(id),
+  projectName: text('project_name'),
+  contactName: text('contact_name'),
+  companyName: text('company_name'),
+  email: varchar('email', { length: 255 }),
+  phone: varchar('phone', { length: 20 }),
+  preferredContact: varchar('preferred_contact', { length: 20 }),
+  source: varchar('source', { length: 50 }),
+  leadScore: integer('lead_score'),
+  jobTypes: text('job_types'),
+  postcodeArea: varchar('postcode_area', { length: 10 }),
+  minJobSizeBand: varchar('min_job_size_band', { length: 50 }),
+  maxTravelMiles: integer('max_travel_miles'),
+  estimatedValueBand: varchar('estimated_value_band', { length: 50 }),
+  planningStatus: varchar('planning_status', { length: 50 }),
+  notes: text('notes'),
+  assignedTo: text('assigned_to'),
+  status: varchar('status', { length: 50 }).notNull().default('New'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// UltraCore metrics tables
+export const utDailyMetrics = pgTable('ut_daily_metrics', {
+  id: text('id').primaryKey().$defaultFn(id),
+  date: varchar('date', { length: 10 }).notNull().unique(),
+  dau: integer('dau').notNull().default(0),
+  appOpens: integer('app_opens').notNull().default(0),
+  tasksCreated: integer('tasks_created').notNull().default(0),
+  tasksCompleted: integer('tasks_completed').notNull().default(0),
+  callsLogged: integer('calls_logged').notNull().default(0),
+  alertsGenerated: integer('alerts_generated').notNull().default(0),
+  alertsAcknowledged: integer('alerts_acknowledged').notNull().default(0),
+  documentsUploaded: integer('documents_uploaded').notNull().default(0),
+  quotesCreated: integer('quotes_created').notNull().default(0),
+  invoicesCreated: integer('invoices_created').notNull().default(0),
+  companiesAdded: integer('companies_added').notNull().default(0),
+  contactsAdded: integer('contacts_added').notNull().default(0),
+  workflowLeaks: integer('workflow_leaks').notNull().default(0),
+  computedAt: timestamp('computed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const utWeeklyReports = pgTable('ut_weekly_reports', {
+  id: text('id').primaryKey().$defaultFn(id),
+  weekStart: varchar('week_start', { length: 10 }).unique(),
+  weekStartDate: timestamp('week_start_date'),
+  weekEnd: varchar('week_end', { length: 10 }),
+  totalEvents: integer('total_events').notNull().default(0),
+  topEvent: text('top_event'),
+  totalBusinessActions: integer('total_business_actions'),
+  utActions: integer('ut_actions'),
+  workflowLeaks: integer('workflow_leaks'),
+  consolidationRate: varchar('consolidation_rate', { length: 10 }),
+  prevWeekRate: varchar('prev_week_rate', { length: 10 }),
+  trend: varchar('trend', { length: 10 }),
+  computedAt: timestamp('computed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+// Voice draft
+export const voiceDraft = pgTable('voice_draft', {
+  id: text('id').primaryKey().$defaultFn(id),
+  userId: text('user_id'),
+  transcript: text('transcript'),
+  parsedContent: jsonb('parsed_content'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
