@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
@@ -11,6 +11,20 @@ export default function LoginPage() {
   const [person, setPerson] = useState('Dagon')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    async function checkDevBypass() {
+      try {
+        const res = await fetch('/api/auth/dev-bypass')
+        if (res.ok) {
+          router.push('/dashboard')
+        }
+      } catch {
+        // Bypass not available, show login form
+      }
+    }
+    checkDevBypass()
+  }, [router])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
