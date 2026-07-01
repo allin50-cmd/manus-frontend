@@ -13,6 +13,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true') {
+      if (typeof window !== 'undefined') {
+        console.log('Auth bypass enabled')
+      }
+      router.push('/dashboard')
+      return
+    }
+
     async function checkDevBypass() {
       try {
         const res = await fetch('/api/auth/dev-bypass')
