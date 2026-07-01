@@ -91,6 +91,81 @@ If PR #27 concepts resurface, **only these pieces** may be considered — and **
 
 ---
 
+## Authentication & Environment Variables
+
+### Critical: Client-Side vs Server-Side Env Vars in Next.js
+
+**This is the #1 source of auth/env confusion. They work differently.**
+
+#### Client-Side Env Vars (Browser)
+- **Prefix**: `NEXT_PUBLIC_*` (REQUIRED for browser access)
+- **Access**: `process.env.NEXT_PUBLIC_*` in client components and useEffect hooks
+- **Set in**: Vercel Project Settings → Environment Variables
+- **.env.local**: Does NOT apply on Vercel; only for local dev
+- **Example**: `NEXT_PUBLIC_DISABLE_AUTH=true` ← browser can read this
+
+#### Server-Side Env Vars (Node.js)
+- **Prefix**: None (no `NEXT_PUBLIC_` prefix)
+- **Access**: `process.env.VAR_NAME` in API routes and server components only
+- **Set in**: Vercel Project Settings → Environment Variables
+- **.env.local**: Works in local dev; does NOT apply on Vercel
+- **Example**: `DATABASE_URL=postgres://...` ← browser cannot read this
+
+### Password/Passcode Gate Location
+
+- **File**: `app/login/page.tsx`
+- **How it works**: 
+  - Checks `NEXT_PUBLIC_DISABLE_AUTH` on page load in useEffect
+  - If `true`: Skips authentication, redirects to `/dashboard`
+  - If `false`/unset: Shows password form, requires correct passcode to proceed
+- **Never delete the auth code** — only bypass it behind the `NEXT_PUBLIC_DISABLE_AUTH` flag
+
+### Environment Variable Setup
+
+#### Local Development (.env.local)
+```
+# For local dev only — does NOT deploy to Vercel
+NEXT_PUBLIC_DISABLE_AUTH=true  # Bypass password screen
+DEFAULT_PASSCODE=demo1234      # Fallback passcode if DISABLE_AUTH=false
+DISABLE_AUTH=true              # Server-side fallback (rarely used)
+```
+
+#### Vercel Preview & Production
+**Project Settings → Environment Variables**
+```
+NEXT_PUBLIC_DISABLE_AUTH=true   # Client-side; needed for browser to skip auth
+DATABASE_URL=postgres://...     # Server-side; not visible to browser
+DEFAULT_PASSCODE=demo1234       # Server-side fallback
+```
+
+### Common Mistakes (Do Not Repeat)
+
+1. ❌ Setting `DISABLE_AUTH=true` and expecting the browser to skip the password screen
+   - ✅ Must use `NEXT_PUBLIC_DISABLE_AUTH=true`
+   - Why: Browser cannot read env vars without the `NEXT_PUBLIC_` prefix
+
+2. ❌ Setting env vars in `.env.local` and expecting them on Vercel
+   - ✅ `.env.local` is for local dev only; set vars in Vercel dashboard for deployed apps
+   - Why: Vercel does not load `.env.local` during builds or runtime
+
+3. ❌ Deleting auth code to "remove the password screen"
+   - ✅ Keep the auth code, only bypass it with the flag
+   - Why: Auth is required for production; the bypass is for development iteration only
+
+4. ❌ Trying to fix auth while working on PR 4 forms simultaneously
+   - ✅ Fix auth first, verify it works on Vercel, then continue PR 4 forms
+   - Why: Auth changes affect the entire app; mixing with form changes causes confusion
+
+### Phase 4 Forms (After Auth Is Fixed)
+
+When continuing with Phase 4 forms:
+- Pull `companyId` from query params: `?companyId=123`
+- Treat `personId`, `storageUrl`, `createdBy` as required text inputs (user enters these)
+- Do NOT delete any existing auth code
+- Routes: `/os/contacts/new`, `/os/tasks/new`, `/os/calls/new`, `/os/messages/new`, `/os/money/quotes/new`, `/os/money/invoices/new`, `/os/documents/upload`
+
+---
+
 ## When to Deviate
 
 These rules exist for stability. You may deviate **only if**:
@@ -118,5 +193,16 @@ If a branch or PR is attempting an unapproved architecture change:
 
 ---
 
-**Last updated**: 2026-06-29  
+**Last updated**: 2026-07-01  
 **Decision**: Vercel + Supabase + Next.js (deterministic, managed, cost-effective)
+
+---
+
+## Key Learnings
+
+**Auth/Env Confusion (Most Common Issue)**
+- Client-side env vars must use `NEXT_PUBLIC_` prefix in Next.js
+- `.env.local` is local-only; Vercel env vars go in dashboard
+- To bypass auth in the browser, set `NEXT_PUBLIC_DISABLE_AUTH=true` on Vercel
+- Server-side `DISABLE_AUTH` alone won't work for client-side checks
+- Never delete auth code; only bypass it behind the flag
