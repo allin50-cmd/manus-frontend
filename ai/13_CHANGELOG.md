@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-07-02 — UI reference doc + plugin skill
+
+### Added
+- `ai/17_UI_COMPONENT_LIBRARY.md` + `ai/assets/ultratech-os-component-library.png` — documents a supplied "UltraTech OS" component-library mockup (dark neon-3D icon style) as a **future-direction reference**, explicitly distinct from the app's current live design system, with a mapping table from mockup concepts to existing components.
+- `plugins/ultratech-ai-memory/skills/ui-reference-check/SKILL.md` — a skill that reads that doc before UI work and reminds to match the current live design system, not the mockup, unless a task explicitly asks otherwise. No AI/LLM calls; deterministic file reads only.
+- `project-memory` skill's read order now includes the new UI doc.
+
 ## 2026-07-02 — Fix workflow UI drift after the engine merge
 
 ### Fixed

@@ -13,6 +13,7 @@ This repo keeps its working memory as plain markdown files under `ai/`, not as a
 3. `ai/08_DECISIONS.md` — past decisions and why, so you don't re-litigate them
 4. `ai/10_KNOWN_ISSUES.md` — known bugs and schema blockers
 5. `ai/03_ARCHITECTURE.md`, `ai/07_DATABASE.md`, `ai/06_ROUTES.md`, `ai/04_MODULES.md`, `ai/05_APIS.md` — as relevant to the area you're touching
+6. `ai/17_UI_COMPONENT_LIBRARY.md` — before touching any UI, if the task involves new components or visual changes (see the `ui-reference-check` skill)
 
 ## Updating memory (deterministic — plain edits, not summarization)
 
