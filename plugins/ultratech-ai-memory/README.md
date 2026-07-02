@@ -6,6 +6,7 @@ A Claude Code dev-tooling plugin for this repo. It does **not** call any AI/LLM 
 
 - **SessionStart hook**: prints `ai/00_READ_THIS_FIRST.md`, `ai/02_CURRENT_STATE.md`, and `ai/10_KNOWN_ISSUES.md` into context at the start of a session, so an assistant always starts with current project state.
 - **`project-memory` skill**: instructions for reading the full `ai/` memory set and how to update it (changelog, current state, decisions, known issues) after a change — plain file edits, not AI summarization.
+- **`ui-reference-check` skill**: before building/reviewing UI, checks the design reference at `ai/17_UI_COMPONENT_LIBRARY.md` (image: `ai/assets/ultratech-os-component-library.png`) and reminds that it's a future-direction reference, not the current design system — to prevent an unscoped redesign creeping into unrelated work.
 
 ## Enable it in this repo
 

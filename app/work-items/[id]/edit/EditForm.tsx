@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import {
   WORK_ITEM_TYPES as TYPES,
   TYPE_LABELS,
-  WORK_ITEM_STATUSES as STATUSES,
   STATUS_LABELS,
   PRIORITIES,
   OWNERS,
 } from '@/lib/work-item-enums'
+import { WORK_ITEM_TRANSITIONS, allowedTransitions } from '@/server/workflow/workflowTransitions'
+import type { WorkItemStatus } from '@/lib/types'
 
 interface Item {
   id: string
@@ -28,6 +29,10 @@ interface Item {
 
 export default function EditForm({ item }: { item: Item }) {
   const router = useRouter()
+  const statusOptions = [
+    item.status,
+    ...allowedTransitions(WORK_ITEM_TRANSITIONS, item.status as WorkItemStatus),
+  ]
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -54,7 +59,9 @@ export default function EditForm({ item }: { item: Item }) {
     setError('')
     setLoading(true)
     try {
-      const body = {
+      // Field edits are saved separately from the status transition so a
+      // rejected transition can never discard them.
+      const fields: Record<string, unknown> = {
         ...form,
         dueDate: form.dueDate || null,
         company: form.company || null,
@@ -62,18 +69,35 @@ export default function EditForm({ item }: { item: Item }) {
         nextAction: form.nextAction || null,
         notes: form.notes || null,
       }
-      const res = await fetch(`/api/work-items/${item.id}`, {
+      delete fields.status
+
+      const fieldsRes = await fetch(`/api/work-items/${item.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(fields),
       })
-      if (res.ok) {
-        router.push(`/work-items/${item.id}`)
-        router.refresh()
-      } else {
-        const data = await res.json().catch(() => ({}))
+      if (!fieldsRes.ok) {
+        const data = await fieldsRes.json().catch(() => ({}))
         setError(data.error ?? 'Failed to save changes')
+        return
       }
+
+      if (form.status !== item.status) {
+        const statusRes = await fetch(`/api/work-items/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: form.status }),
+        })
+        if (!statusRes.ok) {
+          const data = await statusRes.json().catch(() => ({}))
+          setError(`Changes saved, but the status was not updated: ${data.error ?? 'invalid transition'}`)
+          router.refresh()
+          return
+        }
+      }
+
+      router.push(`/work-items/${item.id}`)
+      router.refresh()
     } catch {
       setError('Something went wrong')
     } finally {
@@ -137,7 +161,7 @@ export default function EditForm({ item }: { item: Item }) {
         <div className="grid grid-cols-2 gap-3">
           <Field label="Status">
             <select value={form.status} onChange={(e) => set('status', e.target.value)} className={inputClass}>
-              {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+              {statusOptions.map((s) => <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>)}
             </select>
           </Field>
           <Field label="Company">

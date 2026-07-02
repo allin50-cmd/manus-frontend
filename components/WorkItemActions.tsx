@@ -2,20 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-const STATUSES = [
-  { value: 'Captured', label: 'Captured' },
-  { value: 'Controlled', label: 'Controlled' },
-  { value: 'InProgress', label: 'In Progress' },
-  { value: 'Waiting', label: 'Waiting' },
-  { value: 'FollowUpDue', label: 'Follow-Up Due' },
-  { value: 'Escalated', label: 'Escalated' },
-  { value: 'DecisionNeeded', label: 'Decision Needed' },
-  { value: 'Completed', label: 'Completed' },
-  { value: 'Paused', label: 'Paused' },
-  { value: 'NotFit', label: 'Not Fit' },
-  { value: 'Archived', label: 'Archived' },
-]
+import { STATUS_LABELS } from '@/lib/work-item-enums'
+import { WORK_ITEM_TRANSITIONS, allowedTransitions, canTransition } from '@/server/workflow/workflowTransitions'
+import type { WorkItemStatus } from '@/lib/types'
 
 type Panel = 'logNote' | 'followUp' | 'changeStatus' | 'escalate' | null
 
@@ -32,6 +21,11 @@ export default function WorkItemActions({
   const [panel, setPanel] = useState<Panel>(null)
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
+
+  const status = currentStatus as WorkItemStatus
+  const statusOptions = [status, ...allowedTransitions(WORK_ITEM_TRANSITIONS, status)]
+  const canComplete = canTransition(WORK_ITEM_TRANSITIONS, status, 'Completed')
+  const canArchive = canTransition(WORK_ITEM_TRANSITIONS, status, 'Archived')
 
   function togglePanel(p: Panel) {
     setPanel((prev) => (prev === p ? null : p))
@@ -156,14 +150,14 @@ export default function WorkItemActions({
         </button>
         <button
           onClick={handleMarkComplete}
-          disabled={loading || currentStatus === 'Completed'}
+          disabled={loading || !canComplete}
           className={`${btn} bg-green-600 hover:bg-green-700 text-white`}
         >
           Mark Complete
         </button>
         <button
           onClick={handleArchive}
-          disabled={loading || currentStatus === 'Archived'}
+          disabled={loading || !canArchive}
           className={`${btn} border border-red-200 bg-white hover:bg-red-50 text-red-600`}
         >
           Archive
@@ -210,8 +204,8 @@ export default function WorkItemActions({
         <Panel title="Change Status" onClose={() => setPanel(null)}>
           <form onSubmit={handleChangeStatus} className="space-y-3">
             <select name="status" defaultValue={currentStatus} className={inputCls}>
-              {STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
+              {statusOptions.map((s) => (
+                <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
               ))}
             </select>
             <button type="submit" disabled={loading} className={submitCls}>

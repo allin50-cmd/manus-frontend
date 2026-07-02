@@ -2,8 +2,11 @@
 # Vercel auto-detects root api/ as serverless functions; excluding prevents build failure.
 /api/
 
-# Old server source — imports tRPC, cors, drizzle which are no longer installed
-server/
+# Old server source — imports tRPC, cors, drizzle which are no longer installed.
+# Keep the workflow engine because Next API routes import it during build.
+server/*
+!server/workflow/
+!server/workflow/**
 
 # Azure-specific config and functions — not used on Vercel
 azure-functions/

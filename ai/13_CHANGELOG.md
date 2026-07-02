@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-07-02 — UI reference doc + plugin skill
+
+### Added
+- `ai/17_UI_COMPONENT_LIBRARY.md` + `ai/assets/ultratech-os-component-library.png` — documents a supplied "UltraTech OS" component-library mockup (dark neon-3D icon style) as a **future-direction reference**, explicitly distinct from the app's current live design system, with a mapping table from mockup concepts to existing components.
+- `plugins/ultratech-ai-memory/skills/ui-reference-check/SKILL.md` — a skill that reads that doc before UI work and reminds to match the current live design system, not the mockup, unless a task explicitly asks otherwise. No AI/LLM calls; deterministic file reads only.
+- `project-memory` skill's read order now includes the new UI doc.
+
+## 2026-07-02 — Fix workflow UI drift after the engine merge
+
+### Fixed
+- `components/WorkItemActions.tsx` — Change Status dropdown now offers only the current status plus `allowedTransitions(WORK_ITEM_TRANSITIONS, currentStatus)` instead of all 11 statuses; Mark Complete and Archive are disabled via `canTransition(...)` instead of a hardcoded `currentStatus === 'Completed'|'Archived'` check.
+- `app/work-items/[id]/edit/EditForm.tsx` — status `<select>` options are map-derived; the status change is now submitted as a separate PATCH from the other field edits, so a rejected transition no longer discards title/notes/priority/etc. edited in the same save (surfaces a distinct "Changes saved, but the status was not updated" error).
+- `app/os/today/TodayWorkspace.tsx` — the Complete button (both Jobs Due Today and Overdue lists) now shows based on `canTransition(WORK_ITEM_TRANSITIONS, item.status, 'Completed')` instead of hardcoding `status === 'InProgress'`; the Start Job modal resets its notes/time fields when it opens (was resetting on close, so a long-idle page showed a stale start time on first open); Start Job now runs the status PATCH first and only sends the activity-log POST once that succeeds, surfacing the log failure separately instead of racing both requests and silently dropping a failed note.
+
+### Documented
+- `ai/08_DECISIONS.md` (D09) — noted that the escalate route bypassing the engine can currently resurrect a `Completed`/`Archived`/`NotFit` item straight to `Escalated`, and that the UI components above now read the transition map.
+
 ## 2026-07-02 — Server-side workflow engine
 
 ### Added

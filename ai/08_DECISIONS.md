@@ -81,3 +81,7 @@ Decisions that have been made and should NOT be re-litigated.
 **Why:** The rules existed implicitly across UI components and routes. One map means future modules (tasks, quotes, bookings) reuse the same engine instead of re-implementing checks, and the UI can never create states the server would not.
 
 **Not yet on the engine:** the escalate route, decision-resolution status flip, and `Action` status changes still write status directly (documented technical debt).
+
+**Known consequence:** because the escalate route bypasses the engine, it can currently resurrect a `Completed`/`Archived`/`NotFit` item straight to `Escalated` — a transition the map forbids — until it is routed through `transitionWorkItem`.
+
+**UI now reads the map:** `components/WorkItemActions.tsx`, `app/work-items/[id]/edit/EditForm.tsx`, and `app/os/today/TodayWorkspace.tsx` all derive their offered/enabled status actions from `allowedTransitions`/`canTransition` instead of hardcoding the status list — see the fixes in this changelog entry below.

@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import StatusBadge from '@/components/StatusBadge'
+import { WORK_ITEM_TRANSITIONS, canTransition } from '@/server/workflow/workflowTransitions'
+import type { WorkItemStatus } from '@/lib/types'
+
+function canComplete(status: string): boolean {
+  return canTransition(WORK_ITEM_TRANSITIONS, status as WorkItemStatus, 'Completed')
+}
 
 interface WorkItemSummary {
   id: string
@@ -98,7 +104,7 @@ const StartJobModal: React.FC<StartJobModalProps> = ({ isOpen, onClose, onConfir
   }, [isOpen])
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
       setSelectedId('')
       setNotes('')
       setStartTime(localNowForInput())
@@ -251,18 +257,11 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
         ? `Job started at ${startedLabel}. ${notes.trim()}`
         : `Job started at ${startedLabel}.`
 
-      const [statusRes] = await Promise.all([
-        fetch(`/api/work-items/${workItemId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'InProgress' }),
-        }),
-        fetch(`/api/work-items/${workItemId}/log`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: noteText }),
-        }),
-      ])
+      const statusRes = await fetch(`/api/work-items/${workItemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'InProgress' }),
+      })
 
       if (!statusRes.ok) {
         const d = await statusRes.json().catch(() => ({}))
@@ -270,8 +269,27 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
         return
       }
 
+      let logError = ''
+      try {
+        const logRes = await fetch(`/api/work-items/${workItemId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: noteText }),
+        })
+        if (!logRes.ok) {
+          const d = await logRes.json().catch(() => ({}))
+          logError = d.error ?? 'Unknown error'
+        }
+      } catch {
+        logError = 'Network error'
+      }
+
       setIsStartModalOpen(false)
-      setToast({ message: 'Job started successfully!', type: 'success' })
+      if (logError) {
+        setToast({ message: `Job started, but the note was not saved: ${logError}`, type: 'error' })
+      } else {
+        setToast({ message: 'Job started successfully!', type: 'success' })
+      }
       router.refresh()
     } catch {
       setToast({ message: 'Network error starting job', type: 'error' })
@@ -378,7 +396,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
               <span className="text-xs text-slate-500">
                 {item.due_at ? new Date(item.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
               </span>
-              {item.status === 'InProgress' && (
+              {canComplete(item.status) && (
                 <button
                   onClick={() => {
                     setCompletingItem({ id: item.id, title: item.title })
@@ -408,7 +426,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">{item.due_at ? new Date(item.due_at).toLocaleDateString() : ''}</span>
-              {item.status === 'InProgress' && (
+              {canComplete(item.status) && (
                 <button
                   onClick={() => {
                     setCompletingItem({ id: item.id, title: item.title })
