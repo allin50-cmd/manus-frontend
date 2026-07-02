@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { WorkItemStatus, Priority, WorkItemType } from '@/lib/types'
 import { isValidType, isValidStatus, isValidPriority } from '@/lib/work-item-enums'
+import { transitionWorkItem } from '@/server/workflow/workflowEngine'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession()
@@ -94,24 +95,28 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.decisionNeeded !== undefined) updates.decisionNeeded = body.decisionNeeded
   if (body.notes !== undefined) updates.notes = body.notes
 
+  if (body.status && body.status !== item.status) {
+    const result = await transitionWorkItem({
+      workItemId: params.id,
+      to: body.status as WorkItemStatus,
+      person: session.person,
+      updates,
+    })
+    if (result.ok === false) {
+      const httpStatus =
+        result.code === 'not_found' ? 404 :
+        result.code === 'invalid_transition' ? 400 :
+        result.code === 'forbidden' ? 403 : 503
+      return NextResponse.json({ error: result.error }, { status: httpStatus })
+    }
+    return NextResponse.json(result.entity)
+  }
+
   let updated
   try {
     updated = await db.workItem.update({ where: { id: params.id }, data: updates })
   } catch {
     return NextResponse.json({ error: 'Could not update work item' }, { status: 503 })
-  }
-
-  if (body.status && body.status !== item.status) {
-    await db.activityLog.create({
-      data: {
-        workItemId: item.id,
-        person: session.person,
-        eventType: 'StatusChanged',
-        summary: `Status changed to ${body.status}`,
-        oldStatus: item.status,
-        newStatus: body.status as string,
-      },
-    }).catch(() => {})
   }
 
   return NextResponse.json(updated)

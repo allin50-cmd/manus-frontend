@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-07-02 — Server-side workflow engine
+
+### Added
+- `server/workflow/` — reusable workflow engine (`workflowTransitions.ts`, `workflowPermissions.ts`, `workflowActivity.ts`, `workflowEngine.ts`). Status rules live in one map (`WORK_ITEM_TRANSITIONS`); `runTransition` is an entity-agnostic pipeline (permission → load → validate → apply → record) usable by Prisma and Drizzle entities; `transitionWorkItem` runs it inside one `db.$transaction`.
+- `server/workflow/__tests__/workflow.test.ts` — 13 tests for the map, activity payload, pipeline, and Prisma adapter; 3 new route tests for PATCH transition wiring (148 total).
+
+### Changed
+- `PATCH /api/work-items/[id]` — status changes now go through `transitionWorkItem` (atomic update + activity log + `lastTouchedAt`); field-only updates unchanged. API surface unchanged.
+- Behaviour deltas (deliberate): leaving `Completed`/`NotFit`/`Archived` is restricted to explicit reopen/restore transitions and other requests get 400; a failed activity write now rolls back the status change instead of being swallowed; `lastTouchedAt` is stamped on every transition.
+- `tsconfig.json` include + `vitest.config.ts` now cover `server/**` (removed stale exclude left from the rejected PR #27 layout).
+
 ## 2026-07-02 — Today Workspace + AI memory plugin
 
 ### Added

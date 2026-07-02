@@ -6,6 +6,7 @@ const { db } = vi.hoisted(() => ({
   db: {
     workItem: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), findMany: vi.fn() },
     activityLog: { create: vi.fn() },
+    $transaction: vi.fn(),
   },
 }))
 
@@ -92,5 +93,44 @@ describe('PATCH /api/work-items/[id]', () => {
     const res = await PATCH(jsonReq({ dueDate: null }), { params: { id: 'w1' } })
     expect(res.status).toBe(200)
     expect(db.workItem.update.mock.calls[0][0].data.dueDate).toBeNull()
+  })
+})
+
+describe('PATCH /api/work-items/[id] — workflow transitions', () => {
+  beforeEach(() => {
+    db.workItem.findUnique.mockResolvedValue({ id: 'w1', status: 'Captured', title: 'X' })
+    db.workItem.update.mockResolvedValue({ id: 'w1', status: 'InProgress' })
+    db.$transaction.mockImplementation(async (fn: (t: typeof db) => unknown) => fn(db))
+  })
+
+  it('runs a status change through the engine transaction and logs activity', async () => {
+    const res = await PATCH(jsonReq({ status: 'InProgress' }), { params: { id: 'w1' } })
+    expect(res.status).toBe(200)
+    expect(db.$transaction).toHaveBeenCalledTimes(1)
+    const updateData = db.workItem.update.mock.calls[0][0].data
+    expect(updateData.status).toBe('InProgress')
+    expect(updateData.lastTouchedAt).toBeInstanceOf(Date)
+    expect(db.activityLog.create.mock.calls[0][0].data).toMatchObject({
+      workItemId: 'w1',
+      eventType: 'StatusChanged',
+      oldStatus: 'Captured',
+      newStatus: 'InProgress',
+    })
+  })
+
+  it('rejects a disallowed transition with 400 and writes nothing', async () => {
+    db.workItem.findUnique.mockResolvedValue({ id: 'w1', status: 'Archived', title: 'X' })
+    const res = await PATCH(jsonReq({ status: 'Completed' }), { params: { id: 'w1' } })
+    expect(res.status).toBe(400)
+    expect(db.workItem.update).not.toHaveBeenCalled()
+    expect(db.activityLog.create).not.toHaveBeenCalled()
+  })
+
+  it('skips the engine when the status is unchanged', async () => {
+    const res = await PATCH(jsonReq({ status: 'Captured', title: 'Renamed' }), { params: { id: 'w1' } })
+    expect(res.status).toBe(200)
+    expect(db.$transaction).not.toHaveBeenCalled()
+    expect(db.workItem.update).toHaveBeenCalledTimes(1)
+    expect(db.activityLog.create).not.toHaveBeenCalled()
   })
 })

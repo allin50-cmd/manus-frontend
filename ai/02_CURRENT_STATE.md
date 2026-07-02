@@ -44,6 +44,9 @@ Last updated: 2026-06-28
 - `/os/tasks/new`
 - `/os/today` — mobile Today Workspace: KPI tiles, Start Job / Complete Job modals, jobs due/overdue/blocked/my-tasks/pending-decisions lists, team workload. Uses existing Prisma models via existing API routes (`PATCH /api/work-items/[id]`, `POST /api/work-items/[id]/log`) — no new schema, no new dependency.
 
+### Workflow engine
+- `server/workflow/` — single source of truth for `WorkItem` status transitions (`WORK_ITEM_TRANSITIONS`). `PATCH /api/work-items/[id]` runs status changes through it: permission check, transition validation, atomic update + activity log + `lastTouchedAt` in one transaction. `runTransition` is entity-agnostic so future modules (os tasks, quotes, bookings) can reuse it with their own map and persistence closures. See D09.
+
 ### API Routes
 - `/api/work-items` — CRUD
 - `/api/work-items/[id]/actions` — Action management
