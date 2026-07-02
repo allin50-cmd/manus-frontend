@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 import StatusBadge from '@/components/StatusBadge'
+import Toast from '@/components/os/workspace/Toast'
 
 interface WorkItemSummary {
   id: string
@@ -46,29 +48,6 @@ interface TodayData {
   pendingDecisions: DecisionSummary[]
   scheduledItems: ScheduledItem[]
   teamWorkload: TeamWorkloadSummary[]
-}
-
-const Toast: React.FC<{ message: string; type: 'success' | 'error'; onDismiss: () => void }> = ({
-  message,
-  type,
-  onDismiss,
-}) => {
-  useEffect(() => {
-    const timer = setTimeout(onDismiss, 3000)
-    return () => clearTimeout(timer)
-  }, [onDismiss])
-
-  return (
-    <div
-      className={`fixed bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg border shadow-lg text-sm font-medium transition-all ${
-        type === 'success'
-          ? 'bg-green-50 border-green-200 text-green-800'
-          : 'bg-red-50 border-red-200 text-red-800'
-      }`}
-    >
-      {message}
-    </div>
-  )
 }
 
 interface StartJobModalProps {
