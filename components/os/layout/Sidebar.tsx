@@ -1,0 +1,34 @@
+'use client'
+
+import Link from 'next/link'
+
+const items = [
+  { href: '/os/launcher', label: 'Home' },
+  { href: '/portfolio', label: 'Companies' },
+  { href: '/today', label: 'Tasks' },
+  { href: '/contacts', label: 'Contacts' },
+  { href: '/alerts', label: 'Alerts' },
+]
+
+export default function Sidebar() {
+  return (
+    <aside className="w-64 border-r border-white/10 bg-[#0B1020] text-white">
+      <div className="p-6">
+        <h2 className="text-xl font-bold">UltraTech OS</h2>
+      </div>
+
+      <nav className="flex flex-col gap-1 px-3">
+        {items.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="rounded-lg px-3 py-2 text-sm transition hover:bg-white/10"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+    </aside>
+  )
+}
+
