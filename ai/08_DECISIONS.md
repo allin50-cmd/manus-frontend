@@ -71,3 +71,13 @@ Decisions that have been made and should NOT be re-litigated.
 **Decision:** New routes that use Prisma enum types must import from `@/lib/types`, not `@prisma/client`.
 
 **Why:** Same as D03. This is the established pattern on the canonical branch.
+
+---
+
+## D09 — Work-item status rules live in server/workflow, never in the UI
+
+**Decision:** All `WorkItem` status transitions are validated server-side against `WORK_ITEM_TRANSITIONS` in `server/workflow/workflowTransitions.ts`. Every transition runs in one transaction that updates the row, stamps `lastTouchedAt`, and writes a `StatusChanged` activity record. Active statuses may move freely between each other; leaving `Completed`, `NotFit`, or `Archived` requires the explicit reopen/restore transitions in the map.
+
+**Why:** The rules existed implicitly across UI components and routes. One map means future modules (tasks, quotes, bookings) reuse the same engine instead of re-implementing checks, and the UI can never create states the server would not.
+
+**Not yet on the engine:** the escalate route, decision-resolution status flip, and `Action` status changes still write status directly (documented technical debt).

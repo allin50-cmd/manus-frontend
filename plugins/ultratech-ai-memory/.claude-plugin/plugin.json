@@ -1,0 +1,8 @@
+{
+  "name": "ultratech-ai-memory",
+  "description": "Deterministic markdown-based project memory for UltraTech OS / UltraCore Ops. Loads ai/*.md context at session start and provides a skill for reading/updating it. No AI/LLM calls, no external services.",
+  "version": "1.0.0",
+  "author": {
+    "name": "UltraCore Ops"
+  }
+}
