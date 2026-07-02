@@ -1,0 +1,14 @@
+{
+  "name": "ultratech-os-tools",
+  "owner": {
+    "name": "UltraCore Ops"
+  },
+  "description": "Internal dev-tooling plugins for the UltraTech OS / UltraCore Ops repo.",
+  "plugins": [
+    {
+      "name": "ultratech-ai-memory",
+      "source": "./plugins/ultratech-ai-memory",
+      "description": "Deterministic markdown-based project memory: loads ai/*.md context at session start and provides a skill for keeping it up to date. No AI/LLM calls."
+    }
+  ]
+}

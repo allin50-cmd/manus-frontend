@@ -42,6 +42,7 @@ Last updated: 2026-06-28
 - `/os/money/invoices/new`
 - `/os/money/quotes/new`
 - `/os/tasks/new`
+- `/os/today` — mobile Today Workspace: KPI tiles, Start Job / Complete Job modals, jobs due/overdue/blocked/my-tasks/pending-decisions lists, team workload. Uses existing Prisma models via existing API routes (`PATCH /api/work-items/[id]`, `POST /api/work-items/[id]/log`) — no new schema, no new dependency.
 
 ### API Routes
 - `/api/work-items` — CRUD

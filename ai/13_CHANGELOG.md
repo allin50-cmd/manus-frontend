@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-02 — Today Workspace + AI memory plugin
+
+### Added
+- `app/os/today/page.tsx`, `app/os/today/TodayWorkspace.tsx` — mobile Today Workspace (KPI tiles, Start Job / Complete Job modals, jobs due/overdue/blocked tasks/my tasks/pending decisions lists, team workload). Built on existing Prisma models and API routes only — no new tables, no new dependency, no Supabase client SDK.
+- `NavBar` — "Today Workspace" link in the mobile More menu, pointing at `/os/today`.
+- `plugins/ultratech-ai-memory/` — Claude Code dev-tooling plugin. Deterministic markdown project memory only: a `SessionStart` hook that prints `ai/00_READ_THIS_FIRST.md`, `ai/02_CURRENT_STATE.md`, `ai/10_KNOWN_ISSUES.md` into context, plus a `project-memory` skill documenting how to read/update the `ai/` files. No AI/LLM calls, no external services.
+- `.claude-plugin/marketplace.json` — local marketplace entry so the plugin can be enabled with `/plugin marketplace add .`.
+
 ## 2026-06-28 — Consolidation Phase 1
 
 ### Fixed

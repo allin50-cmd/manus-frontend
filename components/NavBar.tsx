@@ -23,6 +23,7 @@ const DESKTOP_LINKS = [
 ]
 
 const MORE_MENU = [
+  { href: '/os/today',          label: 'Today Workspace' },
   { href: '/my-tasks',          label: 'My Tasks' },
   { href: '/team',              label: 'Team Capacity' },
   { href: '/filings',           label: 'Filings' },
