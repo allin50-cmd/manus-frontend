@@ -1,0 +1,112 @@
+.
+├── _vite_src
+├── AGENTS.md
+├── ai
+│   ├── 00_READ_THIS_FIRST.md
+│   ├── 01_PROJECT_MEMORY.md
+│   ├── 02_CURRENT_STATE.md
+│   ├── 03_ARCHITECTURE.md
+│   ├── 04_MODULES.md
+│   ├── 05_APIS.md
+│   ├── 06_ROUTES.md
+│   ├── 07_DATABASE.md
+│   ├── 08_DECISIONS.md
+│   ├── 09_ROADMAP.md
+│   ├── 10_KNOWN_ISSUES.md
+│   ├── 11_AI_RULES.md
+│   ├── 12_DEPLOYMENT.md
+│   ├── 13_CHANGELOG.md
+│   ├── 14_CONSOLIDATION_PLAN.md
+│   ├── 15_STABILISATION_AUDIT.md
+│   └── CONSOLIDATION_PLAN.md
+├── app
+│   ├── activity
+│   ├── alert-events
+│   ├── alert-recipients
+│   ├── alerts
+│   ├── api
+│   ├── contacts
+│   ├── dashboard
+│   ├── decisions
+│   ├── error.tsx
+│   ├── filings
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── login
+│   ├── my-tasks
+│   ├── os
+│   ├── page.tsx
+│   ├── portfolio
+│   ├── settings
+│   ├── team
+│   ├── teams
+│   ├── templates
+│   ├── today
+│   ├── voice-intake
+│   └── work-items
+├── audit
+│   └── tree.txt
+├── build
+├── CLAUDE.md
+├── components
+│   ├── AlertDeliveriesSection.tsx
+│   ├── CompleteActionButton.tsx
+│   ├── CopyButton.tsx
+│   ├── DecisionActions.tsx
+│   ├── NavBar.tsx
+│   ├── OutreachLogSection.tsx
+│   ├── StatusBadge.tsx
+│   ├── WorkItemActions.tsx
+│   └── WorkItemFilters.tsx
+├── CURRENT_STATUS.txt
+├── db
+│   └── schema.ts
+├── deploy.log
+├── e2e
+│   ├── smoke-api.test.ts
+│   └── smoke-tests.spec.ts
+├── lib
+│   ├── __tests__
+│   ├── alert-dispatch.ts
+│   ├── alert-recipient-selector.ts
+│   ├── auth.ts
+│   ├── compliance
+│   ├── crm-utils.ts
+│   ├── db.ts
+│   ├── password.ts
+│   ├── queries
+│   ├── safe-equal.ts
+│   ├── template-utils.ts
+│   ├── types.ts
+│   ├── utils.ts
+│   ├── voice
+│   └── work-item-enums.ts
+├── middleware.ts
+├── next-env.d.ts
+├── next.config.js
+├── os
+├── package-lock.json
+├── package.json
+├── playwright.config.ts
+├── postcss.config.js
+├── prisma
+│   ├── migrations
+│   ├── schema.prisma
+│   └── seed.ts
+├── prototype.html
+├── public
+│   ├── icons
+│   ├── manifest.webmanifest
+│   └── prototype.html
+├── README.md
+├── run
+├── Sensitive
+├── smoke-test.mjs
+├── tailwind.config.ts
+├── tsconfig.json
+├── tsconfig.tsbuildinfo
+├── vercel.json
+├── vitest.config.ts
+└── voice-agent
+
+39 directories, 71 files
