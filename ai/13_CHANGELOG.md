@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-02 — Fix workflow UI drift after the engine merge
+
+### Fixed
+- `components/WorkItemActions.tsx` — Change Status dropdown now offers only the current status plus `allowedTransitions(WORK_ITEM_TRANSITIONS, currentStatus)` instead of all 11 statuses; Mark Complete and Archive are disabled via `canTransition(...)` instead of a hardcoded `currentStatus === 'Completed'|'Archived'` check.
+- `app/work-items/[id]/edit/EditForm.tsx` — status `<select>` options are map-derived; the status change is now submitted as a separate PATCH from the other field edits, so a rejected transition no longer discards title/notes/priority/etc. edited in the same save (surfaces a distinct "Changes saved, but the status was not updated" error).
+- `app/os/today/TodayWorkspace.tsx` — the Complete button (both Jobs Due Today and Overdue lists) now shows based on `canTransition(WORK_ITEM_TRANSITIONS, item.status, 'Completed')` instead of hardcoding `status === 'InProgress'`; the Start Job modal resets its notes/time fields when it opens (was resetting on close, so a long-idle page showed a stale start time on first open); Start Job now runs the status PATCH first and only sends the activity-log POST once that succeeds, surfacing the log failure separately instead of racing both requests and silently dropping a failed note.
+
+### Documented
+- `ai/08_DECISIONS.md` (D09) — noted that the escalate route bypassing the engine can currently resurrect a `Completed`/`Archived`/`NotFit` item straight to `Escalated`, and that the UI components above now read the transition map.
+
 ## 2026-07-02 — Server-side workflow engine
 
 ### Added
