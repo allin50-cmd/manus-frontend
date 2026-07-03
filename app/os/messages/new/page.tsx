@@ -30,7 +30,6 @@ export default function NewMessagePage() {
     setError('')
     setLoading(true)
     try {
-      // First, create a message thread
       const threadRes = await fetch('/api/os/message-threads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,14 +40,13 @@ export default function NewMessagePage() {
 
       if (!threadRes.ok) {
         const data = await threadRes.json().catch(() => ({}))
-        setError(data.error ?? 'Failed to create message thread')
+        setError(data.error ?? 'Failed to create thread')
         setLoading(false)
         return
       }
 
       const thread = await threadRes.json()
 
-      // Then, send the initial message
       const msgRes = await fetch('/api/os/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,10 +58,10 @@ export default function NewMessagePage() {
       })
 
       if (msgRes.ok) {
-        router.push(`/os/messages?companyId=${companyId}`)
+        router.push('/os/today')
       } else {
         const data = await msgRes.json().catch(() => ({}))
-        setError(data.error ?? 'Failed to send message')
+        setError(data.error ?? 'Failed to save message')
       }
     } catch {
       setError('Something went wrong')
@@ -98,18 +96,18 @@ export default function NewMessagePage() {
             required
             value={form.subject}
             onChange={(e) => set('subject', e.target.value)}
-            placeholder="Message subject"
+            placeholder="Subject"
             className={inputClass}
           />
         </Field>
 
-        <Field label="Message *">
+        <Field label="Text *">
           <textarea
             required
             value={form.body}
             onChange={(e) => set('body', e.target.value)}
             rows={5}
-            placeholder="Write your message…"
+            placeholder="Write here…"
             className={inputClass}
           />
         </Field>
@@ -119,9 +117,9 @@ export default function NewMessagePage() {
         <button
           type="submit"
           disabled={loading || !form.subject || !form.body}
-          className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
+          className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
         >
-          {loading ? 'Sending…' : 'Send Message'}
+          {loading ? 'Saving…' : 'Save'}
         </button>
       </form>
     </div>
