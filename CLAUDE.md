@@ -305,6 +305,7 @@ If PR #27 concepts resurface, **only these pieces** may be considered — and **
 - ✅ No new paid infrastructure (other than the approved AgentMail integration)
 - ✅ No new AI dependencies by default (other than the approved AgentMail drafting/summarization, scoped per policy)
 - ✅ No platform changes (stay Next.js + Vercel)
+- ✅ Any change affecting authentication, routing, cookies, middleware, or client-side navigation must be verified with a real browser end-to-end test. API or curl testing alone is not sufficient — curl-based session cookies bypass the browser's Secure-cookie enforcement and skip the client-side JS that drives login/redirect behavior, which is exactly the class of bug that can hide behind a passing curl check.
 
 ### Before Creating a PR
 - Rebase on `main`
