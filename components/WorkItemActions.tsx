@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { STATUS_LABELS } from '@/lib/work-item-enums'
-import { WORK_ITEM_TRANSITIONS, allowedTransitions, canTransition } from '@/server/workflow/workflowTransitions'
+import { WORK_ITEM_TRANSITIONS, optionsFor, canTransition } from '@/server/workflow/workflowTransitions'
 import type { WorkItemStatus } from '@/lib/types'
 
 type Panel = 'logNote' | 'followUp' | 'changeStatus' | 'escalate' | null
@@ -23,7 +23,7 @@ export default function WorkItemActions({
   const [msg, setMsg] = useState('')
 
   const status = currentStatus as WorkItemStatus
-  const statusOptions = [status, ...allowedTransitions(WORK_ITEM_TRANSITIONS, status)]
+  const statusOptions = optionsFor(WORK_ITEM_TRANSITIONS, status)
   const canComplete = canTransition(WORK_ITEM_TRANSITIONS, status, 'Completed')
   const canArchive = canTransition(WORK_ITEM_TRANSITIONS, status, 'Archived')
 

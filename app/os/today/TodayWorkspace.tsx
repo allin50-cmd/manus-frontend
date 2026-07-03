@@ -59,10 +59,16 @@ const Toast: React.FC<{ message: string; type: 'success' | 'error'; onDismiss: (
   type,
   onDismiss,
 }) => {
+  // Depend on `message`, not `onDismiss` — the parent passes a fresh inline
+  // closure every render, which would otherwise restart the 3s timer on any
+  // unrelated re-render instead of only when a genuinely new toast appears.
+  const onDismissRef = useRef(onDismiss)
+  onDismissRef.current = onDismiss
+
   useEffect(() => {
-    const timer = setTimeout(onDismiss, 3000)
+    const timer = setTimeout(() => onDismissRef.current(), 3000)
     return () => clearTimeout(timer)
-  }, [onDismiss])
+  }, [message])
 
   return (
     <div
@@ -266,6 +272,9 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
       if (!statusRes.ok) {
         const d = await statusRes.json().catch(() => ({}))
         setToast({ message: `Failed to start job: ${d.error ?? 'Unknown error'}`, type: 'error' })
+        // A rejection (e.g. someone else already changed this item's status)
+        // means our view is stale — refresh so the list reflects reality.
+        router.refresh()
         return
       }
 
@@ -311,6 +320,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
         setToast({ message: `Failed to complete job: ${d.error ?? 'Unknown error'}`, type: 'error' })
+        router.refresh()
         return
       }
 

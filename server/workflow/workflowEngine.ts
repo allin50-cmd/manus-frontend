@@ -6,7 +6,7 @@ import { statusChangeActivity } from './workflowActivity'
 
 export type TransitionFailure = {
   ok: false
-  code: 'forbidden' | 'not_found' | 'invalid_transition' | 'unavailable'
+  code: 'forbidden' | 'not_found' | 'invalid_transition' | 'conflict' | 'unavailable'
   error: string
 }
 
@@ -17,13 +17,17 @@ export interface TransitionSteps<S extends string, T> {
   to: S
   transitions: TransitionMap<S>
   load: () => Promise<{ status: S } | null>
-  apply: () => Promise<T>
+  apply: (from: S) => Promise<T>
   record: (from: S) => Promise<unknown>
 }
 
 // Entity-agnostic pipeline: permission → load → validate → apply → record.
 // Callers own persistence and the transaction, so this works for Prisma and
 // Drizzle entities alike. `apply` and `record` only run for a valid transition.
+// `apply` must itself guard against a concurrent transition landing between
+// `load` and `apply` (e.g. a conditional update keyed on `from`) — under
+// READ COMMITTED, two concurrent transitions can both read the same starting
+// status and both pass validation before either commits.
 export async function runTransition<S extends string, T>(
   steps: TransitionSteps<S, T>
 ): Promise<TransitionResult<T>> {
@@ -41,10 +45,12 @@ export async function runTransition<S extends string, T>(
       error: `Cannot change status from ${current.status} to ${steps.to}`,
     }
   }
-  const entity = await steps.apply()
+  const entity = await steps.apply(current.status)
   await steps.record(current.status)
   return { ok: true, entity }
 }
+
+class ConcurrentModificationError extends Error {}
 
 // `updates` lets a route apply other validated field edits atomically with the
 // status change (PATCH /api/work-items/[id] accepts both in one body).
@@ -63,9 +69,18 @@ export async function transitionWorkItem(input: {
         to,
         transitions: WORK_ITEM_TRANSITIONS,
         load: () => tx.workItem.findUnique({ where: { id: workItemId }, select: { status: true } }),
-        apply: () => {
+        apply: async (from) => {
           const data: Record<string, unknown> = { ...updates, status: to, lastTouchedAt: new Date() }
-          return tx.workItem.update({ where: { id: workItemId }, data })
+          // Conditional on `status: from` so a concurrent transition that
+          // already moved this row away from `from` loses the race cleanly
+          // (count 0) instead of being silently overwritten (lost update).
+          const result = await tx.workItem.updateMany({ where: { id: workItemId, status: from }, data })
+          if (result.count === 0) {
+            throw new ConcurrentModificationError(
+              'This item was changed by someone else — refresh and try again'
+            )
+          }
+          return tx.workItem.findUniqueOrThrow({ where: { id: workItemId } })
         },
         record: (from) =>
           tx.activityLog.create({
@@ -73,7 +88,11 @@ export async function transitionWorkItem(input: {
           }),
       })
     )
-  } catch {
+  } catch (error) {
+    if (error instanceof ConcurrentModificationError) {
+      return { ok: false, code: 'conflict', error: error.message }
+    }
+    console.error('[workflowEngine] transitionWorkItem failed', error)
     return { ok: false, code: 'unavailable', error: 'Could not update work item' }
   }
 }
