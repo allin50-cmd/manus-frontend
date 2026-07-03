@@ -1,5 +1,96 @@
 # Architecture & Development Guide
 
+## Product Vision (Do Not Deviate)
+
+### Core Principle
+
+The product is not an AI application.
+
+The product is a business that just works.
+
+Users do not buy AI, databases, APIs, workflows, agents, or automation.
+
+Users buy:
+- "Book the job."
+- "Send the invoice."
+- "Email the customer."
+- "What's urgent today?"
+- "Remind me."
+- "Answer the phone."
+
+Everything else is implementation detail.
+
+### User Experience
+
+The system must always feel like using an iPhone, not enterprise software.
+
+**Primary interface**: Voice + simple graphical icons.
+- Voice is the fastest way to complete actions.
+- Icons provide confidence, visibility, and manual control.
+- Users must always be able to switch naturally between speaking and tapping.
+
+**Voice flow**: Speak → Confirm → Save → Next Action.
+
+Every voice action creates a visible, editable record.
+
+### Design Principles
+
+Always optimise for:
+- Simplicity
+- Speed
+- Confidence
+- Clarity
+- Familiarity
+
+Never optimise for:
+- Technical demonstrations
+- AI buzzwords
+- Complex dashboards
+- Feature count
+- Engineering cleverness
+
+### Language Rules
+
+Never expose technical terminology to end users. Do not use words such as: Agent, Workflow, Database, API, LLM, Prompt, Orchestrator, Vector Database, LangGraph, MCP.
+
+The system translates simple user requests into technical operations internally — those terms are fine in code, docs, and this file, but must never appear in user-facing copy.
+
+### "Just Works" Philosophy
+
+The operating system should disappear. The user should feel that the business simply works.
+
+Every feature must answer one question: **"Does this remove work from the user?"** If not, it should not exist.
+
+### Mobile First
+
+The phone is the primary computer. Desktop is secondary. Every feature must work naturally on a phone before expanding to larger screens.
+
+### Icon First
+
+The interface should be built around clear actions, not menus. Examples: 📞 Calls, 👥 Customers, 📅 Calendar, 📧 Messages, 💷 Money, 📋 Jobs, 🛡 Compliance, 📁 Documents, ⚙ Business.
+
+Large touch targets. Minimal text. No clutter.
+
+### Voice First
+
+Voice is an input method, not a chatbot. Examples: "Book Mrs Smith.", "Email Dagon.", "What's urgent?", "Create a quote.", "Start today's jobs."
+
+The system performs the work and presents a simple confirmation.
+
+### Technology
+
+Technology is implementation detail. Current preferred stack: Vercel, Supabase, mobile-first, voice-first, simple architecture (see **Approved Stack** below for specifics).
+
+Do not recommend additional frameworks, abstractions, or AI layers unless they solve a genuine user problem.
+
+### Golden Rule
+
+Whenever making any design or engineering decision, ask: **"Will this make the customer's business feel like it just works?"**
+
+If the answer is no, choose the simpler solution.
+
+---
+
 ## Approved Stack (Phase 4)
 
 **UltraCore Ops** runs on a proven, cost-efficient, managed stack:
@@ -193,8 +284,9 @@ If a branch or PR is attempting an unapproved architecture change:
 
 ---
 
-**Last updated**: 2026-07-01  
+**Last updated**: 2026-07-03  
 **Decision**: Vercel + Supabase + Next.js (deterministic, managed, cost-effective)
+**Product vision added**: 2026-07-03 — mobile-first, voice-first, icon-first "just works" business OS; see **Product Vision** section above
 
 ---
 
