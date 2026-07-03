@@ -19,53 +19,43 @@ type RecentItem = {
 
 type TeamPulse = { owner: string; count: number }
 
-const EMPTY_DATA = {
-  overdue: 0,
-  dueToday: 0,
-  in7DaysDue: 0,
-  in30DaysDue: 0,
-  escalated: 0,
-  completedThisWeek: 0,
-  total: 0,
-  openActions: 0,
-  decisionNeeded: 0,
-  complianceAlerts: 0,
-  compliantCount: 0,
-  teamPulse: [] as TeamPulse[],
-  recentItems: [] as RecentItem[],
-}
-
-async function safeNumber(query: Promise<number>): Promise<number> {
-  try {
-    return await query
-  } catch (error) {
-    console.error('Dashboard count failed', error)
-    return 0
+function emptyData() {
+  return {
+    overdue: 0,
+    dueToday: 0,
+    in7DaysDue: 0,
+    in30DaysDue: 0,
+    escalated: 0,
+    completedThisWeek: 0,
+    total: 0,
+    openActions: 0,
+    decisionNeeded: 0,
+    complianceAlerts: 0,
+    compliantCount: 0,
+    teamPulse: [] as TeamPulse[],
+    recentItems: [] as RecentItem[],
   }
 }
 
-async function safeRecentItems(query: Promise<RecentItem[]>): Promise<RecentItem[]> {
+async function safeQuery<T>(query: Promise<T>, fallback: T, label: string): Promise<T> {
   try {
     return await query
   } catch (error) {
-    console.error('Dashboard recent items failed', error)
-    return []
+    console.error(`Dashboard ${label} failed`, error)
+    return fallback
   }
 }
 
 async function safeBriefingItems(): Promise<BriefingItemClient[]> {
-  try {
-    const items = await getBriefingItems()
-    return items.map((item) => ({
+  const mapped = getBriefingItems().then((items) =>
+    items.map((item) => ({
       ...item,
       status: item.status as string,
       priority: item.priority as string,
       dueDate: item.dueDate ? item.dueDate.toISOString() : null,
     }))
-  } catch (error) {
-    console.error('Dashboard briefing failed', error)
-    return []
-  }
+  )
+  return safeQuery(mapped, [], 'briefing')
 }
 
 async function getDashboardData() {
@@ -93,27 +83,27 @@ async function getDashboardData() {
     teamPulse,
     recentItems,
   ] = await Promise.all([
-    safeNumber(db.workItem.count({ where: { dueDate: { lt: today }, status: nonFinal } })),
-    safeNumber(db.workItem.count({ where: { dueDate: { gte: today, lte: endOfToday }, status: nonFinal } })),
-    safeNumber(db.workItem.count({ where: { dueDate: { gte: today, lt: in7Days }, status: nonFinal } })),
-    safeNumber(db.workItem.count({ where: { dueDate: { gte: in7Days, lt: in30Days }, status: nonFinal } })),
-    safeNumber(db.workItem.count({ where: { status: { in: ['Escalated', 'DecisionNeeded', 'FollowUpDue'] } } })),
-    safeNumber(db.workItem.count({ where: { status: 'Completed', updatedAt: { gte: startOfWeek } } })),
-    safeNumber(db.workItem.count({ where: { status: nonFinal } })),
-    safeNumber(db.action.count({ where: { status: 'Open' } })),
-    safeNumber(db.workItem.count({ where: { decisionNeeded: true, status: nonFinal } })),
-    safeNumber(db.alertDelivery.count({ where: { status: { in: ['Sent', 'Pending'] } } })),
+    safeQuery(db.workItem.count({ where: { dueDate: { lt: today }, status: nonFinal } }), 0, 'count'),
+    safeQuery(db.workItem.count({ where: { dueDate: { gte: today, lte: endOfToday }, status: nonFinal } }), 0, 'count'),
+    safeQuery(db.workItem.count({ where: { dueDate: { gte: today, lt: in7Days }, status: nonFinal } }), 0, 'count'),
+    safeQuery(db.workItem.count({ where: { dueDate: { gte: in7Days, lt: in30Days }, status: nonFinal } }), 0, 'count'),
+    safeQuery(db.workItem.count({ where: { status: { in: ['Escalated', 'DecisionNeeded', 'FollowUpDue'] } } }), 0, 'count'),
+    safeQuery(db.workItem.count({ where: { status: 'Completed', updatedAt: { gte: startOfWeek } } }), 0, 'count'),
+    safeQuery(db.workItem.count({ where: { status: nonFinal } }), 0, 'count'),
+    safeQuery(db.action.count({ where: { status: 'Open' } }), 0, 'count'),
+    safeQuery(db.workItem.count({ where: { decisionNeeded: true, status: nonFinal } }), 0, 'count'),
+    safeQuery(db.alertDelivery.count({ where: { status: { in: ['Sent', 'Pending'] } } }), 0, 'count'),
     Promise.all(
       owners.map((owner) =>
-        safeNumber(db.workItem.count({ where: { owner, status: nonFinal } })).then((count) => ({ owner, count }))
+        safeQuery(db.workItem.count({ where: { owner, status: nonFinal } }), 0, 'count').then((count) => ({ owner, count }))
       )
     ),
-    safeRecentItems(db.workItem.findMany({
+    safeQuery(db.workItem.findMany({
       where: { status: nonFinal },
       orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
       select: { id: true, title: true, company: true, status: true, priority: true, dueDate: true, type: true },
       take: 5,
-    }) as Promise<RecentItem[]>),
+    }) as Promise<RecentItem[]>, [], 'recent items'),
   ])
 
   const actionRequired = Math.max(escalated, dueToday + overdue > 0 ? dueToday : 0)
@@ -152,13 +142,10 @@ export default async function DashboardPage() {
   const session = await requireAuth()
   const isGeorge = session.person === 'George'
 
-  // Each fetch fails independently — a dashboard-stats error must never
-  // wipe out an already-successful briefing fetch, or vice versa.
+  // Independent fallbacks: a dashboard-stats failure must not discard an
+  // already-successful briefing fetch, or vice versa.
   const [data, briefingItems] = await Promise.all([
-    getDashboardData().catch((error) => {
-      console.error('Dashboard load failed', error)
-      return EMPTY_DATA
-    }),
+    safeQuery(getDashboardData(), emptyData(), 'load'),
     isGeorge ? safeBriefingItems() : Promise.resolve([] as BriefingItemClient[]),
   ])
 
