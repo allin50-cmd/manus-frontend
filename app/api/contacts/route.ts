@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
   }
   const { name, companyId, role, email, phone, isPrimary, notes } = body
 
-  if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  if (typeof name !== 'string' || !name.trim()) {
+    return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  }
   if (!companyId) return NextResponse.json({ error: 'Company is required' }, { status: 400 })
 
   let contact

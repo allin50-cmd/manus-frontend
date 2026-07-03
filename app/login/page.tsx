@@ -13,14 +13,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true') {
-      if (typeof window !== 'undefined') {
-        console.log('Auth bypass enabled')
-      }
-      router.push('/dashboard')
-      return
-    }
-
+    // NEXT_PUBLIC_DISABLE_AUTH alone is never sufficient to skip the password
+    // screen: middleware always requires a real signed session cookie, and a
+    // client-only flag can't produce one, so blindly pushing to /dashboard
+    // here (without a cookie) would just have middleware bounce it straight
+    // back to /login — the same redirect-loop bug class already fixed once.
+    // The dev-bypass endpoint is the one place that both checks the
+    // authoritative server-side DISABLE_AUTH flag and sets the cookie, so
+    // route every bypass path (client or server flag) through it.
     async function checkDevBypass() {
       try {
         // 'manual' so a middleware redirect (e.g. back to /login) surfaces as an

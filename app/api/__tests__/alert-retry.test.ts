@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }))
-const { sendAlertEmail } = vi.hoisted(() => ({ sendAlertEmail: vi.fn() }))
+const { sendAlertEmail, markDeliverySent } = vi.hoisted(() => ({
+  sendAlertEmail: vi.fn(),
+  markDeliverySent: vi.fn(),
+}))
 const { db } = vi.hoisted(() => ({
   db: {
     alertDelivery: { findUnique: vi.fn(), create: vi.fn() },
@@ -11,7 +14,7 @@ const { db } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/auth', () => ({ getSession }))
-vi.mock('@/lib/alert-dispatch', () => ({ sendAlertEmail }))
+vi.mock('@/lib/alert-dispatch', () => ({ sendAlertEmail, markDeliverySent }))
 vi.mock('@/lib/db', () => ({ db }))
 
 import { POST } from '@/app/api/alert-deliveries/[id]/retry/route'
@@ -25,6 +28,7 @@ beforeEach(() => {
   db.alertEvent.create.mockResolvedValue({})
   db.activityLog.create.mockResolvedValue({})
   sendAlertEmail.mockResolvedValue(undefined)
+  markDeliverySent.mockResolvedValue(undefined)
 })
 
 function failedDelivery(overrides = {}) {
@@ -69,7 +73,9 @@ describe('POST /api/alert-deliveries/[id]/retry', () => {
     expect(db.alertDelivery.create.mock.calls[0][0].data.escalationLevel).toBe(3)
     expect(db.alertEvent.create).toHaveBeenCalledTimes(1)
     expect(db.alertEvent.create.mock.calls[0][0].data.deliveryId).toBe('del2')
-    // Dashboard channel still writes its activity log.
+    // Dashboard channel is considered delivered immediately, same as the
+    // original dispatch path — must be marked Sent, not left at Pending.
+    expect(markDeliverySent).toHaveBeenCalledWith('del2', 'w1', 'r1')
     expect(db.activityLog.create).toHaveBeenCalledTimes(1)
   })
 

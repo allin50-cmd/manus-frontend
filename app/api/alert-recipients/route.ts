@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   if (!VALID_ROLES.includes(role as RecipientRole)) {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
   }
-  if (preferredChannel && !VALID_CHANNELS.includes(preferredChannel as DeliveryChannel)) {
+  if (!VALID_CHANNELS.includes(preferredChannel as DeliveryChannel)) {
     return NextResponse.json({ error: 'Invalid preferredChannel' }, { status: 400 })
   }
 

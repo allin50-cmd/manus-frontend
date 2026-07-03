@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
 
   const workItemId = req.nextUrl.searchParams.get('workItemId')
   const limitParam = req.nextUrl.searchParams.get('limit')
-  const take = limitParam ? Math.min(parseInt(limitParam, 10) || 200, 500) : 200
+  const parsedLimit = limitParam !== null ? parseInt(limitParam, 10) : NaN
+  const take = Number.isNaN(parsedLimit) ? 200 : Math.min(Math.max(parsedLimit, 0), 500)
   const where = workItemId ? { workItemId } : {}
 
   let deliveries

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { sendAlertEmail } from '@/lib/alert-dispatch'
+import { sendAlertEmail, markDeliverySent } from '@/lib/alert-dispatch'
 import { randomUUID } from 'crypto'
 
 // Only a delivery that actually failed may be retried. Pending deliveries are still
@@ -75,6 +75,11 @@ export async function POST(
   }).catch(() => {})
 
   if (delivery.channel === 'Dashboard') {
+    // Matches the original dispatch path (lib/alert-dispatch.ts): a Dashboard
+    // delivery is considered delivered as soon as it's created, so it must be
+    // marked Sent here too — otherwise it sits at Pending forever and can
+    // never reach runEscalationCheck(), which only escalates Sent deliveries.
+    await markDeliverySent(newDelivery.id, delivery.workItemId, delivery.recipientId)
     await db.activityLog.create({
       data: {
         workItemId: delivery.workItemId,

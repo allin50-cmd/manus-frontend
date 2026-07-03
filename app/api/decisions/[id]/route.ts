@@ -76,22 +76,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       })
 
       // Don't resurrect items that have already been Completed, Archived, or NotFit.
+      // Conditional on the status just read, so a concurrent status change
+      // (e.g. a PATCH going through transitionWorkItem) landing in between
+      // loses the race cleanly instead of being silently overwritten.
       if (workItem && !TERMINAL_STATUSES.has(workItem.status)) {
-        await db.workItem.update({
-          where: { id: dec.workItemId },
+        const updateResult = await db.workItem.updateMany({
+          where: { id: dec.workItemId, status: workItem.status },
           data: { decisionNeeded: false, status: 'InProgress' },
-        }).catch(() => {})
+        }).catch(() => ({ count: 0 }))
 
-        await db.activityLog.create({
-          data: {
-            workItemId: dec.workItemId,
-            person: session.person,
-            eventType: 'StatusChanged',
-            summary: 'Decision resolved; work item returned to In Progress.',
-            oldStatus: workItem.status,
-            newStatus: 'InProgress',
-          },
-        }).catch(() => {})
+        if (updateResult.count > 0) {
+          await db.activityLog.create({
+            data: {
+              workItemId: dec.workItemId,
+              person: session.person,
+              eventType: 'StatusChanged',
+              summary: 'Decision resolved; work item returned to In Progress.',
+              oldStatus: workItem.status,
+              newStatus: 'InProgress',
+            },
+          }).catch(() => {})
+        }
       }
     }
   }

@@ -200,7 +200,7 @@ async function markDeliveryFailed(
   })
 }
 
-async function markDeliverySent(
+export async function markDeliverySent(
   deliveryId: string,
   workItemId: string,
   recipientId: string,

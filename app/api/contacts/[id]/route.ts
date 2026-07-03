@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   const { name, companyId, role, email, phone, isPrimary, notes } = body
 
-  if (name !== undefined && !name?.trim()) {
+  if (name !== undefined && (typeof name !== 'string' || !name.trim())) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
 
