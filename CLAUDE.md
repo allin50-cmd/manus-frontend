@@ -1,5 +1,116 @@
 # Architecture & Development Guide
 
+This document is the single source of truth for the product vision, architecture and engineering principles of UltraTech OS.
+
+All future development decisions must align with this document.
+
+## Product Vision (Do Not Deviate)
+
+### Core Principle
+
+This repository is building the UltraTech Business Operating System.
+
+The product is not an AI application.
+
+The product is a business that just works — software that feels like it just works for non-technical business owners.
+
+Users do not buy AI, databases, APIs, workflows, agents, or automation.
+
+Users buy:
+- "Book the job."
+- "Send the invoice."
+- "Email the customer."
+- "What's urgent today?"
+- "Remind me."
+- "Answer the phone."
+
+Everything else is implementation detail.
+
+### User Experience
+
+The system must always feel like using an iPhone, not enterprise software.
+
+**Primary interface**: Voice + simple graphical icons.
+- Voice is the fastest way to complete actions.
+- Icons provide confidence, visibility, and manual control.
+- Users must always be able to switch naturally between speaking and tapping.
+
+**Primary interaction**: Speak → Confirm → Done, or Tap icon → Confirm → Done. Every action — voice or tap — should require the fewest possible steps.
+
+**Voice flow**: Speak → Confirm → Save → Next Action.
+
+Every voice action creates a visible, editable record.
+
+### Design Principles
+
+Always optimise for:
+- Simplicity
+- Speed
+- Confidence
+- Clarity
+- Familiarity
+
+Never optimise for:
+- Technical demonstrations
+- AI buzzwords
+- Complex dashboards
+- Feature count
+- Engineering cleverness
+
+### Language Rules
+
+AI is invisible: users should never need to understand AI, agents, databases, APIs, workflows, LLMs, or automation engines — those exist only behind the scenes.
+
+Never expose technical terminology to end users. Do not use words such as: Agent, Workflow, Database, API, LLM, Prompt, Orchestrator, Vector Database, LangGraph, MCP.
+
+The system translates simple user requests into technical operations internally — those terms are fine in code, docs, and this file, but must never appear in user-facing copy.
+
+### "Just Works" Philosophy
+
+The operating system should disappear. The user should feel that the business simply works.
+
+Every feature must answer one question: **"Does this remove work from the user?"** If not, it should not exist.
+
+### Mobile First
+
+The phone is the primary computer. Desktop is secondary. Every feature must work naturally on a phone before expanding to larger screens.
+
+### Icon First
+
+The interface should be built around clear actions, not menus. Examples: 📞 Calls, 👥 Customers, 📅 Calendar, 📧 Messages, 💷 Money, 📋 Jobs, 🛡 Compliance, 📁 Documents, ⚙ Business.
+
+Large touch targets. Minimal text. No clutter.
+
+### Voice First
+
+Voice is an input method, not a chatbot. Examples: "Book Mrs Smith.", "Email Dagon.", "What's urgent?", "Create a quote.", "Start today's jobs.", "Read my messages."
+
+The system performs the work and presents a simple confirmation.
+
+### Technology
+
+Technology is implementation detail. Current preferred stack: Vercel, Supabase, mobile-first, voice-first, simple architecture (see **Approved Stack** below for specifics).
+
+Do not recommend additional frameworks, abstractions, or AI layers unless they solve a genuine user problem. The one approved AI layer beyond deterministic logic is AgentMail's scoped email drafting/summarisation — see **AgentMail Integration Policy** below for exactly what that means and doesn't mean.
+
+### Golden Rule
+
+Whenever making any design or engineering decision, ask: **"Will this make the customer's business feel like it just works?"**
+
+If the answer is no, choose the simpler solution.
+
+**Architecture rule**: Technology may change. Product philosophy must not. Choose the simplest implementation that delivers the desired user experience.
+
+### North Star
+
+Every design, engineering and product decision must make the software feel simpler for the customer.
+
+Complexity belongs inside the implementation, never in the user experience.
+
+If a feature makes the product feel more complicated, redesign it before adding more technology.
+
+---
+
 ## Approved Stack (Phase 4)
 
 **UltraCore Ops** runs on a proven, cost-efficient, managed stack:
@@ -8,15 +119,127 @@
 - **Deployment**: Vercel (no infra management)
 - **Database**: Supabase PostgreSQL (managed, RLS-enabled)
 - **Auth**: Passcode + JWT (in-memory session)
-- **Email**: Resend (optional, for alerts)
-- **AI**: OpenAI voice transcription (optional, API-only)
+- **Email**: Resend (transactional, optional, for alerts) + **AgentMail** (persistent conversational email — see **AgentMail Integration Policy** below; approved 2026-07-03)
+- **AI**: OpenAI voice transcription (optional, API-only) + AgentMail's drafting/summarization (the one other sanctioned non-deterministic AI path — scoped to email mechanics only, see policy)
 - **Infrastructure**: Zero — fully managed services
 
 **Why this stack?**
 - Minimal operational overhead (Vercel handles CI/CD, zero-downtime deploys, auto-scaling)
-- Transparent costs ($0 baseline, +$20/mo Vercel if needed, Supabase free tier covers MVP)
-- Deterministic Business Functions (no random agent behavior)
-- No vendor lock-in beyond Vercel + Postgres (both commodity)
+- Transparent costs ($0 baseline, +$20/mo Vercel if needed, Supabase free tier covers MVP, AgentMail usage-based)
+- Deterministic Business Functions everywhere except the two approved AI exceptions above (no autonomous agent behavior)
+- No vendor lock-in beyond Vercel + Postgres + AgentMail (each is swappable behind its own internal interface)
+
+---
+
+## AgentMail Integration Policy
+
+### Purpose
+
+AgentMail exists to make business communication feel effortless.
+
+Users must never know or care that AgentMail exists. It is infrastructure, not a feature.
+
+### Why This Isn't the Rejected PR #27 AI Agent
+
+PR #27's GPT-4o "shadow|live mode" sales agent was rejected for making autonomous *business* decisions (who to contact, what to say to close a sale) with no deterministic guardrail. AgentMail is approved as a narrower, different thing:
+
+- It never makes a business decision — it only executes communication mechanics (find the thread, draft the wording, summarise the text) inside a flow the user always triggers and can always see.
+- Every AgentMail action ends in a deterministic, logged record (activity log entry, task, calendar update) — the same pattern the rest of this app already uses for status changes (see `server/workflow/`).
+- It does not touch signup/sales flows, pricing, or any GPT-4o-style "shadow mode" — those remain rejected.
+- It is additive (a communication layer), not a platform rewrite — Next.js, Vercel, and Supabase are unchanged.
+
+If a future request tries to extend AgentMail into autonomous business decisions (e.g. auto-sending without confirmation, agent-initiated outreach), treat that as a new architecture change requiring the same approval process as PR #27 — this policy does not pre-approve it.
+
+### Product Philosophy
+
+Never build "an AI email system." Build a business that simply communicates on behalf of the user.
+
+The user should think:
+- "Email the customer."
+- "Reply to Dagon."
+- "Read my messages."
+- "Anything important?"
+
+The system decides how to achieve this.
+
+### Voice Examples
+
+**User**: "Email Dagon."
+
+**System**:
+- Finds the contact.
+- Opens or continues the correct conversation.
+- Generates the draft.
+- Speaks the draft back if confirmation is enabled.
+- Sends the email.
+- Logs the activity.
+- Creates any required follow-up task.
+
+**User**: "Read my new emails."
+
+**System**:
+- Reads unread messages.
+- Summarises long conversations.
+- Highlights urgent actions.
+- Creates tasks where appropriate.
+- Updates CRM records automatically.
+
+**User**: "Reply yes and book next Thursday."
+
+**System**:
+- Understands conversation context.
+- Replies in the correct email thread.
+- Updates the calendar.
+- Updates the work schedule.
+- Creates reminders if necessary.
+
+### AgentMail Responsibilities
+
+AgentMail may be used for:
+- Persistent email conversations
+- Conversation threading
+- Receiving inbound emails
+- Sending outbound emails
+- Shared business inboxes
+- Voice-controlled email
+- AI-assisted drafting
+- Email summarisation
+- Attachment handling
+
+### AgentMail Must Never Become
+
+- A separate application
+- A visible email client
+- Another dashboard
+- Another inbox users must manage
+
+It exists only to support business workflows.
+
+### Integration Rules
+
+Every email interaction should update the business automatically where appropriate:
+
+Customer enquiry → conversation continues → lead created → task assigned → calendar updated → reminder scheduled → timeline updated → decision recorded → everything remains synchronised.
+
+### FineGuard
+
+FineGuard remains a compliance platform (see `lib/app-registry.ts` — Companies House compliance monitoring and deadline alerts). Its purpose is: **"Never miss an important business obligation."** Email, voice, dashboards, notifications, and automation all exist to support that one goal — none of them is the product.
+
+FineGuard primarily uses transactional email. Use AgentMail only where persistent customer conversations add value — accountant support, customer onboarding, compliance discussions, white-label partner communication.
+
+Do not replace transactional notifications with AgentMail unnecessarily.
+
+### UltraCore / JustWorks
+
+AgentMail is the communication layer of the Business Operating System.
+
+Voice is the interface. Icons provide visibility. AgentMail provides memory and conversation continuity. The user experiences one seamless system.
+
+### Design Rule
+
+Whenever implementing email features, ask: **"Does this make business communication feel like it just works?"**
+
+If not, simplify the design. The technology must remain invisible to the user.
 
 ---
 
@@ -70,8 +293,8 @@ If PR #27 concepts resurface, **only these pieces** may be considered — and **
 ## Rules for This Project
 
 ### Before Adding Infrastructure
-- No new paid services without explicit approval
-- No AI unless deterministic or explicitly optional
+- No new paid services without explicit approval (AgentMail is the one approved exception — see **AgentMail Integration Policy**)
+- No AI unless deterministic, explicitly optional, or the approved AgentMail email-mechanics path
 - Deployment stays Vercel; database stays Supabase
 - If in doubt, ask
 
@@ -79,8 +302,8 @@ If PR #27 concepts resurface, **only these pieces** may be considered — and **
 - ✅ TypeScript compiles (`npm run type-check`)
 - ✅ Tests pass (`npm test`)
 - ✅ Build succeeds (`npm run build`)
-- ✅ No new paid infrastructure
-- ✅ No new AI dependencies by default
+- ✅ No new paid infrastructure (other than the approved AgentMail integration)
+- ✅ No new AI dependencies by default (other than the approved AgentMail drafting/summarization, scoped per policy)
 - ✅ No platform changes (stay Next.js + Vercel)
 
 ### Before Creating a PR
@@ -193,8 +416,10 @@ If a branch or PR is attempting an unapproved architecture change:
 
 ---
 
-**Last updated**: 2026-07-01  
+**Last updated**: 2026-07-03  
 **Decision**: Vercel + Supabase + Next.js (deterministic, managed, cost-effective)
+**Product vision added**: 2026-07-03 — mobile-first, voice-first, icon-first "just works" business OS; see **Product Vision** section above
+**AgentMail approved**: 2026-07-03 — persistent conversational email layer; the one sanctioned exception to "no AI unless deterministic," scoped to email mechanics only — see **AgentMail Integration Policy** above
 
 ---
 

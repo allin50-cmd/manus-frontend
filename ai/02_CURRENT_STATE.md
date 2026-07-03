@@ -1,6 +1,8 @@
 # Current State
 
-Last updated: 2026-06-28
+Last updated: 2026-07-03
+
+See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for the product direction and AI-scope rules this state is tracked against.
 
 ## Branch status
 
@@ -88,6 +90,11 @@ Last updated: 2026-06-28
 ### Action reassignment
 - Requires: `Action.reassignedFrom`, `Action.reassignedAt`, `Action.reassignedBy`, `Action.handoffNote`
 - My Tasks reassign UI exists but the API endpoint is blocked on schema migration
+
+### AgentMail (persistent conversational email)
+- **Approved in policy, zero code exists.** No `EmailThread` model, no API routes, no dependency installed. Do not assume any voice command like "email the customer" or "read my messages" is wired up — it isn't.
+- Requires: `EmailThread` model, `WorkItem.emailThreadId` (see `ai/09_ROADMAP.md` Migration 2h)
+- Scope when built: communication mechanics only (find thread, draft, summarise, send, log) inside a user-triggered flow ending in a deterministic activity/task record — never autonomous business decisions. See `CLAUDE.md` → AgentMail Integration Policy.
 
 ## ORM state
 

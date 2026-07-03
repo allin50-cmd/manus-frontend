@@ -1,7 +1,9 @@
 import { requireAuth } from '../../lib/auth'
 import { db } from '../../lib/db'
+import { getBriefingItems } from '../../lib/queries/briefing'
 import Link from 'next/link'
 import type { WorkItemStatus } from '@/lib/types'
+import MorningBriefing, { type BriefingItemClient } from './DashboardClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +49,21 @@ async function safeRecentItems(query: Promise<RecentItem[]>): Promise<RecentItem
     return await query
   } catch (error) {
     console.error('Dashboard recent items failed', error)
+    return []
+  }
+}
+
+async function safeBriefingItems(): Promise<BriefingItemClient[]> {
+  try {
+    const items = await getBriefingItems()
+    return items.map((item) => ({
+      ...item,
+      status: item.status as string,
+      priority: item.priority as string,
+      dueDate: item.dueDate ? item.dueDate.toISOString() : null,
+    }))
+  } catch (error) {
+    console.error('Dashboard briefing failed', error)
     return []
   }
 }
@@ -135,8 +152,14 @@ export default async function DashboardPage() {
   const session = await requireAuth()
 
   let data = EMPTY_DATA
+  let briefingItems: BriefingItemClient[] = []
   try {
-    data = await getDashboardData()
+    const [dashData, briefing] = await Promise.all([
+      getDashboardData(),
+      session.person === 'George' ? safeBriefingItems() : Promise.resolve([]),
+    ])
+    data = dashData
+    briefingItems = briefing
   } catch (error) {
     console.error('Dashboard load failed', error)
   }
@@ -174,6 +197,10 @@ export default async function DashboardPage() {
           Welcome back, <span className="font-medium text-slate-700">{session.person}</span>
         </p>
       </div>
+
+      {session.person === 'George' && briefingItems.length > 0 && (
+        <MorningBriefing items={briefingItems} />
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-5 pt-4 pb-2">

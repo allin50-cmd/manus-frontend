@@ -4,6 +4,8 @@
 
 UltraCore Ops is a **business command hub** for a small advisory firm. It creates, tracks, and audits companies, contacts, work items, filing deadlines, decisions, and compliance alerts. The primary user is "George". Supabase PostgreSQL is the single source of truth — no Google Sheets, no external data sources.
 
+**Product Vision is defined in `CLAUDE.md` — read it before touching any user-facing surface.** In short: this is not an AI app, it's a mobile-first, voice-first business OS that should feel like using an iPhone. Users trigger simple actions ("email the customer", "what's urgent today"); they never see or hear words like agent, workflow, database, API, LLM, or MCP. That vocabulary is fine in this file, in code, and in commit messages — never in UI copy, voice confirmations, or user-facing text.
+
 ---
 
 ## Stack
@@ -14,7 +16,7 @@ UltraCore Ops is a **business command hub** for a small advisory firm. It create
 | Database | Supabase PostgreSQL via Prisma ORM |
 | Auth | httpOnly JWT cookie (`session`), passcode-based |
 | Styling | Tailwind CSS |
-| Email | Resend (optional) |
+| Email | Resend (transactional, optional) + AgentMail (persistent conversational email — approved exception, see `CLAUDE.md` AgentMail Integration Policy) |
 | Voice | OpenAI Whisper — transcription only, one input method into the same work-item workflow |
 | Deploy | Vercel (serverless Node.js) |
 
@@ -67,7 +69,7 @@ public/
 
 2. **Auth is server-only.** `JWT_SECRET` is never sent to the client. `secret()` in `lib/auth.ts` throws if `JWT_SECRET` is unset. Every API route calls `getSession()` or `requireAuth()`.
 
-3. **No AI agents or agent frameworks.** OpenAI is used only for Whisper transcription (`app/api/voice/transcribe/route.ts`). No LangChain, no OpenAI Assistants.
+3. **No AI agents or agent frameworks beyond the two approved exceptions.** OpenAI is used only for Whisper transcription (`app/api/voice/transcribe/route.ts`). AgentMail is approved solely for persistent conversational email — drafting, summarisation, threading — scoped to communication mechanics inside a user-triggered, always-logged flow; it never makes autonomous business decisions (see `CLAUDE.md` → AgentMail Integration Policy). No LangChain, no OpenAI Assistants, no other agent framework, and no extending AgentMail into auto-send or agent-initiated outreach without new, separate approval.
 
 4. **No tRPC. No monorepo. No complex RBAC.** Auth is a single shared passcode — no user roles.
 
