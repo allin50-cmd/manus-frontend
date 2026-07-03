@@ -1,5 +1,7 @@
 # Roadmap
 
+See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for the product direction and AI-scope rules every phase below operates under: this is a mobile-first, voice-first business OS, not an AI app, and AgentMail/Whisper are the only two approved non-deterministic AI paths.
+
 ## Phase 1: Consolidation (current)
 
 **Goal:** One stable, verified canonical branch.
@@ -83,6 +85,15 @@ FilingCategory enum (new: CONFIRMATION_STATEMENT, ANNUAL_ACCOUNTS, etc.)
 FilingSource enum (new: MANUAL, COMPANIES_HOUSE_API, CSV_IMPORT)
 ```
 **Unlocks:** Filings list, detail, health endpoint, status refresh cron
+
+### Migration 2h: AgentMail integration (approved, not started — no code exists yet)
+```
+EmailThread model (new) — persistent conversation, linked to Contact/Company/WorkItem
+WorkItem.emailThreadId String?
+```
+**Unlocks:** Voice-triggered email actions ("email the customer", "reply to Dagon", "read my messages"), conversation continuity, AgentMail-backed drafting/summarisation.
+
+**Scope reminder:** AgentMail is approved only for communication mechanics (find thread, draft, summarise, send, log) inside a user-triggered flow that always ends in a deterministic activity/task record — never autonomous business decisions. See `CLAUDE.md` → AgentMail Integration Policy for the full scope and the "Why This Isn't the Rejected PR #27 AI Agent" reconciliation before building this. Check `ai/02_CURRENT_STATE.md` before assuming any part of this is already implemented.
 
 ## Phase 3: Drizzle migration
 
