@@ -93,6 +93,114 @@ If the answer is no, choose the simpler solution.
 
 ---
 
+## Product Direction (Read Before Coding)
+
+This repository is building the UltraTech Business Operating System.
+
+The objective is not to build an AI application.
+
+The objective is to build software that feels like it just works for non-technical business owners.
+
+### Product Principles
+
+- Mobile-first.
+- Voice-first.
+- Icon-first.
+- AI is invisible.
+- Technology is implementation detail.
+- Every feature must reduce user effort.
+
+Users should never need to understand:
+- AI
+- Agents
+- Databases
+- APIs
+- Workflows
+- LLMs
+- Automation engines
+
+Those exist only behind the scenes.
+
+### User Experience
+
+The application should feel closer to an iPhone than enterprise software.
+
+Primary interaction:
+- Speak → Confirm → Done
+
+or
+
+- Tap icon → Confirm → Done
+
+Every action should require the fewest possible steps.
+
+### Voice
+
+Voice is the primary input mechanism.
+
+Examples:
+- "Book this job."
+- "Email the customer."
+- "What's urgent?"
+- "Create a quote."
+- "Read my messages."
+
+Voice should trigger existing business workflows without exposing technical implementation.
+
+### Icons
+
+Large, simple business icons are preferred over menus and nested navigation.
+
+Examples:
+- 📞 Calls
+- 👥 Customers
+- 📅 Calendar
+- 📧 Messages
+- 💷 Money
+- 📋 Jobs
+- 🛡 Compliance
+- 📁 Documents
+- ⚙ Business
+
+### AgentMail
+
+AgentMail is infrastructure.
+
+Users should never know it exists.
+
+Responsibilities:
+- Send email.
+- Receive email.
+- Maintain conversation history.
+- Enable voice-controlled messaging.
+- Keep conversations linked to business records.
+
+Never expose "AI inboxes" or technical email concepts to end users.
+
+### FineGuard
+
+FineGuard remains a compliance platform.
+
+Its purpose is: **"Never miss an important business obligation."**
+
+Email, voice, dashboards, notifications and automation all support this goal.
+
+### JustWorks Philosophy
+
+Every development decision must answer one question: **Does this make running a business feel easier?**
+
+If the answer is no, simplify the solution before adding more technology.
+
+### Architecture Rule
+
+Technology may change.
+
+Product philosophy must not.
+
+Choose the simplest implementation that delivers the desired user experience.
+
+---
+
 ## Approved Stack (Phase 4)
 
 **UltraCore Ops** runs on a proven, cost-efficient, managed stack:
