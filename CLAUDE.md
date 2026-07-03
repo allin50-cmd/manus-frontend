@@ -89,6 +89,8 @@ Whenever making any design or engineering decision, ask: **"Will this make the c
 
 If the answer is no, choose the simpler solution.
 
+**Architecture rule**: Technology may change. Product philosophy must not. Choose the simplest implementation that delivers the desired user experience.
+
 ---
 
 ## Approved Stack (Phase 4)
@@ -202,6 +204,8 @@ Every email interaction should update the business automatically where appropria
 Customer enquiry → conversation continues → lead created → task assigned → calendar updated → reminder scheduled → timeline updated → decision recorded → everything remains synchronised.
 
 ### FineGuard
+
+FineGuard remains a compliance platform (see `lib/app-registry.ts` — Companies House compliance monitoring and deadline alerts). Its purpose is: **"Never miss an important business obligation."** Email, voice, dashboards, notifications, and automation all exist to support that one goal — none of them is the product.
 
 FineGuard primarily uses transactional email. Use AgentMail only where persistent customer conversations add value — accountant support, customer onboarding, compliance discussions, white-label partner communication.
 
