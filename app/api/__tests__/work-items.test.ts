@@ -4,7 +4,14 @@ const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }))
 const { dispatchAlerts } = vi.hoisted(() => ({ dispatchAlerts: vi.fn() }))
 const { db } = vi.hoisted(() => ({
   db: {
-    workItem: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), findMany: vi.fn() },
+    workItem: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
+      findMany: vi.fn(),
+    },
     activityLog: { create: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -99,7 +106,8 @@ describe('PATCH /api/work-items/[id]', () => {
 describe('PATCH /api/work-items/[id] — workflow transitions', () => {
   beforeEach(() => {
     db.workItem.findUnique.mockResolvedValue({ id: 'w1', status: 'Captured', title: 'X' })
-    db.workItem.update.mockResolvedValue({ id: 'w1', status: 'InProgress' })
+    db.workItem.updateMany.mockResolvedValue({ count: 1 })
+    db.workItem.findUniqueOrThrow.mockResolvedValue({ id: 'w1', status: 'InProgress' })
     db.$transaction.mockImplementation(async (fn: (t: typeof db) => unknown) => fn(db))
   })
 
@@ -107,9 +115,10 @@ describe('PATCH /api/work-items/[id] — workflow transitions', () => {
     const res = await PATCH(jsonReq({ status: 'InProgress' }), { params: { id: 'w1' } })
     expect(res.status).toBe(200)
     expect(db.$transaction).toHaveBeenCalledTimes(1)
-    const updateData = db.workItem.update.mock.calls[0][0].data
-    expect(updateData.status).toBe('InProgress')
-    expect(updateData.lastTouchedAt).toBeInstanceOf(Date)
+    const call = db.workItem.updateMany.mock.calls[0][0]
+    expect(call.where).toEqual({ id: 'w1', status: 'Captured' })
+    expect(call.data.status).toBe('InProgress')
+    expect(call.data.lastTouchedAt).toBeInstanceOf(Date)
     expect(db.activityLog.create.mock.calls[0][0].data).toMatchObject({
       workItemId: 'w1',
       eventType: 'StatusChanged',
@@ -122,7 +131,14 @@ describe('PATCH /api/work-items/[id] — workflow transitions', () => {
     db.workItem.findUnique.mockResolvedValue({ id: 'w1', status: 'Archived', title: 'X' })
     const res = await PATCH(jsonReq({ status: 'Completed' }), { params: { id: 'w1' } })
     expect(res.status).toBe(400)
-    expect(db.workItem.update).not.toHaveBeenCalled()
+    expect(db.workItem.updateMany).not.toHaveBeenCalled()
+    expect(db.activityLog.create).not.toHaveBeenCalled()
+  })
+
+  it('reports 409 when a concurrent request already moved the row', async () => {
+    db.workItem.updateMany.mockResolvedValue({ count: 0 })
+    const res = await PATCH(jsonReq({ status: 'InProgress' }), { params: { id: 'w1' } })
+    expect(res.status).toBe(409)
     expect(db.activityLog.create).not.toHaveBeenCalled()
   })
 

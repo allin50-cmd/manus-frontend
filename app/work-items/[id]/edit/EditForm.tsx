@@ -9,7 +9,7 @@ import {
   PRIORITIES,
   OWNERS,
 } from '@/lib/work-item-enums'
-import { WORK_ITEM_TRANSITIONS, allowedTransitions } from '@/server/workflow/workflowTransitions'
+import { WORK_ITEM_TRANSITIONS, optionsFor } from '@/server/workflow/workflowTransitions'
 import type { WorkItemStatus } from '@/lib/types'
 
 interface Item {
@@ -29,10 +29,7 @@ interface Item {
 
 export default function EditForm({ item }: { item: Item }) {
   const router = useRouter()
-  const statusOptions = [
-    item.status,
-    ...allowedTransitions(WORK_ITEM_TRANSITIONS, item.status as WorkItemStatus),
-  ]
+  const statusOptions = optionsFor(WORK_ITEM_TRANSITIONS, item.status as WorkItemStatus)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 

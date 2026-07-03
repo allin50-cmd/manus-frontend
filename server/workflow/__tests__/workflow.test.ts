@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { db, tx } = vi.hoisted(() => {
   const tx = {
-    workItem: { findUnique: vi.fn(), update: vi.fn() },
+    workItem: { findUnique: vi.fn(), updateMany: vi.fn(), findUniqueOrThrow: vi.fn() },
     activityLog: { create: vi.fn() },
   }
   const db = {
@@ -125,7 +125,8 @@ describe('runTransition', () => {
 describe('transitionWorkItem', () => {
   it('updates status, timestamps, and activity in one transaction', async () => {
     tx.workItem.findUnique.mockResolvedValue({ status: 'Captured' })
-    tx.workItem.update.mockResolvedValue({ id: 'w1', status: 'InProgress' })
+    tx.workItem.updateMany.mockResolvedValue({ count: 1 })
+    tx.workItem.findUniqueOrThrow.mockResolvedValue({ id: 'w1', status: 'InProgress' })
 
     const result = await transitionWorkItem({
       workItemId: 'w1',
@@ -135,9 +136,10 @@ describe('transitionWorkItem', () => {
 
     expect(result).toEqual({ ok: true, entity: { id: 'w1', status: 'InProgress' } })
     expect(db.$transaction).toHaveBeenCalledTimes(1)
-    const updateData = tx.workItem.update.mock.calls[0][0].data
-    expect(updateData.status).toBe('InProgress')
-    expect(updateData.lastTouchedAt).toBeInstanceOf(Date)
+    const call = tx.workItem.updateMany.mock.calls[0][0]
+    expect(call.where).toEqual({ id: 'w1', status: 'Captured' })
+    expect(call.data.status).toBe('InProgress')
+    expect(call.data.lastTouchedAt).toBeInstanceOf(Date)
     const logData = tx.activityLog.create.mock.calls[0][0].data
     expect(logData).toMatchObject({
       workItemId: 'w1',
@@ -150,7 +152,8 @@ describe('transitionWorkItem', () => {
 
   it('merges extra field updates into the same write', async () => {
     tx.workItem.findUnique.mockResolvedValue({ status: 'InProgress' })
-    tx.workItem.update.mockResolvedValue({ id: 'w1', status: 'Completed' })
+    tx.workItem.updateMany.mockResolvedValue({ count: 1 })
+    tx.workItem.findUniqueOrThrow.mockResolvedValue({ id: 'w1', status: 'Completed' })
 
     await transitionWorkItem({
       workItemId: 'w1',
@@ -159,7 +162,7 @@ describe('transitionWorkItem', () => {
       updates: { nextAction: null },
     })
 
-    const updateData = tx.workItem.update.mock.calls[0][0].data
+    const updateData = tx.workItem.updateMany.mock.calls[0][0].data
     expect(updateData.nextAction).toBeNull()
     expect(updateData.status).toBe('Completed')
   })
@@ -174,7 +177,22 @@ describe('transitionWorkItem', () => {
     })
 
     expect(result).toMatchObject({ ok: false, code: 'invalid_transition' })
-    expect(tx.workItem.update).not.toHaveBeenCalled()
+    expect(tx.workItem.updateMany).not.toHaveBeenCalled()
+    expect(tx.activityLog.create).not.toHaveBeenCalled()
+  })
+
+  it('reports a conflict when a concurrent transition already moved the row', async () => {
+    tx.workItem.findUnique.mockResolvedValue({ status: 'InProgress' })
+    tx.workItem.updateMany.mockResolvedValue({ count: 0 })
+
+    const result = await transitionWorkItem({
+      workItemId: 'w1',
+      to: 'Completed',
+      person: 'Dagon',
+    })
+
+    expect(result).toMatchObject({ ok: false, code: 'conflict' })
+    expect(tx.workItem.findUniqueOrThrow).not.toHaveBeenCalled()
     expect(tx.activityLog.create).not.toHaveBeenCalled()
   })
 

@@ -41,3 +41,9 @@ export function canTransition<S extends string>(map: TransitionMap<S>, from: S, 
 export function allowedTransitions<S extends string>(map: TransitionMap<S>, from: S): readonly S[] {
   return map[from] ?? []
 }
+
+// The current status plus its allowed transitions — what a status picker
+// should offer, so the UI never hardcodes its own copy of this list.
+export function optionsFor<S extends string>(map: TransitionMap<S>, from: S): readonly S[] {
+  return [from, ...allowedTransitions(map, from)]
+}

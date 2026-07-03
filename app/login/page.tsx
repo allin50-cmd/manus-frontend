@@ -23,7 +23,10 @@ export default function LoginPage() {
 
     async function checkDevBypass() {
       try {
-        const res = await fetch('/api/auth/dev-bypass')
+        // 'manual' so a middleware redirect (e.g. back to /login) surfaces as an
+        // opaque redirect response rather than being followed and mistaken for
+        // a real 200 from this endpoint.
+        const res = await fetch('/api/auth/dev-bypass', { redirect: 'manual' })
         if (res.ok) {
           router.push('/dashboard')
         }

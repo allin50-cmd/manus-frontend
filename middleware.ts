@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose'
 // Paths that bypass auth by exact match (no sub-paths allowed).
 const PUBLIC_EXACT = new Set(['/api/alert-deliveries/ack'])
 // Paths that bypass auth by prefix match (and all their sub-paths).
-const PUBLIC_PREFIX = ['/login', '/api/auth/login']
+const PUBLIC_PREFIX = ['/login', '/api/auth/login', '/api/auth/dev-bypass']
 
 async function verifyToken(token: string): Promise<boolean> {
   const jwtSecret = process.env.JWT_SECRET

@@ -55,6 +55,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.priority !== undefined && !isValidPriority(body.priority)) {
     return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
   }
+  if (body.decisionNeeded !== undefined && typeof body.decisionNeeded !== 'boolean') {
+    return NextResponse.json({ error: 'decisionNeeded must be a boolean' }, { status: 400 })
+  }
 
   if (body.title !== undefined) {
     if (typeof body.title !== 'string' || !body.title.trim()) {
@@ -106,7 +109,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       const httpStatus =
         result.code === 'not_found' ? 404 :
         result.code === 'invalid_transition' ? 400 :
-        result.code === 'forbidden' ? 403 : 503
+        result.code === 'forbidden' ? 403 :
+        result.code === 'conflict' ? 409 : 503
       return NextResponse.json({ error: result.error }, { status: httpStatus })
     }
     return NextResponse.json(result.entity)
