@@ -5,16 +5,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import StatusBadge from '@/components/StatusBadge'
- HEAD
 import { WORK_ITEM_TRANSITIONS, canTransition } from '@/server/workflow/workflowTransitions'
 import type { WorkItemStatus } from '@/lib/types'
 
 function canComplete(status: string): boolean {
   return canTransition(WORK_ITEM_TRANSITIONS, status as WorkItemStatus, 'Completed')
 }
-=======
-import Toast from '@/components/os/workspace/Toast
- feat/ui-design-system
+import Toast from '@/components/os/workspace/Toast'
 
 interface WorkItemSummary {
   id: string
@@ -59,39 +56,8 @@ interface TodayData {
   teamWorkload: TeamWorkloadSummary[]
 }
 
- HEAD
-const Toast: React.FC<{ message: string; type: 'success' | 'error'; onDismiss: () => void }> = ({
-  message,
-  type,
-  onDismiss,
-}) => {
-  // Depend on `message`, not `onDismiss` — the parent passes a fresh inline
-  // closure every render, which would otherwise restart the 3s timer on any
-  // unrelated re-render instead of only when a genuinely new toast appears.
-  const onDismissRef = useRef(onDismiss)
-  onDismissRef.current = onDismiss
-
-  useEffect(() => {
-    const timer = setTimeout(() => onDismissRef.current(), 3000)
-    return () => clearTimeout(timer)
-  }, [message])
-
-  return (
-    <div
-      className={`fixed bottom-20 sm:bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg border shadow-lg text-sm font-medium transition-all ${
-        type === 'success'
-          ? 'bg-green-50 border-green-200 text-green-800'
-          : 'bg-red-50 border-red-200 text-red-800'
-      }`}
-    >
-      {message}
-    </div>
-  )
-}
-
-=======
- feat/ui-design-system
 interface StartJobModalProps {
+
   isOpen: boolean
   onClose: () => void
   onConfirm: (workItemId: string, notes: string, startTime: string) => Promise<void>
