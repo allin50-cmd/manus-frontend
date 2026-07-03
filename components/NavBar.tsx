@@ -29,7 +29,6 @@ const MORE_MENU = [
   { href: '/filings',           label: 'Filings' },
   { href: '/teams',             label: 'Teams' },
   { href: '/contacts',          label: 'Contacts' },
-  { href: '/partnerships',      label: 'Pipeline' },
   { href: '/work-items',        label: 'All Work Items' },
   { href: '/alert-recipients',  label: 'Alert Recipients' },
   { href: '/alert-events',      label: 'Alert Audit Log' },
@@ -51,11 +50,8 @@ export default function NavBar({ person }: { person: string | null }) {
 
   return (
     <>
-      {/* ── Desktop top bar ── */}
-      <nav className="hidden sm:flex items-center justify-between sticky top-0 z-50 px-6 py-0 h-14"
-           style={{ background: '#0c2340' }}>
+      <nav className="hidden sm:flex items-center justify-between sticky top-0 z-50 px-6 py-0 h-14" style={{ background: '#0c2340' }}>
         <div className="flex items-center gap-6">
-          {/* Brand */}
           <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-base leading-none">
               🛡️
@@ -82,23 +78,16 @@ export default function NavBar({ person }: { person: string | null }) {
 
         <div className="flex items-center gap-4">
           {person && (
-            <Link
-              href="/settings"
-              className="text-xs text-white/50 hover:text-white transition-colors font-medium"
-            >
+            <Link href="/settings" className="text-xs text-white/50 hover:text-white transition-colors font-medium">
               {person}
             </Link>
           )}
-          <button
-            onClick={handleLogout}
-            className="text-xs text-white/50 hover:text-white transition-colors"
-          >
+          <button onClick={handleLogout} className="text-xs text-white/50 hover:text-white transition-colors">
             Log out
           </button>
         </div>
       </nav>
 
-      {/* ── Mobile bottom bar ── */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 flex items-center">
         {BOTTOM_TABS.map((n) => {
           const active = pathname.startsWith(n.href)
@@ -126,12 +115,8 @@ export default function NavBar({ person }: { person: string | null }) {
         </button>
       </nav>
 
-      {/* ── Mobile overflow menu ── */}
       {menuOpen && (
-        <div
-          className="sm:hidden fixed inset-0 z-40 bg-black/50"
-          onClick={() => setMenuOpen(false)}
-        >
+        <div className="sm:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMenuOpen(false)}>
           <div
             className="absolute bottom-16 right-4 left-4 bg-white rounded-2xl p-2 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
