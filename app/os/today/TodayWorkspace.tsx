@@ -3,13 +3,18 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
 import StatusBadge from '@/components/StatusBadge'
+ HEAD
 import { WORK_ITEM_TRANSITIONS, canTransition } from '@/server/workflow/workflowTransitions'
 import type { WorkItemStatus } from '@/lib/types'
 
 function canComplete(status: string): boolean {
   return canTransition(WORK_ITEM_TRANSITIONS, status as WorkItemStatus, 'Completed')
 }
+=======
+import Toast from '@/components/os/workspace/Toast
+ feat/ui-design-system
 
 interface WorkItemSummary {
   id: string
@@ -54,6 +59,7 @@ interface TodayData {
   teamWorkload: TeamWorkloadSummary[]
 }
 
+ HEAD
 const Toast: React.FC<{ message: string; type: 'success' | 'error'; onDismiss: () => void }> = ({
   message,
   type,
@@ -83,6 +89,8 @@ const Toast: React.FC<{ message: string; type: 'success' | 'error'; onDismiss: (
   )
 }
 
+=======
+ feat/ui-design-system
 interface StartJobModalProps {
   isOpen: boolean
   onClose: () => void
