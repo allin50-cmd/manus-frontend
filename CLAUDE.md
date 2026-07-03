@@ -1,12 +1,18 @@
 # Architecture & Development Guide
 
+This document is the single source of truth for the product vision, architecture and engineering principles of UltraTech OS.
+
+All future development decisions must align with this document.
+
 ## Product Vision (Do Not Deviate)
 
 ### Core Principle
 
+This repository is building the UltraTech Business Operating System.
+
 The product is not an AI application.
 
-The product is a business that just works.
+The product is a business that just works — software that feels like it just works for non-technical business owners.
 
 Users do not buy AI, databases, APIs, workflows, agents, or automation.
 
@@ -28,6 +34,8 @@ The system must always feel like using an iPhone, not enterprise software.
 - Voice is the fastest way to complete actions.
 - Icons provide confidence, visibility, and manual control.
 - Users must always be able to switch naturally between speaking and tapping.
+
+**Primary interaction**: Speak → Confirm → Done, or Tap icon → Confirm → Done. Every action — voice or tap — should require the fewest possible steps.
 
 **Voice flow**: Speak → Confirm → Save → Next Action.
 
@@ -51,6 +59,8 @@ Never optimise for:
 
 ### Language Rules
 
+AI is invisible: users should never need to understand AI, agents, databases, APIs, workflows, LLMs, or automation engines — those exist only behind the scenes.
+
 Never expose technical terminology to end users. Do not use words such as: Agent, Workflow, Database, API, LLM, Prompt, Orchestrator, Vector Database, LangGraph, MCP.
 
 The system translates simple user requests into technical operations internally — those terms are fine in code, docs, and this file, but must never appear in user-facing copy.
@@ -73,7 +83,7 @@ Large touch targets. Minimal text. No clutter.
 
 ### Voice First
 
-Voice is an input method, not a chatbot. Examples: "Book Mrs Smith.", "Email Dagon.", "What's urgent?", "Create a quote.", "Start today's jobs."
+Voice is an input method, not a chatbot. Examples: "Book Mrs Smith.", "Email Dagon.", "What's urgent?", "Create a quote.", "Start today's jobs.", "Read my messages."
 
 The system performs the work and presents a simple confirmation.
 
@@ -81,7 +91,7 @@ The system performs the work and presents a simple confirmation.
 
 Technology is implementation detail. Current preferred stack: Vercel, Supabase, mobile-first, voice-first, simple architecture (see **Approved Stack** below for specifics).
 
-Do not recommend additional frameworks, abstractions, or AI layers unless they solve a genuine user problem.
+Do not recommend additional frameworks, abstractions, or AI layers unless they solve a genuine user problem. The one approved AI layer beyond deterministic logic is AgentMail's scoped email drafting/summarisation — see **AgentMail Integration Policy** below for exactly what that means and doesn't mean.
 
 ### Golden Rule
 
@@ -91,113 +101,13 @@ If the answer is no, choose the simpler solution.
 
 **Architecture rule**: Technology may change. Product philosophy must not. Choose the simplest implementation that delivers the desired user experience.
 
----
+### North Star
 
-## Product Direction (Read Before Coding)
+Every design, engineering and product decision must make the software feel simpler for the customer.
 
-This repository is building the UltraTech Business Operating System.
+Complexity belongs inside the implementation, never in the user experience.
 
-The objective is not to build an AI application.
-
-The objective is to build software that feels like it just works for non-technical business owners.
-
-### Product Principles
-
-- Mobile-first.
-- Voice-first.
-- Icon-first.
-- AI is invisible.
-- Technology is implementation detail.
-- Every feature must reduce user effort.
-
-Users should never need to understand:
-- AI
-- Agents
-- Databases
-- APIs
-- Workflows
-- LLMs
-- Automation engines
-
-Those exist only behind the scenes.
-
-### User Experience
-
-The application should feel closer to an iPhone than enterprise software.
-
-Primary interaction:
-- Speak → Confirm → Done
-
-or
-
-- Tap icon → Confirm → Done
-
-Every action should require the fewest possible steps.
-
-### Voice
-
-Voice is the primary input mechanism.
-
-Examples:
-- "Book this job."
-- "Email the customer."
-- "What's urgent?"
-- "Create a quote."
-- "Read my messages."
-
-Voice should trigger existing business workflows without exposing technical implementation.
-
-### Icons
-
-Large, simple business icons are preferred over menus and nested navigation.
-
-Examples:
-- 📞 Calls
-- 👥 Customers
-- 📅 Calendar
-- 📧 Messages
-- 💷 Money
-- 📋 Jobs
-- 🛡 Compliance
-- 📁 Documents
-- ⚙ Business
-
-### AgentMail
-
-AgentMail is infrastructure.
-
-Users should never know it exists.
-
-Responsibilities:
-- Send email.
-- Receive email.
-- Maintain conversation history.
-- Enable voice-controlled messaging.
-- Keep conversations linked to business records.
-
-Never expose "AI inboxes" or technical email concepts to end users.
-
-### FineGuard
-
-FineGuard remains a compliance platform.
-
-Its purpose is: **"Never miss an important business obligation."**
-
-Email, voice, dashboards, notifications and automation all support this goal.
-
-### JustWorks Philosophy
-
-Every development decision must answer one question: **Does this make running a business feel easier?**
-
-If the answer is no, simplify the solution before adding more technology.
-
-### Architecture Rule
-
-Technology may change.
-
-Product philosophy must not.
-
-Choose the simplest implementation that delivers the desired user experience.
+If a feature makes the product feel more complicated, redesign it before adding more technology.
 
 ---
 
