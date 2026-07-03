@@ -99,15 +99,125 @@ If the answer is no, choose the simpler solution.
 - **Deployment**: Vercel (no infra management)
 - **Database**: Supabase PostgreSQL (managed, RLS-enabled)
 - **Auth**: Passcode + JWT (in-memory session)
-- **Email**: Resend (optional, for alerts)
-- **AI**: OpenAI voice transcription (optional, API-only)
+- **Email**: Resend (transactional, optional, for alerts) + **AgentMail** (persistent conversational email — see **AgentMail Integration Policy** below; approved 2026-07-03)
+- **AI**: OpenAI voice transcription (optional, API-only) + AgentMail's drafting/summarization (the one other sanctioned non-deterministic AI path — scoped to email mechanics only, see policy)
 - **Infrastructure**: Zero — fully managed services
 
 **Why this stack?**
 - Minimal operational overhead (Vercel handles CI/CD, zero-downtime deploys, auto-scaling)
-- Transparent costs ($0 baseline, +$20/mo Vercel if needed, Supabase free tier covers MVP)
-- Deterministic Business Functions (no random agent behavior)
-- No vendor lock-in beyond Vercel + Postgres (both commodity)
+- Transparent costs ($0 baseline, +$20/mo Vercel if needed, Supabase free tier covers MVP, AgentMail usage-based)
+- Deterministic Business Functions everywhere except the two approved AI exceptions above (no autonomous agent behavior)
+- No vendor lock-in beyond Vercel + Postgres + AgentMail (each is swappable behind its own internal interface)
+
+---
+
+## AgentMail Integration Policy
+
+### Purpose
+
+AgentMail exists to make business communication feel effortless.
+
+Users must never know or care that AgentMail exists. It is infrastructure, not a feature.
+
+### Why This Isn't the Rejected PR #27 AI Agent
+
+PR #27's GPT-4o "shadow|live mode" sales agent was rejected for making autonomous *business* decisions (who to contact, what to say to close a sale) with no deterministic guardrail. AgentMail is approved as a narrower, different thing:
+
+- It never makes a business decision — it only executes communication mechanics (find the thread, draft the wording, summarise the text) inside a flow the user always triggers and can always see.
+- Every AgentMail action ends in a deterministic, logged record (activity log entry, task, calendar update) — the same pattern the rest of this app already uses for status changes (see `server/workflow/`).
+- It does not touch signup/sales flows, pricing, or any GPT-4o-style "shadow mode" — those remain rejected.
+- It is additive (a communication layer), not a platform rewrite — Next.js, Vercel, and Supabase are unchanged.
+
+If a future request tries to extend AgentMail into autonomous business decisions (e.g. auto-sending without confirmation, agent-initiated outreach), treat that as a new architecture change requiring the same approval process as PR #27 — this policy does not pre-approve it.
+
+### Product Philosophy
+
+Never build "an AI email system." Build a business that simply communicates on behalf of the user.
+
+The user should think:
+- "Email the customer."
+- "Reply to Dagon."
+- "Read my messages."
+- "Anything important?"
+
+The system decides how to achieve this.
+
+### Voice Examples
+
+**User**: "Email Dagon."
+
+**System**:
+- Finds the contact.
+- Opens or continues the correct conversation.
+- Generates the draft.
+- Speaks the draft back if confirmation is enabled.
+- Sends the email.
+- Logs the activity.
+- Creates any required follow-up task.
+
+**User**: "Read my new emails."
+
+**System**:
+- Reads unread messages.
+- Summarises long conversations.
+- Highlights urgent actions.
+- Creates tasks where appropriate.
+- Updates CRM records automatically.
+
+**User**: "Reply yes and book next Thursday."
+
+**System**:
+- Understands conversation context.
+- Replies in the correct email thread.
+- Updates the calendar.
+- Updates the work schedule.
+- Creates reminders if necessary.
+
+### AgentMail Responsibilities
+
+AgentMail may be used for:
+- Persistent email conversations
+- Conversation threading
+- Receiving inbound emails
+- Sending outbound emails
+- Shared business inboxes
+- Voice-controlled email
+- AI-assisted drafting
+- Email summarisation
+- Attachment handling
+
+### AgentMail Must Never Become
+
+- A separate application
+- A visible email client
+- Another dashboard
+- Another inbox users must manage
+
+It exists only to support business workflows.
+
+### Integration Rules
+
+Every email interaction should update the business automatically where appropriate:
+
+Customer enquiry → conversation continues → lead created → task assigned → calendar updated → reminder scheduled → timeline updated → decision recorded → everything remains synchronised.
+
+### FineGuard
+
+FineGuard primarily uses transactional email. Use AgentMail only where persistent customer conversations add value — accountant support, customer onboarding, compliance discussions, white-label partner communication.
+
+Do not replace transactional notifications with AgentMail unnecessarily.
+
+### UltraCore / JustWorks
+
+AgentMail is the communication layer of the Business Operating System.
+
+Voice is the interface. Icons provide visibility. AgentMail provides memory and conversation continuity. The user experiences one seamless system.
+
+### Design Rule
+
+Whenever implementing email features, ask: **"Does this make business communication feel like it just works?"**
+
+If not, simplify the design. The technology must remain invisible to the user.
 
 ---
 
@@ -161,8 +271,8 @@ If PR #27 concepts resurface, **only these pieces** may be considered — and **
 ## Rules for This Project
 
 ### Before Adding Infrastructure
-- No new paid services without explicit approval
-- No AI unless deterministic or explicitly optional
+- No new paid services without explicit approval (AgentMail is the one approved exception — see **AgentMail Integration Policy**)
+- No AI unless deterministic, explicitly optional, or the approved AgentMail email-mechanics path
 - Deployment stays Vercel; database stays Supabase
 - If in doubt, ask
 
@@ -170,8 +280,8 @@ If PR #27 concepts resurface, **only these pieces** may be considered — and **
 - ✅ TypeScript compiles (`npm run type-check`)
 - ✅ Tests pass (`npm test`)
 - ✅ Build succeeds (`npm run build`)
-- ✅ No new paid infrastructure
-- ✅ No new AI dependencies by default
+- ✅ No new paid infrastructure (other than the approved AgentMail integration)
+- ✅ No new AI dependencies by default (other than the approved AgentMail drafting/summarization, scoped per policy)
 - ✅ No platform changes (stay Next.js + Vercel)
 
 ### Before Creating a PR
@@ -287,6 +397,7 @@ If a branch or PR is attempting an unapproved architecture change:
 **Last updated**: 2026-07-03  
 **Decision**: Vercel + Supabase + Next.js (deterministic, managed, cost-effective)
 **Product vision added**: 2026-07-03 — mobile-first, voice-first, icon-first "just works" business OS; see **Product Vision** section above
+**AgentMail approved**: 2026-07-03 — persistent conversational email layer; the one sanctioned exception to "no AI unless deterministic," scoped to email mechanics only — see **AgentMail Integration Policy** above
 
 ---
 
