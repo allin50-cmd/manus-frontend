@@ -150,19 +150,17 @@ const PRIORITY_DOT: Record<string, string> = {
 
 export default async function DashboardPage() {
   const session = await requireAuth()
+  const isGeorge = session.person === 'George'
 
-  let data = EMPTY_DATA
-  let briefingItems: BriefingItemClient[] = []
-  try {
-    const [dashData, briefing] = await Promise.all([
-      getDashboardData(),
-      session.person === 'George' ? safeBriefingItems() : Promise.resolve([]),
-    ])
-    data = dashData
-    briefingItems = briefing
-  } catch (error) {
-    console.error('Dashboard load failed', error)
-  }
+  // Each fetch fails independently — a dashboard-stats error must never
+  // wipe out an already-successful briefing fetch, or vice versa.
+  const [data, briefingItems] = await Promise.all([
+    getDashboardData().catch((error) => {
+      console.error('Dashboard load failed', error)
+      return EMPTY_DATA
+    }),
+    isGeorge ? safeBriefingItems() : Promise.resolve([] as BriefingItemClient[]),
+  ])
 
   const {
     overdue,
@@ -198,7 +196,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {session.person === 'George' && briefingItems.length > 0 && (
+      {isGeorge && briefingItems.length > 0 && (
         <MorningBriefing items={briefingItems} />
       )}
 
