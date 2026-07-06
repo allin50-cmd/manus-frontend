@@ -15,6 +15,16 @@ function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+function normaliseTitle(value: string): string | undefined {
+  const cleaned = value
+    .replace(/[.,;:!?]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return undefined;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 function nextWeekday(referenceDate: Date, targetDay: number): Date {
   const date = new Date(referenceDate);
   const currentDay = date.getDay();
@@ -83,24 +93,21 @@ function extractParticipants(text: string): string[] | undefined {
 
 function extractSubject(text: string): string | undefined {
   const match = text.match(/\b(?:about|regarding)\s+(.+?)(?:\s+(?:today|tomorrow|next\s+(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))|\s+at\s+\d{1,2}|$)/i);
-  return match?.[1]?.trim();
+  return match?.[1] ? normaliseTitle(match[1]) : undefined;
 }
 
 function cleanTitle(text: string): string | undefined {
   const subject = extractSubject(text);
-  if (subject) return subject.charAt(0).toUpperCase() + subject.slice(1);
+  if (subject) return subject;
 
   const cleaned = text
     .replace(/\b(remind me|create a task|add a task|draft an email|send an email|create an invoice|book a callback|book a call|schedule a meeting|set up a meeting|arrange a meeting|catch up with|sync with)\b/gi, '')
     .replace(/\b(today|tomorrow|next\s+(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))\b/gi, '')
     .replace(/\bat\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b/gi, '')
     .replace(/(?:£|\$|€|GBP|USD|EUR)\s?[\d,]+(?:\.\d{1,2})?/gi, '')
-    .replace(/\s+/g, ' ')
-    .replace(/^\s*(to|for|with|about|regarding)\s+/i, '')
-    .trim();
+    .replace(/^\s*(to|for|with|about|regarding)\s+/i, '');
 
-  if (!cleaned) return undefined;
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  return normaliseTitle(cleaned);
 }
 
 export function extractEntities(text: string, referenceDate = new Date()): ExtractedEntities {
