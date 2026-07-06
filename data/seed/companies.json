@@ -1,0 +1,44 @@
+[
+  {
+    "id": "c1",
+    "name": "Acme Manufacturing Ltd",
+    "route": "sc-aa",
+    "status": "active"
+  },
+  {
+    "id": "c2",
+    "name": "Bright Futures Consulting Ltd",
+    "route": "sc-bb",
+    "status": "active"
+  },
+  {
+    "id": "c3",
+    "name": "Tech Corp Solutions Ltd",
+    "route": "sc-cc",
+    "status": "active"
+  },
+  {
+    "id": "c4",
+    "name": "Sunset Retail Group Ltd",
+    "route": "sc-dd",
+    "status": "active"
+  },
+  {
+    "id": "c5",
+    "name": "Northern Properties Ltd",
+    "route": "sc-ee",
+    "status": "active"
+  },
+  {
+    "id": "c6",
+    "name": "GreenLeaf Catering Ltd",
+    "route": "sc-ff",
+    "status": "active"
+  },
+  {
+    "id": "c7",
+    "name": "Harbor Logistics Ltd",
+    "route": "sc-gg",
+    "status": "active"
+  }
+]

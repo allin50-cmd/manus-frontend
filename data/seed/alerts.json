@@ -1,0 +1,90 @@
+[
+  {
+    "id": "a1",
+    "companyId": "c1",
+    "deadlineId": "d1",
+    "type": "overdue",
+    "channel": "email",
+    "status": "sent",
+    "recipient": "george@firm.co.uk",
+    "sentAt": "2026-06-06T09:00:00Z",
+    "subject": "OVERDUE: Annual Accounts — Acme Manufacturing Ltd"
+  },
+  {
+    "id": "a2",
+    "companyId": "c1",
+    "deadlineId": "d1",
+    "type": "overdue",
+    "channel": "sms",
+    "status": "sent",
+    "recipient": "+44 7700 900123",
+    "sentAt": "2026-06-06T09:01:00Z",
+    "subject": "FineGuard: Acme Manufacturing annual accounts OVERDUE"
+  },
+  {
+    "id": "a3",
+    "companyId": "c2",
+    "deadlineId": "d2",
+    "type": "14-day",
+    "channel": "email",
+    "status": "sent",
+    "recipient": "george@firm.co.uk",
+    "sentAt": "2026-06-14T08:00:00Z",
+    "subject": "14 days: Confirmation Statement — Bright Futures Consulting Ltd"
+  },
+  {
+    "id": "a4",
+    "companyId": "c3",
+    "deadlineId": "d4",
+    "type": "7-day",
+    "channel": "email",
+    "status": "sent",
+    "recipient": "george@firm.co.uk",
+    "sentAt": "2026-06-13T08:00:00Z",
+    "subject": "7 days: Director Appointment — Tech Corp Solutions Ltd"
+  },
+  {
+    "id": "a5",
+    "companyId": "c4",
+    "deadlineId": "d7",
+    "type": "60-day",
+    "channel": "email",
+    "status": "sent",
+    "recipient": "george@firm.co.uk",
+    "sentAt": "2026-06-16T08:00:00Z",
+    "subject": "60 days: Confirmation Statement — Sunset Retail Group Ltd"
+  },
+  {
+    "id": "a6",
+    "companyId": "c2",
+    "deadlineId": "d10",
+    "type": "14-day",
+    "channel": "sms",
+    "status": "sent",
+    "recipient": "+44 7700 900123",
+    "sentAt": "2026-06-11T08:05:00Z",
+    "subject": "FineGuard: PSC change filing due in 14 days"
+  },
+  {
+    "id": "a7",
+    "companyId": "c6",
+    "deadlineId": "d5",
+    "type": "30-day",
+    "channel": "email",
+    "status": "failed",
+    "recipient": "contact@greenleaf.co.uk",
+    "sentAt": "2026-06-13T08:00:00Z",
+    "subject": "30 days: Confirmation Statement — GreenLeaf Catering Ltd"
+  },
+  {
+    "id": "a8",
+    "companyId": "c1",
+    "deadlineId": "d1",
+    "type": "30-day",
+    "channel": "email",
+    "status": "sent",
+    "recipient": "george@firm.co.uk",
+    "sentAt": "2026-05-06T09:00:00Z",
+    "subject": "30 days: Annual Accounts — Acme Manufacturing Ltd"
+  }
+]

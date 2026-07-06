@@ -1,0 +1,16 @@
+{
+  "alertDays": [
+    90,
+    60,
+    30,
+    14,
+    7,
+    1
+  ],
+  "overdueRepeat": 7,
+  "channels": {
+    "email": true,
+    "sms": true,
+    "whatsapp": false
+  }
+}

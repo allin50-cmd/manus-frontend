@@ -1,0 +1,122 @@
+[
+  {
+    "id": "d1",
+    "companyId": "c1",
+    "type": "accounts",
+    "dueDate": "2026-06-01",
+    "status": "overdue",
+    "filedAt": null,
+    "ref": "AA",
+    "notes": "FY ended 31 Mar 2025"
+  },
+  {
+    "id": "d2",
+    "companyId": "c2",
+    "type": "confirmation",
+    "dueDate": "2026-06-15",
+    "status": "overdue",
+    "filedAt": null,
+    "ref": "CS01",
+    "notes": ""
+  },
+  {
+    "id": "d3",
+    "companyId": "c3",
+    "type": "accounts",
+    "dueDate": "2026-04-30",
+    "status": "filed",
+    "filedAt": "2026-04-25",
+    "ref": "AA",
+    "notes": "FY ended 31 Dec 2025"
+  },
+  {
+    "id": "d4",
+    "companyId": "c3",
+    "type": "director",
+    "dueDate": "2026-06-20",
+    "status": "due-soon",
+    "filedAt": null,
+    "ref": "AP01",
+    "notes": "Director appointment filed"
+  },
+  {
+    "id": "d5",
+    "companyId": "c6",
+    "type": "confirmation",
+    "dueDate": "2026-07-13",
+    "status": "upcoming",
+    "filedAt": null,
+    "ref": "CS01",
+    "notes": ""
+  },
+  {
+    "id": "d6",
+    "companyId": "c6",
+    "type": "accounts",
+    "dueDate": "2026-10-31",
+    "status": "upcoming",
+    "filedAt": null,
+    "ref": "AA",
+    "notes": "FY ended 31 Mar 2026"
+  },
+  {
+    "id": "d7",
+    "companyId": "c4",
+    "type": "confirmation",
+    "dueDate": "2026-08-15",
+    "status": "upcoming",
+    "filedAt": null,
+    "ref": "CS01",
+    "notes": ""
+  },
+  {
+    "id": "d8",
+    "companyId": "c5",
+    "type": "accounts",
+    "dueDate": "2026-11-30",
+    "status": "ok",
+    "filedAt": null,
+    "ref": "AA",
+    "notes": "FY ended 28 Feb 2026"
+  },
+  {
+    "id": "d9",
+    "companyId": "c7",
+    "type": "confirmation",
+    "dueDate": "2026-12-20",
+    "status": "ok",
+    "filedAt": null,
+    "ref": "CS01",
+    "notes": ""
+  },
+  {
+    "id": "d10",
+    "companyId": "c2",
+    "type": "psc",
+    "dueDate": "2026-06-25",
+    "status": "due-soon",
+    "filedAt": null,
+    "ref": "PSC04",
+    "notes": "PSC details updated. Filing required within 14 days."
+  },
+  {
+    "id": "d11",
+    "companyId": "c1",
+    "type": "confirmation",
+    "dueDate": "2026-09-12",
+    "status": "upcoming",
+    "filedAt": null,
+    "ref": "CS01",
+    "notes": ""
+  },
+  {
+    "id": "d12",
+    "companyId": "c5",
+    "type": "confirmation",
+    "dueDate": "2026-07-05",
+    "status": "upcoming",
+    "filedAt": null,
+    "ref": "CS01",
+    "notes": ""
+  }
+]
