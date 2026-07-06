@@ -12,14 +12,32 @@ const REQUIRED_FIELDS: Record<ActionType, (keyof ExtractedEntities)[]> = {
   unknown: [],
 };
 
-function calculateConfidence(baseScore: number, missingFields: string[]): number {
-  return Math.max(0.1, Number((baseScore - missingFields.length * 0.2).toFixed(2)));
+function hasEntityValue(value: ExtractedEntities[keyof ExtractedEntities]): boolean {
+  return Array.isArray(value) ? value.length > 0 : value !== undefined;
+}
+
+function calculateConfidence(
+  baseScore: number,
+  requiredFields: (keyof ExtractedEntities)[],
+  missingFields: string[],
+  entities: ExtractedEntities,
+): number {
+  if (requiredFields.length === 0) return Math.max(0.1, Number(baseScore.toFixed(2)));
+
+  const presentRequiredCount = requiredFields.filter((field) => hasEntityValue(entities[field])).length;
+  const requiredFieldScore = presentRequiredCount / requiredFields.length;
+  const titleBonus = entities.title ? 0.05 : 0;
+  const confidence = baseScore * 0.65 + requiredFieldScore * 0.3 + titleBonus - missingFields.length * 0.1;
+
+  return Math.max(0.1, Math.min(1, Number(confidence.toFixed(2))));
 }
 
 function buildAction(action: ActionType, entities: ExtractedEntities, text: string, baseScore: number): ParsedAction {
   const requiredFields = REQUIRED_FIELDS[action];
-  const missingFields = requiredFields.filter((field) => entities[field] === undefined) as string[];
-  const confidence = action === 'unknown' ? 0.2 : calculateConfidence(baseScore, missingFields);
+  const missingFields = requiredFields.filter((field) => !hasEntityValue(entities[field])) as string[];
+  const confidence = action === 'unknown'
+    ? 0.2
+    : calculateConfidence(baseScore, requiredFields, missingFields, entities);
 
   return {
     action,
