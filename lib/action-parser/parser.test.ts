@@ -34,10 +34,11 @@ describe('parseActionRequest', () => {
 
     expect(result.action).toBe('schedule_meeting');
     expect(result.participants).toEqual(['Chris', 'Dagon']);
-    expect(result.title).toBe('FineGuard.');
+    expect(result.title).toBe('FineGuard');
     expect(result.date).toBe('2026-07-07');
     expect(result.time).toBe('11:00');
     expect(result.needs_confirmation).toBe(false);
+    expect(result.missing_fields).toEqual([]);
   });
 
   it('marks a meeting without participants as needing confirmation', () => {
@@ -46,6 +47,15 @@ describe('parseActionRequest', () => {
     expect(result.action).toBe('schedule_meeting');
     expect(result.needs_confirmation).toBe(true);
     expect(result.missing_fields).toContain('participants');
+    expect(result.confidence).toBeLessThan(0.7);
+  });
+
+  it('marks a minimal meeting request as needing confirmation', () => {
+    const result = parseActionRequest('Schedule a meeting.', referenceDate);
+
+    expect(result.action).toBe('schedule_meeting');
+    expect(result.needs_confirmation).toBe(true);
+    expect(result.missing_fields).toEqual(['participants', 'date', 'time']);
   });
 
   it('fails safely for unknown requests', () => {
@@ -54,5 +64,13 @@ describe('parseActionRequest', () => {
     expect(result.action).toBe('unknown');
     expect(result.needs_confirmation).toBe(true);
     expect(result.missing_fields).toEqual(['action']);
+  });
+
+  it('does not over-classify vague messages', () => {
+    const result = parseActionRequest('Ping Sarah about the contract.', referenceDate);
+
+    expect(result.action).toBe('unknown');
+    expect(result.confidence).toBeLessThan(0.6);
+    expect(result.needs_confirmation).toBe(true);
   });
 });
