@@ -29,6 +29,25 @@ describe('parseActionRequest', () => {
     expect(result.currency).toBe('GBP');
   });
 
+  it('parses a meeting request', () => {
+    const result = parseActionRequest('Schedule a meeting with Chris and Dagon next Tuesday at 11am about FineGuard.', referenceDate);
+
+    expect(result.action).toBe('schedule_meeting');
+    expect(result.participants).toEqual(['Chris', 'Dagon']);
+    expect(result.title).toBe('FineGuard.');
+    expect(result.date).toBe('2026-07-07');
+    expect(result.time).toBe('11:00');
+    expect(result.needs_confirmation).toBe(false);
+  });
+
+  it('marks a meeting without participants as needing confirmation', () => {
+    const result = parseActionRequest('Set up a meeting tomorrow at 3pm.', referenceDate);
+
+    expect(result.action).toBe('schedule_meeting');
+    expect(result.needs_confirmation).toBe(true);
+    expect(result.missing_fields).toContain('participants');
+  });
+
   it('fails safely for unknown requests', () => {
     const result = parseActionRequest('Book me an Uber to Croydon tomorrow at 9am.', referenceDate);
 
