@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { commandCorpus } from '@/lib/action-parser/commandCorpus'
+import { getExecutionPreview } from '@/lib/action-parser/executionPreview'
 
 type ParseResult = {
   action: string
@@ -23,15 +25,7 @@ type HistoryItem = {
   result: ParseResult
 }
 
-const EXAMPLES = [
-  'Remind me tomorrow at 2pm to call Dagon about FineGuard.',
-  'Create a task for Michelle to chase the Accuracy quote tomorrow morning.',
-  'Draft an email to Shakeel saying Thursday at 3pm works.',
-  'Create an invoice for £450 for website updates.',
-  'Book a callback with Chris next Friday at 10am.',
-  'Schedule a meeting with Chris and Dagon next Tuesday at 11am about FineGuard.',
-  'Ping Sarah about the contract.',
-]
+const EXAMPLES = commandCorpus.slice(0, 12)
 
 function formatConfidence(confidence?: number) {
   if (typeof confidence !== 'number') return '—'
@@ -39,16 +33,27 @@ function formatConfidence(confidence?: number) {
 }
 
 export default function ParserPlayground() {
-  const [text, setText] = useState(EXAMPLES[5])
+  const [text, setText] = useState(EXAMPLES[12]?.input || EXAMPLES[0]?.input || '')
   const [result, setResult] = useState<ParseResult | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedArea, setSelectedArea] = useState('All')
+  const [executionMessage, setExecutionMessage] = useState<string | null>(null)
 
   const statusLabel = useMemo(() => {
     if (!result) return 'Waiting for input'
     return result.needs_confirmation ? 'Needs confirmation' : 'Ready to execute'
   }, [result])
+
+  const areas = useMemo(() => ['All', ...Array.from(new Set(commandCorpus.map((entry) => entry.area)))], [])
+  const filteredExamples = useMemo(() => {
+    return selectedArea === 'All'
+      ? commandCorpus
+      : commandCorpus.filter((entry) => entry.area === selectedArea)
+  }, [selectedArea])
+
+  const preview = useMemo(() => getExecutionPreview(result), [result])
 
   async function handleParse() {
     const trimmed = text.trim()
@@ -60,6 +65,7 @@ export default function ParserPlayground() {
 
     setIsLoading(true)
     setError(null)
+    setExecutionMessage(null)
 
     try {
       const response = await fetch('/api/parse-action', {
@@ -84,6 +90,11 @@ export default function ParserPlayground() {
     }
   }
 
+  function handleConfirm() {
+    if (!result || result.needs_confirmation) return
+    setExecutionMessage(`Mock execution queued: ${result.action}`)
+  }
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -99,38 +110,66 @@ export default function ParserPlayground() {
             {statusLabel}
           </div>
         </div>
+      </div>
 
-        <div className="mt-5 space-y-3">
-          <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            className="min-h-32 w-full rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none ring-0 placeholder:text-white/30 focus:border-cyan-400/60"
-            placeholder="Example: Schedule a meeting with Chris and Dagon next Tuesday at 11am about FineGuard."
-          />
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <h3 className="font-semibold text-white">1. Natural language input</h3>
+          <div className="mt-4 space-y-3">
+            <textarea
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              className="min-h-32 w-full rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none ring-0 placeholder:text-white/30 focus:border-cyan-400/60"
+              placeholder="Example: Schedule a meeting with Chris and Dagon next Tuesday at 11am about FineGuard."
+            />
 
-          <div className="flex flex-wrap gap-2">
-            {EXAMPLES.map((example) => (
+            <button
+              type="button"
+              onClick={handleParse}
+              disabled={isLoading}
+              className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? 'Parsing…' : 'Parse command'}
+            </button>
+
+            {error ? <p className="text-sm text-red-300">{error}</p> : null}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <h3 className="font-semibold text-white">Command corpus</h3>
+          <p className="mt-1 text-sm text-white/50">{commandCorpus.length} saved test commands</p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {areas.map((area) => (
               <button
-                key={example}
+                key={area}
                 type="button"
-                onClick={() => setText(example)}
-                className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/60 hover:border-cyan-400/60 hover:text-white"
+                onClick={() => setSelectedArea(area)}
+                className={`rounded-full border px-3 py-1 text-xs ${selectedArea === area ? 'border-cyan-400/70 text-white' : 'border-white/10 text-white/60 hover:border-cyan-400/60 hover:text-white'}`}
               >
-                {example.slice(0, 42)}{example.length > 42 ? '…' : ''}
+                {area}
               </button>
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={handleParse}
-            disabled={isLoading}
-            className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isLoading ? 'Parsing…' : 'Parse command'}
-          </button>
-
-          {error ? <p className="text-sm text-red-300">{error}</p> : null}
+          <div className="mt-4 max-h-64 space-y-2 overflow-auto pr-1">
+            {filteredExamples.map((example) => (
+              <button
+                key={`${example.area}-${example.input}`}
+                type="button"
+                onClick={() => {
+                  setText(example.input)
+                  setResult(null)
+                  setExecutionMessage(null)
+                }}
+                className="w-full rounded-xl border border-white/10 p-3 text-left hover:border-cyan-400/50"
+              >
+                <p className="text-xs text-cyan-200">{example.area} · expects {example.expected.action}</p>
+                <p className="mt-1 text-sm text-white">{example.input}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -155,36 +194,69 @@ export default function ParserPlayground() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <h3 className="font-semibold text-white">Parsed JSON</h3>
+          <h3 className="font-semibold text-white">2. Parsed intent JSON</h3>
           <pre className="mt-4 max-h-[520px] overflow-auto rounded-xl bg-black/40 p-4 text-xs text-cyan-100">
             {result ? JSON.stringify(result, null, 2) : 'No result yet.'}
           </pre>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <h3 className="font-semibold text-white">Recent parses</h3>
-          <div className="mt-4 space-y-3">
-            {history.length === 0 ? (
-              <p className="text-sm text-white/50">Parsed commands will appear here.</p>
-            ) : (
-              history.map((item, index) => (
-                <button
-                  key={`${item.input}-${index}`}
-                  type="button"
-                  onClick={() => {
-                    setText(item.input)
-                    setResult(item.result)
-                  }}
-                  className="w-full rounded-xl border border-white/10 p-3 text-left hover:border-cyan-400/50"
-                >
-                  <p className="text-sm text-white">{item.input}</p>
-                  <p className="mt-1 text-xs text-white/50">
-                    {item.result.action} · {formatConfidence(item.result.confidence)} · {item.result.needs_confirmation ? 'confirm' : 'ready'}
-                  </p>
-                </button>
-              ))
-            )}
+          <h3 className="font-semibold text-white">3. Execution preview</h3>
+          <p className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-white/80">
+            {preview}
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={!result || result.needs_confirmation}
+              className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Confirm mock execution
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setResult(null)
+                setExecutionMessage(null)
+              }}
+              className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/70 hover:border-white/30 hover:text-white"
+            >
+              Cancel
+            </button>
           </div>
+
+          {executionMessage ? (
+            <p className="mt-3 text-sm text-cyan-200">{executionMessage}</p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <h3 className="font-semibold text-white">Recent parses</h3>
+        <div className="mt-4 space-y-3">
+          {history.length === 0 ? (
+            <p className="text-sm text-white/50">Parsed commands will appear here.</p>
+          ) : (
+            history.map((item, index) => (
+              <button
+                key={`${item.input}-${index}`}
+                type="button"
+                onClick={() => {
+                  setText(item.input)
+                  setResult(item.result)
+                  setExecutionMessage(null)
+                }}
+                className="w-full rounded-xl border border-white/10 p-3 text-left hover:border-cyan-400/50"
+              >
+                <p className="text-sm text-white">{item.input}</p>
+                <p className="mt-1 text-xs text-white/50">
+                  {item.result.action} · {formatConfidence(item.result.confidence)} · {item.result.needs_confirmation ? 'confirm' : 'ready'}
+                </p>
+              </button>
+            ))
+          )}
         </div>
       </div>
     </div>
