@@ -6,6 +6,7 @@ const KEYWORDS: Record<Exclude<ActionType, 'unknown'>, string[]> = {
   draft_email: ['draft email', 'email', 'send email', 'write to'],
   create_invoice: ['invoice', 'bill', 'charge'],
   book_callback: ['callback', 'call back', 'phone call', 'book a call'],
+  schedule_meeting: ['schedule a meeting', 'set up a meeting', 'arrange a meeting', 'meeting with', 'catch up with', 'sync with'],
 };
 
 export function classifyAction(text: string): { action: ActionType; score: number } {
