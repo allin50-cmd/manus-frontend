@@ -4,6 +4,7 @@ export type ActionType =
   | 'draft_email'
   | 'create_invoice'
   | 'book_callback'
+  | 'schedule_meeting'
   | 'unknown';
 
 export type ParsedAction = {
@@ -11,6 +12,7 @@ export type ParsedAction = {
   title?: string;
   message?: string;
   person?: string;
+  participants?: string[];
   amount?: number;
   currency?: 'GBP' | 'USD' | 'EUR';
   date?: string;
@@ -24,6 +26,7 @@ export type ParsedAction = {
 export type ExtractedEntities = {
   title?: string;
   person?: string;
+  participants?: string[];
   amount?: number;
   currency?: 'GBP' | 'USD' | 'EUR';
   date?: string;
