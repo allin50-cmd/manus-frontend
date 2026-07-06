@@ -27,25 +27,14 @@ function nextWeekday(referenceDate: Date, targetDay: number): Date {
 function extractDate(text: string, referenceDate: Date): string | undefined {
   const lower = text.toLowerCase();
 
-  if (lower.includes('tomorrow')) {
-    return toIsoDate(new Date(referenceDate.getTime() + DAY_MS));
-  }
-
-  if (lower.includes('today')) {
-    return toIsoDate(referenceDate);
-  }
+  if (lower.includes('tomorrow')) return toIsoDate(new Date(referenceDate.getTime() + DAY_MS));
+  if (lower.includes('today')) return toIsoDate(referenceDate);
 
   const nextMatch = lower.match(/next\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/);
-  if (nextMatch) {
-    return toIsoDate(nextWeekday(referenceDate, WEEKDAY_INDEX[nextMatch[1]]));
-  }
+  if (nextMatch) return toIsoDate(nextWeekday(referenceDate, WEEKDAY_INDEX[nextMatch[1]]));
 
   const isoMatch = lower.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
-  if (isoMatch) {
-    return isoMatch[1];
-  }
-
-  return undefined;
+  return isoMatch?.[1];
 }
 
 function extractTime(text: string): string | undefined {
@@ -59,7 +48,6 @@ function extractTime(text: string): string | undefined {
 
   if (meridiem === 'pm' && hour < 12) hour += 12;
   if (meridiem === 'am' && hour === 12) hour = 0;
-
   if (hour > 23 || minute > 59) return undefined;
 
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
@@ -81,14 +69,34 @@ function extractPerson(text: string): string | undefined {
   return match?.[1];
 }
 
+function extractParticipants(text: string): string[] | undefined {
+  const match = text.match(/\b(?:with|between)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+and\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)*)/);
+  if (!match) return undefined;
+
+  const participants = match[1]
+    .split(/\s+and\s+/i)
+    .map((participant) => participant.trim())
+    .filter(Boolean);
+
+  return participants.length > 0 ? participants : undefined;
+}
+
+function extractSubject(text: string): string | undefined {
+  const match = text.match(/\b(?:about|regarding)\s+(.+?)(?:\s+(?:today|tomorrow|next\s+(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))|\s+at\s+\d{1,2}|$)/i);
+  return match?.[1]?.trim();
+}
+
 function cleanTitle(text: string): string | undefined {
+  const subject = extractSubject(text);
+  if (subject) return subject.charAt(0).toUpperCase() + subject.slice(1);
+
   const cleaned = text
-    .replace(/\b(remind me|create a task|add a task|draft an email|send an email|create an invoice|book a callback|book a call)\b/gi, '')
+    .replace(/\b(remind me|create a task|add a task|draft an email|send an email|create an invoice|book a callback|book a call|schedule a meeting|set up a meeting|arrange a meeting|catch up with|sync with)\b/gi, '')
     .replace(/\b(today|tomorrow|next\s+(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))\b/gi, '')
     .replace(/\bat\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b/gi, '')
     .replace(/(?:£|\$|€|GBP|USD|EUR)\s?[\d,]+(?:\.\d{1,2})?/gi, '')
     .replace(/\s+/g, ' ')
-    .replace(/^\s*(to|for|with|about)\s+/i, '')
+    .replace(/^\s*(to|for|with|about|regarding)\s+/i, '')
     .trim();
 
   if (!cleaned) return undefined;
@@ -101,6 +109,7 @@ export function extractEntities(text: string, referenceDate = new Date()): Extra
   return {
     title: cleanTitle(text),
     person: extractPerson(text),
+    participants: extractParticipants(text),
     date: extractDate(text, referenceDate),
     time: extractTime(text),
     ...money,
