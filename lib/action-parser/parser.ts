@@ -8,6 +8,7 @@ const REQUIRED_FIELDS: Record<ActionType, (keyof ExtractedEntities)[]> = {
   draft_email: ['person', 'title'],
   create_invoice: ['amount', 'title'],
   book_callback: ['person', 'date', 'time'],
+  schedule_meeting: ['participants', 'date', 'time'],
   unknown: [],
 };
 
@@ -25,6 +26,7 @@ function buildAction(action: ActionType, entities: ExtractedEntities, text: stri
     title: entities.title,
     message: action === 'draft_email' ? entities.title : undefined,
     person: entities.person,
+    participants: entities.participants,
     amount: entities.amount,
     currency: entities.currency,
     date: entities.date,
