@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import ParserPlayground from '@/components/os/parser/ParserPlayground'
 import AppShell from '@/components/os/layout/AppShell'
+import ParsedJobsPanel from '@/components/workspace/ParsedJobsPanel'
 import WhiteLabelServicesWorkspace from '@/components/workspace/WhiteLabelServicesWorkspace'
 import { getWorkspace } from '@/lib/workspace-registry'
 
@@ -22,6 +24,23 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
     )
   }
 
+  if (workspace.id === 'command-parser') {
+    return (
+      <AppShell>
+        <div className="space-y-6">
+          <div>
+            <Link href="/workspace" className="text-sm text-white/50 hover:text-white">
+              ← Workspace Command Centre
+            </Link>
+            <h1 className="mt-4 text-3xl font-bold text-white">Command Parser</h1>
+            <p className="mt-2 text-white/60">Parse user instructions and preview UltraTech OS actions.</p>
+          </div>
+          <ParserPlayground />
+        </div>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell>
       <div className="space-y-6">
@@ -32,6 +51,8 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
           <h1 className="mt-4 text-3xl font-bold text-white">{workspace.label}</h1>
           <p className="mt-2 text-white/60">Workspace route is registered and ready for the next implementation pass.</p>
         </div>
+
+        {workspace.id === 'todays-work' && <ParsedJobsPanel />}
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <h2 className="text-xl font-semibold text-white">Runtime Contract</h2>
