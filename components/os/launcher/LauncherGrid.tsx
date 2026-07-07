@@ -4,6 +4,16 @@ import LauncherTile from './LauncherTile'
 
 const modules = [
   {
+    title: 'Workspaces',
+    subtitle: 'Command Centre',
+    href: '/workspace',
+  },
+  {
+    title: 'White Label',
+    subtitle: 'Clients & Resellers',
+    href: '/workspace/white-label-services',
+  },
+  {
     title: 'Companies',
     subtitle: 'CRM & Compliance',
     href: '/portfolio',
@@ -54,4 +64,3 @@ export default function LauncherGrid() {
     </div>
   )
 }
-
