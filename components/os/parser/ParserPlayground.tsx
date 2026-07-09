@@ -53,7 +53,7 @@ export default function ParserPlayground() {
       : commandCorpus.filter((entry) => entry.area === selectedArea)
   }, [selectedArea])
 
-  const preview = useMemo(() => getExecutionPreview(result), [result])
+  const preview = useMemo(() => getExecutionPreview(result as any), [result])
 
   async function handleParse() {
     const trimmed = text.trim()
