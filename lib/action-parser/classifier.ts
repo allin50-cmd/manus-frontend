@@ -1,31 +1,32 @@
-import { ParsedAction } from './types';
+import type { ActionType } from './types';
 
-const actionKeywords: Record<string, string[]> = {
-  create_reminder: ['remind', 'reminder', 'remember'],
-  create_task: ['task', 'todo', 'add task'],
-  schedule_meeting: ['meeting', 'schedule', 'arrange', 'sync'],
-  draft_email: ['email', 'mail', 'draft'],
-  create_invoice: ['invoice', 'bill'],
-  book_callback: ['callback', 'call back', 'phone'],
+const KEYWORDS: Record<Exclude<ActionType, 'unknown'>, string[]> = {
+  create_reminder: ['remind', 'reminder', 'remember to'],
+  create_task: ['task', 'todo', 'to do', 'chase', 'follow up'],
+  draft_email: ['draft email', 'email', 'send email', 'write to'],
+  create_invoice: ['invoice', 'bill', 'charge'],
+  book_callback: ['callback', 'call back', 'phone call', 'book a call'],
+  schedule_meeting: ['schedule a meeting', 'set up a meeting', 'arrange a meeting', 'meeting with', 'catch up with', 'sync with'],
 };
 
-export function classify(text: string): { action: string; score: number } {
-  const lower = text.toLowerCase();
-  let bestAction = 'unknown';
-  let bestScore = 0;
+export function classifyAction(text: string): { action: ActionType; score: number } {
+  const normalised = text.toLowerCase().trim();
 
-  for (const [action, keywords] of Object.entries(actionKeywords)) {
-    let score = 0;
-    for (const kw of keywords) {
-      if (lower.includes(kw)) score += 1;
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestAction = action;
+  if (!normalised) {
+    return { action: 'unknown', score: 0.1 };
+  }
+
+  let best: { action: ActionType; score: number } = { action: 'unknown', score: 0.2 };
+
+  for (const [action, keywords] of Object.entries(KEYWORDS) as [Exclude<ActionType, 'unknown'>, string[]][]) {
+    const matches = keywords.filter((keyword) => normalised.includes(keyword));
+    if (matches.length === 0) continue;
+
+    const score = Math.min(1, 0.65 + matches.length * 0.15);
+    if (score > best.score) {
+      best = { action, score };
     }
   }
 
-  // Boost confidence if multiple keywords match
-  const confidence = Math.min(bestScore / 2, 0.95);
-  return { action: bestAction, score: confidence };
+  return best;
 }

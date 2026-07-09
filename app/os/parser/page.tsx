@@ -1,5 +1,10 @@
-import ParserPlayground from '@/components/os/parser/ParserPlayground';
+import AppShell from '@/components/os/layout/AppShell'
+import ParserPlayground from '@/components/os/parser/ParserPlayground'
 
 export default function ParserPage() {
-  return <ParserPlayground />;
+  return (
+    <AppShell>
+      <ParserPlayground />
+    </AppShell>
+  )
 }

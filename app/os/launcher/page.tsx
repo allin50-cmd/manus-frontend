@@ -1,5 +1,6 @@
 import AppShell from '@/components/os/layout/AppShell'
 import MetricCard from '@/components/os/cards/MetricCard'
+import GlobalCommandInput from '@/components/os/command/GlobalCommandInput'
 import LauncherGrid from '@/components/os/launcher/LauncherGrid'
 
 export default function LauncherPage() {
@@ -16,6 +17,8 @@ export default function LauncherPage() {
           </p>
         </div>
 
+        <GlobalCommandInput />
+
         <div className="grid gap-4 md:grid-cols-4">
           <MetricCard title="Companies" value="24" subtitle="Active" />
           <MetricCard title="Tasks" value="18" subtitle="Open" />
@@ -28,4 +31,3 @@ export default function LauncherPage() {
     </AppShell>
   )
 }
-

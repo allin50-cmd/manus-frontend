@@ -1,31 +1,124 @@
-import { EntityExtraction } from './types';
+import type { ExtractedEntities } from './types';
 
-const dateRegex = /\b(tomorrow|today|next\s+\w+|\d{1,2}\s+\w+\s+\d{4}|\d{4}-\d{2}-\d{2})\b/i;
-const timeRegex = /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|at\s+\d{1,2})\b/i;
-const participantRegex = /(?:with|and)\s+([A-Z][a-z]+(?:\s+and\s+[A-Z][a-z]+)?)/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEKDAY_INDEX: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
 
-export function extractEntities(text: string): EntityExtraction {
-  const lower = text;
-  let date: string | undefined;
-  let time: string | undefined;
-  let participants: string[] | undefined;
+function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
 
-  const dateMatch = lower.match(dateRegex);
-  if (dateMatch) date = dateMatch[0];
+function normaliseTitle(value: string): string | undefined {
+  const cleaned = value
+    .replace(/[.,;:!?]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  const timeMatch = lower.match(timeRegex);
-  if (timeMatch) time = timeMatch[0];
+  if (!cleaned) return undefined;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
 
-  const participantMatch = lower.match(participantRegex);
-  if (participantMatch) {
-    participants = participantMatch[1].split(/\s+and\s+/);
-  }
+function nextWeekday(referenceDate: Date, targetDay: number): Date {
+  const date = new Date(referenceDate);
+  const currentDay = date.getDay();
+  let daysAhead = targetDay - currentDay;
+  if (daysAhead <= 0) daysAhead += 7;
+  date.setDate(date.getDate() + daysAhead);
+  return date;
+}
 
-  // Title extraction: after "about", "regarding", etc.
-  let title: string | undefined;
-  const titleRegex = /(?:about|regarding|for)\s+(.+)$/i;
-  const titleMatch = lower.match(titleRegex);
-  if (titleMatch) title = titleMatch[1].trim();
+function extractDate(text: string, referenceDate: Date): string | undefined {
+  const lower = text.toLowerCase();
 
-  return { date, time, participants, title };
+  if (lower.includes('tomorrow')) return toIsoDate(new Date(referenceDate.getTime() + DAY_MS));
+  if (lower.includes('today')) return toIsoDate(referenceDate);
+
+  const nextMatch = lower.match(/next\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/);
+  if (nextMatch) return toIsoDate(nextWeekday(referenceDate, WEEKDAY_INDEX[nextMatch[1]]));
+
+  const isoMatch = lower.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
+  return isoMatch?.[1];
+}
+
+function extractTime(text: string): string | undefined {
+  const lower = text.toLowerCase();
+  const match = lower.match(/\b(?:at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/);
+  if (!match) return undefined;
+
+  let hour = Number(match[1]);
+  const minute = match[2] ? Number(match[2]) : 0;
+  const meridiem = match[3];
+
+  if (meridiem === 'pm' && hour < 12) hour += 12;
+  if (meridiem === 'am' && hour === 12) hour = 0;
+  if (hour > 23 || minute > 59) return undefined;
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function extractMoney(text: string): { amount?: number; currency?: 'GBP' | 'USD' | 'EUR' } {
+  const match = text.match(/(?:£|\$|€|GBP|USD|EUR)\s?([\d,]+(?:\.\d{1,2})?)/i);
+  if (!match) return {};
+
+  const marker = match[0].trim().slice(0, 3).toUpperCase();
+  const amount = Number(match[1].replace(/,/g, ''));
+  const currency = marker.includes('£') || marker.includes('GBP') ? 'GBP' : marker.includes('€') || marker.includes('EUR') ? 'EUR' : 'USD';
+
+  return Number.isFinite(amount) ? { amount, currency } : {};
+}
+
+function extractPerson(text: string): string | undefined {
+  const match = text.match(/\b(?:to|with|for|call|email)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
+  return match?.[1];
+}
+
+function extractParticipants(text: string): string[] | undefined {
+  const match = text.match(/\b(?:with|between)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+and\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)*)/);
+  if (!match) return undefined;
+
+  const participants = match[1]
+    .split(/\s+and\s+/i)
+    .map((participant) => participant.trim())
+    .filter(Boolean);
+
+  return participants.length > 0 ? participants : undefined;
+}
+
+function extractSubject(text: string): string | undefined {
+  const match = text.match(/\b(?:about|regarding)\s+(.+?)(?:\s+(?:today|tomorrow|next\s+(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))|\s+at\s+\d{1,2}|$)/i);
+  return match?.[1] ? normaliseTitle(match[1]) : undefined;
+}
+
+function cleanTitle(text: string): string | undefined {
+  const subject = extractSubject(text);
+  if (subject) return subject;
+
+  const cleaned = text
+    .replace(/\b(remind me|create a task|add a task|draft an email|send an email|create an invoice|book a callback|book a call|schedule a meeting|set up a meeting|arrange a meeting|catch up with|sync with)\b/gi, '')
+    .replace(/\b(today|tomorrow|next\s+(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))\b/gi, '')
+    .replace(/\bat\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b/gi, '')
+    .replace(/(?:£|\$|€|GBP|USD|EUR)\s?[\d,]+(?:\.\d{1,2})?/gi, '')
+    .replace(/^\s*(to|for|with|about|regarding)\s+/i, '');
+
+  return normaliseTitle(cleaned);
+}
+
+export function extractEntities(text: string, referenceDate = new Date()): ExtractedEntities {
+  const money = extractMoney(text);
+
+  return {
+    title: cleanTitle(text),
+    person: extractPerson(text),
+    participants: extractParticipants(text),
+    date: extractDate(text, referenceDate),
+    time: extractTime(text),
+    ...money,
+  };
 }

@@ -1,20 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { parseAction } from '@/lib/action-parser/parser';
-import { validateAction } from '@/lib/action-parser/validator';
-import { generatePreview } from '@/lib/action-parser/executionPreview';
+import { NextResponse } from 'next/server'
+import { parseActionRequest } from '@/lib/action-parser'
 
-export async function POST(req: NextRequest) {
-  const { text } = await req.json();
-  const parsed = parseAction(text);
-  const validation = validateAction(parsed);
-  const preview = generatePreview(parsed);
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    const input = typeof body?.input === 'string' ? body.input : ''
 
-  const response = {
-    ...parsed,
-    ...validation,
-    preview,
-    mock_execution: validation.valid ? 'Ready to run' : 'Missing fields',
-  };
+    if (!input.trim()) {
+      return NextResponse.json(
+        { ok: false, error: 'Input is required' },
+        { status: 400 }
+      )
+    }
 
-  return NextResponse.json(response);
+    const result = parseActionRequest(input)
+    return NextResponse.json({ ok: true, result })
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, error: 'Unable to parse action request' },
+      { status: 500 }
+    )
+  }
 }
