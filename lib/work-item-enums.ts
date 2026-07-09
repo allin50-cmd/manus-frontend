@@ -1,16 +1,26 @@
-export const workItemStatuses = [
+export const STATUSES = [
   'todo',
   'in_progress',
   'blocked',
   'done',
 ] as const
 
-export const workItemPriorities = [
+export const PRIORITIES = [
   'low',
   'medium',
   'high',
   'urgent',
 ] as const
 
-export type WorkItemStatus = typeof workItemStatuses[number]
-export type WorkItemPriority = typeof workItemPriorities[number]
+export const OWNERS = [
+  'George',
+  'Team',
+  'Unassigned',
+] as const
+
+export const workItemStatuses = STATUSES
+export const workItemPriorities = PRIORITIES
+
+export type WorkItemStatus = typeof STATUSES[number]
+export type WorkItemPriority = typeof PRIORITIES[number]
+export type WorkItemOwner = typeof OWNERS[number]
