@@ -5,36 +5,37 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const BOTTOM_TABS = [
-  { href: '/dashboard',    label: 'Dashboard', icon: '⊞' },
+  { href: '/dashboard',    label: 'Hub',       icon: '⊞' },
+  { href: '/os/launcher',  label: 'Apps',      icon: '▦' },
+  { href: '/os/parser',    label: 'Parser',    icon: '⌁' },
+  { href: '/today',        label: 'Tasks',     icon: '✓' },
   { href: '/alerts',       label: 'Alerts',    icon: '🔔' },
-  { href: '/portfolio',    label: 'Portfolio', icon: '🏢' },
-  { href: '/decisions',    label: 'Decisions', icon: '⚖️' },
-  { href: '/voice-intake', label: 'Voice',     icon: '🎤' },
 ]
 
 const DESKTOP_LINKS = [
-  { href: '/dashboard',  label: 'Dashboard' },
-  { href: '/filings',    label: 'Filings' },
-  { href: '/alerts',     label: 'Alerts' },
-  { href: '/portfolio',  label: 'Portfolio' },
-  { href: '/decisions',  label: 'Decisions' },
-  { href: '/teams',      label: 'Teams' },
-  { href: '/contacts',   label: 'Contacts' },
+  { href: '/dashboard',    label: 'Command Hub' },
+  { href: '/os/launcher',  label: 'Launcher' },
+  { href: '/os/parser',    label: 'Parser' },
+  { href: '/today',        label: 'Tasks' },
+  { href: '/portfolio',    label: 'Companies' },
+  { href: '/contacts',     label: 'Contacts' },
+  { href: '/alerts',       label: 'Alerts' },
 ]
 
 const MORE_MENU = [
-  { href: '/os/today',          label: 'Today Workspace' },
-  { href: '/my-tasks',          label: 'My Tasks' },
-  { href: '/team',              label: 'Team Capacity' },
-  { href: '/filings',           label: 'Filings' },
-  { href: '/teams',             label: 'Teams' },
-  { href: '/contacts',          label: 'Contacts' },
-  { href: '/partnerships',      label: 'Pipeline' },
-  { href: '/work-items',        label: 'All Work Items' },
-  { href: '/alert-recipients',  label: 'Alert Recipients' },
-  { href: '/alert-events',      label: 'Alert Audit Log' },
-  { href: '/activity',          label: 'Activity Log' },
-  { href: '/templates',         label: 'Templates' },
+  { href: '/os/launcher',        label: 'OS Launcher' },
+  { href: '/os/parser',          label: 'Universal Action Parser' },
+  { href: '/work-items/new',     label: 'New Work Item' },
+  { href: '/os/contacts/new',    label: 'New Contact' },
+  { href: '/os/tasks/new',       label: 'New Task' },
+  { href: '/os/calls/new',       label: 'New Call' },
+  { href: '/os/messages/new',    label: 'New Message' },
+  { href: '/os/documents/upload', label: 'Upload Document' },
+  { href: '/filings',            label: 'Filings' },
+  { href: '/decisions',          label: 'Decisions' },
+  { href: '/teams',              label: 'Teams' },
+  { href: '/templates',          label: 'Templates' },
+  { href: '/activity',           label: 'Activity Log' },
 ]
 
 export default function NavBar({ person }: { person: string | null }) {
@@ -51,11 +52,9 @@ export default function NavBar({ person }: { person: string | null }) {
 
   return (
     <>
-      {/* ── Desktop top bar ── */}
       <nav className="hidden sm:flex items-center justify-between sticky top-0 z-50 px-6 py-0 h-14"
            style={{ background: '#0c2340' }}>
         <div className="flex items-center gap-6">
-          {/* Brand */}
           <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-base leading-none">
               🛡️
@@ -98,7 +97,6 @@ export default function NavBar({ person }: { person: string | null }) {
         </div>
       </nav>
 
-      {/* ── Mobile bottom bar ── */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 flex items-center">
         {BOTTOM_TABS.map((n) => {
           const active = pathname.startsWith(n.href)
@@ -126,7 +124,6 @@ export default function NavBar({ person }: { person: string | null }) {
         </button>
       </nav>
 
-      {/* ── Mobile overflow menu ── */}
       {menuOpen && (
         <div
           className="sm:hidden fixed inset-0 z-40 bg-black/50"
