@@ -1,99 +1,72 @@
-// Canonical work-item enum values, the single source of truth shared by API
-// validation and all UI. Keep in sync with the Prisma enums WorkItemType /
-// WorkItemStatus / Priority. Each array is defined once and exported under both
-// the VALID_* and legacy names so there are no duplicated constants.
-
-export const VALID_WORK_ITEM_STATUSES = [
-  'Captured',
-  'Controlled',
-  'InProgress',
-  'Waiting',
-  'FollowUpDue',
-  'Escalated',
-  'DecisionNeeded',
-  'Completed',
-  'Paused',
-  'NotFit',
-  'Archived',
+export const WORK_ITEM_TYPES = [
+  'filing',
+  'alert',
+  'task',
+  'call',
+  'message',
+  'document',
+  'invoice',
+  'quote',
+  'other',
 ] as const
-
-export const VALID_WORK_ITEM_TYPES = [
-  'Partnership',
-  'ConstructionLead',
-  'PlanningLead',
-  'ComplianceAlert',
-  'DocumentRecord',
-  'MediaBrief',
-  'InternalTask',
-  'Operations',
-  'TechTask',
-  'Other',
-] as const
-
-export const VALID_PRIORITIES = [
-  'Low',
-  'Medium',
-  'High',
-  'Urgent',
-] as const
-
-// Legacy aliases (same arrays, no duplication).
-export const WORK_ITEM_STATUSES = VALID_WORK_ITEM_STATUSES
-export const WORK_ITEM_TYPES = VALID_WORK_ITEM_TYPES
-export const PRIORITIES = VALID_PRIORITIES
 
 export const TYPE_LABELS: Record<string, string> = {
-  Partnership: 'Partnership',
-  ConstructionLead: 'Construction Lead',
-  PlanningLead: 'Planning Lead',
-  ComplianceAlert: 'Compliance Alert',
-  DocumentRecord: 'Document Record',
-  MediaBrief: 'Media Brief',
-  InternalTask: 'Internal Task',
-  Operations: 'Operations',
-  TechTask: 'Tech Task',
-  Other: 'Other',
+  filing: 'Filing',
+  alert: 'Alert',
+  task: 'Task',
+  call: 'Call',
+  message: 'Message',
+  document: 'Document',
+  invoice: 'Invoice',
+  quote: 'Quote',
+  other: 'Other',
 }
 
-export const STATUS_LABELS: Record<string, string> = {
-  Captured: 'Captured',
-  Controlled: 'Controlled',
-  InProgress: 'In Progress',
-  Waiting: 'Waiting',
-  FollowUpDue: 'Follow-Up Due',
-  Escalated: 'Escalated',
-  DecisionNeeded: 'Decision Needed',
-  Completed: 'Completed',
-  Paused: 'Paused',
-  NotFit: 'Not Fit',
-  Archived: 'Archived',
+export const STATUSES = ['todo', 'in_progress', 'blocked', 'done'] as const
+export const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
+export const OWNERS = ['George', 'Team', 'Unassigned'] as const
+
+export const workItemStatuses = STATUSES
+export const workItemPriorities = PRIORITIES
+
+export type WorkItemType = typeof WORK_ITEM_TYPES[number]
+export type WorkItemStatus = typeof STATUSES[number]
+export type WorkItemPriority = typeof PRIORITIES[number]
+export type WorkItemOwner = typeof OWNERS[number]
+
+export function isValidType(value: unknown): value is WorkItemType {
+  return typeof value === 'string' && WORK_ITEM_TYPES.includes(value as WorkItemType)
 }
 
-// Spoken synonyms for each type — checked by the voice parser after the
-// primary label and enum-token match.
-export const TYPE_SYNONYMS: Record<string, string[]> = {
-  Partnership: ['partner', 'partnership enquiry', 'joint venture', 'JV'],
-  ConstructionLead: ['build lead', 'construction enquiry', 'contractor lead', 'build enquiry'],
-  PlanningLead: ['planning enquiry', 'planning application', 'planning app', 'planning permission'],
-  ComplianceAlert: ['compliance issue', 'compliance breach', 'regulatory alert', 'regulation alert'],
-  DocumentRecord: ['document', 'file this', 'filing', 'paperwork'],
-  MediaBrief: ['media', 'press', 'PR brief', 'content brief'],
-  Operations: ['ops', 'ops task', 'site ops', 'operational', 'operations issue'],
-  TechTask: ['tech', 'technical task', 'bug', 'dev task', 'system issue'],
-  InternalTask: ['internal', 'admin task', 'housekeeping', 'team task'],
+export function isValidPriority(value: unknown): value is WorkItemPriority {
+  return typeof value === 'string' && PRIORITIES.includes(value as WorkItemPriority)
+}
+export const STATUS_LABELS: Record<WorkItemStatus, string> = {
+  todo: 'To Do',
+  in_progress: 'In Progress',
+  blocked: 'Blocked',
+  done: 'Done',
 }
 
-export const OWNERS = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie'] as const
+export function isValidStatus(value: unknown): value is WorkItemStatus {
+  return (
+    typeof value === 'string' &&
+    STATUSES.includes(value as WorkItemStatus)
+  )
+}
 
-export const isValidWorkItemStatus = (value: unknown): value is (typeof VALID_WORK_ITEM_STATUSES)[number] =>
-  typeof value === 'string' && (VALID_WORK_ITEM_STATUSES as readonly string[]).includes(value)
 
-export const isValidWorkItemType = (value: unknown): value is (typeof VALID_WORK_ITEM_TYPES)[number] =>
-  typeof value === 'string' && (VALID_WORK_ITEM_TYPES as readonly string[]).includes(value)
+export const WORK_ITEM_STATUSES = STATUSES
 
-export const isValidPriority = (value: unknown): value is (typeof VALID_PRIORITIES)[number] =>
-  typeof value === 'string' && (VALID_PRIORITIES as readonly string[]).includes(value)
+export const TYPE_SYNONYMS: Record<WorkItemType, string[]> = {
+  filing: ['filing', 'filings'],
+  alert: ['alert', 'alerts'],
+  task: ['task', 'tasks'],
+  call: ['call', 'calls'],
+  message: ['message', 'messages'],
+  document: ['document', 'documents'],
+  invoice: ['invoice', 'invoices'],
+  quote: ['quote', 'quotes'],
+  other: ['other'],
+}
 
-// Legacy validator aliases.
-export const isValidStatus = isValidWorkItemStatus
-export const isValidType = isValidWorkItemType
