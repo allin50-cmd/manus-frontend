@@ -48,9 +48,7 @@ export default function QuotesPage() {
           <h1 className="text-2xl font-bold text-slate-900">Quotes</h1>
           <p className="text-sm text-slate-500">Company: {companyId}</p>
         </div>
-        <Link href={`/os/money/quotes/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
-          New Quote
-        </Link>
+        <Link href={`/os/money/quotes/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">New Quote</Link>
       </div>
 
       {loading && <p className="text-sm text-slate-500">Loading quotes…</p>}
@@ -67,7 +65,7 @@ export default function QuotesPage() {
               {quotes.map((quote) => (
                 <tr key={quote.id}>
                   <td className="px-4 py-3 font-medium text-slate-900">{quote.quoteNumber}</td>
-                  <td className="px-4 py-3">{quote.currency} {Number(quote.amount).toFixed(2)}</td>
+                  <td className="px-4 py-3">{quote.currency} {(Number(quote.amount) / 100).toFixed(2)}</td>
                   <td className="px-4 py-3">{quote.status}</td>
                   <td className="px-4 py-3">{new Date(quote.issueDate).toLocaleDateString('en-GB')}</td>
                   <td className="px-4 py-3">{quote.expiryDate ? new Date(quote.expiryDate).toLocaleDateString('en-GB') : '—'}</td>
