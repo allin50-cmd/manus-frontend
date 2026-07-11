@@ -1,0 +1,5 @@
+{
+  "resources": [
+    {"name": "companies", "endpoint": "/api/companies", "itemPath": "data"}
+  ]
+}

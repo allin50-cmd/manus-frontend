@@ -1,0 +1,15 @@
+{
+  "_comment": "Example staging mapping only. Review real fields before execute.",
+  "resources": {
+    "companies": {
+      "file": "companies.json",
+      "table": "migration_staging_companies",
+      "preserveSourceRecord": true,
+      "fields": {
+        "source_id": {"source": "id", "transform": "string"},
+        "name": {"source": "name", "transform": "string"},
+        "created_at": {"source": "createdAt", "transform": "date"}
+      }
+    }
+  }
+}

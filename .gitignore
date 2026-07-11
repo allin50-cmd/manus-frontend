@@ -75,3 +75,10 @@ credentials.json
 .vercel
 .env*
 .claude/
+# Manus migration local data and credentials
+scripts/manus-migration/.env.local
+scripts/manus-migration/headers.local.json
+scripts/manus-migration/endpoints.json
+scripts/manus-migration/discovered-endpoints.json
+scripts/manus-migration/export/
+scripts/manus-migration/mapped/
