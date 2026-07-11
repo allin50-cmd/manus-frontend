@@ -13,7 +13,11 @@ const items = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 border-r border-white/10 bg-[#0B1020] text-white">
+    // Hidden below `sm` — the root NavBar (app/layout.tsx) already renders a
+    // fixed bottom tab bar at that breakpoint, which is this app's real
+    // mobile nav pattern. Without this, this fixed w-64 sidebar stacked
+    // alongside it forces horizontal overflow on every /os/* page.
+    <aside className="hidden sm:block sm:w-64 sm:shrink-0 border-r border-white/10 bg-[#0B1020] text-white">
       <div className="p-6">
         <h2 className="text-xl font-bold">UltraTech OS</h2>
       </div>
