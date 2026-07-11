@@ -49,9 +49,7 @@ export default function InvoicesPage() {
           <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
           <p className="text-sm text-slate-500">Company: {companyId}</p>
         </div>
-        <Link href={`/os/money/invoices/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-          New Invoice
-        </Link>
+        <Link href={`/os/money/invoices/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">New Invoice</Link>
       </div>
 
       {loading && <p className="text-sm text-slate-500">Loading invoices…</p>}
@@ -68,7 +66,7 @@ export default function InvoicesPage() {
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
                   <td className="px-4 py-3 font-medium text-slate-900">{invoice.invoiceNumber}</td>
-                  <td className="px-4 py-3">{invoice.currency} {Number(invoice.amount).toFixed(2)}</td>
+                  <td className="px-4 py-3">{invoice.currency} {(Number(invoice.amount) / 100).toFixed(2)}</td>
                   <td className="px-4 py-3">{invoice.status}</td>
                   <td className="px-4 py-3">{new Date(invoice.issueDate).toLocaleDateString('en-GB')}</td>
                   <td className="px-4 py-3">{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : '—'}</td>
