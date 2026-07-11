@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getCurrentTenantId } from '@/lib/apps/tenant'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +14,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ appId: 
   const { appId } = await params
 
   try {
+    const tenantId = await getCurrentTenantId()
+    if (!tenantId) {
+      return NextResponse.json({ error: 'No workspace found' }, { status: 404 })
+    }
+
     const installation = await db.workspaceAppInstallation.findFirst({
-      where: { appId, status: 'active' },
+      where: { appId, status: 'active', tenantId },
       include: { app: true, tenant: true },
     })
 

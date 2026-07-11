@@ -4,6 +4,7 @@ import AppShell from '@/components/os/layout/AppShell'
 import InstalledAppsGrid from '@/components/os/apps/InstalledAppsGrid'
 import EmptyAppsState from '@/components/os/apps/EmptyAppsState'
 import type { InstalledAppSummary } from '@/components/os/apps/types'
+import { getCurrentTenantId } from '@/lib/apps/tenant'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,11 +15,14 @@ export default async function AppsPage() {
   let loadError = false
 
   try {
-    const installations = await db.workspaceAppInstallation.findMany({
-      where: { status: 'active' },
-      include: { app: true },
-      orderBy: { installedAt: 'asc' },
-    })
+    const tenantId = await getCurrentTenantId()
+    const installations = tenantId
+      ? await db.workspaceAppInstallation.findMany({
+          where: { status: 'active', tenantId },
+          include: { app: true },
+          orderBy: { installedAt: 'asc' },
+        })
+      : []
 
     apps = installations.map((i: any) => ({
       id: i.app.id,

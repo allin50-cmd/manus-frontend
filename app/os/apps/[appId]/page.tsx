@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import AppShell from '@/components/os/layout/AppShell'
 import AppDetailPanel from '@/components/os/apps/AppDetailPanel'
+import { getCurrentTenantId } from '@/lib/apps/tenant'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +11,11 @@ export default async function AppDetailPage({ params }: { params: Promise<{ appI
   await requireAuth()
   const { appId } = await params
 
+  const tenantId = await getCurrentTenantId()
+  if (!tenantId) notFound()
+
   const installation = await db.workspaceAppInstallation.findFirst({
-    where: { appId, status: 'active' },
+    where: { appId, status: 'active', tenantId },
     include: { app: true, tenant: true },
   })
 

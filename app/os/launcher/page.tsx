@@ -5,13 +5,17 @@ import LauncherGrid from '@/components/os/launcher/LauncherGrid'
 import InstalledAppsSummary, { type InstalledAppsSummaryData } from '@/components/os/apps/InstalledAppsSummary'
 import { db } from '@/lib/db'
 import { checkAppHealth } from '@/lib/apps/health'
+import { getCurrentTenantId } from '@/lib/apps/tenant'
 
 export const dynamic = 'force-dynamic'
 
 async function loadInstalledAppsSummary(): Promise<InstalledAppsSummaryData | null> {
   try {
+    const tenantId = await getCurrentTenantId()
+    if (!tenantId) return null
+
     const installations = await db.workspaceAppInstallation.findMany({
-      where: { status: 'active' },
+      where: { status: 'active', tenantId },
       include: { app: true },
       orderBy: { installedAt: 'asc' },
     })
@@ -24,7 +28,7 @@ async function loadInstalledAppsSummary(): Promise<InstalledAppsSummaryData | nu
     const unhealthyCount = healthResults.filter((r) => r.status === 'error').length
 
     const recentEvents = await db.appEvent.findMany({
-      where: { eventType: 'app.launched' },
+      where: { eventType: 'app.launched', tenantId },
       orderBy: { createdAt: 'desc' },
       take: 3,
       include: { app: true },
