@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
 type Quote = {
   id: string
@@ -14,9 +13,8 @@ type Quote = {
   expiryDate?: string | null
 }
 
-export default function QuotesPage() {
-  const searchParams = useSearchParams()
-  const companyId = searchParams.get('companyId')
+export default function QuotesPage({ searchParams }: { searchParams?: { companyId?: string } }) {
+  const companyId = searchParams?.companyId ?? null
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -48,7 +46,9 @@ export default function QuotesPage() {
           <h1 className="text-2xl font-bold text-slate-900">Quotes</h1>
           <p className="text-sm text-slate-500">Company: {companyId}</p>
         </div>
-        <Link href={`/os/money/quotes/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">New Quote</Link>
+        <Link href={`/os/money/quotes/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+          New Quote
+        </Link>
       </div>
 
       {loading && <p className="text-sm text-slate-500">Loading quotes…</p>}
