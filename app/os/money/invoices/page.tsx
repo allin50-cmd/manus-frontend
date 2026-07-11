@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
 type Invoice = {
   id: string
@@ -15,9 +14,8 @@ type Invoice = {
   paidAt?: string | null
 }
 
-export default function InvoicesPage() {
-  const searchParams = useSearchParams()
-  const companyId = searchParams.get('companyId')
+export default function InvoicesPage({ searchParams }: { searchParams?: { companyId?: string } }) {
+  const companyId = searchParams?.companyId ?? null
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -49,7 +47,9 @@ export default function InvoicesPage() {
           <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
           <p className="text-sm text-slate-500">Company: {companyId}</p>
         </div>
-        <Link href={`/os/money/invoices/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">New Invoice</Link>
+        <Link href={`/os/money/invoices/new?companyId=${encodeURIComponent(companyId)}`} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+          New Invoice
+        </Link>
       </div>
 
       {loading && <p className="text-sm text-slate-500">Loading invoices…</p>}
