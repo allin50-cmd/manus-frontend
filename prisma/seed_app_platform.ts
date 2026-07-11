@@ -37,25 +37,26 @@ async function main() {
     },
   })
 
+  // Mirrors what FineGuard V1 actually implements (src/server/actions.ts) —
+  // no tasks.write, since there is no UltraCore task-creation integration yet.
   await prisma.appPermission.createMany({
     data: [
       { appId: app.id, permission: 'companies.read', description: 'Read monitored companies' },
       { appId: app.id, permission: 'companies.write', description: 'Add/remove monitored companies' },
-      { appId: app.id, permission: 'tasks.write', description: 'Create UltraCore tasks from alerts' },
-      { appId: app.id, permission: 'alerts.write', description: 'Create UltraCore alerts' },
+      { appId: app.id, permission: 'alerts.write', description: 'Mark compliance alerts handled' },
     ],
     skipDuplicates: true,
   })
 
   await prisma.workspaceAppInstallation.upsert({
     where: { tenantId_appId: { tenantId: tenant.id, appId: app.id } },
-    update: { status: 'active' },
+    update: { grantedPermissions: ['companies.read', 'companies.write', 'alerts.write'], status: 'active' },
     create: {
       tenantId: tenant.id,
       appId: app.id,
       status: 'active',
       installedBy: 'system-seed',
-      grantedPermissions: ['companies.read', 'companies.write', 'tasks.write', 'alerts.write'],
+      grantedPermissions: ['companies.read', 'companies.write', 'alerts.write'],
     },
   })
 
