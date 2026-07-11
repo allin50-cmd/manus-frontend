@@ -8,6 +8,7 @@ const items = [
   { href: '/today', label: 'Tasks' },
   { href: '/contacts', label: 'Contacts' },
   { href: '/alerts', label: 'Alerts' },
+  { href: '/os/apps', label: 'Apps' },
 ]
 
 export default function Sidebar() {

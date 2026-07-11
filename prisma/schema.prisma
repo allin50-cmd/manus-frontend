@@ -379,3 +379,144 @@ model Contact {
 
   company Company @relation(fields: [companyId], references: [id])
 }
+
+// ─── UltraCore App Platform ────────────────────────────────────────────────
+// Plugin registry + installations. Reuses `Tenant` for workspace identity —
+// does not duplicate tenant, auth, billing, or contact data.
+
+model Tenant {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String   @unique
+  plan      String   @default("free") @db.VarChar(32)
+  settings  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  installations WorkspaceAppInstallation[]
+  events        AppEvent[]
+  reviews       MarketplaceReview[]
+
+  @@map("tenants")
+}
+
+model App {
+  id            String   @id // stable slug, e.g. 'fineguard'
+  name          String
+  description   String?
+  category      String?
+  launchUrl     String   @map("launch_url")
+  manifestUrl   String   @map("manifest_url")
+  healthUrl     String?  @map("health_url")
+  iconUrl       String?  @map("icon_url")
+  status        String   @default("beta") // live | beta | coming_soon
+  installable   Boolean  @default(true)
+  pwa           Boolean  @default(false)
+  latestVersion String?  @map("latest_version")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  versions      AppVersion[]
+  permissions   AppPermission[]
+  installations WorkspaceAppInstallation[]
+  events        AppEvent[]
+  webhooks      AppWebhook[]
+  reviews       MarketplaceReview[]
+
+  @@map("apps")
+}
+
+model AppVersion {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId      String   @map("app_id")
+  version    String
+  changelog  String?
+  releasedAt DateTime @default(now()) @map("released_at")
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@unique([appId, version])
+  @@map("app_versions")
+}
+
+model AppPermission {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId       String  @map("app_id")
+  permission  String
+  description String?
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@unique([appId, permission])
+  @@map("app_permissions")
+}
+
+model WorkspaceAppInstallation {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String    @map("tenant_id") @db.Uuid
+  appId               String    @map("app_id")
+  status              String    @default("active") // active | trial | suspended | uninstalled
+  installedBy         String?   @map("installed_by")
+  installedAt         DateTime  @default(now()) @map("installed_at")
+  trialEndsAt         DateTime? @map("trial_ends_at")
+  grantedPermissions  Json      @default("[]") @map("granted_permissions")
+  config              Json      @default("{}")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  app    App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, appId])
+  @@map("workspace_app_installations")
+}
+
+model AppEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId     String   @map("app_id")
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  eventType String   @map("event_type")
+  payload   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  app    App     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("app_events")
+}
+
+model AppWebhook {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId     String   @map("app_id")
+  url       String
+  secret    String
+  events    Json     @default("[]")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@map("app_webhooks")
+}
+
+model MarketplaceCategory {
+  id          String  @id
+  name        String
+  description String?
+  icon        String?
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  @@map("marketplace_categories")
+}
+
+model MarketplaceReview {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appId     String   @map("app_id")
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  app    App     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("marketplace_reviews")
+}
