@@ -11,6 +11,8 @@ export const WORK_ITEM_TYPES = [
   'Other',
 ] as const
 
+export type WorkItemType = typeof WORK_ITEM_TYPES[number]
+
 export const TYPE_LABELS: Record<WorkItemType, string> = {
   Partnership: 'Partnership',
   ConstructionLead: 'Construction Lead',
@@ -51,6 +53,22 @@ export const WORK_ITEM_STATUSES = [
   'Archived',
 ] as const
 
+export type WorkItemStatus = typeof WORK_ITEM_STATUSES[number]
+
+export const STATUS_LABELS: Record<WorkItemStatus, string> = {
+  Captured: 'Captured',
+  Controlled: 'Controlled',
+  InProgress: 'In Progress',
+  Waiting: 'Waiting',
+  FollowUpDue: 'Follow-up Due',
+  Escalated: 'Escalated',
+  DecisionNeeded: 'Decision Needed',
+  Completed: 'Completed',
+  Paused: 'Paused',
+  NotFit: 'Not Fit',
+  Archived: 'Archived',
+}
+
 export const STATUSES = WORK_ITEM_STATUSES
 export const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'] as const
 export const OWNERS = ['George', 'Dagon', 'Michelle', 'Chris', 'Charlie', 'Alissa', 'Team', 'Unassigned'] as const
@@ -58,8 +76,6 @@ export const OWNERS = ['George', 'Dagon', 'Michelle', 'Chris', 'Charlie', 'Aliss
 export const workItemStatuses = WORK_ITEM_STATUSES
 export const workItemPriorities = PRIORITIES
 
-export type WorkItemType = typeof WORK_ITEM_TYPES[number]
-export type WorkItemStatus = typeof WORK_ITEM_STATUSES[number]
 export type WorkItemPriority = typeof PRIORITIES[number]
 export type WorkItemOwner = typeof OWNERS[number]
 
