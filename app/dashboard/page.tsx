@@ -1,347 +1,141 @@
-import { requireAuth } from '../../lib/auth'
-import { db } from '../../lib/db'
-import { getBriefingItems } from '../../lib/queries/briefing'
 import Link from 'next/link'
-import type { WorkItemStatus } from '@/lib/types'
-import MorningBriefing, { type BriefingItemClient } from './DashboardClient'
+import AppShell from '@/components/os/layout/AppShell'
+import MetricCard from '@/components/os/cards/MetricCard'
+import GlobalCommandInput from '@/components/os/command/GlobalCommandInput'
+import LauncherGrid from '@/components/os/launcher/LauncherGrid'
+import { requireAuth } from '../../lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-type RecentItem = {
-  id: string
-  title: string
-  company: string | null
-  status: string
-  priority: string
-  dueDate: Date | null
-  type: string
-}
+const executionItems = [
+  {
+    title: 'Action parser',
+    status: 'Ready',
+    detail: 'Natural-language commands route through /api/parse-action.',
+    href: '/os/parser',
+  },
+  {
+    title: 'Execution preview',
+    status: 'Mock queue',
+    detail: 'Parsed actions show confidence, missing fields, and confirm state before execution.',
+    href: '/os/parser',
+  },
+  {
+    title: 'Launcher modules',
+    status: '8 apps',
+    detail: 'Money, Messages, Calls, Contacts, Alerts, Tasks, Companies, and Documents.',
+    href: '/os/launcher',
+  },
+]
 
-type TeamPulse = { owner: string; count: number }
-
-function emptyData() {
-  return {
-    overdue: 0,
-    dueToday: 0,
-    in7DaysDue: 0,
-    in30DaysDue: 0,
-    escalated: 0,
-    completedThisWeek: 0,
-    total: 0,
-    openActions: 0,
-    decisionNeeded: 0,
-    complianceAlerts: 0,
-    compliantCount: 0,
-    teamPulse: [] as TeamPulse[],
-    recentItems: [] as RecentItem[],
-  }
-}
-
-async function safeQuery<T>(query: Promise<T>, fallback: T, label: string): Promise<T> {
-  try {
-    return await query
-  } catch (error) {
-    console.error(`Dashboard ${label} failed`, error)
-    return fallback
-  }
-}
-
-async function safeBriefingItems(): Promise<BriefingItemClient[]> {
-  const mapped = getBriefingItems().then((items) =>
-    items.map((item) => ({
-      ...item,
-      status: item.status as string,
-      priority: item.priority as string,
-      dueDate: item.dueDate ? item.dueDate.toISOString() : null,
-    }))
-  )
-  return safeQuery(mapped, [], 'briefing')
-}
-
-async function getDashboardData() {
-  const now = new Date()
-  const today = new Date(now); today.setHours(0, 0, 0, 0)
-  const endOfToday = new Date(now); endOfToday.setHours(23, 59, 59, 999)
-  const in7Days = new Date(today.getTime() + 7 * 86_400_000)
-  const in30Days = new Date(today.getTime() + 30 * 86_400_000)
-  const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - today.getDay())
-  const owners = ['Dagon', 'Alissa', 'Michelle', 'Chris', 'Charlie', 'George']
-
-  const nonFinal = { notIn: ['Completed', 'Archived', 'NotFit'] as WorkItemStatus[] }
-
-  const [
-    overdue,
-    dueToday,
-    in7DaysDue,
-    in30DaysDue,
-    escalated,
-    completedThisWeek,
-    total,
-    openActions,
-    decisionNeeded,
-    complianceAlerts,
-    teamPulse,
-    recentItems,
-  ] = await Promise.all([
-    safeQuery(db.workItem.count({ where: { dueDate: { lt: today }, status: nonFinal } }), 0, 'count'),
-    safeQuery(db.workItem.count({ where: { dueDate: { gte: today, lte: endOfToday }, status: nonFinal } }), 0, 'count'),
-    safeQuery(db.workItem.count({ where: { dueDate: { gte: today, lt: in7Days }, status: nonFinal } }), 0, 'count'),
-    safeQuery(db.workItem.count({ where: { dueDate: { gte: in7Days, lt: in30Days }, status: nonFinal } }), 0, 'count'),
-    safeQuery(db.workItem.count({ where: { status: { in: ['Escalated', 'DecisionNeeded', 'FollowUpDue'] } } }), 0, 'count'),
-    safeQuery(db.workItem.count({ where: { status: 'Completed', updatedAt: { gte: startOfWeek } } }), 0, 'count'),
-    safeQuery(db.workItem.count({ where: { status: nonFinal } }), 0, 'count'),
-    safeQuery(db.action.count({ where: { status: 'Open' } }), 0, 'count'),
-    safeQuery(db.workItem.count({ where: { decisionNeeded: true, status: nonFinal } }), 0, 'count'),
-    safeQuery(db.alertDelivery.count({ where: { status: { in: ['Sent', 'Pending'] } } }), 0, 'count'),
-    Promise.all(
-      owners.map((owner) =>
-        safeQuery(db.workItem.count({ where: { owner, status: nonFinal } }), 0, 'count').then((count) => ({ owner, count }))
-      )
-    ),
-    safeQuery(db.workItem.findMany({
-      where: { status: nonFinal },
-      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
-      select: { id: true, title: true, company: true, status: true, priority: true, dueDate: true, type: true },
-      take: 5,
-    }) as Promise<RecentItem[]>, [], 'recent items'),
-  ])
-
-  const actionRequired = Math.max(escalated, dueToday + overdue > 0 ? dueToday : 0)
-  const compliantCount = Math.max(0, total - overdue - actionRequired - in30DaysDue)
-
-  return {
-    overdue,
-    dueToday,
-    in7DaysDue,
-    in30DaysDue,
-    escalated,
-    completedThisWeek,
-    total,
-    openActions,
-    decisionNeeded,
-    complianceAlerts,
-    compliantCount,
-    teamPulse,
-    recentItems,
-  }
-}
-
-function fmt(d: Date | null | undefined) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
-}
-
-const PRIORITY_DOT: Record<string, string> = {
-  Urgent: 'bg-red-500',
-  High: 'bg-orange-500',
-  Medium: 'bg-amber-400',
-  Low: 'bg-slate-300',
-}
+const quickActions = [
+  { label: 'Open parser', href: '/os/parser' },
+  { label: 'New task', href: '/work-items/new' },
+  { label: 'New contact', href: '/os/contacts/new' },
+  { label: 'Upload document', href: '/os/documents/upload' },
+]
 
 export default async function DashboardPage() {
   const session = await requireAuth()
-  const isGeorge = session.person === 'George'
-
-  // Independent fallbacks: a dashboard-stats failure must not discard an
-  // already-successful briefing fetch, or vice versa.
-  const [data, briefingItems] = await Promise.all([
-    safeQuery(getDashboardData(), emptyData(), 'load'),
-    isGeorge ? safeBriefingItems() : Promise.resolve([] as BriefingItemClient[]),
-  ])
-
-  const {
-    overdue,
-    dueToday,
-    in7DaysDue,
-    in30DaysDue,
-    escalated,
-    completedThisWeek,
-    total,
-    openActions,
-    decisionNeeded,
-    complianceAlerts,
-    compliantCount,
-    teamPulse,
-    recentItems,
-  } = data
-
-  const actionRequired = escalated + dueToday
-  const atRisk = in7DaysDue + in30DaysDue
-  const grandTotal = compliantCount + atRisk + actionRequired + overdue || 1
-  const pct = (n: number) => Math.round((n / grandTotal) * 100)
   const today = new Date().toLocaleDateString('en-GB', {
-    weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   }).toUpperCase()
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{today}</p>
-        <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Compliance Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-0.5">
-          Welcome back, <span className="font-medium text-slate-700">{session.person}</span>
-        </p>
-      </div>
+    <AppShell>
+      <div className="space-y-8">
+        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/80">{today}</p>
+              <h1 className="mt-3 text-3xl font-bold text-white md:text-4xl">Business Command Hub</h1>
+              <p className="mt-3 text-sm leading-6 text-white/60 md:text-base">
+                Welcome back, <span className="font-semibold text-white">{session.person}</span>. This is the current UltraTech OS hub for commands, execution previews, live work, and module launch.
+              </p>
+            </div>
 
-      {isGeorge && briefingItems.length > 0 && (
-        <MorningBriefing items={briefingItems} />
-      )}
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 pt-4 pb-2">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-              Overall Compliance Status
-            </span>
-            <Link href="/filings" className="text-xs font-semibold text-blue-600 hover:underline">
-              View filings →
-            </Link>
-          </div>
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            <Link href="/filings?status=compliant" className="rounded-xl bg-green-50 border border-green-200 p-3 text-center hover:bg-green-100 transition-colors">
-              <div className="text-xl font-extrabold text-green-700">{compliantCount}</div>
-              <div className="text-[11px] font-semibold text-green-600 mt-0.5">✓ Compliant</div>
-              <div className="text-[10px] text-green-500">{pct(compliantCount)}%</div>
-            </Link>
-            <Link href="/filings?status=risk" className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-center hover:bg-amber-100 transition-colors">
-              <div className="text-xl font-extrabold text-amber-700">{atRisk}</div>
-              <div className="text-[11px] font-semibold text-amber-600 mt-0.5">⚡ At Risk</div>
-              <div className="text-[10px] text-amber-500">{pct(atRisk)}%</div>
-            </Link>
-            <Link href="/today" className="rounded-xl bg-orange-50 border border-orange-200 p-3 text-center hover:bg-orange-100 transition-colors">
-              <div className="text-xl font-extrabold text-orange-700">{actionRequired}</div>
-              <div className="text-[11px] font-semibold text-orange-600 mt-0.5">⚠ Action Req.</div>
-              <div className="text-[10px] text-orange-500">{pct(actionRequired)}%</div>
-            </Link>
-            <Link href="/today" className="rounded-xl bg-red-50 border border-red-200 p-3 text-center hover:bg-red-100 transition-colors">
-              <div className="text-xl font-extrabold text-red-700">{overdue}</div>
-              <div className="text-[11px] font-semibold text-red-600 mt-0.5">🔴 Overdue</div>
-              <div className="text-[10px] text-red-500">{pct(overdue)}%</div>
-            </Link>
-          </div>
-          <div className="flex gap-0.5 h-2 rounded-full overflow-hidden">
-            <div className="bg-green-500 rounded-l-full" style={{ flex: compliantCount || 0 }} />
-            <div className="bg-amber-400" style={{ flex: atRisk || 0 }} />
-            <div className="bg-orange-500" style={{ flex: actionRequired || 0 }} />
-            <div className="bg-red-500 rounded-r-full" style={{ flex: overdue || 0 }} />
-          </div>
-        </div>
-        <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>{total} active obligations</span>
-          <span>{completedThisWeek} completed this week ✓</span>
-        </div>
-      </div>
-
-      {(overdue > 0 || dueToday > 0) && (
-        <Link href="/today" className="flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-3 transition-colors shadow-sm">
-          <span className="text-xl shrink-0">🔴</span>
-          <div className="flex-1">
-            <p className="text-sm font-bold">
-              {[overdue > 0 && `${overdue} overdue`, dueToday > 0 && `${dueToday} due today`].filter(Boolean).join(' · ')}
-            </p>
-            <p className="text-xs opacity-80">Tap to see Today&apos;s Actions</p>
-          </div>
-          <span className="opacity-70 text-lg shrink-0">→</span>
-        </Link>
-      )}
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Active Items" value={total} color="blue" />
-        <StatCard label="Open Actions" value={openActions} color={openActions > 0 ? 'orange' : 'green'} />
-        <StatCard label="Decisions" value={decisionNeeded} color={decisionNeeded > 0 ? 'purple' : 'green'} />
-        <StatCard label="Alert Deliveries" value={complianceAlerts} color={complianceAlerts > 0 ? 'orange' : 'green'} />
-      </div>
-
-      {recentItems.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Priority Items</span>
-            <Link href="/filings" className="text-xs font-semibold text-blue-600 hover:underline">
-              View all →
-            </Link>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {recentItems.map((item) => {
-              const isPast = item.dueDate && new Date(item.dueDate) < new Date()
-              return (
-                <Link key={item.id} href={`/work-items/${item.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors">
-                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_DOT[item.priority] ?? 'bg-slate-300'}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-slate-900 truncate">{item.title}</div>
-                    {item.company && <div className="text-xs text-slate-500 truncate">{item.company}</div>}
-                  </div>
-                  {item.dueDate && (
-                    <span className={`text-xs font-semibold shrink-0 ${isPast ? 'text-red-600' : 'text-slate-500'}`}>
-                      {fmt(item.dueDate)}
-                    </span>
-                  )}
+            <div className="flex flex-wrap gap-3">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className="rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-cyan-300/60 hover:text-white"
+                >
+                  {action.label}
                 </Link>
-              )
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        </section>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Team Pulse</span>
-          <Link href="/teams" className="text-xs font-semibold text-blue-600 hover:underline">
-            Full view →
-          </Link>
-        </div>
-        <div className="px-5 py-4 flex flex-wrap gap-2">
-          {teamPulse.map(({ owner, count }) => (
-            <Link key={owner} href={`/work-items?owner=${owner}`} className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 transition-colors">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: '#1d4ed8' }}>
-                {owner[0]}
+        <GlobalCommandInput />
+
+        <section className="grid gap-4 md:grid-cols-4">
+          <MetricCard title="Parser" value="Live" subtitle="Command intake ready" />
+          <MetricCard title="Queue" value="Preview" subtitle="Mock execution enabled" />
+          <MetricCard title="Modules" value="8" subtitle="Core apps wired" />
+          <MetricCard title="Status" value="Current" subtitle="Legacy dashboard replaced" />
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Execution Control</h2>
+                <p className="mt-1 text-sm text-white/50">Current action-parser work is now surfaced from the main dashboard.</p>
               </div>
-              <span className="text-sm font-semibold text-slate-800">{owner}</span>
-              <span className={`text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center ${count > 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                {count}
-              </span>
+              <Link href="/os/parser" className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950">
+                Test parser
+              </Link>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {executionItems.map((item) => (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-cyan-300/50"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-semibold text-white">{item.title}</h3>
+                      <p className="mt-1 text-sm text-white/55">{item.detail}</p>
+                    </div>
+                    <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                      {item.status}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <h2 className="text-xl font-semibold text-white">What changed</h2>
+            <div className="mt-4 space-y-3 text-sm leading-6 text-white/60">
+              <p>The old compliance-only dashboard has been removed from this route.</p>
+              <p>The default dashboard now matches the newer OS direction: command input, parser access, launcher modules, and execution status.</p>
+              <p>Compliance pages are still available from Filings, Alerts, Portfolio, and Today where needed.</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Launch apps</h2>
+              <p className="mt-1 text-sm text-white/50">Single workspace, no old app silos.</p>
+            </div>
+            <Link href="/os/launcher" className="text-sm font-semibold text-cyan-200 hover:text-cyan-100">
+              Full launcher →
             </Link>
-          ))}
-        </div>
+          </div>
+          <LauncherGrid />
+        </section>
       </div>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <QuickLink href="/work-items/new" label="+ New Item" color="blue" />
-        <QuickLink href="/today" label="Today's Actions" color="orange" />
-        <QuickLink href="/decisions" label="Decisions" color="purple" />
-        <QuickLink href="/portfolio" label="Portfolio" color="navy" />
-      </div>
-    </div>
-  )
-}
-
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  const styles: Record<string, string> = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
-    orange: 'bg-orange-50 border-orange-200 text-orange-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700',
-    green: 'bg-green-50 border-green-200 text-green-700',
-    slate: 'bg-slate-100 border-slate-200 text-slate-700',
-  }
-  return (
-    <div className={`rounded-xl border p-4 ${styles[color] ?? styles.slate}`}>
-      <div className="text-3xl font-extrabold">{value}</div>
-      <div className="text-xs font-medium mt-1 opacity-80">{label}</div>
-    </div>
-  )
-}
-
-function QuickLink({ href, label, color }: { href: string; label: string; color: string }) {
-  const styles: Record<string, string> = {
-    blue: 'bg-blue-600 hover:bg-blue-700 text-white',
-    orange: 'bg-orange-500 hover:bg-orange-600 text-white',
-    purple: 'bg-purple-600 hover:bg-purple-700 text-white',
-    navy: 'text-white hover:opacity-90',
-    slate: 'bg-slate-200 hover:bg-slate-300 text-slate-800',
-  }
-  const inlineStyle = color === 'navy' ? { background: '#0c2340' } : undefined
-  return (
-    <Link href={href} style={inlineStyle} className={`block rounded-xl px-4 py-4 text-center font-semibold text-sm transition-colors ${styles[color] ?? styles.slate}`}>
-      {label}
-    </Link>
+    </AppShell>
   )
 }

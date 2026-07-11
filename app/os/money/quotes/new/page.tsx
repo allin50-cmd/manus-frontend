@@ -4,7 +4,7 @@ import { useState, FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const STATUSES = ['Draft', 'Sent', 'Accepted', 'Declined', 'Expired']
-const CURRENCIES = ['USD', 'GBP', 'EUR']
+const CURRENCIES = ['GBP', 'USD', 'EUR']
 
 function generateQuoteNumber(): string {
   const now = new Date()
@@ -26,7 +26,7 @@ export default function NewQuotePage() {
   const [form, setForm] = useState({
     quoteNumber: generateQuoteNumber(),
     amount: '',
-    currency: 'USD',
+    currency: 'GBP',
     status: 'Draft',
     issueDate: new Date().toISOString().split('T')[0],
     expiryDate: '',
@@ -44,11 +44,15 @@ export default function NewQuotePage() {
       return
     }
 
+    const amount = Number.parseFloat(form.amount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError('Enter a valid amount greater than zero')
+      return
+    }
+
     setError('')
     setLoading(true)
     try {
-      const amount = parseFloat(form.amount)
-
       const res = await fetch('/api/os/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +68,7 @@ export default function NewQuotePage() {
         }),
       })
       if (res.ok) {
-        const data = await res.json()
+        await res.json()
         router.push(`/os/money/quotes?companyId=${companyId}`)
       } else {
         const data = await res.json().catch(() => ({}))
@@ -99,87 +103,42 @@ export default function NewQuotePage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
         <Field label="Quote Number *">
-          <input
-            required
-            value={form.quoteNumber}
-            onChange={(e) => set('quoteNumber', e.target.value)}
-            placeholder="Auto-generated"
-            className={inputClass}
-          />
+          <input required value={form.quoteNumber} onChange={(e) => set('quoteNumber', e.target.value)} placeholder="Auto-generated" className={inputClass} />
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Amount *">
-            <input
-              required
-              type="number"
-              step="0.01"
-              value={form.amount}
-              onChange={(e) => set('amount', e.target.value)}
-              placeholder="0.00"
-              className={inputClass}
-            />
+            <input required type="number" min="0.01" step="0.01" value={form.amount} onChange={(e) => set('amount', e.target.value)} placeholder="0.00" className={inputClass} />
           </Field>
-
           <Field label="Currency">
             <select value={form.currency} onChange={(e) => set('currency', e.target.value)} className={inputClass}>
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Issue Date *">
-            <input
-              required
-              type="date"
-              value={form.issueDate}
-              onChange={(e) => set('issueDate', e.target.value)}
-              className={inputClass}
-            />
+            <input required type="date" value={form.issueDate} onChange={(e) => set('issueDate', e.target.value)} className={inputClass} />
           </Field>
-
           <Field label="Expiry Date">
-            <input
-              type="date"
-              value={form.expiryDate}
-              onChange={(e) => set('expiryDate', e.target.value)}
-              className={inputClass}
-            />
+            <input type="date" value={form.expiryDate} onChange={(e) => set('expiryDate', e.target.value)} className={inputClass} />
           </Field>
         </div>
 
         <Field label="Status">
           <select value={form.status} onChange={(e) => set('status', e.target.value)} className={inputClass}>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
+            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </Field>
 
         <Field label="Notes">
-          <textarea
-            value={form.notes}
-            onChange={(e) => set('notes', e.target.value)}
-            rows={3}
-            placeholder="Additional notes…"
-            className={inputClass}
-          />
+          <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} rows={3} placeholder="Additional notes…" className={inputClass} />
         </Field>
 
         {error && <p className="text-red-600 text-sm">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={loading || !form.quoteNumber || !form.amount || !form.issueDate}
-          className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
-        >
+        <button type="submit" disabled={loading || !form.quoteNumber || !form.amount || !form.issueDate} className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors">
           {loading ? 'Creating…' : 'Create Quote'}
         </button>
       </form>

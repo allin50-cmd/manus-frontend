@@ -30,9 +30,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getSession()
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen bg-slate-50">
         <NavBar person={session?.person ?? null} />
-        <main className="max-w-4xl mx-auto px-4 py-6">{children}</main>
+        <main className="min-h-[calc(100vh-3.5rem)] w-full">{children}</main>
       </body>
     </html>
   )

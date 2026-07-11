@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     const invoices = await db.select().from(osInvoices).where(eq(osInvoices.companyId, companyId))
     return NextResponse.json(invoices)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 })
   }
 }
@@ -35,15 +35,15 @@ export async function POST(req: NextRequest) {
 
   if (!companyId?.trim()) return NextResponse.json({ error: 'companyId is required' }, { status: 400 })
   if (!invoiceNumber?.trim()) return NextResponse.json({ error: 'invoiceNumber is required' }, { status: 400 })
-  if (amount === undefined || amount === null) return NextResponse.json({ error: 'amount is required' }, { status: 400 })
+  if (!Number.isFinite(amount) || amount <= 0) return NextResponse.json({ error: 'amount must be greater than zero' }, { status: 400 })
   if (!issueDate) return NextResponse.json({ error: 'issueDate is required' }, { status: 400 })
 
   try {
     const invoice = await db.insert(osInvoices).values({
       companyId,
       invoiceNumber,
-      amount,
-      currency: currency || 'USD',
+      amount: Math.round(amount * 100),
+      currency: currency || 'GBP',
       status: status || 'Draft',
       issueDate: new Date(issueDate),
       dueDate: dueDate ? new Date(dueDate) : null,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }).returning()
 
     return NextResponse.json(invoice[0], { status: 201 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 })
   }
 }

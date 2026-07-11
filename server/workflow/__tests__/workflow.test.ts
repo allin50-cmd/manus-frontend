@@ -20,7 +20,7 @@ import {
 } from '@/server/workflow/workflowTransitions'
 import { statusChangeActivity } from '@/server/workflow/workflowActivity'
 import { runTransition, transitionWorkItem } from '@/server/workflow/workflowEngine'
-import { WORK_ITEM_STATUSES } from '@/lib/work-item-enums'
+import { WorkItemStatus } from '@/lib/types'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -30,13 +30,13 @@ beforeEach(() => {
 
 describe('WORK_ITEM_TRANSITIONS', () => {
   it('defines an entry for every work item status', () => {
-    for (const status of WORK_ITEM_STATUSES) {
+    for (const status of Object.values(WorkItemStatus)) {
       expect(WORK_ITEM_TRANSITIONS[status]).toBeDefined()
     }
   })
 
   it('never allows a self-transition', () => {
-    for (const status of WORK_ITEM_STATUSES) {
+    for (const status of Object.values(WorkItemStatus)) {
       expect(canTransition(WORK_ITEM_TRANSITIONS, status, status)).toBe(false)
     }
   })

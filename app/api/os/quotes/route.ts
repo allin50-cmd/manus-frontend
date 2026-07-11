@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     const quotes = await db.select().from(osQuotes).where(eq(osQuotes.companyId, companyId))
     return NextResponse.json(quotes)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch quotes' }, { status: 500 })
   }
 }
@@ -35,15 +35,15 @@ export async function POST(req: NextRequest) {
 
   if (!companyId?.trim()) return NextResponse.json({ error: 'companyId is required' }, { status: 400 })
   if (!quoteNumber?.trim()) return NextResponse.json({ error: 'quoteNumber is required' }, { status: 400 })
-  if (amount === undefined || amount === null) return NextResponse.json({ error: 'amount is required' }, { status: 400 })
+  if (!Number.isFinite(amount) || amount <= 0) return NextResponse.json({ error: 'amount must be greater than zero' }, { status: 400 })
   if (!issueDate) return NextResponse.json({ error: 'issueDate is required' }, { status: 400 })
 
   try {
     const quote = await db.insert(osQuotes).values({
       companyId,
       quoteNumber,
-      amount,
-      currency: currency || 'USD',
+      amount: Math.round(amount * 100),
+      currency: currency || 'GBP',
       status: status || 'Draft',
       issueDate: new Date(issueDate),
       expiryDate: expiryDate ? new Date(expiryDate) : null,
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     }).returning()
 
     return NextResponse.json(quote[0], { status: 201 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create quote' }, { status: 500 })
   }
 }
