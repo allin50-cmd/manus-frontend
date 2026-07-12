@@ -9,7 +9,7 @@ export type AppDefinition = {
   category: AppCategory
   status: AppStatus
   color: string
-  externalRoute?: string  // existing page to link to instead of workspace sub-route
+  externalRoute?: string  // existing page or canonical app URL
 }
 
 export const APP_REGISTRY: AppDefinition[] = [
@@ -21,6 +21,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     category: 'compliance',
     status: 'live',
     color: '#00A86B',
+    externalRoute: 'https://thefineguard.com',
   },
   {
     id: 'autolawclerk',
