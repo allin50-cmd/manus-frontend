@@ -63,7 +63,7 @@ export default function WorkspaceOverviewPage({
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Quotes
             </h3>
-            <WorkspaceQuotes companyName={company.name} />
+            <WorkspaceQuotes companyId={params.companyId} companyName={company.name} />
           </div>
 
           {/* Invoices */}
