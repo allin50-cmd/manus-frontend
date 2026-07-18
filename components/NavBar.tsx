@@ -58,7 +58,7 @@ export default function NavBar({ person }: { person: string | null }) {
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-white" />
+              <ShieldCheck className="w-4 h-4 text-white" aria-hidden="true" />
             </div>
             <span className="font-extrabold text-white text-base tracking-tight">UltraCore Ops</span>
           </Link>
@@ -110,7 +110,7 @@ export default function NavBar({ person }: { person: string | null }) {
                 active ? 'text-blue-600' : 'text-slate-400'
               }`}
             >
-              <TabIcon className={`w-5 h-5 mb-0.5 transition-transform ${active ? 'scale-110' : ''}`} />
+              <TabIcon className={`w-5 h-5 mb-0.5 transition-transform ${active ? 'scale-110' : ''}`} aria-hidden="true" />
               {n.label}
             </Link>
           )
@@ -119,7 +119,7 @@ export default function NavBar({ person }: { person: string | null }) {
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex-1 flex flex-col items-center pt-2 pb-3 text-[10px] font-medium text-slate-400"
         >
-          <MoreHorizontal className="w-5 h-5 mb-0.5" />
+          <MoreHorizontal className="w-5 h-5 mb-0.5" aria-hidden="true" />
           More
         </button>
       </nav>

@@ -1,11 +1,13 @@
 import AppShell from '@/components/os/layout/AppShell'
 import Skeleton from '@/components/Skeleton'
 
-// Loading fallback for the /os/* surface. Rendered inside AppShell so the dark
-// sidebar + top bar stay put (matching how every /os page self-wraps in AppShell)
-// while the page's server data loads. Mirrors the launcher layout: title, metric
-// row, then a tile grid.
-export default function OsLoading() {
+// Loading fallback scoped to the launcher — the /os page that both uses AppShell
+// and loads installed-apps data server-side. Placed at this depth (not app/os/)
+// on purpose: most /os pages are light and sidebar-less, so a shared AppShell
+// skeleton would flash a fake dark sidebar on them. Here it matches the
+// launcher's real chrome and shape (header, command bar, metric row, tile grid);
+// the other /os pages fall back to the neutral light root app/loading.tsx.
+export default function LauncherLoading() {
   return (
     <AppShell>
       <div className="space-y-8">
@@ -24,11 +26,7 @@ export default function OsLoading() {
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
-              <Skeleton className="h-12 w-12 rounded-2xl bg-white/10" />
-              <Skeleton className="h-5 w-24 bg-white/10" />
-              <Skeleton className="h-3 w-28 bg-white/10" />
-            </div>
+            <Skeleton key={i} className="h-40 rounded-2xl bg-white/10" />
           ))}
         </div>
       </div>

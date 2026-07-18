@@ -38,7 +38,7 @@ export default function Sidebar() {
                 active ? 'bg-white/10 text-white' : 'text-white/70'
               }`}
             >
-              <ItemIcon className="w-4 h-4 shrink-0" />
+              <ItemIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
               {item.label}
             </Link>
           )
