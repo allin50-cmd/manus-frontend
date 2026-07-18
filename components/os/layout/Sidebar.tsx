@@ -1,17 +1,21 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Home, Building2, CheckSquare, Contact, Bell, AppWindow } from 'lucide-react'
 
 const items = [
-  { href: '/os/launcher', label: 'Home' },
-  { href: '/portfolio', label: 'Companies' },
-  { href: '/today', label: 'Tasks' },
-  { href: '/contacts', label: 'Contacts' },
-  { href: '/alerts', label: 'Alerts' },
-  { href: '/os/apps', label: 'Apps' },
+  { href: '/os/launcher', label: 'Home', icon: Home },
+  { href: '/portfolio', label: 'Companies', icon: Building2 },
+  { href: '/today', label: 'Tasks', icon: CheckSquare },
+  { href: '/contacts', label: 'Contacts', icon: Contact },
+  { href: '/alerts', label: 'Alerts', icon: Bell },
+  { href: '/os/apps', label: 'Apps', icon: AppWindow },
 ]
 
 export default function Sidebar() {
+  const pathname = usePathname()
+
   return (
     // Hidden below `sm` — the root NavBar (app/layout.tsx) already renders a
     // fixed bottom tab bar at that breakpoint, which is this app's real
@@ -23,15 +27,22 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-1 px-3">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="rounded-lg px-3 py-2 text-sm transition hover:bg-white/10"
-          >
-            {item.label}
-          </Link>
-        ))}
+        {items.map((item) => {
+          const active = pathname.startsWith(item.href)
+          const ItemIcon = item.icon
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-white/10 ${
+                active ? 'bg-white/10 text-white' : 'text-white/70'
+              }`}
+            >
+              <ItemIcon className="w-4 h-4 shrink-0" />
+              {item.label}
+            </Link>
+          )
+        })}
       </nav>
     </aside>
   )

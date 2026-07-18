@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { LayoutGrid, AppWindow, Zap, CheckSquare, Bell, MoreHorizontal, ShieldCheck } from 'lucide-react'
 
 const BOTTOM_TABS = [
-  { href: '/dashboard',    label: 'Hub',       icon: '⊞' },
-  { href: '/os/launcher',  label: 'Apps',      icon: '▦' },
-  { href: '/os/parser',    label: 'Parser',    icon: '⌁' },
-  { href: '/today',        label: 'Tasks',     icon: '✓' },
-  { href: '/alerts',       label: 'Alerts',    icon: '🔔' },
+  { href: '/dashboard',    label: 'Hub',       icon: LayoutGrid },
+  { href: '/os/launcher',  label: 'Apps',      icon: AppWindow },
+  { href: '/os/parser',    label: 'Parser',    icon: Zap },
+  { href: '/today',        label: 'Tasks',     icon: CheckSquare },
+  { href: '/alerts',       label: 'Alerts',    icon: Bell },
 ]
 
 const DESKTOP_LINKS = [
@@ -56,8 +57,8 @@ export default function NavBar({ person }: { person: string | null }) {
            style={{ background: '#0c2340' }}>
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-base leading-none">
-              🛡️
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4 text-white" />
             </div>
             <span className="font-extrabold text-white text-base tracking-tight">UltraCore Ops</span>
           </Link>
@@ -100,6 +101,7 @@ export default function NavBar({ person }: { person: string | null }) {
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 flex items-center">
         {BOTTOM_TABS.map((n) => {
           const active = pathname.startsWith(n.href)
+          const TabIcon = n.icon
           return (
             <Link
               key={n.href}
@@ -108,9 +110,7 @@ export default function NavBar({ person }: { person: string | null }) {
                 active ? 'text-blue-600' : 'text-slate-400'
               }`}
             >
-              <span className={`text-xl leading-none mb-0.5 transition-transform ${active ? 'scale-110' : ''}`}>
-                {n.icon}
-              </span>
+              <TabIcon className={`w-5 h-5 mb-0.5 transition-transform ${active ? 'scale-110' : ''}`} />
               {n.label}
             </Link>
           )
@@ -119,7 +119,7 @@ export default function NavBar({ person }: { person: string | null }) {
           onClick={() => setMenuOpen(!menuOpen)}
           className="flex-1 flex flex-col items-center pt-2 pb-3 text-[10px] font-medium text-slate-400"
         >
-          <span className="text-xl leading-none mb-0.5">⋯</span>
+          <MoreHorizontal className="w-5 h-5 mb-0.5" />
           More
         </button>
       </nav>
