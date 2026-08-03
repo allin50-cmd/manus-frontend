@@ -1,4 +1,10 @@
 import { getBusinessFunction, BUSINESS_FUNCTION_REGISTRY } from './business-functions'
+import {
+  findFunding,
+  getFundingProfile,
+  type CompanyFundingProfile,
+  type FundingKind,
+} from './funding-sources'
 
 // ── Core Types ────────────────────────────────────────────────────────────────
 
@@ -126,6 +132,76 @@ registerFunction(placeholder('quote-builder'))
 registerFunction(placeholder('scheduler'))
 registerFunction(placeholder('invoicing'))
 registerFunction(placeholder('fineguard-compliance'))
+
+// ── Real Runners ──────────────────────────────────────────────────────────────
+
+export interface FundingFinderPayload {
+  /** Overrides for assumed profile values, e.g. { employees: 12, assumed: false }. */
+  profile?: Partial<CompanyFundingProfile>
+  /** Restrict the search, e.g. ['grant'] to exclude loans and equity. */
+  kinds?: FundingKind[]
+}
+
+// Matches a venture against the UK funding catalogue in lib/funding-sources.ts.
+// Pure and synchronous — reads no tables and makes no network calls. Callers
+// decide what to do with the result; the function itself persists nothing.
+registerFunction({
+  id: 'funding-finder',
+  async execute(context: FunctionContext): Promise<FunctionResult> {
+    const payload = (context.payload ?? {}) as FundingFinderPayload
+
+    const base = getFundingProfile(context.companyId)
+    if (!base) {
+      return failure([
+        `No funding profile for company '${context.companyId}'. ` +
+        `Add one to COMPANY_FUNDING_PROFILES in lib/funding-sources.ts.`,
+      ])
+    }
+
+    // Caller overrides win, but the company can never be reassigned.
+    const profile: CompanyFundingProfile = {
+      ...base,
+      ...payload.profile,
+      companyId: context.companyId,
+    }
+
+    const result = findFunding(profile, payload.kinds)
+
+    const events = [
+      `Matched ${result.matches.length} funding schemes for '${context.companyId}' ` +
+      `(${result.excluded.length} excluded)`,
+    ]
+    // Reported per kind — grant, debt, and equity money are not interchangeable
+    // and a combined total would overstate what is realistically available.
+    for (const [kind, ceiling] of Object.entries(result.ceilingByKind)) {
+      events.push(`Indicative ${kind} ceiling: £${ceiling.toLocaleString('en-GB')}`)
+    }
+    for (const match of result.matches.slice(0, 5)) {
+      const award = match.source.maxAward
+        ? ` (up to £${match.source.maxAward.toLocaleString('en-GB')})`
+        : ''
+      events.push(`${match.source.name} — ${match.source.provider}${award}`)
+    }
+
+    const warnings: string[] = []
+    if (profile.assumed) {
+      warnings.push(
+        `Funding profile for '${context.companyId}' uses assumed values ` +
+        `(${profile.employees} employees, region '${profile.region}', ${profile.tradingMonths} months trading). ` +
+        `Several schemes turn on exactly these fields — confirm them before relying on this result.`,
+      )
+    }
+    const withCaveats = result.matches.filter((m) => m.caveats.length > 0).length
+    if (withCaveats > 0) {
+      warnings.push(`${withCaveats} matched schemes carry conditions the matcher could not evaluate — read the caveats before applying.`)
+    }
+    if (result.matches.length === 0) {
+      warnings.push('No schemes matched this profile. Widen the search or review the exclusion reasons.')
+    }
+
+    return { success: true, events, warnings, errors: [], data: result }
+  },
+})
 
 // ── Future AI Integration Point ───────────────────────────────────────────────
 // When AI advice is needed, add it AFTER deterministic execution:

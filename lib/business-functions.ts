@@ -46,6 +46,14 @@ export const BUSINESS_FUNCTION_REGISTRY: BusinessFunction[] = [
     watches: ['ut_daily_metrics', 'ut_weekly_reports'],
   },
   {
+    id: 'funding-finder',
+    name: 'Funding Finder',
+    description: 'Match each venture against available UK grants, loans, tax reliefs, and support schemes based on its funding profile.',
+    department: 'Executive',
+    status: 'beta',
+    owner: 'Jobe',
+  },
+  {
     id: 'decision-register',
     name: 'Decision Register',
     description: 'Log and track decisions, escalations, and outcomes.',
