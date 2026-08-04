@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UltraTech Funding Finder — Demo</title>
+<!--
+  Standalone demo of the 'funding-finder' business function.
+  No build step, no server, no network — runs from file:// or GitHub Pages.
+
+  The catalogue and matching logic below mirror lib/funding-sources.ts.
+  If you change the rules there, change them here too.
+-->
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0A0A0F;
+    --surface:   rgba(255,255,255,0.04);
+    --surface-2: rgba(255,255,255,0.06);
+    --border:    rgba(255,255,255,0.07);
+    --border-hi: rgba(255,255,255,0.12);
+    --text:      rgba(255,255,255,0.88);
+    --text-2:    rgba(255,255,255,0.5);
+    --text-3:    rgba(255,255,255,0.28);
+    --label:     rgba(255,255,255,0.22);
+    --green:     #28C76F;
+    --orange:    #FF9F0A;
+    --red:       #FF3B30;
+    --blue:      #3D8BFF;
+    --purple:    #818CF8;
+    --live:      #00A86B;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 48px;
+  }
+
+  /* ── Header ── */
+  .header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-logo {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, #818CF8, #4338CA);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .header-title { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .header-sub   { font-size: 11px; color: var(--text-3); }
+  .badge {
+    margin-left: auto; flex-shrink: 0;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 3px 9px; border-radius: 999px;
+    background: rgba(122,90,248,0.15);
+    color: #9B87FF;
+    border: 1px solid rgba(122,90,248,0.3);
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .panel-title {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.11em; text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 13px;
+  }
+
+  /* ── Venture picker ── */
+  .ventures { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 9px; }
+  .venture {
+    text-align: left;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 12px 13px;
+    cursor: pointer;
+    transition: border-color .12s, background .12s;
+    font-family: inherit;
+    color: var(--text);
+  }
+  .venture:hover { background: rgba(255,255,255,0.06); }
+  .venture.active { border-color: var(--vc); background: color-mix(in srgb, var(--vc) 11%, transparent); }
+  .venture-top { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+  .venture-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--vc); flex-shrink: 0; }
+  .venture-name { font-weight: 650; font-size: 13.5px; }
+  .venture-meta { font-size: 10.5px; color: var(--text-3); }
+
+  /* ── Controls ── */
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px,1fr)); gap: 12px; }
+  .field label {
+    display: block; font-size: 10.5px; color: var(--text-3);
+    margin-bottom: 5px; letter-spacing: 0.02em;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    padding: 8px 11px;
+    color: var(--text);
+    font-size: 13px; font-family: inherit;
+    outline: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: rgba(129,140,248,0.5);
+    background: rgba(129,140,248,0.07);
+  }
+  .field select option { background: #14141B; }
+
+  .toggle {
+    display: flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    padding: 8px 11px;
+    cursor: pointer; user-select: none;
+    font-size: 13px;
+  }
+  .toggle input { accent-color: var(--purple); width: 15px; height: 15px; cursor: pointer; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 11px; font-weight: 600;
+    padding: 5px 11px; border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-hi);
+    color: var(--text-2);
+    cursor: pointer; font-family: inherit;
+    transition: all .12s;
+  }
+  .chip:hover { background: rgba(255,255,255,0.09); }
+  .chip.on { background: rgba(129,140,248,0.18); border-color: rgba(129,140,248,0.45); color: #B9AFFF; }
+
+  .btn-reset {
+    background: none; border: 1px solid var(--border-hi);
+    color: var(--text-3); font-size: 11px; font-family: inherit;
+    padding: 5px 11px; border-radius: 999px; cursor: pointer;
+    margin-left: auto;
+  }
+  .btn-reset:hover { color: var(--text); border-color: var(--text-3); }
+  .row-between { display: flex; align-items: center; gap: 10px; }
+
+  /* ── Assumption notice ── */
+  .notice {
+    display: flex; gap: 9px; align-items: flex-start;
+    background: rgba(255,159,10,0.08);
+    border: 1px solid rgba(255,159,10,0.22);
+    border-radius: 12px;
+    padding: 11px 13px;
+    font-size: 12px; color: #FFCE7A;
+    margin-bottom: 16px;
+  }
+  .notice.clear { background: rgba(40,199,111,0.07); border-color: rgba(40,199,111,0.22); color: #7EE2AC; }
+  .notice-icon { flex-shrink: 0; }
+
+  /* ── Ceilings ── */
+  .ceilings { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px,1fr)); gap: 9px; }
+  .ceiling {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 12px 13px;
+  }
+  .ceiling-kind {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--label); margin-bottom: 5px;
+  }
+  .ceiling-val { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .ceiling-count { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+
+  /* ── Results ── */
+  .counts { display: flex; gap: 7px; align-items: center; margin-left: auto; }
+  .count-pill {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .count-pill.ok  { background: rgba(40,199,111,0.15); color: var(--green); }
+  .count-pill.no  { background: rgba(255,59,48,0.13); color: #FF8078; }
+
+  .scheme {
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.02);
+  }
+  .scheme-head {
+    display: flex; align-items: flex-start; gap: 11px;
+    padding: 12px 13px;
+    cursor: pointer;
+  }
+  .scheme-head:hover { background: rgba(255,255,255,0.03); }
+  .scheme-main { flex: 1; min-width: 0; }
+  .scheme-name { font-weight: 640; font-size: 13.5px; margin-bottom: 2px; }
+  .scheme-provider { font-size: 11px; color: var(--text-3); }
+  .scheme-right { text-align: right; flex-shrink: 0; }
+  .scheme-award { font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+  .scheme-award.none { color: var(--text-3); font-weight: 500; font-size: 11px; }
+
+  .kind {
+    display: inline-block;
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px; border-radius: 999px; margin-top: 5px;
+  }
+  .kind.grant      { background: rgba(40,199,111,0.15);  color: var(--green); }
+  .kind.loan       { background: rgba(61,139,255,0.15);  color: var(--blue); }
+  .kind.tax-relief { background: rgba(255,159,10,0.15);  color: var(--orange); }
+  .kind.equity     { background: rgba(129,140,248,0.18); color: #A99CFF; }
+  .kind.training   { background: rgba(236,72,153,0.15);  color: #F472B6; }
+  .kind.support    { background: rgba(255,255,255,0.07); color: var(--text-2); }
+
+  .scheme-body {
+    display: none;
+    padding: 0 13px 13px;
+    border-top: 1px solid var(--border);
+    padding-top: 11px;
+  }
+  .scheme.open .scheme-body { display: block; }
+  .scheme-summary { font-size: 12.5px; color: var(--text-2); margin-bottom: 10px; }
+
+  .caveats { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .caveats li {
+    display: flex; gap: 7px; align-items: flex-start;
+    font-size: 11.5px; color: #FFCE7A;
+  }
+  .caveats li::before { content: '▸'; color: var(--orange); flex-shrink: 0; }
+
+  .reasons { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .reasons li {
+    display: flex; gap: 7px; align-items: flex-start;
+    font-size: 11.5px; color: #FF9E96;
+  }
+  .reasons li::before { content: '✕'; flex-shrink: 0; font-size: 10px; }
+
+  .scheme.excluded { opacity: 0.62; }
+  .scheme.excluded .scheme-name { color: var(--text-2); }
+
+  .meta-line {
+    font-size: 10.5px; color: var(--text-3);
+    margin-top: 9px; padding-top: 9px;
+    border-top: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .meta-line a { color: var(--blue); text-decoration: none; }
+  .meta-line a:hover { text-decoration: underline; }
+
+  .empty { color: var(--text-3); font-size: 12.5px; padding: 8px 0; }
+
+  .footnote {
+    font-size: 11px; color: var(--text-3);
+    text-align: center; padding: 8px 16px; line-height: 1.6;
+  }
+
+  @media (min-width: 860px) {
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .split .panel { margin-bottom: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">💷</div>
+  <div>
+    <div class="header-title">Funding Finder</div>
+    <div class="header-sub">UltraTech Business Function · funding-finder</div>
+  </div>
+  <div class="badge">DEMO</div>
+</div>
+
+<div class="wrap">
+
+  <div class="panel">
+    <div class="panel-title">Venture</div>
+    <div class="ventures" id="ventures"></div>
+  </div>
+
+  <div class="panel">
+    <div class="row-between" style="margin-bottom:13px">
+      <div class="panel-title" style="margin:0">Funding profile</div>
+      <button class="btn-reset" id="reset">Reset to registry</button>
+    </div>
+    <div class="controls">
+      <div class="field">
+        <label for="employees">Employees</label>
+        <input type="number" id="employees" min="0" max="5000" />
+      </div>
+      <div class="field">
+        <label for="tradingMonths">Months trading</label>
+        <input type="number" id="tradingMonths" min="0" max="600" />
+      </div>
+      <div class="field">
+        <label for="region">Region</label>
+        <select id="region"></select>
+      </div>
+      <div class="field">
+        <label>Qualifying R&amp;D</label>
+        <label class="toggle" for="doesRnd">
+          <input type="checkbox" id="doesRnd" />
+          <span>Carries out R&amp;D</span>
+        </label>
+      </div>
+    </div>
+    <div style="margin-top:13px">
+      <div class="panel-title" style="margin-bottom:8px">Scheme types</div>
+      <div class="chips" id="kinds"></div>
+    </div>
+  </div>
+
+  <div id="notice"></div>
+
+  <div class="panel">
+    <div class="panel-title">Indicative ceiling by kind</div>
+    <div class="ceilings" id="ceilings"></div>
+    <div class="footnote" style="text-align:left;padding:11px 0 0">
+      Grant, debt, and equity money are not interchangeable — these are shown separately
+      on purpose. A combined total would overstate what is realistically available.
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="panel">
+      <div class="row-between" style="margin-bottom:13px">
+        <div class="panel-title" style="margin:0">Matched</div>
+        <div class="counts"><span class="count-pill ok" id="matchCount">0</span></div>
+      </div>
+      <div id="matches"></div>
+    </div>
+
+    <div class="panel">
+      <div class="row-between" style="margin-bottom:13px">
+        <div class="panel-title" style="margin:0">Not eligible</div>
+        <div class="counts"><span class="count-pill no" id="excludeCount">0</span></div>
+      </div>
+      <div id="excluded"></div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Figures are indicative and unverified — catalogue data reflects May 2026 and UK scheme
+    terms change frequently. Confirm every scheme against its provider before applying.<br />
+    Mirrors <code>lib/funding-sources.ts</code>. See <code>docs/funding-finder.md</code>.
+  </div>
+
+</div>
+
+<script>
+// ── Companies (mirrors lib/company-registry.ts) ──────────────────────────────
+const COMPANIES = [
+  { id: 'fineguard',        name: 'FineGuard',        color: '#00A86B', tagline: 'Compliance · Monitoring' },
+  { id: 'ultratech',        name: 'Ultratech',        color: '#3B82F6', tagline: 'Operations · Projects' },
+  { id: 'builder-big-jobs', name: 'Builder Big Jobs', color: '#F97316', tagline: 'Construction Leads' },
+  { id: 'accuracy',         name: 'Accuracy Ltd',     color: '#8B5CF6', tagline: 'Planning · Site Visits' },
+];
+
+// ── Company funding profiles (mirrors COMPANY_FUNDING_PROFILES) ──────────────
+const PROFILES = {
+  'fineguard':        { sector: 'software',              employees: 5, region: 'unknown', tradingMonths: 24, doesRnd: true,  assumed: true },
+  'ultratech':        { sector: 'software',              employees: 5, region: 'unknown', tradingMonths: 24, doesRnd: true,  assumed: true },
+  'builder-big-jobs': { sector: 'construction',          employees: 5, region: 'unknown', tradingMonths: 24, doesRnd: false, assumed: true },
+  'accuracy':         { sector: 'professional-services', employees: 5, region: 'unknown', tradingMonths: 24, doesRnd: false, assumed: true },
+};
+
+const MADE_SMARTER_REGIONS = ['North West','North East','Yorkshire and the Humber','West Midlands','East Midlands','East of England','South East','South West'];
+
+const REGIONS = ['unknown', ...MADE_SMARTER_REGIONS, 'London', 'Scotland', 'Wales', 'Northern Ireland'];
+
+// ── Funding catalogue (mirrors FUNDING_SOURCES) ──────────────────────────────
+const R = '2026-05';
+const SOURCES = [
+  { id:'innovate-uk-smart-grants', name:'Smart Grants', provider:'Innovate UK', kind:'grant', window:'periodic',
+    minAward:100000, maxAward:2000000, lastReviewed:R,
+    summary:'Open competition for game-changing, commercially viable R&D innovation. Highly competitive, sector-agnostic.',
+    reviewUrl:'https://apply-for-innovation-funding.service.gov.uk/competition/search',
+    eligibility:{ requiresRnd:true, manualChecks:[
+      'Project must be genuinely novel R&D, not product completion or rollout',
+      'Grant covers a percentage of project cost — match funding required',
+      'Competition rounds open periodically; check current round dates'] } },
+
+  { id:'innovate-uk-investor-partnerships', name:'Investor Partnerships', provider:'Innovate UK', kind:'grant', window:'periodic',
+    minAward:250000, maxAward:2000000, lastReviewed:R,
+    summary:'Grant funding matched by private investment from an approved investor partner.',
+    reviewUrl:'https://iuk-business-connect.org.uk/programme/investor-partnerships/',
+    eligibility:{ requiresRnd:true, manualChecks:[
+      'Requires a committed investor from the Innovate UK approved partner list',
+      'Company must be seeking equity investment alongside the grant'] } },
+
+  { id:'ktp', name:'Knowledge Transfer Partnership', provider:'Innovate UK / UKRI', kind:'grant', window:'periodic',
+    minAward:30000, maxAward:200000, lastReviewed:R,
+    summary:'Part-funds a graduate associate plus academic supervision to embed new capability in the business over 12–36 months.',
+    reviewUrl:'https://www.ktp-uk.org/',
+    eligibility:{ minTradingMonths:12, manualChecks:[
+      'Requires a university partner willing to co-apply',
+      'SMEs typically fund around a third of project cost; grant covers the rest'] } },
+
+  { id:'young-innovators', name:'Young Innovators Awards', provider:'Innovate UK', kind:'grant', window:'periodic',
+    minAward:5000, maxAward:10000, lastReviewed:R,
+    summary:'Grant plus living allowance and mentoring for founders aged 18–30 with a socially or environmentally motivated business idea.',
+    reviewUrl:'https://iuk-business-connect.org.uk/programme/young-innovators/',
+    eligibility:{ manualChecks:['Applicant founder must be aged 18–30 at the application deadline'] } },
+
+  { id:'rd-tax-relief', name:'R&D Tax Relief (merged scheme)', provider:'HMRC', kind:'tax-relief', window:'rolling',
+    lastReviewed:R,
+    summary:'Corporation tax relief or credit on qualifying R&D expenditure. Claimed retrospectively through the company tax return.',
+    reviewUrl:'https://www.gov.uk/guidance/corporation-tax-research-and-development-rd-relief',
+    eligibility:{ requiresRnd:true, manualChecks:[
+      'Work must seek an advance in science or technology, resolving genuine technical uncertainty',
+      'Claim notification deadlines apply for first-time claimants — check before the period ends',
+      'Loss-making R&D-intensive SMEs may qualify for the enhanced (ERIS) rate'] } },
+
+  { id:'seis', name:'Seed Enterprise Investment Scheme', provider:'HMRC', kind:'equity', window:'rolling',
+    maxAward:250000, lastReviewed:R,
+    summary:'Tax relief for investors in early-stage companies, making an equity raise materially easier to close.',
+    reviewUrl:'https://www.gov.uk/guidance/venture-capital-schemes-apply-for-the-seed-enterprise-investment-scheme',
+    eligibility:{ maxEmployees:25, maxTradingMonths:36, manualChecks:[
+      'Gross assets must be under the scheme threshold at the time of investment',
+      'Seek Advance Assurance from HMRC before approaching investors',
+      'This raises equity, not grant funding — it dilutes ownership'] } },
+
+  { id:'eis', name:'Enterprise Investment Scheme', provider:'HMRC', kind:'equity', window:'rolling',
+    maxAward:5000000, lastReviewed:R,
+    summary:'Investor tax relief for larger equity rounds in companies beyond the SEIS stage.',
+    reviewUrl:'https://www.gov.uk/guidance/venture-capital-schemes-apply-to-use-the-enterprise-investment-scheme',
+    eligibility:{ maxEmployees:250, manualChecks:[
+      'Company must generally be within 7 years of first commercial sale',
+      'Annual and lifetime raise limits apply across all venture capital schemes',
+      'This raises equity, not grant funding — it dilutes ownership'] } },
+
+  { id:'start-up-loans', name:'Start Up Loans', provider:'British Business Bank', kind:'loan', window:'rolling',
+    minAward:500, maxAward:25000, lastReviewed:R,
+    summary:'Government-backed unsecured personal loan for business use, at a fixed rate, with 12 months free mentoring.',
+    reviewUrl:'https://www.startuploans.co.uk/',
+    eligibility:{ maxTradingMonths:36, manualChecks:[
+      'Loan is personal to the director and personally liable, not company debt',
+      'Multiple directors can each apply, subject to a per-business cap'] } },
+
+  { id:'growth-guarantee-scheme', name:'Growth Guarantee Scheme', provider:'British Business Bank', kind:'loan', window:'open',
+    minAward:25000, maxAward:2000000, lastReviewed:R,
+    summary:'Government guarantee to accredited lenders, improving access to term loans, overdrafts, and asset finance.',
+    reviewUrl:'https://www.british-business-bank.co.uk/finance-options/debt-finance/growth-guarantee-scheme',
+    eligibility:{ manualChecks:[
+      'Apply through an accredited lender, not the British Business Bank directly',
+      'The borrower remains fully liable for the debt — the guarantee protects the lender'] } },
+
+  { id:'kings-trust-enterprise', name:"King's Trust Enterprise Programme", provider:"The King's Trust", kind:'loan', window:'rolling',
+    minAward:500, maxAward:25000, lastReviewed:R,
+    summary:'Low-interest start-up loans, small grants, and mentoring for founders aged 18–30.',
+    reviewUrl:'https://www.kingstrust.org.uk/how-we-can-help/programmes/enterprise',
+    eligibility:{ maxTradingMonths:24, manualChecks:['Founder must be aged 18–30'] } },
+
+  { id:'citb-grants', name:'CITB Grants Scheme', provider:'Construction Industry Training Board', kind:'training', window:'rolling',
+    minAward:30, maxAward:12000, lastReviewed:R,
+    summary:'Per-course and per-apprentice grants for training construction employees. Short course, qualification, and apprenticeship attendance tiers.',
+    reviewUrl:'https://www.citb.co.uk/levy-grants-and-funding/grants-funding/',
+    eligibility:{ sectors:['construction'], manualChecks:[
+      'Employer must be registered with CITB and up to date on Levy Returns',
+      'Grant rates differ by course tier — confirm the specific course qualifies'] } },
+
+  { id:'made-smarter-adoption', name:'Made Smarter Adoption', provider:'Made Smarter (regional delivery)', kind:'grant', window:'rolling',
+    minAward:5000, maxAward:20000, lastReviewed:R,
+    summary:'Matched capital grants plus free technology advice for SME manufacturers adopting digital technology.',
+    reviewUrl:'https://www.madesmarter.uk/',
+    eligibility:{ sectors:['manufacturing'], maxEmployees:250, regions:MADE_SMARTER_REGIONS,
+      manualChecks:['Delivery and grant rates vary by region — check the local programme'] } },
+
+  { id:'help-to-grow-management', name:'Help to Grow: Management', provider:'Department for Business and Trade', kind:'training', window:'rolling',
+    lastReviewed:R,
+    summary:'12-week practical management course delivered by business schools, around 90% government subsidised, with one-to-one mentoring.',
+    reviewUrl:'https://helptogrow.campaign.gov.uk/',
+    eligibility:{ minTradingMonths:12, manualChecks:[
+      'Business must meet the minimum employee headcount for the course',
+      'Participant must be a senior decision maker'] } },
+
+  { id:'skills-bootcamps', name:'Skills Bootcamps', provider:'Department for Education', kind:'training', window:'rolling',
+    lastReviewed:R,
+    summary:'Free or heavily subsidised flexible training courses up to 16 weeks in digital, technical, and construction skills.',
+    reviewUrl:'https://www.gov.uk/guidance/find-a-skills-bootcamp',
+    eligibility:{ manualChecks:[
+      'Employers co-fund a share of the cost when training existing staff',
+      'Availability and subject areas vary by region and provider'] } },
+
+  { id:'apprenticeship-funding', name:'Apprenticeship Funding and Levy Transfer', provider:'Department for Education', kind:'training', window:'rolling',
+    maxAward:27000, lastReviewed:R,
+    summary:'Government covers most or all apprenticeship training cost for small employers; levy-paying businesses can transfer unused funds.',
+    reviewUrl:'https://www.gov.uk/guidance/employing-an-apprentice-technical-guide-for-employers',
+    eligibility:{ manualChecks:[
+      'Funding band cap depends on the specific apprenticeship standard',
+      'Small non-levy employers pay a reduced or nil contribution'] } },
+
+  { id:'local-growth-hub', name:'Local Growth Hub Grants', provider:'Local Growth Hub network', kind:'grant', window:'rolling',
+    minAward:1000, maxAward:25000, lastReviewed:R,
+    summary:'Regionally administered capital and revenue grants for SME growth, digital adoption, and job creation. Terms vary widely by area.',
+    reviewUrl:'https://www.gov.uk/business-support-helpline',
+    eligibility:{ maxEmployees:250, manualChecks:[
+      'Schemes, amounts, and open windows are entirely region-specific',
+      'Most require match funding and job creation commitments'] } },
+
+  { id:'innovate-uk-business-growth', name:'Innovate UK Business Growth', provider:'Innovate UK', kind:'support', window:'rolling',
+    lastReviewed:R,
+    summary:'Free assigned innovation and growth specialist for innovation-led SMEs. No cash award, but routes to grants and investors.',
+    reviewUrl:'https://iuk-business-growth.org.uk/',
+    eligibility:{ requiresRnd:true, manualChecks:['Support only — no direct funding attached'] } },
+
+  { id:'bipc', name:'Business & IP Centre Network', provider:'British Library', kind:'support', window:'rolling',
+    lastReviewed:R,
+    summary:'Free market research databases, IP guidance, and workshops through local library centres.',
+    reviewUrl:'https://www.bl.uk/business-and-ip-centre',
+    eligibility:{ manualChecks:['Support only — no direct funding attached'] } },
+];
+
+const ALL_KINDS = ['grant','tax-relief','equity','loan','training','support'];
+
+// ── Matching (mirrors checkEligibility / findFunding) ────────────────────────
+function checkEligibility(source, profile) {
+  const blocking = [], caveats = [];
+  const rules = source.eligibility;
+
+  if (source.window === 'closed') blocking.push('Scheme is closed to new applications');
+
+  if (rules.sectors && !rules.sectors.includes('any') && !rules.sectors.includes(profile.sector))
+    blocking.push(`Restricted to ${rules.sectors.join(', ')} — company sector is ${profile.sector}`);
+
+  if (rules.maxEmployees !== undefined && profile.employees > rules.maxEmployees)
+    blocking.push(`Requires fewer than ${rules.maxEmployees} employees — company has ${profile.employees}`);
+
+  if (rules.minTradingMonths !== undefined && profile.tradingMonths < rules.minTradingMonths)
+    blocking.push(`Requires ${rules.minTradingMonths} months trading — company has ${profile.tradingMonths}`);
+
+  if (rules.maxTradingMonths !== undefined && profile.tradingMonths > rules.maxTradingMonths)
+    blocking.push(`Limited to businesses under ${rules.maxTradingMonths} months old — company is ${profile.tradingMonths}`);
+
+  if (rules.requiresRnd && !profile.doesRnd) blocking.push('Requires qualifying R&D activity');
+
+  if (rules.regions) {
+    if (profile.region === 'unknown')
+      caveats.push(`Regional scheme — confirm the business trades in one of: ${rules.regions.join(', ')}`);
+    else if (!rules.regions.includes(profile.region))
+      blocking.push(`Not available in ${profile.region}`);
+  }
+
+  if (rules.manualChecks) caveats.push(...rules.manualChecks);
+  if (profile.assumed) caveats.push('Company profile uses assumed values — confirm employees, region, and trading history');
+
+  return { blocking, caveats };
+}
+
+function findFunding(profile, kinds) {
+  const pool = kinds && kinds.length ? SOURCES.filter(s => kinds.includes(s.kind)) : SOURCES;
+  const matches = [], excluded = [];
+
+  for (const source of pool) {
+    const { blocking, caveats } = checkEligibility(source, profile);
+    if (blocking.length) excluded.push({ source, reasons: blocking });
+    else matches.push({ source, caveats });
+  }
+
+  matches.sort((a, b) => (b.source.maxAward || 0) - (a.source.maxAward || 0));
+
+  const ceilingByKind = {};
+  for (const { source } of matches) {
+    if (source.maxAward === undefined) continue;
+    ceilingByKind[source.kind] = (ceilingByKind[source.kind] || 0) + source.maxAward;
+  }
+
+  return { matches, excluded, ceilingByKind };
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+let companyId = 'ultratech';
+let profile = { ...PROFILES[companyId] };
+let activeKinds = [...ALL_KINDS];
+
+// ── Rendering ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const money = n => '£' + n.toLocaleString('en-GB');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+function renderVentures() {
+  $('ventures').innerHTML = COMPANIES.map(c => `
+    <button class="venture ${c.id === companyId ? 'active' : ''}" style="--vc:${c.color}" data-id="${c.id}">
+      <div class="venture-top"><span class="venture-dot"></span><span class="venture-name">${esc(c.name)}</span></div>
+      <div class="venture-meta">${esc(c.tagline)} · ${esc(PROFILES[c.id].sector)}</div>
+    </button>`).join('');
+  $('ventures').querySelectorAll('.venture').forEach(b =>
+    b.onclick = () => { companyId = b.dataset.id; profile = { ...PROFILES[companyId] }; renderAll(); });
+}
+
+function renderRegions() {
+  $('region').innerHTML = REGIONS.map(r =>
+    `<option value="${esc(r)}">${r === 'unknown' ? 'Not confirmed' : esc(r)}</option>`).join('');
+}
+
+function renderKinds() {
+  $('kinds').innerHTML = ALL_KINDS.map(k =>
+    `<button class="chip ${activeKinds.includes(k) ? 'on' : ''}" data-kind="${k}">${k.replace('-', ' ')}</button>`).join('');
+  $('kinds').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const k = b.dataset.kind;
+    activeKinds = activeKinds.includes(k) ? activeKinds.filter(x => x !== k) : [...activeKinds, k];
+    renderAll();
+  });
+}
+
+function renderControls() {
+  $('employees').value = profile.employees;
+  $('tradingMonths').value = profile.tradingMonths;
+  $('region').value = profile.region;
+  $('doesRnd').checked = profile.doesRnd;
+}
+
+function renderNotice() {
+  $('notice').innerHTML = profile.assumed
+    ? `<div class="notice"><span class="notice-icon">⚠</span><div>
+         <strong>Profile values are assumed, not confirmed.</strong> Employees, region, and months
+         trading decide real eligibility — SEIS needs under 25 staff and under 36 months, Start Up
+         Loans under 36 months, Made Smarter and Growth Hub schemes are regional. Adjust the fields
+         above to see matches change.</div></div>`
+    : `<div class="notice clear"><span class="notice-icon">✓</span><div>
+         <strong>Profile confirmed.</strong> Results below reflect the values you entered.</div></div>`;
+}
+
+function renderCeilings(ceilingByKind, matches) {
+  const entries = Object.entries(ceilingByKind).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) { $('ceilings').innerHTML = `<div class="empty">No cash schemes matched.</div>`; return; }
+  $('ceilings').innerHTML = entries.map(([kind, total]) => {
+    const n = matches.filter(m => m.source.kind === kind && m.source.maxAward !== undefined).length;
+    return `<div class="ceiling">
+        <div class="ceiling-kind">${kind.replace('-', ' ')}</div>
+        <div class="ceiling-val">${money(total)}</div>
+        <div class="ceiling-count">${n} scheme${n === 1 ? '' : 's'}</div>
+      </div>`;
+  }).join('');
+}
+
+function awardText(s) {
+  if (s.maxAward === undefined) return '<div class="scheme-award none">No cash award</div>';
+  const lo = s.minAward !== undefined ? money(s.minAward) + ' – ' : 'up to ';
+  return `<div class="scheme-award">${lo}${money(s.maxAward)}</div>`;
+}
+
+function schemeCard(source, listType, items) {
+  const isEx = listType === 'excluded';
+  const cls = isEx ? 'reasons' : 'caveats';
+  const body = items.length
+    ? `<ul class="${cls}">${items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`
+    : `<div class="empty">No conditions flagged.</div>`;
+  return `<div class="scheme ${isEx ? 'excluded' : ''}">
+      <div class="scheme-head">
+        <div class="scheme-main">
+          <div class="scheme-name">${esc(source.name)}</div>
+          <div class="scheme-provider">${esc(source.provider)}</div>
+          <span class="kind ${source.kind}">${source.kind.replace('-', ' ')}</span>
+        </div>
+        <div class="scheme-right">${awardText(source)}</div>
+      </div>
+      <div class="scheme-body">
+        <div class="scheme-summary">${esc(source.summary)}</div>
+        ${body}
+        <div class="meta-line">
+          <span>${esc(source.window)}</span>
+          <span>reviewed ${esc(source.lastReviewed)}</span>
+          <a href="${esc(source.reviewUrl)}" target="_blank" rel="noopener">Verify with provider ↗</a>
+        </div>
+      </div>
+    </div>`;
+}
+
+function wireToggles(container) {
+  container.querySelectorAll('.scheme-head').forEach(h =>
+    h.onclick = () => h.parentElement.classList.toggle('open'));
+}
+
+function renderAll() {
+  renderVentures();
+  renderControls();
+  renderKinds();
+  renderNotice();
+
+  const { matches, excluded, ceilingByKind } = findFunding(profile, activeKinds);
+
+  renderCeilings(ceilingByKind, matches);
+
+  $('matchCount').textContent = matches.length;
+  $('excludeCount').textContent = excluded.length;
+
+  $('matches').innerHTML = matches.length
+    ? matches.map(m => schemeCard(m.source, 'matched', m.caveats)).join('')
+    : `<div class="empty">No schemes matched this profile. Widen the scheme types or adjust the profile.</div>`;
+
+  $('excluded').innerHTML = excluded.length
+    ? excluded.map(e => schemeCard(e.source, 'excluded', e.reasons)).join('')
+    : `<div class="empty">Every scheme in the selected types matched.</div>`;
+
+  wireToggles($('matches'));
+  wireToggles($('excluded'));
+}
+
+// ── Events ───────────────────────────────────────────────────────────────────
+function bindField(id, key, transform) {
+  $(id).addEventListener('input', e => {
+    const v = transform(e.target.value);
+    if (v === null) return;
+    profile = { ...profile, [key]: v, assumed: false };
+    renderAll();
+  });
+}
+
+renderRegions();
+
+bindField('employees', 'employees', v => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : null; });
+bindField('tradingMonths', 'tradingMonths', v => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : null; });
+bindField('region', 'region', v => v);
+$('doesRnd').addEventListener('change', e => {
+  profile = { ...profile, doesRnd: e.target.checked, assumed: false };
+  renderAll();
+});
+$('reset').onclick = () => { profile = { ...PROFILES[companyId] }; activeKinds = [...ALL_KINDS]; renderAll(); };
+
+renderAll();
+</script>
+
+</body>
+</html>
