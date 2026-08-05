@@ -270,7 +270,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     window: 'rolling',
     minAward: 500,
     maxAward: 25_000,
-    summary: 'Government-backed unsecured personal loan for business use at a fixed rate, up to £25,000 per founder, with 12 months of free mentoring.',
+    summary: 'Government-backed unsecured personal loan for business use. 7.5% fixed from 6 April 2026 (was 6%), £500 to £25,000 per founder over 1 to 5 years. No arrangement fee, no early repayment charge, plus 12 months of free mentoring.',
     reviewUrl: 'https://www.startuploans.co.uk/',
     lastReviewed: '2026-08',
     verified: true,
@@ -278,6 +278,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
       maxTradingMonths: 36,
       manualChecks: [
         'Loan is personal to the director and personally liable, not company debt',
+        'Fixed 7.5% from 6 April 2026 — commercial lenders may now undercut this',
         'Multiple directors can each apply, subject to a per-business cap',
       ],
     },
