@@ -34,12 +34,13 @@ ceiling. It calls no LLM, hits no external API, and touches no database.
 `/os/workspace/[companyId]/funding` — read-only. It reports rule matches and
 persists nothing.
 
-Reached from **Settings → Funding**, deliberately not from the tab bar.
-`docs/business-functions.md` states that Business Functions do not modify the
-workspace shell, and the tab bar is part of that shell. Adding a `Funding` tab
-is a one-line change to `WorkspaceTabBar.tsx` if that rule is ever relaxed, but
-it needs deciding explicitly rather than arriving as a side effect of this
-function.
+Reached from the **Funding** tab in the workspace tab bar, and also from
+**Settings → Funding** — the same dual entry point People has.
+
+The tab was added by explicit owner decision on 2026-08-03, recorded in
+`docs/DECISION_LOG.md`. It is not the default for a Business Function: building
+one does not entitle it to shell navigation, and `docs/business-functions.md`
+still requires a logged decision before the tab bar changes.
 
 The page is a server component with no client JavaScript — expansion uses
 native `<details>`. It carries `force-dynamic` because staleness is measured

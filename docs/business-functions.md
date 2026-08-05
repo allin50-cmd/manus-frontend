@@ -46,7 +46,7 @@ Business Functions **execute work**. They are not AI agents, not microservices, 
 - Not an AI pipeline or chain
 - Not an Application (Applications provide specialist capability; Functions use that capability)
 - Not a database table (tables store state; Functions define what happens to it)
-- Not a Workspace tab (the Workspace shell is never modified to install a Function)
+- Not a Workspace tab by default (installing a Function does not entitle it to shell navigation — that is a separate, explicit decision)
 
 ---
 
@@ -225,7 +225,7 @@ All writes go through existing Drizzle-backed API routes. Functions do not write
 ## What Must Not Change
 
 - Business Functions are **not** AI agents. Do not add autonomous execution, polling, or background scheduling.
-- Business Functions **do not** modify the Workspace shell. The Workspace tab bar, layout, and navigation are fixed.
+- Business Functions **do not** modify the Workspace shell on their own initiative. The Workspace tab bar, layout, and navigation change only by explicit owner decision, recorded in `docs/DECISION_LOG.md`. A Function being built is not itself a reason to add a tab. See the `[2026-08-03]` entry for the one exception granted so far.
 - Business Functions **do not** own their own database tables. They read and write shared `os_*` tables.
 - The `owner` field is a named person, not a role string. It must be one of the five defined names.
 - `lib/business-functions.ts` is **pure in-memory data** — no async, no DB, no imports from application code.

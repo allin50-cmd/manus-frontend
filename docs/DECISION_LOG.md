@@ -22,6 +22,35 @@ All significant decisions must be recorded here before or immediately after impl
 
 ---
 
+## [2026-08-03] — Add Funding tab to the workspace shell
+
+**Decision:** Add a `Funding` tab to `WorkspaceTabBar.tsx`, between Activity and
+Settings, pointing at `/os/workspace/[companyId]/funding`. The Settings →
+Funding control is kept alongside it, matching the existing People pattern where
+a destination is reachable from both places.
+
+**Reason:** Requested directly by the owner. The funding page was initially
+reached only from Settings, because `docs/business-functions.md` stated that
+Business Functions never modify the workspace shell. Funding visibility across
+all four ventures was judged important enough to warrant top-level navigation
+rather than being nested two levels deep.
+
+**Alternatives Considered:** Leaving the Settings-only entry point (rejected —
+too buried for something reviewed regularly); adding it to the workspace
+Overview page instead (rejected — Overview is a summary surface, not
+navigation); surfacing it as an Application in `APP_REGISTRY` (rejected —
+Funding is a Business Function, not an Application, and forcing it into the app
+model to gain navigation would be drift).
+
+**Consequence:** `docs/business-functions.md` has been amended. The rule is now
+that Business Functions do not modify the shell *on their own initiative* —
+shell changes require an explicit owner decision logged here. Building a
+Function still does not, by itself, entitle it to a tab.
+
+**Approved By:** User (George).
+
+---
+
 ## [2024] — Migrate from Prisma to Drizzle ORM
 
 **Decision:** Replace Prisma ORM with Drizzle ORM v0.30 using the postgres-js driver.

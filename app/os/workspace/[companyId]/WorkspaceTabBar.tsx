@@ -9,6 +9,7 @@ const TABS = [
   { label: 'Documents',     suffix: '/documents' },
   { label: 'Notifications', suffix: '/notifications' },
   { label: 'Activity',      suffix: '/activity' },
+  { label: 'Funding',       suffix: '/funding' },
   { label: 'Settings',      suffix: '/settings' },
 ]
 
