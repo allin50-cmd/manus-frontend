@@ -51,6 +51,17 @@ A company present in `COMPANY_REGISTRY` but absent from
 `COMPANY_FUNDING_PROFILES` renders an explanatory empty state rather than
 failing.
 
+The page renders a scheme's `reviewUrl` as a link only when it is a genuine
+`https://` URL, and shows a correction notice otherwise. React will happily put
+`javascript:` into an `href`; the audit already knows what a valid review URL
+looks like, so the page should not render a link it has flagged. Confirmed by
+injecting `javascript:alert(1)` into a catalogue entry: the link was suppressed,
+the notice appeared, and the other seventeen links were unaffected.
+
+The data-quality banner surfaces `auditProfiles()` alongside `auditCatalogue()`,
+so a duplicate or malformed entry in the company profile registry is visible
+rather than silently resolving to whichever entry happens to come first.
+
 Owned by Executive rather than Finance because it spans all four ventures and
 drives strategic decisions, not bookkeeping.
 
@@ -122,9 +133,10 @@ mode — not a sudden break.
 
 ### Tests
 
-`lib/__tests__/` — 103 tests covering catalogue and profile-registry integrity,
+`lib/__tests__/` — 113 tests covering catalogue and profile-registry integrity,
 staleness arithmetic, profile validation, every eligibility rule, result
-invariants, the engine contract, all four registered ventures, and demo parity.
+invariants, the engine contract (including result normalisation, timeout, and
+context isolation), all four registered ventures, and demo parity.
 
 ```bash
 npm run test:unit

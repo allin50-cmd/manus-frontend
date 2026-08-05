@@ -13,6 +13,7 @@ import {
   registerFunction,
   hasFunction,
   listFunctions,
+  FUNCTION_TIMEOUT_MS,
   type FunctionResult,
 } from '../function-engine'
 import { getBusinessFunction } from '../business-functions'
@@ -78,6 +79,85 @@ describe('engine contract', () => {
   test('listFunctions reports registered runners only', () => {
     assert.ok(listFunctions().includes('funding-finder'))
     assert.ok(!listFunctions().includes('crm'))
+  })
+})
+
+// ── Result contract ───────────────────────────────────────────────────────────
+//
+// runFunction promises a FunctionResult in every case. A misbehaving runner
+// must not be able to break that promise for its caller.
+
+describe('result normalisation', () => {
+  const cases: Array<[string, unknown]> = [
+    ['undefined', undefined],
+    ['null', null],
+    ['a string', 'done'],
+    ['a number', 42],
+    ['an array', []],
+  ]
+
+  for (const [label, value] of cases) {
+    test(`a runner returning ${label} yields a usable failure`, async () => {
+      registerFunction({ id: 'monitoring', async execute() { return value as never } })
+      const r = await runFunction('monitoring', { companyId: 'ultratech' })
+      assert.equal(typeof r, 'object')
+      assert.equal(r.success, false)
+      assert.ok(Array.isArray(r.events) && Array.isArray(r.warnings) && Array.isArray(r.errors))
+      assert.ok(r.errors.length > 0)
+    })
+  }
+
+  test('a result missing the array fields is filled in, not passed through', async () => {
+    registerFunction({ id: 'monitoring', async execute() { return { success: true } as never } })
+    const r = await runFunction('monitoring', { companyId: 'ultratech' })
+    assert.equal(r.success, true)
+    assert.deepEqual(r.events, [])
+    assert.deepEqual(r.warnings, [])
+    assert.deepEqual(r.errors, [])
+  })
+
+  test('a result with a non-boolean success is rejected', async () => {
+    registerFunction({ id: 'monitoring', async execute() { return { success: 'yes' } as never } })
+    const r = await runFunction('monitoring', { companyId: 'ultratech' })
+    assert.equal(r.success, false)
+    assert.ok(r.errors[0].includes("no boolean 'success'"))
+  })
+
+  test('a well-formed result passes through untouched, data included', async () => {
+    registerFunction({
+      id: 'monitoring',
+      async execute() {
+        return { success: true, events: ['e'], warnings: ['w'], errors: [], data: { n: 1 } }
+      },
+    })
+    const r = await runFunction('monitoring', { companyId: 'ultratech' })
+    assert.deepEqual(r, { success: true, events: ['e'], warnings: ['w'], errors: [], data: { n: 1 } })
+  })
+})
+
+describe('execution is bounded and isolated', () => {
+  test('a runner that never settles times out instead of hanging', async () => {
+    registerFunction({ id: 'monitoring', async execute() { return new Promise(() => {}) } })
+    const raced = await Promise.race([
+      runFunction('monitoring', { companyId: 'ultratech' }).then((r) => r),
+      new Promise<'HUNG'>((r) => setTimeout(() => r('HUNG'), FUNCTION_TIMEOUT_MS + 2_000).unref?.()),
+    ])
+    assert.notEqual(raced, 'HUNG', 'runFunction hung past its own timeout')
+    assert.equal((raced as FunctionResult).success, false)
+    assert.ok((raced as FunctionResult).errors[0].includes('did not complete within'))
+  })
+
+  test('a runner cannot mutate the caller-owned context', async () => {
+    registerFunction({
+      id: 'monitoring',
+      async execute(ctx) {
+        ;(ctx as { companyId: string }).companyId = 'hijacked'
+        return { success: true, events: [], warnings: [], errors: [] }
+      },
+    })
+    const context = { companyId: 'ultratech' }
+    await runFunction('monitoring', context)
+    assert.equal(context.companyId, 'ultratech')
   })
 })
 

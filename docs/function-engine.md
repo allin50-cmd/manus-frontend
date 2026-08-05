@@ -29,12 +29,34 @@ caller calls runFunction(id, context)
     ↓  (no → return failure)
 3. Resolve — is there a runner registered for this id?
     ↓  (no → return warning result, not an error)
-4. Execute — call runner.execute(context)
-    ↓  (throws → catch and return failure)
-5. Return FunctionResult to caller
+4. Execute — call runner.execute(copyOf(context)), racing a timeout
+    ↓  (throws, rejects, or exceeds FUNCTION_TIMEOUT_MS → return failure)
+5. Normalise — coerce whatever came back into a real FunctionResult
+    ↓
+6. Return FunctionResult to caller
 ```
 
-All errors are caught. `runFunction` never throws. The caller always receives a `FunctionResult`.
+All errors are caught. `runFunction` never throws. The caller always receives a
+`FunctionResult` — and that is enforced, not merely intended.
+
+### Why steps 4 and 5 are defensive
+
+A runner is arbitrary code. Three things it can do that would otherwise break
+the caller:
+
+**Return something that is not a result.** A runner returning `undefined`, a
+string, or an object missing `errors` used to be handed straight back, so a
+caller doing `result.errors.length` crashed. `normaliseResult` coerces anything
+malformed into a failure, and fills in missing arrays on a partial result.
+
+**Never settle.** A promise that never resolves hung `runFunction` forever, and
+with it the server component and the request. Execution now races
+`FUNCTION_TIMEOUT_MS` (10 seconds). The timer is cleared in a `finally` —
+without that a pending timer keeps the Node event loop alive.
+
+**Mutate the caller's context.** The context object is copied before it reaches
+the runner. The copy is shallow, so `payload` is still shared by reference —
+runners must treat `payload` as read-only.
 
 ---
 
@@ -235,3 +257,12 @@ Rules for AI integration:
 - `companyId` validation is mandatory — no function may execute without workspace scope
 - Placeholder runners must not write to the database or make network calls
 - The engine must not import from application code (`app/`) — only from `lib/`
+- Result normalisation must stay — without it a single badly written runner
+  crashes every caller that trusts the documented shape
+- The timeout must stay bounded. Raising `FUNCTION_TIMEOUT_MS` is a decision
+  about how long a request may hang, not a knob to turn when a runner is slow
+- The context copy must stay — a runner must not be able to reach back into the
+  caller's object
+
+Each of these is covered by a test that was confirmed to fail before the fix
+existed. They are not decorative.

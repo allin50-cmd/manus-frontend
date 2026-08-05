@@ -5,6 +5,7 @@ import {
   findFunding,
   getFundingProfile,
   auditCatalogue,
+  auditProfiles,
   STALE_AFTER_MONTHS,
   type FundingKind,
   type FundingSource,
@@ -24,6 +25,15 @@ const KIND_COLOR: Record<FundingKind, string> = {
 }
 
 const money = (n: number) => `£${n.toLocaleString('en-GB')}`
+
+/**
+ * React will happily render `javascript:` into an href. The catalogue is a
+ * hand-edited file today, but the audit already knows what a valid review URL
+ * looks like — the page should not render a link it has flagged as invalid.
+ */
+function isSafeUrl(url: string): boolean {
+  return /^https:\/\//i.test(url)
+}
 
 function awardLabel(source: FundingSource): string {
   if (source.maxAward === undefined) return 'No cash award'
@@ -60,6 +70,7 @@ export default function WorkspaceFundingPage({
 
   const result = findFunding(profile)
   const health = auditCatalogue()
+  const profileHealth = auditProfiles()
   const ceilings = Object.entries(result.ceilingByKind).sort((a, b) => b[1] - a[1])
 
   // A malformed registry profile produces no matches. Say why rather than
@@ -91,7 +102,8 @@ export default function WorkspaceFundingPage({
       <Header companyName={company.name} />
 
       {/* ── Data quality ─────────────────────────────────────── */}
-      {(result.unverifiedMatches > 0 || health.stale || profile.assumed) && (
+      {(result.unverifiedMatches > 0 || health.stale || profile.assumed ||
+        health.issues.length > 0 || profileHealth.issues.length > 0) && (
         <div
           className="rounded-2xl p-4"
           style={{ background: 'rgba(255,159,10,0.07)', border: '1px solid rgba(255,159,10,0.22)' }}
@@ -124,6 +136,9 @@ export default function WorkspaceFundingPage({
             )}
             {health.issues.length > 0 && (
               <Caution>Catalogue integrity: {health.issues.join('; ')}</Caution>
+            )}
+            {profileHealth.issues.length > 0 && (
+              <Caution>Company profile registry: {profileHealth.issues.join('; ')}</Caution>
             )}
           </ul>
         </div>
@@ -229,15 +244,21 @@ export default function WorkspaceFundingPage({
                       ))}
                     </ul>
                   )}
-                  <a
-                    href={match.source.reviewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] font-medium"
-                    style={{ color: '#3D8BFF' }}
-                  >
-                    Verify with provider ↗
-                  </a>
+                  {isSafeUrl(match.source.reviewUrl) ? (
+                    <a
+                      href={match.source.reviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-medium"
+                      style={{ color: '#3D8BFF' }}
+                    >
+                      Verify with provider ↗
+                    </a>
+                  ) : (
+                    <span className="text-[11px]" style={{ color: 'rgba(255,158,150,0.85)' }}>
+                      Review URL is not a valid https link — fix the catalogue entry
+                    </span>
+                  )}
                 </div>
               </details>
             ))}

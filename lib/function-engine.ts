@@ -38,6 +38,14 @@ export interface BusinessFunctionRunner {
 const RUNNER_REGISTRY = new Map<string, BusinessFunctionRunner>()
 
 /**
+ * Hard ceiling on a single execution. A runner that never settles would
+ * otherwise hang the caller — and in a server component, the request — forever.
+ * Functions are meant to be short, synchronous units of work; anything
+ * approaching this limit is doing something it should not.
+ */
+export const FUNCTION_TIMEOUT_MS = 10_000
+
+/**
  * Register a runner for a function that already exists in BUSINESS_FUNCTION_REGISTRY.
  * Throws if the function id is not known — prevents ghost runners.
  */
@@ -86,12 +94,66 @@ export async function runFunction(
     }
   }
 
-  // 4. Execute — capture all thrown errors as a structured result
+  // 4. Execute — bounded, isolated, and normalised.
+  //
+  // The context is copied so a runner cannot mutate the caller's object.
+  // Note this is shallow: `payload` is still shared by reference, so a runner
+  // can still mutate a payload the caller holds. Runners must treat payload as
+  // read-only.
+  const isolatedContext: FunctionContext = { ...context }
+
+  let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    return await runner.execute(context)
+    const raw = await Promise.race([
+      runner.execute(isolatedContext),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(
+            `Function '${id}' did not complete within ${FUNCTION_TIMEOUT_MS}ms`,
+          )),
+          FUNCTION_TIMEOUT_MS,
+        )
+      }),
+    ])
+    return normaliseResult(raw, id)
   } catch (err) {
     return failure([err instanceof Error ? err.message : String(err)])
+  } finally {
+    // Without this the pending timer keeps the event loop alive.
+    if (timer) clearTimeout(timer)
   }
+}
+
+/**
+ * Coerce whatever a runner returned into a real FunctionResult.
+ *
+ * `runFunction` promises callers a FunctionResult in every case. A runner that
+ * returns undefined, a non-object, or an object missing the array fields would
+ * otherwise break that promise and crash callers doing `result.errors.length`.
+ */
+function normaliseResult(raw: unknown, id: string): FunctionResult {
+  if (raw === null || typeof raw !== 'object') {
+    return failure([
+      `Function '${id}' returned ${raw === undefined ? 'undefined' : JSON.stringify(raw)} ` +
+      `instead of a FunctionResult`,
+    ])
+  }
+
+  const result = raw as Partial<FunctionResult>
+
+  if (typeof result.success !== 'boolean') {
+    return failure([`Function '${id}' returned a result with no boolean 'success' field`])
+  }
+
+  const normalised: FunctionResult = {
+    success: result.success,
+    events: Array.isArray(result.events) ? result.events : [],
+    warnings: Array.isArray(result.warnings) ? result.warnings : [],
+    errors: Array.isArray(result.errors) ? result.errors : [],
+  }
+  if (result.data !== undefined) normalised.data = result.data
+
+  return normalised
 }
 
 /** Return all function ids that have registered runners. */
