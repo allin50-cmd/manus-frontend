@@ -32,18 +32,64 @@ drives strategic decisions, not bookkeeping.
 
 ## Why `beta` and not `live`
 
-The matching logic is real and correct. The **catalogue data is not verified.**
+The matching logic is production quality: validated inputs, integrity-checked
+data, deterministic output, no unhandled paths. **The catalogue data is not.**
 
-Every entry in `FUNDING_SOURCES` carries `lastReviewed: '2026-05'`, which
-reflects when the figures were written down — not an active check against the
-provider. UK scheme amounts, windows, and eligibility rules change frequently,
-and several of the schemes listed have been restructured before.
+All 18 entries carry `verified: false`. That flag means exactly what it says —
+the figures were written from prior knowledge and **have never been checked
+against the provider's own page.** `lastReviewed: '2026-05'` records when they
+were written down, not when anyone confirmed them.
 
-The company profiles are also assumptions. All four ventures currently carry
-`assumed: true`.
+The four company profiles are also assumptions, all carrying `assumed: true`.
 
-Promote to `live` once both are confirmed. Until then the runner warns on every
-execution.
+These are the only two things standing between `beta` and `live`, and neither
+is a code change:
+
+| Blocker | Who can clear it | How |
+|---|---|---|
+| 18 unverified sources | Anyone with web access | Open each `reviewUrl`, confirm award range, window, and rules, set `verified: true` |
+| 4 assumed profiles | The operator | Supply real employees, region, months trading; set `assumed: false` |
+
+Until both are cleared the runner warns on every execution. That is deliberate:
+a funding tool that presents unconfirmed award figures as fact causes wasted
+applications and bad board decisions. The warnings are the safety mechanism, not
+noise to be silenced.
+
+---
+
+## Data Quality Controls
+
+Because award figures drive real money decisions, data quality is a first-class
+result rather than a footnote.
+
+### `auditCatalogue(sources?, now?): CatalogueHealth`
+
+Pure structural check over the catalogue. Returns verification counts, the age
+of the oldest entry, a staleness verdict, and any integrity problems found:
+
+- duplicate source ids
+- `minAward` above `maxAward`
+- negative award figures
+- a `reviewUrl` that is not HTTPS
+- an unparseable `lastReviewed` stamp
+
+### Staleness
+
+`STALE_AFTER_MONTHS` is 6. Once the oldest entry passes that, every execution
+carries a staleness warning naming the actual age. UK scheme terms move with
+fiscal events, so figures going quietly out of date is the realistic failure
+mode — not a sudden break.
+
+### `validateProfile(partial): string[]`
+
+Rejects input that would produce confident nonsense — non-integer or negative
+headcount, implausible values (over 100,000 employees or 100 years trading),
+an unknown sector, an empty region, a non-boolean R&D flag. Returns readable
+errors; empty array means usable.
+
+The runner calls this on any `payload.profile` override and **fails the
+execution** rather than matching against a bad profile. Registry profiles are
+trusted; caller-supplied overrides are not.
 
 ---
 
@@ -94,6 +140,7 @@ company.
   excluded: { id: string; name: string; reasons: string[] }[]
   ceilingByKind: Partial<Record<FundingKind, number>>
   indicativeCeiling: number
+  unverifiedMatches: number   // matched sources never confirmed at source
 }
 ```
 
@@ -211,18 +258,36 @@ new eligibility field.
 
 ---
 
-## Roadmap
+## Road to Production
 
-| Step | Change |
+Done — engine layer is production quality:
+
+- Input validation on every caller-supplied override, failing the execution
+  rather than matching against a bad profile
+- Catalogue integrity checks (duplicate ids, inverted ranges, negative awards,
+  non-HTTPS review URLs, unparseable dates)
+- Staleness detection with an explicit threshold
+- Per-source verification tracking surfaced in every result
+- `runFunction` never throws; `companyId` cannot be reassigned by payload
+- Demo verified equivalent to the TypeScript across all four ventures
+
+Outstanding — none of it is code:
+
+| Step | Blocked on | Notes |
+|---|---|---|
+| Verify 18 sources | Web access | Open each `reviewUrl`, confirm award range, window, rules; set `verified: true` |
+| Confirm 4 profiles | The operator | Real employees, region, months trading; set `assumed: false` |
+| Promote to `live` | Both above | One-line status change in the registry |
+
+Then, as separate approved work:
+
+| Step | Requires |
 |---|---|
-| Confirm profiles | Fill in real employees, region, trading months; set `assumed: false` |
-| Verify catalogue | Check all 18 entries against `reviewUrl`; update `lastReviewed` |
-| Promote to `live` | Once both above are done |
-| Persist opportunities | Write matched schemes to `os_work_items` so they can be actioned — needs `writesTo` declared and a route |
-| Deadline alerts | Feed `periodic` competition rounds into `os_alerts` |
+| Workspace page under `/os/` | Confirmation — `CLAUDE.md` gates new `/os/` pages |
+| Persist opportunities to `os_work_items` | Confirmation + `writesTo` declared on the registry entry |
+| Deadline alerts from `periodic` rounds into `os_alerts` | Confirmation |
 
-The first two steps are data work, not code. Nothing after that should change
-the matching logic.
+Nothing beyond this point should change the matching logic.
 
 ---
 
@@ -235,3 +300,7 @@ the matching logic.
 - Region must remain a caveat, not a blocker, while `region` can be `'unknown'`
 - Every source must carry `reviewUrl` and `lastReviewed` — an entry with no
   provenance cannot be verified and must not be added
+- `verified: true` means a human opened the provider's page and confirmed the
+  figures. It is not a formality and must never be set in bulk
+- The unverified and staleness warnings must not be suppressed to make output
+  look cleaner — they are the safety mechanism for a tool that reports money

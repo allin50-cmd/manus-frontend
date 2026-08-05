@@ -50,8 +50,17 @@ export interface FundingSource {
   maxAward?: number
   summary: string
   reviewUrl: string
-  /** YYYY-MM the entry's figures were last taken from the provider. */
+  /** YYYY-MM the entry's figures were last recorded. */
   lastReviewed: string
+  /**
+   * True only once a human has opened `reviewUrl` and confirmed the award
+   * range, window, and eligibility rules against the provider's own page.
+   *
+   * Every entry currently ships `false`: the figures were written from prior
+   * knowledge, never checked at source. Do not flip this without actually
+   * looking. `runFunction` warns while any matched source is unverified.
+   */
+  verified: boolean
   eligibility: FundingEligibility
 }
 
@@ -96,6 +105,8 @@ export interface FundingSearchResult {
    * as an upper bound on the search space.
    */
   indicativeCeiling: number
+  /** Matched sources not yet confirmed against their provider. */
+  unverifiedMatches: number
 }
 
 // ── Funding source catalogue ──────────────────────────────────────────────────
@@ -115,6 +126,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Open competition for game-changing, commercially viable R&D innovation. Highly competitive, sector-agnostic.',
     reviewUrl: 'https://apply-for-innovation-funding.service.gov.uk/competition/search',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       requiresRnd: true,
       manualChecks: [
@@ -135,6 +147,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Grant funding matched by private investment from an approved investor partner.',
     reviewUrl: 'https://iuk-business-connect.org.uk/programme/investor-partnerships/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       requiresRnd: true,
       manualChecks: [
@@ -154,6 +167,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Part-funds a graduate associate plus academic supervision to embed new capability in the business over 12–36 months.',
     reviewUrl: 'https://www.ktp-uk.org/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       minTradingMonths: 12,
       manualChecks: [
@@ -173,6 +187,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Grant plus living allowance and mentoring for founders aged 18–30 with a socially or environmentally motivated business idea.',
     reviewUrl: 'https://iuk-business-connect.org.uk/programme/young-innovators/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       manualChecks: ['Applicant founder must be aged 18–30 at the application deadline'],
     },
@@ -188,6 +203,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Corporation tax relief or credit on qualifying R&D expenditure. Claimed retrospectively through the company tax return.',
     reviewUrl: 'https://www.gov.uk/guidance/corporation-tax-research-and-development-rd-relief',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       requiresRnd: true,
       manualChecks: [
@@ -207,6 +223,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Tax relief for investors in early-stage companies, making an equity raise materially easier to close.',
     reviewUrl: 'https://www.gov.uk/guidance/venture-capital-schemes-apply-for-the-seed-enterprise-investment-scheme',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       maxEmployees: 25,
       maxTradingMonths: 36,
@@ -227,6 +244,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Investor tax relief for larger equity rounds in companies beyond the SEIS stage.',
     reviewUrl: 'https://www.gov.uk/guidance/venture-capital-schemes-apply-to-use-the-enterprise-investment-scheme',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       maxEmployees: 250,
       manualChecks: [
@@ -249,6 +267,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Government-backed unsecured personal loan for business use, at a fixed rate, with 12 months free mentoring.',
     reviewUrl: 'https://www.startuploans.co.uk/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       maxTradingMonths: 36,
       manualChecks: [
@@ -268,6 +287,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Government guarantee to accredited lenders, improving access to term loans, overdrafts, and asset finance.',
     reviewUrl: 'https://www.british-business-bank.co.uk/finance-options/debt-finance/growth-guarantee-scheme',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       manualChecks: [
         'Apply through an accredited lender, not the British Business Bank directly',
@@ -286,6 +306,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Low-interest start-up loans, small grants, and mentoring for founders aged 18–30.',
     reviewUrl: 'https://www.kingstrust.org.uk/how-we-can-help/programmes/enterprise',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       maxTradingMonths: 24,
       manualChecks: ['Founder must be aged 18–30'],
@@ -304,6 +325,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Per-course and per-apprentice grants for training construction employees. Short course, qualification, and apprenticeship attendance tiers.',
     reviewUrl: 'https://www.citb.co.uk/levy-grants-and-funding/grants-funding/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       sectors: ['construction'],
       manualChecks: [
@@ -323,6 +345,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Matched capital grants plus free technology advice for SME manufacturers adopting digital technology.',
     reviewUrl: 'https://www.madesmarter.uk/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       sectors: ['manufacturing'],
       maxEmployees: 250,
@@ -341,6 +364,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: '12-week practical management course delivered by business schools, around 90% government subsidised, with one-to-one mentoring.',
     reviewUrl: 'https://helptogrow.campaign.gov.uk/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       minTradingMonths: 12,
       manualChecks: [
@@ -358,6 +382,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Free or heavily subsidised flexible training courses up to 16 weeks in digital, technical, and construction skills.',
     reviewUrl: 'https://www.gov.uk/guidance/find-a-skills-bootcamp',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       manualChecks: [
         'Employers co-fund a share of the cost when training existing staff',
@@ -375,6 +400,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Government covers most or all apprenticeship training cost for small employers; levy-paying businesses can transfer unused funds.',
     reviewUrl: 'https://www.gov.uk/guidance/employing-an-apprentice-technical-guide-for-employers',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       manualChecks: [
         'Funding band cap depends on the specific apprenticeship standard',
@@ -395,6 +421,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Regionally administered capital and revenue grants for SME growth, digital adoption, and job creation. Terms vary widely by area.',
     reviewUrl: 'https://www.gov.uk/business-support-helpline',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       maxEmployees: 250,
       manualChecks: [
@@ -412,6 +439,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Free assigned innovation and growth specialist for innovation-led SMEs. No cash award, but routes to grants and investors.',
     reviewUrl: 'https://iuk-business-growth.org.uk/',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       requiresRnd: true,
       manualChecks: ['Support only — no direct funding attached'],
@@ -426,6 +454,7 @@ export const FUNDING_SOURCES: FundingSource[] = [
     summary: 'Free market research databases, IP guidance, and workshops through local library centres.',
     reviewUrl: 'https://www.bl.uk/business-and-ip-centre',
     lastReviewed: REVIEWED,
+    verified: false,
     eligibility: {
       manualChecks: ['Support only — no direct funding attached'],
     },
@@ -484,6 +513,125 @@ export function getFundingProfile(companyId: string): CompanyFundingProfile | un
 
 export function getFundingSource(id: string): FundingSource | undefined {
   return FUNDING_SOURCES.find((s) => s.id === id)
+}
+
+// ── Data quality ──────────────────────────────────────────────────────────────
+
+/** Catalogue figures older than this are treated as stale. */
+export const STALE_AFTER_MONTHS = 6
+
+/** Largest headcount we accept before assuming the input is a mistake. */
+const MAX_EMPLOYEES = 100_000
+/** 100 years. Anything beyond this is a typo, not a company. */
+const MAX_TRADING_MONTHS = 1_200
+
+const VALID_SECTORS: FundingSector[] = [
+  'software', 'construction', 'professional-services', 'manufacturing', 'any',
+]
+
+/** Whole months between a 'YYYY-MM' stamp and now. Null if unparseable. */
+export function monthsSince(yyyymm: string, now: Date = new Date()): number | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(yyyymm)
+  if (!m) return null
+  const year = Number(m[1])
+  const month = Number(m[2])
+  if (month < 1 || month > 12) return null
+  return (now.getFullYear() - year) * 12 + (now.getMonth() + 1 - month)
+}
+
+export interface CatalogueHealth {
+  total: number
+  verified: number
+  unverified: number
+  /** Age of the oldest entry in months, or null if none parse. */
+  oldestMonths: number | null
+  stale: boolean
+  /** Structural problems — duplicate ids, inverted award ranges, bad URLs. */
+  issues: string[]
+}
+
+/**
+ * Check the catalogue for structural problems and verification state.
+ * Pure — safe to call from a route, a test, or a health endpoint.
+ */
+export function auditCatalogue(
+  sources: FundingSource[] = FUNDING_SOURCES,
+  now: Date = new Date(),
+): CatalogueHealth {
+  const issues: string[] = []
+  const seen = new Set<string>()
+  let oldestMonths: number | null = null
+
+  for (const s of sources) {
+    if (seen.has(s.id)) issues.push(`Duplicate source id '${s.id}'`)
+    seen.add(s.id)
+
+    if (s.minAward !== undefined && s.maxAward !== undefined && s.minAward > s.maxAward) {
+      issues.push(`'${s.id}' has minAward (${s.minAward}) above maxAward (${s.maxAward})`)
+    }
+    if (s.minAward !== undefined && s.minAward < 0) issues.push(`'${s.id}' has a negative minAward`)
+    if (s.maxAward !== undefined && s.maxAward < 0) issues.push(`'${s.id}' has a negative maxAward`)
+    if (!/^https:\/\//.test(s.reviewUrl)) issues.push(`'${s.id}' reviewUrl is not an https URL`)
+
+    const age = monthsSince(s.lastReviewed, now)
+    if (age === null) issues.push(`'${s.id}' has an unparseable lastReviewed '${s.lastReviewed}'`)
+    else if (oldestMonths === null || age > oldestMonths) oldestMonths = age
+  }
+
+  const verified = sources.filter((s) => s.verified).length
+
+  return {
+    total: sources.length,
+    verified,
+    unverified: sources.length - verified,
+    oldestMonths,
+    stale: oldestMonths !== null && oldestMonths > STALE_AFTER_MONTHS,
+    issues,
+  }
+}
+
+/**
+ * Reject profiles that would produce meaningless matches.
+ * Returns human-readable errors; empty array means the profile is usable.
+ */
+export function validateProfile(profile: Partial<CompanyFundingProfile>): string[] {
+  const errors: string[] = []
+
+  const { employees, tradingMonths, sector, region, doesRnd } = profile
+
+  if (employees !== undefined) {
+    if (!Number.isFinite(employees) || !Number.isInteger(employees)) {
+      errors.push('employees must be a whole number')
+    } else if (employees < 0) {
+      errors.push('employees cannot be negative')
+    } else if (employees > MAX_EMPLOYEES) {
+      errors.push(`employees of ${employees} is implausible (max ${MAX_EMPLOYEES})`)
+    }
+  }
+
+  if (tradingMonths !== undefined) {
+    if (!Number.isFinite(tradingMonths) || !Number.isInteger(tradingMonths)) {
+      errors.push('tradingMonths must be a whole number')
+    } else if (tradingMonths < 0) {
+      errors.push('tradingMonths cannot be negative')
+    } else if (tradingMonths > MAX_TRADING_MONTHS) {
+      errors.push(`tradingMonths of ${tradingMonths} is implausible (max ${MAX_TRADING_MONTHS})`)
+    }
+  }
+
+  if (sector !== undefined && !VALID_SECTORS.includes(sector)) {
+    errors.push(`sector '${sector}' is not one of: ${VALID_SECTORS.join(', ')}`)
+  }
+
+  if (region !== undefined && (typeof region !== 'string' || region.trim() === '')) {
+    errors.push('region must be a non-empty string, or "unknown"')
+  }
+
+  if (doesRnd !== undefined && typeof doesRnd !== 'boolean') {
+    errors.push('doesRnd must be a boolean')
+  }
+
+  return errors
 }
 
 // ── Matching ──────────────────────────────────────────────────────────────────
@@ -579,6 +727,15 @@ export function findFunding(
   }
 
   const indicativeCeiling = matches.reduce((sum, m) => sum + (m.source.maxAward ?? 0), 0)
+  const unverifiedMatches = matches.filter((m) => !m.source.verified).length
 
-  return { companyId: profile.companyId, profile, matches, excluded, ceilingByKind, indicativeCeiling }
+  return {
+    companyId: profile.companyId,
+    profile,
+    matches,
+    excluded,
+    ceilingByKind,
+    indicativeCeiling,
+    unverifiedMatches,
+  }
 }

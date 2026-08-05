@@ -229,6 +229,16 @@
   .kind.training   { background: rgba(236,72,153,0.15);  color: #F472B6; }
   .kind.support    { background: rgba(255,255,255,0.07); color: var(--text-2); }
 
+  .unverified {
+    display: inline-block; margin-left: 5px;
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px; border-radius: 999px;
+    background: rgba(255,159,10,0.13);
+    color: var(--orange);
+    border: 1px solid rgba(255,159,10,0.25);
+  }
+
   .scheme-body {
     display: none;
     padding: 0 13px 13px;
@@ -357,8 +367,10 @@
   </div>
 
   <div class="footnote">
-    Figures are indicative and unverified — catalogue data reflects May 2026 and UK scheme
-    terms change frequently. Confirm every scheme against its provider before applying.<br />
+    <strong style="color:#FFCE7A">All 18 schemes are unverified.</strong>
+    Figures were recorded from prior knowledge in May 2026 and have never been checked against
+    the provider. Award amounts and eligibility rules change frequently — open the
+    “Verify with provider” link on any scheme before acting on it.<br />
     Mirrors <code>lib/funding-sources.ts</code>. See <code>docs/funding-finder.md</code>.
   </div>
 
@@ -389,7 +401,7 @@ const REGIONS = ['unknown', ...MADE_SMARTER_REGIONS, 'London', 'Scotland', 'Wale
 const R = '2026-05';
 const SOURCES = [
   { id:'innovate-uk-smart-grants', name:'Smart Grants', provider:'Innovate UK', kind:'grant', window:'periodic',
-    minAward:100000, maxAward:2000000, lastReviewed:R,
+    minAward:100000, maxAward:2000000, lastReviewed:R, verified:false,
     summary:'Open competition for game-changing, commercially viable R&D innovation. Highly competitive, sector-agnostic.',
     reviewUrl:'https://apply-for-innovation-funding.service.gov.uk/competition/search',
     eligibility:{ requiresRnd:true, manualChecks:[
@@ -398,7 +410,7 @@ const SOURCES = [
       'Competition rounds open periodically; check current round dates'] } },
 
   { id:'innovate-uk-investor-partnerships', name:'Investor Partnerships', provider:'Innovate UK', kind:'grant', window:'periodic',
-    minAward:250000, maxAward:2000000, lastReviewed:R,
+    minAward:250000, maxAward:2000000, lastReviewed:R, verified:false,
     summary:'Grant funding matched by private investment from an approved investor partner.',
     reviewUrl:'https://iuk-business-connect.org.uk/programme/investor-partnerships/',
     eligibility:{ requiresRnd:true, manualChecks:[
@@ -406,7 +418,7 @@ const SOURCES = [
       'Company must be seeking equity investment alongside the grant'] } },
 
   { id:'ktp', name:'Knowledge Transfer Partnership', provider:'Innovate UK / UKRI', kind:'grant', window:'periodic',
-    minAward:30000, maxAward:200000, lastReviewed:R,
+    minAward:30000, maxAward:200000, lastReviewed:R, verified:false,
     summary:'Part-funds a graduate associate plus academic supervision to embed new capability in the business over 12–36 months.',
     reviewUrl:'https://www.ktp-uk.org/',
     eligibility:{ minTradingMonths:12, manualChecks:[
@@ -414,13 +426,13 @@ const SOURCES = [
       'SMEs typically fund around a third of project cost; grant covers the rest'] } },
 
   { id:'young-innovators', name:'Young Innovators Awards', provider:'Innovate UK', kind:'grant', window:'periodic',
-    minAward:5000, maxAward:10000, lastReviewed:R,
+    minAward:5000, maxAward:10000, lastReviewed:R, verified:false,
     summary:'Grant plus living allowance and mentoring for founders aged 18–30 with a socially or environmentally motivated business idea.',
     reviewUrl:'https://iuk-business-connect.org.uk/programme/young-innovators/',
     eligibility:{ manualChecks:['Applicant founder must be aged 18–30 at the application deadline'] } },
 
   { id:'rd-tax-relief', name:'R&D Tax Relief (merged scheme)', provider:'HMRC', kind:'tax-relief', window:'rolling',
-    lastReviewed:R,
+    lastReviewed:R, verified:false,
     summary:'Corporation tax relief or credit on qualifying R&D expenditure. Claimed retrospectively through the company tax return.',
     reviewUrl:'https://www.gov.uk/guidance/corporation-tax-research-and-development-rd-relief',
     eligibility:{ requiresRnd:true, manualChecks:[
@@ -429,7 +441,7 @@ const SOURCES = [
       'Loss-making R&D-intensive SMEs may qualify for the enhanced (ERIS) rate'] } },
 
   { id:'seis', name:'Seed Enterprise Investment Scheme', provider:'HMRC', kind:'equity', window:'rolling',
-    maxAward:250000, lastReviewed:R,
+    maxAward:250000, lastReviewed:R, verified:false,
     summary:'Tax relief for investors in early-stage companies, making an equity raise materially easier to close.',
     reviewUrl:'https://www.gov.uk/guidance/venture-capital-schemes-apply-for-the-seed-enterprise-investment-scheme',
     eligibility:{ maxEmployees:25, maxTradingMonths:36, manualChecks:[
@@ -438,7 +450,7 @@ const SOURCES = [
       'This raises equity, not grant funding — it dilutes ownership'] } },
 
   { id:'eis', name:'Enterprise Investment Scheme', provider:'HMRC', kind:'equity', window:'rolling',
-    maxAward:5000000, lastReviewed:R,
+    maxAward:5000000, lastReviewed:R, verified:false,
     summary:'Investor tax relief for larger equity rounds in companies beyond the SEIS stage.',
     reviewUrl:'https://www.gov.uk/guidance/venture-capital-schemes-apply-to-use-the-enterprise-investment-scheme',
     eligibility:{ maxEmployees:250, manualChecks:[
@@ -447,7 +459,7 @@ const SOURCES = [
       'This raises equity, not grant funding — it dilutes ownership'] } },
 
   { id:'start-up-loans', name:'Start Up Loans', provider:'British Business Bank', kind:'loan', window:'rolling',
-    minAward:500, maxAward:25000, lastReviewed:R,
+    minAward:500, maxAward:25000, lastReviewed:R, verified:false,
     summary:'Government-backed unsecured personal loan for business use, at a fixed rate, with 12 months free mentoring.',
     reviewUrl:'https://www.startuploans.co.uk/',
     eligibility:{ maxTradingMonths:36, manualChecks:[
@@ -455,7 +467,7 @@ const SOURCES = [
       'Multiple directors can each apply, subject to a per-business cap'] } },
 
   { id:'growth-guarantee-scheme', name:'Growth Guarantee Scheme', provider:'British Business Bank', kind:'loan', window:'open',
-    minAward:25000, maxAward:2000000, lastReviewed:R,
+    minAward:25000, maxAward:2000000, lastReviewed:R, verified:false,
     summary:'Government guarantee to accredited lenders, improving access to term loans, overdrafts, and asset finance.',
     reviewUrl:'https://www.british-business-bank.co.uk/finance-options/debt-finance/growth-guarantee-scheme',
     eligibility:{ manualChecks:[
@@ -463,13 +475,13 @@ const SOURCES = [
       'The borrower remains fully liable for the debt — the guarantee protects the lender'] } },
 
   { id:'kings-trust-enterprise', name:"King's Trust Enterprise Programme", provider:"The King's Trust", kind:'loan', window:'rolling',
-    minAward:500, maxAward:25000, lastReviewed:R,
+    minAward:500, maxAward:25000, lastReviewed:R, verified:false,
     summary:'Low-interest start-up loans, small grants, and mentoring for founders aged 18–30.',
     reviewUrl:'https://www.kingstrust.org.uk/how-we-can-help/programmes/enterprise',
     eligibility:{ maxTradingMonths:24, manualChecks:['Founder must be aged 18–30'] } },
 
   { id:'citb-grants', name:'CITB Grants Scheme', provider:'Construction Industry Training Board', kind:'training', window:'rolling',
-    minAward:30, maxAward:12000, lastReviewed:R,
+    minAward:30, maxAward:12000, lastReviewed:R, verified:false,
     summary:'Per-course and per-apprentice grants for training construction employees. Short course, qualification, and apprenticeship attendance tiers.',
     reviewUrl:'https://www.citb.co.uk/levy-grants-and-funding/grants-funding/',
     eligibility:{ sectors:['construction'], manualChecks:[
@@ -477,14 +489,14 @@ const SOURCES = [
       'Grant rates differ by course tier — confirm the specific course qualifies'] } },
 
   { id:'made-smarter-adoption', name:'Made Smarter Adoption', provider:'Made Smarter (regional delivery)', kind:'grant', window:'rolling',
-    minAward:5000, maxAward:20000, lastReviewed:R,
+    minAward:5000, maxAward:20000, lastReviewed:R, verified:false,
     summary:'Matched capital grants plus free technology advice for SME manufacturers adopting digital technology.',
     reviewUrl:'https://www.madesmarter.uk/',
     eligibility:{ sectors:['manufacturing'], maxEmployees:250, regions:MADE_SMARTER_REGIONS,
       manualChecks:['Delivery and grant rates vary by region — check the local programme'] } },
 
   { id:'help-to-grow-management', name:'Help to Grow: Management', provider:'Department for Business and Trade', kind:'training', window:'rolling',
-    lastReviewed:R,
+    lastReviewed:R, verified:false,
     summary:'12-week practical management course delivered by business schools, around 90% government subsidised, with one-to-one mentoring.',
     reviewUrl:'https://helptogrow.campaign.gov.uk/',
     eligibility:{ minTradingMonths:12, manualChecks:[
@@ -492,7 +504,7 @@ const SOURCES = [
       'Participant must be a senior decision maker'] } },
 
   { id:'skills-bootcamps', name:'Skills Bootcamps', provider:'Department for Education', kind:'training', window:'rolling',
-    lastReviewed:R,
+    lastReviewed:R, verified:false,
     summary:'Free or heavily subsidised flexible training courses up to 16 weeks in digital, technical, and construction skills.',
     reviewUrl:'https://www.gov.uk/guidance/find-a-skills-bootcamp',
     eligibility:{ manualChecks:[
@@ -500,7 +512,7 @@ const SOURCES = [
       'Availability and subject areas vary by region and provider'] } },
 
   { id:'apprenticeship-funding', name:'Apprenticeship Funding and Levy Transfer', provider:'Department for Education', kind:'training', window:'rolling',
-    maxAward:27000, lastReviewed:R,
+    maxAward:27000, lastReviewed:R, verified:false,
     summary:'Government covers most or all apprenticeship training cost for small employers; levy-paying businesses can transfer unused funds.',
     reviewUrl:'https://www.gov.uk/guidance/employing-an-apprentice-technical-guide-for-employers',
     eligibility:{ manualChecks:[
@@ -508,7 +520,7 @@ const SOURCES = [
       'Small non-levy employers pay a reduced or nil contribution'] } },
 
   { id:'local-growth-hub', name:'Local Growth Hub Grants', provider:'Local Growth Hub network', kind:'grant', window:'rolling',
-    minAward:1000, maxAward:25000, lastReviewed:R,
+    minAward:1000, maxAward:25000, lastReviewed:R, verified:false,
     summary:'Regionally administered capital and revenue grants for SME growth, digital adoption, and job creation. Terms vary widely by area.',
     reviewUrl:'https://www.gov.uk/business-support-helpline',
     eligibility:{ maxEmployees:250, manualChecks:[
@@ -516,13 +528,13 @@ const SOURCES = [
       'Most require match funding and job creation commitments'] } },
 
   { id:'innovate-uk-business-growth', name:'Innovate UK Business Growth', provider:'Innovate UK', kind:'support', window:'rolling',
-    lastReviewed:R,
+    lastReviewed:R, verified:false,
     summary:'Free assigned innovation and growth specialist for innovation-led SMEs. No cash award, but routes to grants and investors.',
     reviewUrl:'https://iuk-business-growth.org.uk/',
     eligibility:{ requiresRnd:true, manualChecks:['Support only — no direct funding attached'] } },
 
   { id:'bipc', name:'Business & IP Centre Network', provider:'British Library', kind:'support', window:'rolling',
-    lastReviewed:R,
+    lastReviewed:R, verified:false,
     summary:'Free market research databases, IP guidance, and workshops through local library centres.',
     reviewUrl:'https://www.bl.uk/business-and-ip-centre',
     eligibility:{ manualChecks:['Support only — no direct funding attached'] } },
@@ -668,7 +680,7 @@ function schemeCard(source, listType, items) {
         <div class="scheme-main">
           <div class="scheme-name">${esc(source.name)}</div>
           <div class="scheme-provider">${esc(source.provider)}</div>
-          <span class="kind ${source.kind}">${source.kind.replace('-', ' ')}</span>
+          <span class="kind ${source.kind}">${source.kind.replace('-', ' ')}</span>${source.verified ? '' : '<span class="unverified">unverified</span>'}
         </div>
         <div class="scheme-right">${awardText(source)}</div>
       </div>

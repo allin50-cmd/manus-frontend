@@ -2,6 +2,9 @@ import { getBusinessFunction, BUSINESS_FUNCTION_REGISTRY } from './business-func
 import {
   findFunding,
   getFundingProfile,
+  validateProfile,
+  auditCatalogue,
+  STALE_AFTER_MONTHS,
   type CompanyFundingProfile,
   type FundingKind,
 } from './funding-sources'
@@ -158,6 +161,15 @@ registerFunction({
       ])
     }
 
+    // Reject bad overrides before they reach the matcher — a negative headcount
+    // or an unknown sector would otherwise produce confident nonsense.
+    if (payload.profile) {
+      const profileErrors = validateProfile(payload.profile)
+      if (profileErrors.length > 0) {
+        return failure(profileErrors.map((e) => `Invalid profile override: ${e}`))
+      }
+    }
+
     // Caller overrides win, but the company can never be reassigned.
     const profile: CompanyFundingProfile = {
       ...base,
@@ -197,6 +209,26 @@ registerFunction({
     }
     if (result.matches.length === 0) {
       warnings.push('No schemes matched this profile. Widen the search or review the exclusion reasons.')
+    }
+
+    // Data quality is a first-class result here: award figures drive real
+    // funding decisions, so an unverified or stale catalogue must be loud.
+    const health = auditCatalogue()
+    if (result.unverifiedMatches > 0) {
+      warnings.push(
+        `${result.unverifiedMatches} of ${result.matches.length} matched schemes have never been ` +
+        `confirmed against the provider. Award figures and eligibility rules are indicative only — ` +
+        `open each reviewUrl and set verified: true before acting on them.`,
+      )
+    }
+    if (health.stale) {
+      warnings.push(
+        `Catalogue figures are ${health.oldestMonths} months old (stale after ${STALE_AFTER_MONTHS}). ` +
+        `UK scheme terms change frequently — re-check before relying on these results.`,
+      )
+    }
+    if (health.issues.length > 0) {
+      warnings.push(`Catalogue integrity issues: ${health.issues.join('; ')}`)
     }
 
     return { success: true, events, warnings, errors: [], data: result }
