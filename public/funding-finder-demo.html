@@ -405,9 +405,9 @@ const REGIONS = ['unknown', ...MADE_SMARTER_REGIONS, 'London', 'Scotland', 'Wale
 // ── Funding catalogue (mirrors FUNDING_SOURCES) ──────────────────────────────
 const R = '2026-05';
 const SOURCES = [
-  { id:'innovate-uk-smart-grants', name:'Smart Grants', provider:'Innovate UK', kind:'grant', window:'periodic',
-    minAward:100000, maxAward:2000000, lastReviewed:R, verified:false,
-    summary:'Open competition for game-changing, commercially viable R&D innovation. Highly competitive, sector-agnostic.',
+  { id:'innovate-uk-smart-grants', name:'Smart Grants', provider:'Innovate UK', kind:'grant', window:'closed',
+    minAward:100000, maxAward:2000000, lastReviewed:'2026-08', verified:true,
+    summary:'PAUSED. Innovate UK paused Smart Grants in January 2025 with no rounds in 2025/26 and no named replacement as of August 2026. Themed and challenge-led competitions continue — check the live competition list instead.',
     reviewUrl:'https://apply-for-innovation-funding.service.gov.uk/competition/search',
     eligibility:{ requiresRnd:true, manualChecks:[
       'Project must be genuinely novel R&D, not product completion or rollout',
@@ -437,8 +437,8 @@ const SOURCES = [
     eligibility:{ manualChecks:['Applicant founder must be aged 18–30 at the application deadline'] } },
 
   { id:'rd-tax-relief', name:'R&D Tax Relief (merged scheme)', provider:'HMRC', kind:'tax-relief', window:'rolling',
-    lastReviewed:R, verified:false,
-    summary:'Corporation tax relief or credit on qualifying R&D expenditure. Claimed retrospectively through the company tax return.',
+    lastReviewed:'2026-08', verified:true,
+    summary:'Merged scheme pays a 20% above-the-line credit on qualifying R&D spend — roughly 15% net after corporation tax. Loss-making SMEs spending 30%+ of total costs on R&D can instead claim ERIS: a 186% deduction plus a payable credit worth up to 14.5% of the surrenderable loss.',
     reviewUrl:'https://www.gov.uk/guidance/corporation-tax-research-and-development-rd-relief',
     eligibility:{ requiresRnd:true, manualChecks:[
       'Work must seek an advance in science or technology, resolving genuine technical uncertainty',
@@ -464,19 +464,20 @@ const SOURCES = [
       'This raises equity, not grant funding — it dilutes ownership'] } },
 
   { id:'start-up-loans', name:'Start Up Loans', provider:'British Business Bank', kind:'loan', window:'rolling',
-    minAward:500, maxAward:25000, lastReviewed:R, verified:false,
-    summary:'Government-backed unsecured personal loan for business use, at a fixed rate, with 12 months free mentoring.',
+    minAward:500, maxAward:25000, lastReviewed:'2026-08', verified:true,
+    summary:'Government-backed unsecured personal loan for business use at a fixed rate, up to £25,000 per founder, with 12 months of free mentoring.',
     reviewUrl:'https://www.startuploans.co.uk/',
     eligibility:{ maxTradingMonths:36, manualChecks:[
       'Loan is personal to the director and personally liable, not company debt',
       'Multiple directors can each apply, subject to a per-business cap'] } },
 
   { id:'growth-guarantee-scheme', name:'Growth Guarantee Scheme', provider:'British Business Bank', kind:'loan', window:'open',
-    minAward:25000, maxAward:2000000, lastReviewed:R, verified:false,
-    summary:'Government guarantee to accredited lenders, improving access to term loans, overdrafts, and asset finance.',
+    minAward:25000, maxAward:2000000, lastReviewed:'2026-08', verified:true,
+    summary:'Government guarantee to accredited lenders, improving access to term loans, overdrafts, and asset finance. Extended to 31 March 2030; July 2026 enhancement added £6.5bn capacity, terms up to 10 years, and raised the turnover ceiling to £54m. 70+ accredited lenders.',
     reviewUrl:'https://www.british-business-bank.co.uk/finance-options/debt-finance/growth-guarantee-scheme',
     eligibility:{ manualChecks:[
       'Apply through an accredited lender, not the British Business Bank directly',
+      'Annual turnover must be under £54m (raised from £45m in July 2026)',
       'The borrower remains fully liable for the debt — the guarantee protects the lender'] } },
 
   { id:'kings-trust-enterprise', name:"King's Trust Enterprise Programme", provider:"The King's Trust", kind:'loan', window:'rolling',
@@ -486,12 +487,14 @@ const SOURCES = [
     eligibility:{ maxTradingMonths:24, manualChecks:['Founder must be aged 18–30'] } },
 
   { id:'citb-grants', name:'CITB Grants Scheme', provider:'Construction Industry Training Board', kind:'training', window:'rolling',
-    minAward:30, maxAward:12000, lastReviewed:R, verified:false,
-    summary:'Per-course and per-apprentice grants for training construction employees. Short course, qualification, and apprenticeship attendance tiers.',
-    reviewUrl:'https://www.citb.co.uk/levy-grants-and-funding/grants-funding/',
+    minAward:600, maxAward:12000, lastReviewed:'2026-08', verified:true,
+    summary:'Apprenticeship grants (unchanged) plus qualification achievement grants. Changed materially on 8 January 2026: NVQ achievement grants cut to a flat £600 regardless of level, and most short courses moved out of the grants scheme to Employer Network match funding at 50% of cost (30% for some health and safety courses).',
+    reviewUrl:'https://www.citb.co.uk/funding-changes',
     eligibility:{ sectors:['construction'], manualChecks:[
       'Employer must be registered with CITB and up to date on Levy Returns',
-      'Grant rates differ by course tier — confirm the specific course qualifies'] } },
+      'NVQ achievement grants are now a flat £600 — the old Level 3/4/6 tiers are gone',
+      'Most short courses now go through Employer Networks, not the grants scheme',
+      'Plant Operations and Scaffolding short courses still attract the grant at existing rates'] } },
 
   { id:'made-smarter-adoption', name:'Made Smarter Adoption', provider:'Made Smarter (regional delivery)', kind:'grant', window:'rolling',
     minAward:5000, maxAward:20000, lastReviewed:R, verified:false,
@@ -501,12 +504,13 @@ const SOURCES = [
       manualChecks:['Delivery and grant rates vary by region — check the local programme'] } },
 
   { id:'help-to-grow-management', name:'Help to Grow: Management', provider:'Department for Business and Trade', kind:'training', window:'rolling',
-    lastReviewed:R, verified:false,
-    summary:'12-week practical management course delivered by business schools, around 90% government subsidised, with one-to-one mentoring.',
+    lastReviewed:'2026-08', verified:true,
+    summary:'12-week practical management course delivered by business schools. 90% government funded — the business pays £750. Includes one-to-one mentoring and a peer network.',
     reviewUrl:'https://helptogrow.campaign.gov.uk/',
-    eligibility:{ minTradingMonths:12, manualChecks:[
-      'Business must meet the minimum employee headcount for the course',
-      'Participant must be a senior decision maker'] } },
+    eligibility:{ minEmployees:5, maxEmployees:249, minTradingMonths:12, manualChecks:[
+      'Participant must be a decision maker or senior management team member',
+      'Charities are not eligible',
+      'Cohorts run on fixed dates — check the provider for the next intake'] } },
 
   { id:'skills-bootcamps', name:'Skills Bootcamps', provider:'Department for Education', kind:'training', window:'rolling',
     lastReviewed:R, verified:false,
@@ -556,6 +560,9 @@ function checkEligibility(source, profile) {
 
   if (rules.sectors && !rules.sectors.includes('any') && !rules.sectors.includes(profile.sector))
     blocking.push(`Restricted to ${rules.sectors.join(', ')} — company sector is ${profile.sector}`);
+
+  if (rules.minEmployees !== undefined && profile.employees < rules.minEmployees)
+    blocking.push(`Requires at least ${rules.minEmployees} employees — company has ${profile.employees}`);
 
   if (rules.maxEmployees !== undefined && profile.employees > rules.maxEmployees)
     blocking.push(`Requires fewer than ${rules.maxEmployees} employees — company has ${profile.employees}`);

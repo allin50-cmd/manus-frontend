@@ -27,6 +27,7 @@ export type FundingWindow = 'open' | 'rolling' | 'periodic' | 'closed'
 export interface FundingEligibility {
   /** Omitted means all sectors qualify. */
   sectors?: FundingSector[]
+  minEmployees?: number
   maxEmployees?: number
   minTradingMonths?: number
   maxTradingMonths?: number
@@ -125,13 +126,13 @@ export const FUNDING_SOURCES: FundingSource[] = [
     name: 'Smart Grants',
     provider: 'Innovate UK',
     kind: 'grant',
-    window: 'periodic',
+    window: 'closed',
     minAward: 100_000,
     maxAward: 2_000_000,
-    summary: 'Open competition for game-changing, commercially viable R&D innovation. Highly competitive, sector-agnostic.',
+    summary: 'PAUSED. Innovate UK paused Smart Grants in January 2025 with no rounds in 2025/26 and no named replacement as of August 2026. Themed and challenge-led competitions continue — check the live competition list instead.',
     reviewUrl: 'https://apply-for-innovation-funding.service.gov.uk/competition/search',
-    lastReviewed: REVIEWED,
-    verified: false,
+    lastReviewed: '2026-08',
+    verified: true,
     eligibility: {
       requiresRnd: true,
       manualChecks: [
@@ -205,10 +206,10 @@ export const FUNDING_SOURCES: FundingSource[] = [
     provider: 'HMRC',
     kind: 'tax-relief',
     window: 'rolling',
-    summary: 'Corporation tax relief or credit on qualifying R&D expenditure. Claimed retrospectively through the company tax return.',
+    summary: 'Merged scheme pays a 20% above-the-line credit on qualifying R&D spend — roughly 15% net after corporation tax. Loss-making SMEs spending 30%+ of total costs on R&D can instead claim ERIS: a 186% deduction plus a payable credit worth up to 14.5% of the surrenderable loss.',
     reviewUrl: 'https://www.gov.uk/guidance/corporation-tax-research-and-development-rd-relief',
-    lastReviewed: REVIEWED,
-    verified: false,
+    lastReviewed: '2026-08',
+    verified: true,
     eligibility: {
       requiresRnd: true,
       manualChecks: [
@@ -269,10 +270,10 @@ export const FUNDING_SOURCES: FundingSource[] = [
     window: 'rolling',
     minAward: 500,
     maxAward: 25_000,
-    summary: 'Government-backed unsecured personal loan for business use, at a fixed rate, with 12 months free mentoring.',
+    summary: 'Government-backed unsecured personal loan for business use at a fixed rate, up to £25,000 per founder, with 12 months of free mentoring.',
     reviewUrl: 'https://www.startuploans.co.uk/',
-    lastReviewed: REVIEWED,
-    verified: false,
+    lastReviewed: '2026-08',
+    verified: true,
     eligibility: {
       maxTradingMonths: 36,
       manualChecks: [
@@ -289,13 +290,14 @@ export const FUNDING_SOURCES: FundingSource[] = [
     window: 'open',
     minAward: 25_000,
     maxAward: 2_000_000,
-    summary: 'Government guarantee to accredited lenders, improving access to term loans, overdrafts, and asset finance.',
+    summary: 'Government guarantee to accredited lenders, improving access to term loans, overdrafts, and asset finance. Extended to 31 March 2030; July 2026 enhancement added £6.5bn capacity, terms up to 10 years, and raised the turnover ceiling to £54m. 70+ accredited lenders.',
     reviewUrl: 'https://www.british-business-bank.co.uk/finance-options/debt-finance/growth-guarantee-scheme',
-    lastReviewed: REVIEWED,
-    verified: false,
+    lastReviewed: '2026-08',
+    verified: true,
     eligibility: {
       manualChecks: [
         'Apply through an accredited lender, not the British Business Bank directly',
+        'Annual turnover must be under £54m (raised from £45m in July 2026)',
         'The borrower remains fully liable for the debt — the guarantee protects the lender',
       ],
     },
@@ -325,17 +327,19 @@ export const FUNDING_SOURCES: FundingSource[] = [
     provider: 'Construction Industry Training Board',
     kind: 'training',
     window: 'rolling',
-    minAward: 30,
+    minAward: 600,
     maxAward: 12_000,
-    summary: 'Per-course and per-apprentice grants for training construction employees. Short course, qualification, and apprenticeship attendance tiers.',
-    reviewUrl: 'https://www.citb.co.uk/levy-grants-and-funding/grants-funding/',
-    lastReviewed: REVIEWED,
-    verified: false,
+    summary: 'Apprenticeship grants (unchanged) plus qualification achievement grants. Changed materially on 8 January 2026: NVQ achievement grants cut to a flat £600 regardless of level, and most short courses moved out of the grants scheme to Employer Network match funding at 50% of cost (30% for some health and safety courses).',
+    reviewUrl: 'https://www.citb.co.uk/funding-changes',
+    lastReviewed: '2026-08',
+    verified: true,
     eligibility: {
       sectors: ['construction'],
       manualChecks: [
         'Employer must be registered with CITB and up to date on Levy Returns',
-        'Grant rates differ by course tier — confirm the specific course qualifies',
+        'NVQ achievement grants are now a flat £600 — the old Level 3/4/6 tiers are gone',
+        'Most short courses now go through Employer Networks, not the grants scheme',
+        'Plant Operations and Scaffolding short courses still attract the grant at existing rates',
       ],
     },
   },
@@ -366,15 +370,18 @@ export const FUNDING_SOURCES: FundingSource[] = [
     provider: 'Department for Business and Trade',
     kind: 'training',
     window: 'rolling',
-    summary: '12-week practical management course delivered by business schools, around 90% government subsidised, with one-to-one mentoring.',
+    summary: '12-week practical management course delivered by business schools. 90% government funded — the business pays £750. Includes one-to-one mentoring and a peer network.',
     reviewUrl: 'https://helptogrow.campaign.gov.uk/',
-    lastReviewed: REVIEWED,
-    verified: false,
+    lastReviewed: '2026-08',
+    verified: true,
     eligibility: {
+      minEmployees: 5,
+      maxEmployees: 249,
       minTradingMonths: 12,
       manualChecks: [
-        'Business must meet the minimum employee headcount for the course',
-        'Participant must be a senior decision maker',
+        'Participant must be a decision maker or senior management team member',
+        'Charities are not eligible',
+        'Cohorts run on fixed dates — check the provider for the next intake',
       ],
     },
   },
@@ -583,6 +590,10 @@ export function auditCatalogue(
 
     // An empty restriction list is never intentional: an empty `sectors` blocks
     // every company, and an empty `regions` renders a caveat listing nothing.
+    if (s.eligibility.minEmployees !== undefined && s.eligibility.maxEmployees !== undefined
+        && s.eligibility.minEmployees > s.eligibility.maxEmployees) {
+      issues.push(`'${s.id}' has minEmployees above maxEmployees — no company can qualify`)
+    }
     if (s.eligibility.sectors && s.eligibility.sectors.length === 0) {
       issues.push(`'${s.id}' has an empty sectors list — this blocks every company`)
     }
@@ -719,6 +730,10 @@ export function checkEligibility(
 
   if (rules.sectors && !rules.sectors.includes('any') && !rules.sectors.includes(profile.sector)) {
     blocking.push(`Restricted to ${rules.sectors.join(', ')} — company sector is ${profile.sector}`)
+  }
+
+  if (rules.minEmployees !== undefined && profile.employees < rules.minEmployees) {
+    blocking.push(`Requires at least ${rules.minEmployees} employees — company has ${profile.employees}`)
   }
 
   if (rules.maxEmployees !== undefined && profile.employees > rules.maxEmployees) {
