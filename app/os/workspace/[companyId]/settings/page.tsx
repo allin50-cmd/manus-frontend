@@ -36,6 +36,13 @@ export default function WorkspaceSettingsPage({
       available: true,
     },
     {
+      label: 'Funding',
+      description: 'Grants, loans, and reliefs this company is eligible for.',
+      href: `${base}/funding`,
+      action: 'Go to Funding →',
+      available: true,
+    },
+    {
       label: 'Billing',
       description: 'Manage your plan and invoices.',
       href: null,

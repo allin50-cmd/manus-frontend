@@ -24,6 +24,31 @@ ceiling. It calls no LLM, hits no external API, and touches no database.
 | Status | `beta` |
 | Data module | `lib/funding-sources.ts` |
 | Runner | `lib/function-engine.ts` |
+| Workspace page | `app/os/workspace/[companyId]/funding/page.tsx` |
+| Demo | `public/funding-finder-demo.html` |
+
+---
+
+## Workspace Page
+
+`/os/workspace/[companyId]/funding` — read-only. It reports rule matches and
+persists nothing.
+
+Reached from **Settings → Funding**, deliberately not from the tab bar.
+`docs/business-functions.md` states that Business Functions do not modify the
+workspace shell, and the tab bar is part of that shell. Adding a `Funding` tab
+is a one-line change to `WorkspaceTabBar.tsx` if that rule is ever relaxed, but
+it needs deciding explicitly rather than arriving as a side effect of this
+function.
+
+The page is a server component with no client JavaScript — expansion uses
+native `<details>`. It carries `force-dynamic` because staleness is measured
+against the current date, and static prerendering would freeze that check at
+build time and report stale figures as fresh.
+
+A company present in `COMPANY_REGISTRY` but absent from
+`COMPANY_FUNDING_PROFILES` renders an explanatory empty state rather than
+failing.
 
 Owned by Executive rather than Finance because it spans all four ventures and
 drives strategic decisions, not bookkeeping.
