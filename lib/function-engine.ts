@@ -179,6 +179,16 @@ registerFunction({
 
     const result = findFunding(profile, payload.kinds)
 
+    // Registry profiles bypass the override check above, so findFunding
+    // re-validates. Surface that as a failure rather than an empty result.
+    if (result.profileErrors.length > 0) {
+      return failure(
+        result.profileErrors.map(
+          (e) => `Invalid funding profile for '${context.companyId}': ${e}`,
+        ),
+      )
+    }
+
     const events = [
       `Matched ${result.matches.length} funding schemes for '${context.companyId}' ` +
       `(${result.excluded.length} excluded)`,

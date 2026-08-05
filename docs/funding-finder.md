@@ -106,6 +106,24 @@ carries a staleness warning naming the actual age. UK scheme terms move with
 fiscal events, so figures going quietly out of date is the realistic failure
 mode — not a sudden break.
 
+### Tests
+
+`lib/__tests__/` — 72 tests covering catalogue integrity, staleness arithmetic,
+profile validation, every eligibility rule, result invariants, the engine
+contract, and all four registered ventures.
+
+```bash
+npm run test:unit
+```
+
+Uses Node's built-in test runner via `tsx`. No test framework dependency was
+added. Wired into `ci.yml` ahead of the existing DB-dependent step, so the pure
+logic is protected on every push regardless of database availability.
+
+Invariants worth keeping: every source is either matched or excluded (never
+both, never dropped), `indicativeCeiling` always equals the sum of
+`ceilingByKind`, and every exclusion carries at least one reason.
+
 ### `validateProfile(partial): string[]`
 
 Rejects input that would produce confident nonsense — non-integer or negative
@@ -167,8 +185,33 @@ company.
   ceilingByKind: Partial<Record<FundingKind, number>>
   indicativeCeiling: number
   unverifiedMatches: number   // matched sources never confirmed at source
+  profileErrors: string[]     // non-empty means nothing was matched
 }
 ```
+
+### `kinds` semantics
+
+Omitting `kinds` means every kind. Passing `[]` means **no kind is selected, so
+no results** — an explicit empty filter must never silently widen to
+"everything". A filter UI with all options deselected shows nothing, which is
+what any user expects.
+
+### `profileErrors`
+
+`findFunding` validates the profile before matching. If it fails, every list
+comes back empty with `profileErrors` populated. This is the last line of
+defence: the runner validates caller-supplied overrides, but registry profiles
+reach `findFunding` directly, so the check lives there too. The runner turns a
+populated `profileErrors` into a failed execution; the workspace page renders
+the reasons instead of an empty results screen that would read as "nothing is
+available".
+
+### Where `assumed` is surfaced
+
+`checkEligibility` deliberately does **not** add a caveat for
+`profile.assumed`. It is a property of the company, not of any scheme —
+repeating it on all 18 rows buried the scheme-specific conditions that actually
+differ. Callers read `profile.assumed` and surface it once.
 
 ### Read `ceilingByKind`, not `indicativeCeiling`
 

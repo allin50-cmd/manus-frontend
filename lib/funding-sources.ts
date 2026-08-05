@@ -107,6 +107,11 @@ export interface FundingSearchResult {
   indicativeCeiling: number
   /** Matched sources not yet confirmed against their provider. */
   unverifiedMatches: number
+  /**
+   * Validation failures on the profile itself. Non-empty means no matching was
+   * attempted and every list above is empty — render these instead of results.
+   */
+  profileErrors: string[]
 }
 
 // ── Funding source catalogue ──────────────────────────────────────────────────
@@ -687,9 +692,10 @@ export function checkEligibility(
     caveats.push(...rules.manualChecks)
   }
 
-  if (profile.assumed) {
-    caveats.push('Company profile uses assumed values — confirm employees, region, and trading history')
-  }
+  // Deliberately NOT adding a caveat for `profile.assumed` here. It is a
+  // property of the company, not of the scheme — repeating it on all 18 rows
+  // buries the scheme-specific conditions that actually differ. Callers surface
+  // it once, from `profile.assumed`.
 
   return { blocking, caveats }
 }
@@ -697,14 +703,36 @@ export function checkEligibility(
 /**
  * Match a company profile against the catalogue.
  * Matches are sorted by indicative maximum award, highest first.
+ *
+ * `kinds` omitted means every kind. `kinds` given as an empty array means no
+ * kind is selected, and therefore no results — an explicit empty filter must
+ * not silently widen to "everything".
+ *
+ * An invalid profile returns empty lists with `profileErrors` populated rather
+ * than matching against nonsense. This is the last line of defence: the runner
+ * validates caller overrides, but registry profiles reach here directly.
  */
 export function findFunding(
   profile: CompanyFundingProfile,
   kinds?: FundingKind[],
 ): FundingSearchResult {
-  const pool = kinds?.length
-    ? FUNDING_SOURCES.filter((s) => kinds.includes(s.kind))
-    : FUNDING_SOURCES
+  const profileErrors = validateProfile(profile)
+  if (profileErrors.length > 0) {
+    return {
+      companyId: profile.companyId,
+      profile,
+      matches: [],
+      excluded: [],
+      ceilingByKind: {},
+      indicativeCeiling: 0,
+      unverifiedMatches: 0,
+      profileErrors,
+    }
+  }
+
+  const pool = kinds === undefined
+    ? FUNDING_SOURCES
+    : FUNDING_SOURCES.filter((s) => kinds.includes(s.kind))
 
   const matches: FundingMatch[] = []
   const excluded: FundingExclusion[] = []
@@ -737,5 +765,6 @@ export function findFunding(
     ceilingByKind,
     indicativeCeiling,
     unverifiedMatches,
+    profileErrors: [],
   }
 }

@@ -62,6 +62,30 @@ export default function WorkspaceFundingPage({
   const health = auditCatalogue()
   const ceilings = Object.entries(result.ceilingByKind).sort((a, b) => b[1] - a[1])
 
+  // A malformed registry profile produces no matches. Say why rather than
+  // rendering an empty page that looks like "nothing is available".
+  if (result.profileErrors.length > 0) {
+    return (
+      <div className="space-y-6">
+        <Header companyName={company.name} />
+        <Panel label="Funding profile is invalid">
+          <p className="text-xs leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            No schemes were matched because {company.name}&apos;s profile in{' '}
+            <Code>COMPANY_FUNDING_PROFILES</Code> failed validation:
+          </p>
+          <ul className="space-y-1">
+            {result.profileErrors.map((error) => (
+              <li key={error} className="text-[11px] leading-relaxed flex gap-2" style={{ color: 'rgba(255,158,150,0.85)' }}>
+                <span aria-hidden>✕</span>
+                <span>{error}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <Header companyName={company.name} />
@@ -180,6 +204,15 @@ export default function WorkspaceFundingPage({
                   >
                     {awardLabel(match.source)}
                   </span>
+                  {/* Rotates when the row opens — without this there is no cue the row expands */}
+                  <svg
+                    className="shrink-0 mt-0.5 transition-transform group-open:rotate-90"
+                    width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="rgba(255,255,255,0.3)" strokeWidth={2.5}
+                    strokeLinecap="round" strokeLinejoin="round" aria-hidden
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
                 </summary>
 
                 <div className="pb-3 px-1">

@@ -13,7 +13,8 @@
     "db:push": "drizzle-kit push:pg --config=drizzle.config.ts",
     "db:seed": "tsx scripts/seed-os-modules.ts",
     "type-check:server": "echo 'server/ removed — skipping'",
-    "fineguard:test-workflow": "tsx scripts/fineguard-test-workflow.ts"
+    "fineguard:test-workflow": "tsx scripts/fineguard-test-workflow.ts",
+    "test:unit": "node --import tsx --test \"lib/__tests__/*.test.ts\""
   },
   "dependencies": {
     "autoprefixer": "^10.4.19",

@@ -209,6 +209,11 @@
     cursor: pointer;
   }
   .scheme-head:hover { background: rgba(255,255,255,0.03); }
+  .scheme-head:focus-visible {
+    outline: 2px solid rgba(129,140,248,0.7);
+    outline-offset: -2px;
+    background: rgba(129,140,248,0.06);
+  }
   .scheme-main { flex: 1; min-width: 0; }
   .scheme-name { font-weight: 640; font-size: 13.5px; margin-bottom: 2px; }
   .scheme-provider { font-size: 11px; color: var(--text-3); }
@@ -571,13 +576,15 @@ function checkEligibility(source, profile) {
   }
 
   if (rules.manualChecks) caveats.push(...rules.manualChecks);
-  if (profile.assumed) caveats.push('Company profile uses assumed values — confirm employees, region, and trading history');
+  // profile.assumed is a property of the company, not the scheme — surfaced
+  // once in the notice banner rather than repeated on all 18 rows.
 
   return { blocking, caveats };
 }
 
 function findFunding(profile, kinds) {
-  const pool = kinds && kinds.length ? SOURCES.filter(s => kinds.includes(s.kind)) : SOURCES;
+  // undefined = every kind; [] = nothing selected, therefore no results.
+  const pool = kinds === undefined || kinds === null ? SOURCES : SOURCES.filter(s => kinds.includes(s.kind));
   const matches = [], excluded = [];
 
   for (const source of pool) {
@@ -676,7 +683,7 @@ function schemeCard(source, listType, items) {
     ? `<ul class="${cls}">${items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`
     : `<div class="empty">No conditions flagged.</div>`;
   return `<div class="scheme ${isEx ? 'excluded' : ''}">
-      <div class="scheme-head">
+      <div class="scheme-head" role="button" tabindex="0" aria-expanded="false">
         <div class="scheme-main">
           <div class="scheme-name">${esc(source.name)}</div>
           <div class="scheme-provider">${esc(source.provider)}</div>
@@ -697,8 +704,16 @@ function schemeCard(source, listType, items) {
 }
 
 function wireToggles(container) {
-  container.querySelectorAll('.scheme-head').forEach(h =>
-    h.onclick = () => h.parentElement.classList.toggle('open'));
+  container.querySelectorAll('.scheme-head').forEach(h => {
+    const toggle = () => {
+      const open = h.parentElement.classList.toggle('open');
+      h.setAttribute('aria-expanded', String(open));
+    };
+    h.onclick = toggle;
+    h.onkeydown = e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    };
+  });
 }
 
 function renderAll() {

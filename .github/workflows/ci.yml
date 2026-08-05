@@ -26,6 +26,9 @@ jobs:
       - name: Type-check client
         run: npm run type-check
 
+      - name: Unit tests (pure logic — no DB required)
+        run: npm run test:unit
+
       - name: Unit tests
         run: npm test
         # Integration tests skip cleanly when DATABASE_URL is absent.
