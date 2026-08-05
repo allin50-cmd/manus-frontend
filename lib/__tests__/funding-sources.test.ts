@@ -15,6 +15,7 @@ import {
   checkEligibility,
   validateProfile,
   auditCatalogue,
+  auditProfiles,
   monthsSince,
   getFundingProfile,
   getFundingSource,
@@ -97,6 +98,57 @@ describe('catalogue integrity', () => {
     const bad = auditCatalogue([source({ lastReviewed: 'whenever' })])
     assert.ok(bad.issues.some((i) => i.includes('unparseable lastReviewed')))
   })
+
+  test('detects a lastReviewed in the future', () => {
+    const bad = auditCatalogue([source({ lastReviewed: '2027-12' })], new Date('2026-08-01'))
+    assert.ok(bad.issues.some((i) => i.includes('in the future')))
+  })
+
+  test('a future date does not drag oldestMonths negative and mask staleness', () => {
+    const mixed = auditCatalogue(
+      [source({ id: 'future', lastReviewed: '2027-12' }), source({ id: 'old', lastReviewed: '2025-01' })],
+      new Date('2026-08-01'),
+    )
+    assert.ok(mixed.oldestMonths !== null && mixed.oldestMonths > 0)
+    assert.equal(mixed.stale, true, 'a genuinely stale entry must still register as stale')
+  })
+
+  test('detects minAward with no maxAward', () => {
+    const bad = auditCatalogue([source({ minAward: 500 })])
+    assert.ok(bad.issues.some((i) => i.includes('no maxAward')))
+  })
+
+  test('detects an empty sectors list', () => {
+    const bad = auditCatalogue([source({ eligibility: { sectors: [] } })])
+    assert.ok(bad.issues.some((i) => i.includes('empty sectors list')))
+  })
+
+  test('detects an empty regions list', () => {
+    const bad = auditCatalogue([source({ eligibility: { regions: [] } })])
+    assert.ok(bad.issues.some((i) => i.includes('empty regions list')))
+  })
+})
+
+describe('company profile registry audit', () => {
+  test('the shipped registry is clean', () => {
+    assert.deepEqual(auditProfiles().issues, [])
+  })
+
+  test('counts assumed against confirmed', () => {
+    const h = auditProfiles()
+    assert.equal(h.assumed + h.confirmed, h.total)
+    assert.equal(h.total, COMPANY_FUNDING_PROFILES.length)
+  })
+
+  test('detects duplicate company ids', () => {
+    const h = auditProfiles([baseProfile, { ...baseProfile }])
+    assert.ok(h.issues.some((i) => i.includes('Duplicate company profile')))
+  })
+
+  test('surfaces per-profile validation failures', () => {
+    const h = auditProfiles([{ ...baseProfile, employees: -1 }])
+    assert.ok(h.issues.some((i) => i.includes('test-co') && i.includes('negative')))
+  })
 })
 
 // ── Staleness ─────────────────────────────────────────────────────────────────
@@ -160,6 +212,15 @@ describe('validateProfile', () => {
 
   test('ignores fields that are absent', () => {
     assert.deepEqual(validateProfile({}), [])
+  })
+
+  test('rejects an empty or whitespace companyId', () => {
+    assert.ok(validateProfile({ companyId: '' }).length > 0)
+    assert.ok(validateProfile({ companyId: '   ' }).length > 0)
+  })
+
+  test('rejects a non-boolean assumed flag', () => {
+    assert.ok(validateProfile({ assumed: 'no' as never }).length > 0)
   })
 })
 

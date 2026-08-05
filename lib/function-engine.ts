@@ -1,4 +1,4 @@
-import { getBusinessFunction, BUSINESS_FUNCTION_REGISTRY } from './business-functions'
+import { getBusinessFunction } from './business-functions'
 import {
   findFunding,
   getFundingProfile,

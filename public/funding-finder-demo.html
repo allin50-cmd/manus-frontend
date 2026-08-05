@@ -608,6 +608,9 @@ function findFunding(profile, kinds) {
 let companyId = 'ultratech';
 let profile = { ...PROFILES[companyId] };
 let activeKinds = [...ALL_KINDS];
+// Expanded rows survive re-render. renderAll() rewrites innerHTML, so without
+// this every filter or profile edit silently collapses whatever was open.
+const openRows = new Set();
 
 // ── Rendering ────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -682,8 +685,9 @@ function schemeCard(source, listType, items) {
   const body = items.length
     ? `<ul class="${cls}">${items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`
     : `<div class="empty">No conditions flagged.</div>`;
-  return `<div class="scheme ${isEx ? 'excluded' : ''}">
-      <div class="scheme-head" role="button" tabindex="0" aria-expanded="false">
+  const isOpen = openRows.has(source.id);
+  return `<div class="scheme ${isEx ? 'excluded' : ''}${isOpen ? ' open' : ''}" data-id="${source.id}">
+      <div class="scheme-head" role="button" tabindex="0" aria-expanded="${isOpen}">
         <div class="scheme-main">
           <div class="scheme-name">${esc(source.name)}</div>
           <div class="scheme-provider">${esc(source.provider)}</div>
@@ -706,8 +710,10 @@ function schemeCard(source, listType, items) {
 function wireToggles(container) {
   container.querySelectorAll('.scheme-head').forEach(h => {
     const toggle = () => {
-      const open = h.parentElement.classList.toggle('open');
+      const row = h.parentElement;
+      const open = row.classList.toggle('open');
       h.setAttribute('aria-expanded', String(open));
+      if (open) openRows.add(row.dataset.id); else openRows.delete(row.dataset.id);
     };
     h.onclick = toggle;
     h.onkeydown = e => {
@@ -742,11 +748,13 @@ function renderAll() {
 }
 
 // ── Events ───────────────────────────────────────────────────────────────────
-function bindField(id, key, transform) {
+// `confirms` decides whether a new value counts as the operator confirming the
+// profile. Setting region back to "Not confirmed" plainly does not.
+function bindField(id, key, transform, confirms = () => true) {
   $(id).addEventListener('input', e => {
     const v = transform(e.target.value);
     if (v === null) return;
-    profile = { ...profile, [key]: v, assumed: false };
+    profile = { ...profile, [key]: v, assumed: confirms(v) ? false : profile.assumed };
     renderAll();
   });
 }
@@ -755,7 +763,7 @@ renderRegions();
 
 bindField('employees', 'employees', v => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : null; });
 bindField('tradingMonths', 'tradingMonths', v => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : null; });
-bindField('region', 'region', v => v);
+bindField('region', 'region', v => v, v => v !== 'unknown');
 $('doesRnd').addEventListener('change', e => {
   profile = { ...profile, doesRnd: e.target.checked, assumed: false };
   renderAll();

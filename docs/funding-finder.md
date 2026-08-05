@@ -95,9 +95,23 @@ of the oldest entry, a staleness verdict, and any integrity problems found:
 
 - duplicate source ids
 - `minAward` above `maxAward`
+- `minAward` with no `maxAward` (contributes nothing to ceilings)
 - negative award figures
+- an empty `sectors` list (would block every company)
+- an empty `regions` list (would block every known region)
 - a `reviewUrl` that is not HTTPS
 - an unparseable `lastReviewed` stamp
+- a `lastReviewed` in the future
+
+Future dates are excluded from the age calculation as well as reported. Left in,
+a single mistyped year drags `oldestMonths` negative and masks genuinely stale
+entries behind a false "fresh" verdict.
+
+### `auditProfiles(profiles?): ProfileRegistryHealth`
+
+The same treatment for the company profile registry, which nothing previously
+inspected: duplicate company ids, per-profile validation failures, and the
+assumed-versus-confirmed split.
 
 ### Staleness
 
@@ -108,9 +122,9 @@ mode — not a sudden break.
 
 ### Tests
 
-`lib/__tests__/` — 72 tests covering catalogue integrity, staleness arithmetic,
-profile validation, every eligibility rule, result invariants, the engine
-contract, and all four registered ventures.
+`lib/__tests__/` — 103 tests covering catalogue and profile-registry integrity,
+staleness arithmetic, profile validation, every eligibility rule, result
+invariants, the engine contract, all four registered ventures, and demo parity.
 
 ```bash
 npm run test:unit
@@ -123,6 +137,18 @@ logic is protected on every push regardless of database availability.
 Invariants worth keeping: every source is either matched or excluded (never
 both, never dropped), `indicativeCeiling` always equals the sum of
 `ceilingByKind`, and every exclusion carries at least one reason.
+
+**`demo-parity.test.ts`** is the one to understand. The demo re-implements the
+catalogue and rules in plain JavaScript so it can run with no build step, and
+that duplication will rot the moment the library changes and the demo does not.
+The test reads the HTML from disk, extracts its data and matching functions, and
+asserts identical ids, kinds, award ceilings, verification flags, profiles,
+matches, exclusions, ceilings, exclusion reason text, and caveat text across all
+four ventures. It has been confirmed to fail on injected drift, not merely to
+pass — a regression guard that cannot fail is worth nothing.
+
+If you change a rule in `lib/funding-sources.ts`, change it in the demo too.
+This test is what tells you that you forgot.
 
 ### `validateProfile(partial): string[]`
 

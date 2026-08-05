@@ -576,11 +576,30 @@ export function auditCatalogue(
     }
     if (s.minAward !== undefined && s.minAward < 0) issues.push(`'${s.id}' has a negative minAward`)
     if (s.maxAward !== undefined && s.maxAward < 0) issues.push(`'${s.id}' has a negative maxAward`)
+    if (s.minAward !== undefined && s.maxAward === undefined) {
+      issues.push(`'${s.id}' has a minAward but no maxAward — it contributes nothing to ceilings`)
+    }
     if (!/^https:\/\//.test(s.reviewUrl)) issues.push(`'${s.id}' reviewUrl is not an https URL`)
 
+    // An empty restriction list is never intentional: an empty `sectors` blocks
+    // every company, and an empty `regions` renders a caveat listing nothing.
+    if (s.eligibility.sectors && s.eligibility.sectors.length === 0) {
+      issues.push(`'${s.id}' has an empty sectors list — this blocks every company`)
+    }
+    if (s.eligibility.regions && s.eligibility.regions.length === 0) {
+      issues.push(`'${s.id}' has an empty regions list — this blocks every known region`)
+    }
+
     const age = monthsSince(s.lastReviewed, now)
-    if (age === null) issues.push(`'${s.id}' has an unparseable lastReviewed '${s.lastReviewed}'`)
-    else if (oldestMonths === null || age > oldestMonths) oldestMonths = age
+    if (age === null) {
+      issues.push(`'${s.id}' has an unparseable lastReviewed '${s.lastReviewed}'`)
+    } else if (age < 0) {
+      // A future stamp would otherwise drag oldestMonths negative and mask
+      // genuinely stale entries behind a false "fresh" verdict.
+      issues.push(`'${s.id}' has a lastReviewed in the future ('${s.lastReviewed}')`)
+    } else if (oldestMonths === null || age > oldestMonths) {
+      oldestMonths = age
+    }
   }
 
   const verified = sources.filter((s) => s.verified).length
@@ -602,7 +621,15 @@ export function auditCatalogue(
 export function validateProfile(profile: Partial<CompanyFundingProfile>): string[] {
   const errors: string[] = []
 
-  const { employees, tradingMonths, sector, region, doesRnd } = profile
+  const { employees, tradingMonths, sector, region, doesRnd, companyId, assumed } = profile
+
+  if (companyId !== undefined && (typeof companyId !== 'string' || companyId.trim() === '')) {
+    errors.push('companyId must be a non-empty string')
+  }
+
+  if (assumed !== undefined && typeof assumed !== 'boolean') {
+    errors.push('assumed must be a boolean')
+  }
 
   if (employees !== undefined) {
     if (!Number.isFinite(employees) || !Number.isInteger(employees)) {
@@ -637,6 +664,38 @@ export function validateProfile(profile: Partial<CompanyFundingProfile>): string
   }
 
   return errors
+}
+
+export interface ProfileRegistryHealth {
+  total: number
+  assumed: number
+  confirmed: number
+  /** Duplicate ids and per-profile validation failures. */
+  issues: string[]
+}
+
+/**
+ * Check the company profile registry. `auditCatalogue` covers funding sources;
+ * this covers the other half, which nothing previously inspected.
+ */
+export function auditProfiles(
+  profiles: CompanyFundingProfile[] = COMPANY_FUNDING_PROFILES,
+): ProfileRegistryHealth {
+  const issues: string[] = []
+  const seen = new Set<string>()
+
+  for (const p of profiles) {
+    if (seen.has(p.companyId)) issues.push(`Duplicate company profile '${p.companyId}'`)
+    seen.add(p.companyId)
+
+    for (const error of validateProfile(p)) {
+      issues.push(`'${p.companyId}': ${error}`)
+    }
+  }
+
+  const assumed = profiles.filter((p) => p.assumed).length
+
+  return { total: profiles.length, assumed, confirmed: profiles.length - assumed, issues }
 }
 
 // ── Matching ──────────────────────────────────────────────────────────────────
