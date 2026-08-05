@@ -476,9 +476,12 @@ export const FUNDING_SOURCES: FundingSource[] = [
 // ── Company funding profiles ──────────────────────────────────────────────────
 //
 // Keyed by company id from COMPANY_REGISTRY (lib/company-registry.ts).
-// `assumed: true` marks a profile whose values were inferred rather than
-// confirmed. Confirm employees, region, and tradingMonths with the operator
-// and set `assumed: false` — several schemes turn on exactly these fields.
+// CONFIRMED by the operator (2026-08): employees = 5, tradingMonths = 18,
+// for all four ventures.
+//
+// STILL INFERRED: `region` (all 'unknown') and `doesRnd`. `assumed` therefore
+// stays true and the warnings stay on — two of four fields is not a confirmed
+// profile. Set `assumed: false` only once region and R&D status are settled.
 
 export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
   {
@@ -486,7 +489,7 @@ export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
     sector: 'software',
     employees: 5,
     region: 'unknown',
-    tradingMonths: 24,
+    tradingMonths: 18,
     doesRnd: true,
     assumed: true,
   },
@@ -495,7 +498,7 @@ export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
     sector: 'software',
     employees: 5,
     region: 'unknown',
-    tradingMonths: 24,
+    tradingMonths: 18,
     doesRnd: true,
     assumed: true,
   },
@@ -504,7 +507,7 @@ export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
     sector: 'construction',
     employees: 5,
     region: 'unknown',
-    tradingMonths: 24,
+    tradingMonths: 18,
     doesRnd: false,
     assumed: true,
   },
@@ -513,7 +516,7 @@ export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
     sector: 'professional-services',
     employees: 5,
     region: 'unknown',
-    tradingMonths: 24,
+    tradingMonths: 18,
     doesRnd: false,
     assumed: true,
   },
