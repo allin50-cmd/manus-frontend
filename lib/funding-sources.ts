@@ -213,9 +213,12 @@ export const FUNDING_SOURCES: FundingSource[] = [
     eligibility: {
       requiresRnd: true,
       manualChecks: [
-        'Work must seek an advance in science or technology, resolving genuine technical uncertainty',
-        'Claim notification deadlines apply for first-time claimants — check before the period ends',
-        'Loss-making R&D-intensive SMEs may qualify for the enhanced (ERIS) rate',
+        'CLAIM NOTIFICATION: first-time claimants (or none in the last 3 years) must notify HMRC within 6 months of the accounting period end. Miss it and the whole period is lost — no exceptions, no extensions',
+        'The advance must be in overall scientific or technological knowledge, not just your own',
+        'It must be an advance in the underlying technology, not in the commercial product',
+        'Uncertainty must not be readily solvable by a competent professional in the field',
+        'Does NOT qualify: customising existing software, maintenance, debugging, routine improvements from customer feedback, requirement gathering, testing, or design',
+        'Loss-making SMEs at 30%+ R&D intensity can claim ERIS instead',
       ],
     },
   },
