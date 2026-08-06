@@ -427,6 +427,26 @@ export const FUNDING_SOURCES: FundingSource[] = [
 
   // ── Local and advisory ─────────────────────────────────────────────────────
   {
+    id: 'bromley-business-growth',
+    name: 'Bromley Business Growth',
+    provider: 'London Borough of Bromley (UK Shared Prosperity Fund)',
+    kind: 'support',
+    window: 'rolling',
+    summary: 'Fully funded, free business support for Bromley businesses under the council\'s £913k UKSPF allocation for 2025/26. Includes the Growth Builder programme delivered by Goldsmiths, University of London (finance, marketing, branding, sales, operations, leadership, technology, compliance), Start Up Bromley workshops and mentoring, and the Bromley Business Hub.',
+    reviewUrl: 'https://www.bromley.gov.uk/BromleyBusinessGrowth',
+    lastReviewed: '2026-08',
+    verified: true,
+    eligibility: {
+      regions: ['London'],
+      manualChecks: [
+        'Business must be based in the London Borough of Bromley',
+        'Support is free and fully funded — no cash award attached to these programmes',
+        'Bromley has previously run cash grants of £5k-£25k for growth and £25k-£50k for occupying vacant units; whether a round is currently open is not published and must be confirmed with the council',
+        'Contact the Bromley Business Hub directly to ask what is open now',
+      ],
+    },
+  },
+  {
     id: 'local-growth-hub',
     name: 'Local Growth Hub Grants',
     provider: 'Local Growth Hub network',
@@ -483,16 +503,18 @@ export const FUNDING_SOURCES: FundingSource[] = [
 // CONFIRMED by the operator (2026-08): employees = 5, tradingMonths = 18,
 // for all four ventures.
 //
-// STILL INFERRED: `region` (all 'unknown') and `doesRnd`. `assumed` therefore
-// stays true and the warnings stay on — two of four fields is not a confirmed
-// profile. Set `assumed: false` only once region and R&D status are settled.
+// CONFIRMED (2026-08): region = London (Bromley) for all four ventures.
+//
+// STILL INFERRED: `doesRnd`. HMRC's bar for software is an advance in overall
+// technological knowledge, not a commercially novel product — see the R&D entry.
+// `assumed` stays true until that flag is settled.
 
 export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
   {
     companyId: 'fineguard',
     sector: 'software',
     employees: 5,
-    region: 'unknown',
+    region: 'London',
     tradingMonths: 18,
     doesRnd: true,
     assumed: true,
@@ -501,7 +523,7 @@ export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
     companyId: 'ultratech',
     sector: 'software',
     employees: 5,
-    region: 'unknown',
+    region: 'London',
     tradingMonths: 18,
     doesRnd: true,
     assumed: true,
@@ -510,7 +532,7 @@ export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
     companyId: 'builder-big-jobs',
     sector: 'construction',
     employees: 5,
-    region: 'unknown',
+    region: 'London',
     tradingMonths: 18,
     doesRnd: false,
     assumed: true,
@@ -519,7 +541,7 @@ export const COMPANY_FUNDING_PROFILES: CompanyFundingProfile[] = [
     companyId: 'accuracy',
     sector: 'professional-services',
     employees: 5,
-    region: 'unknown',
+    region: 'London',
     tradingMonths: 18,
     doesRnd: false,
     assumed: true,

@@ -392,10 +392,10 @@ const COMPANIES = [
 
 // ── Company funding profiles (mirrors COMPANY_FUNDING_PROFILES) ──────────────
 const PROFILES = {
-  'fineguard':        { sector: 'software',              employees: 5, region: 'unknown', tradingMonths: 18, doesRnd: true,  assumed: true },
-  'ultratech':        { sector: 'software',              employees: 5, region: 'unknown', tradingMonths: 18, doesRnd: true,  assumed: true },
-  'builder-big-jobs': { sector: 'construction',          employees: 5, region: 'unknown', tradingMonths: 18, doesRnd: false, assumed: true },
-  'accuracy':         { sector: 'professional-services', employees: 5, region: 'unknown', tradingMonths: 18, doesRnd: false, assumed: true },
+  'fineguard':        { sector: 'software',              employees: 5, region: 'London', tradingMonths: 18, doesRnd: true,  assumed: true },
+  'ultratech':        { sector: 'software',              employees: 5, region: 'London', tradingMonths: 18, doesRnd: true,  assumed: true },
+  'builder-big-jobs': { sector: 'construction',          employees: 5, region: 'London', tradingMonths: 18, doesRnd: false, assumed: true },
+  'accuracy':         { sector: 'professional-services', employees: 5, region: 'London', tradingMonths: 18, doesRnd: false, assumed: true },
 };
 
 const MADE_SMARTER_REGIONS = ['North West','North East','Yorkshire and the Humber','West Midlands','East Midlands','East of England','South East','South West'];
@@ -532,6 +532,15 @@ const SOURCES = [
       'Funding band cap depends on the specific apprenticeship standard',
       'Small non-levy employers pay a reduced or nil contribution'] } },
 
+  { id:'bromley-business-growth', name:'Bromley Business Growth', provider:'London Borough of Bromley (UK Shared Prosperity Fund)', kind:'support', window:'rolling',
+    lastReviewed:'2026-08', verified:true,
+    summary:"Fully funded, free business support for Bromley businesses under the council's £913k UKSPF allocation for 2025/26. Includes the Growth Builder programme delivered by Goldsmiths, University of London (finance, marketing, branding, sales, operations, leadership, technology, compliance), Start Up Bromley workshops and mentoring, and the Bromley Business Hub.",
+    reviewUrl:'https://www.bromley.gov.uk/BromleyBusinessGrowth',
+    eligibility:{ regions:['London'], manualChecks:[
+      'Business must be based in the London Borough of Bromley',
+      'Support is free and fully funded — no cash award attached to these programmes',
+      'Bromley has previously run cash grants of £5k-£25k for growth and £25k-£50k for occupying vacant units; whether a round is currently open is not published and must be confirmed with the council',
+      'Contact the Bromley Business Hub directly to ask what is open now'] } },
   { id:'local-growth-hub', name:'Local Growth Hub Grants', provider:'Local Growth Hub network', kind:'grant', window:'rolling',
     minAward:1000, maxAward:25000, lastReviewed:R, verified:false,
     summary:'Regionally administered capital and revenue grants for SME growth, digital adoption, and job creation. Terms vary widely by area.',
