@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import StatusBadge from '@/components/StatusBadge'
 import { WORK_ITEM_TRANSITIONS, canTransition } from '@/server/workflow/workflowTransitions'
 import type { WorkItemStatus } from '@/lib/types'
+import { formatUKDate, formatUKDateTime } from '@/lib/utils'
 
 function canComplete(status: string): boolean {
   return canTransition(WORK_ITEM_TRANSITIONS, status as WorkItemStatus, 'Completed')
@@ -119,7 +120,7 @@ const StartJobModal: React.FC<StartJobModalProps> = ({ isOpen, onClose, onConfir
               <option value="">Select a job...</option>
               {scheduledItems.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.title} {item.due_at ? `(due ${new Date(item.due_at).toLocaleDateString()})` : ''}
+                  {item.title} {item.due_at ? `(due ${formatUKDate(item.due_at)})` : ''}
                 </option>
               ))}
             </select>
@@ -232,7 +233,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
   async function handleStartJob(workItemId: string, notes: string, startTime: string) {
     setSaving(true)
     try {
-      const startedLabel = new Date(startTime).toLocaleString()
+      const startedLabel = formatUKDateTime(startTime)
       const noteText = notes.trim()
         ? `Job started at ${startedLabel}. ${notes.trim()}`
         : `Job started at ${startedLabel}.`
@@ -315,7 +316,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
 
       <h1 className="text-2xl font-bold text-slate-900">Today Workspace</h1>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center">
             <span className="text-xs text-slate-500 uppercase tracking-wide">{kpi.label}</span>
@@ -335,13 +336,13 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
           href="/work-items/new"
           className="px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full text-sm text-slate-700 font-medium transition-colors whitespace-nowrap"
         >
-          Add Task
+          Add Task &rarr;
         </Link>
         <Link
           href="/decisions"
           className="px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full text-sm text-slate-700 font-medium transition-colors whitespace-nowrap"
         >
-          View Decisions
+          View Decisions &rarr;
         </Link>
       </div>
 
@@ -378,7 +379,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">
-                {item.due_at ? new Date(item.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                {item.due_at ? new Date(item.due_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''}
               </span>
               {canComplete(item.status) && (
                 <button
@@ -409,7 +410,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">{item.due_at ? new Date(item.due_at).toLocaleDateString() : ''}</span>
+              <span className="text-xs text-slate-500">{item.due_at ? formatUKDate(item.due_at) : ''}</span>
               {canComplete(item.status) && (
                 <button
                   onClick={() => {
@@ -461,7 +462,7 @@ export default function TodayWorkspace({ initialData }: { initialData: TodayData
         renderItem={(item) => (
           <div className="flex-1 min-w-0">
             <p className="truncate font-medium text-slate-900">{item.title}</p>
-            <p className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString()}</p>
+            <p className="text-xs text-slate-500">{formatUKDate(item.createdAt)}</p>
           </div>
         )}
       />
