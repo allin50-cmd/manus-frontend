@@ -31,7 +31,7 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
 }
 
 export async function getSession(): Promise<SessionPayload | null> {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value
   if (!token) return null
   return verifyToken(token)
