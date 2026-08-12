@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 })
   }
 
-  let stored
+  let stored: { hash: string } | null = null
   try {
     stored = await db.userPassword.findUnique({ where: { person: session.person } })
   } catch {
