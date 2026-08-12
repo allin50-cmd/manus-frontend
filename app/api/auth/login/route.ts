@@ -1,3 +1,4 @@
+import type { UserPassword } from '@prisma/client'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createSessionToken, sessionCookieOptions, COOKIE_NAME } from '@/lib/auth'
 import { db } from '@/lib/db'
@@ -5,7 +6,6 @@ import { verifyPassword } from '@/lib/password'
 import { safeEqual } from '@/lib/safe-equal'
 
 const KNOWN_PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
-const DEMO_PASSCODE = 'demo1234'
 
 export async function POST(req: NextRequest) {
   let body: { passcode?: unknown; person?: unknown }
@@ -25,18 +25,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
   }
 
-  let stored = null
+  let stored: UserPassword | null
   try {
     stored = await db.userPassword.findUnique({ where: { person: person as string } })
   } catch {
-    stored = null
+    return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
   }
 
   let ok: boolean
   if (stored) {
     ok = await verifyPassword(passcode, stored.hash)
   } else {
-    const defaultPass = process.env.DEFAULT_PASSCODE || DEMO_PASSCODE
+    const defaultPass = process.env.DEFAULT_PASSCODE
+    if (!defaultPass) {
+      return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+    }
     ok = safeEqual(passcode, defaultPass)
   }
 
@@ -44,7 +47,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
   }
 
-  const token = await createSessionToken(person as string)
+  let token: string
+  try {
+    token = await createSessionToken(person as string)
+  } catch {
+    return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+  }
+
   const res = NextResponse.json({ ok: true })
   res.cookies.set(COOKIE_NAME, token, sessionCookieOptions(req))
   return res

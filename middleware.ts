@@ -1,29 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
+import { type NextRequest, NextResponse } from 'next/server'
+import { verifySessionToken } from '@/lib/session-token'
 
 // Paths that bypass auth by exact match (no sub-paths allowed).
 const PUBLIC_EXACT = new Set(['/api/alert-deliveries/ack'])
 // Paths that bypass auth by prefix match (and all their sub-paths).
 const PUBLIC_PREFIX = ['/login', '/api/auth/login', '/api/auth/dev-bypass']
 
-async function verifyToken(token: string): Promise<boolean> {
-  const jwtSecret = process.env.JWT_SECRET
-  if (!jwtSecret) return false
-  try {
-    await jwtVerify(token, new TextEncoder().encode(jwtSecret))
-    return true
-  } catch {
-    return false
-  }
+async function hasValidSession(token: string): Promise<boolean> {
+  return (await verifySessionToken(token)) !== null
 }
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-
   const token = req.cookies.get('session')?.value
 
   if (PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIX.some((p) => pathname.startsWith(p))) {
-    if (pathname.startsWith('/login') && token && (await verifyToken(token))) {
+    if (pathname.startsWith('/login') && token && (await hasValidSession(token))) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
     return NextResponse.next()
@@ -31,7 +23,7 @@ export async function middleware(req: NextRequest) {
 
   if (!token) return NextResponse.redirect(new URL('/login', req.url))
 
-  if (await verifyToken(token)) return NextResponse.next()
+  if (await hasValidSession(token)) return NextResponse.next()
 
   const res = NextResponse.redirect(new URL('/login', req.url))
   res.cookies.delete('session')
