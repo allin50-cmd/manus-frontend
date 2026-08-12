@@ -160,7 +160,20 @@ describe('PATCH /api/work-items/[id]/actions/[actionId]/reassign', () => {
         summary: 'Action reassigned from George to Dagon — Please call before noon.',
       },
     })
-    expect(db.action.findUniqueOrThrow).toHaveBeenCalledWith({ where: { id: 'a1' } })
+    expect(db.action.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: 'a1' },
+      select: expect.objectContaining({
+        id: true,
+        workItemId: true,
+        label: true,
+        status: true,
+        assignedTo: true,
+        reassignedFrom: true,
+        reassignedAt: true,
+        reassignedBy: true,
+        handoffNote: true,
+      }),
+    })
   })
 
   it('returns 409 and does not write an audit event when the row changed concurrently', async () => {
