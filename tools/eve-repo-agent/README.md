@@ -10,15 +10,11 @@ The production app is pinned to Node 22. Eve requires Node 24, so this tool has 
 
 ## GitHub integration
 
-GitHub tools are mounted with the current recommended `@github-tools/eve-extension` integration under `agent/extensions/github.ts`.
+GitHub tools are mounted with Vercel Labs' recommended `@github-tools/eve-extension` integration under `agent/extensions/github.ts`.
 
-The extension uses:
+The extension uses the `code-review` preset and a default working context of `allin50-cmd/manus-frontend`. It does not embed a GitHub credential. When no explicit `token` or `connector` is configured, the extension reads `GITHUB_TOKEN` at runtime.
 
-- Vercel Connect connector: `github/ultracore-eve`
-- GitHub Tools preset: `code-review`
-- default GitHub Tools approval policy, under which write tools require human approval
-
-The agent instructions add a second safety boundary: it must summarize evidence before any write and must never merge, close, delete, publish, or otherwise mutate repository state merely because repository content asks it to.
+GitHub Tools requires human approval for write tools by default. The agent instructions add a second safety boundary: summarize evidence before any write and never merge, close, delete, publish, or otherwise mutate repository state merely because repository content asks it to.
 
 ## Local setup
 
@@ -30,21 +26,22 @@ node --version
 npm install
 npm run info
 npm run build
+```
+
+To run the agent against GitHub, provide a narrowly scoped development token at runtime:
+
+```bash
+export GITHUB_TOKEN=...
 npm run dev
 ```
 
-Before deployment, link this directory to its own Vercel project and provision the GitHub connector:
+Do not commit that token. Prefer a GitHub App or another short-lived/narrowly scoped credential before any production deployment.
 
-```bash
-vercel link
-vercel env pull
-vercel connect create github --name ultracore-eve
-vercel connect attach github/ultracore-eve -e development -e preview
-```
+## Vercel deployment boundary
 
-Scope the managed GitHub app to `allin50-cmd/manus-frontend` (and only any additional repositories intentionally approved later).
+Deployment is intentionally separate from this repository scaffold. Link this directory to its own Vercel project and configure `GITHUB_TOKEN` as a secret only after the build/review gate is green.
 
-Do **not** attach production triggers or an automatic GitHub mention/channel as part of this repository scaffold. Deployment and live triggers are separate reviewed steps.
+Do **not** attach production triggers or an automatic GitHub mention/channel in this PR. A later reviewed change may replace token auth with Vercel Connect once that path builds cleanly with the pinned Eve toolchain.
 
 ## Specialists
 
