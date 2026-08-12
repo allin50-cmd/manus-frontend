@@ -30,14 +30,14 @@ VoiceIntake.qualityFlags         String[]
 ```
 **Unlocks:** Voice transcription quality badges, draft confidence display
 
-### Migration 2b: Action reassignment
+### Migration 2b: Action reassignment — COMPLETE
 ```
 Action.reassignedFrom String?
 Action.reassignedAt   DateTime?
 Action.reassignedBy   String?
 Action.handoffNote    String?
 ```
-**Unlocks:** Full My Tasks reassign functionality, `/api/work-items/[id]/actions/[actionId]/reassign`
+**Delivered on `main` (2026-08-12):** Full My Tasks reassignment is implemented. `/api/work-items/[id]/actions/[actionId]/reassign` validates assignees and work-item scope, rejects terminal/no-op reassignments, persists handoff metadata, writes the ActivityLog in the same transaction, and uses optimistic concurrency protection. The My Tasks UI uses the central owner list and mirrors the server rules. PRs #68 and #69 passed lint, TypeScript, tests, production build, and post-merge `main` verification.
 
 ### Migration 2c: Template workflow
 ```
