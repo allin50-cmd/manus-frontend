@@ -124,11 +124,12 @@ export default function ActivityClient({ logs }: { logs: ActivityLogClient[] }) 
       {/* Filter bar */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap gap-3 items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Signal</label>
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Signal</span>
           <div className="flex gap-1">
             {(['all', 'high', 'high-medium'] as SignalFilter[]).map((v) => (
               <button
                 key={v}
+                type="button"
                 onClick={() => setSignalFilter(v)}
                 className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
                   signalFilter === v
@@ -143,8 +144,9 @@ export default function ActivityClient({ logs }: { logs: ActivityLogClient[] }) 
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Person</label>
+          <label htmlFor="activity-person-filter" className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Person</label>
           <select
+            id="activity-person-filter"
             value={personFilter}
             onChange={(e) => setPersonFilter(e.target.value as Person)}
             className="text-xs font-semibold border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -157,11 +159,12 @@ export default function ActivityClient({ logs }: { logs: ActivityLogClient[] }) 
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Period</label>
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Period</span>
           <div className="flex gap-1">
             {([['today', 'Today'], ['7d', 'Last 7 days'], ['30d', 'Last 30 days']] as [DateRange, string][]).map(([v, label]) => (
               <button
                 key={v}
+                type="button"
                 onClick={() => setDateRange(v)}
                 className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
                   dateRange === v

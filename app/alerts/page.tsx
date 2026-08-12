@@ -89,7 +89,7 @@ export default async function AlertsPage() {
           <div className="text-xs text-slate-500 mt-0.5">Acknowledged</div>
         </div>
         <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex-1 min-w-[100px]">
-          <div className="text-2xl font-bold text-slate-900">{byStatus['Failed'] ?? 0}</div>
+          <div className="text-2xl font-bold text-slate-900">{byStatus.Failed ?? 0}</div>
           <div className="text-xs text-slate-500 mt-0.5">Failed deliveries</div>
         </div>
       </div>
@@ -106,7 +106,6 @@ export default async function AlertsPage() {
 
       <div className="space-y-3">
         {items.map((item) => {
-          const latestDelivery = item.alertDeliveries[0]
           const deliveryCount = item.alertDeliveries.length
           const hasUnacked = item.alertDeliveries.some(
             (d) => d.status === 'Sent' || d.status === 'Pending',

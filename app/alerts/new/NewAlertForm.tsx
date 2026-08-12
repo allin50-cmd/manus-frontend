@@ -112,9 +112,9 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
     <form onSubmit={handleSubmit} className="space-y-5 bg-white border border-slate-200 rounded-xl p-5">
       {/* Category */}
       <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+        <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
           Alert Category *
-        </label>
+        </span>
         <div className="flex flex-wrap gap-2">
           {ALERT_CATEGORIES.filter((c) => c !== 'SystemNotice').map((cat) => (
             <button
@@ -136,11 +136,12 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
       {/* Company */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          <label htmlFor="alert-company" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
             Company *
           </label>
           {companies.length > 0 ? (
             <select
+              id="alert-company"
               value={form.company}
               onChange={(e) => handleCompanyChange(e.target.value)}
               className={inp}
@@ -155,6 +156,7 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
             </select>
           ) : (
             <input
+              id="alert-company"
               required
               value={form.company}
               onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
@@ -164,10 +166,11 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
           )}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          <label htmlFor="alert-priority" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
             Priority
           </label>
           <select
+            id="alert-priority"
             value={form.priority}
             onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
             className={inp}
@@ -181,10 +184,11 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
 
       {/* Title */}
       <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+        <label htmlFor="alert-title" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
           Title *
         </label>
         <input
+          id="alert-title"
           required
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -196,10 +200,11 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
       {/* Due date + Owner */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          <label htmlFor="alert-deadline" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
             Deadline
           </label>
           <input
+            id="alert-deadline"
             type="date"
             value={form.dueDate}
             onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
@@ -207,10 +212,11 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          <label htmlFor="alert-owner" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
             Assigned to
           </label>
           <select
+            id="alert-owner"
             value={form.owner}
             onChange={(e) => setForm((f) => ({ ...f, owner: e.target.value }))}
             className={inp}
@@ -224,10 +230,11 @@ export default function NewAlertForm({ companies }: { companies: string[] }) {
 
       {/* Notes */}
       <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+        <label htmlFor="alert-notes" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
           Details / Notes
         </label>
         <textarea
+          id="alert-notes"
           rows={3}
           value={form.notes}
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
