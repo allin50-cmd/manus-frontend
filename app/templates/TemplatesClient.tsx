@@ -242,7 +242,6 @@ export default function TemplatesClient({ templates, person, templateMap }: Prop
                   </label>
                   <textarea
                     id={`reject-note-${template.id}`}
-                    autoFocus
                     rows={2}
                     maxLength={1000}
                     value={rejectNote}
