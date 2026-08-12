@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - "tools/eve-repo-agent/**"
-      - ".claude/agents/**"
       - "AGENTS.md"
       - "CLAUDE.md"
       - ".github/workflows/eve-agent.yml"
@@ -13,7 +12,6 @@ on:
       - main
     paths:
       - "tools/eve-repo-agent/**"
-      - ".claude/agents/**"
       - "AGENTS.md"
       - "CLAUDE.md"
       - ".github/workflows/eve-agent.yml"
