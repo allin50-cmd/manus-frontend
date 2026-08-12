@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { createSessionToken, sessionCookieOptions, COOKIE_NAME } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
@@ -6,8 +6,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ disabled: false }, { status: 401 })
   }
 
-  const defaultPerson = 'Dagon'
-  const token = await createSessionToken(defaultPerson)
+  let token: string
+  try {
+    token = await createSessionToken('Dagon')
+  } catch {
+    return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+  }
+
   const res = NextResponse.json({ ok: true })
   res.cookies.set(COOKIE_NAME, token, sessionCookieOptions(req))
   return res

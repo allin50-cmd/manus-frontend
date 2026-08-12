@@ -1,9 +1,14 @@
-import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { NextRequest } from 'next/server'
+import {
+  createSessionToken,
+  verifySessionToken,
+  type SessionPayload,
+} from '@/lib/session-token'
 
 export const COOKIE_NAME = 'session'
+export { createSessionToken }
 
 // NODE_ENV alone isn't a reliable signal for the Secure cookie flag: it's
 // 'production' for `next start` even when served over plain HTTP (e.g. a
@@ -21,39 +26,18 @@ export function sessionCookieOptions(req: NextRequest) {
   }
 }
 
-function secret() {
-  // Prefer a dedicated JWT secret. Falling back to DEFAULT_PASSCODE keeps
-  // existing deployments usable when JWT_SECRET was omitted, while still
-  // producing a stable key shared by token creation and verification.
-  const s = process.env.JWT_SECRET || process.env.DEFAULT_PASSCODE || 'demo1234'
-  return new TextEncoder().encode(s)
+export async function verifyToken(token: string): Promise<SessionPayload | null> {
+  return verifySessionToken(token)
 }
 
-export async function createSessionToken(person: string): Promise<string> {
-  return new SignJWT({ person })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('7d')
-    .sign(secret())
-}
-
-export async function verifyToken(token: string): Promise<{ person: string } | null> {
-  try {
-    const { payload } = await jwtVerify(token, secret())
-    return payload as { person: string }
-  } catch {
-    return null
-  }
-}
-
-export async function getSession(): Promise<{ person: string } | null> {
+export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value
   if (!token) return null
   return verifyToken(token)
 }
 
-export async function requireAuth(): Promise<{ person: string }> {
+export async function requireAuth(): Promise<SessionPayload> {
   const session = await getSession()
   if (!session) redirect('/login')
   return session
