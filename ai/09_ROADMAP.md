@@ -39,16 +39,18 @@ Action.handoffNote    String?
 ```
 **Delivered on `main` (2026-08-12):** Full My Tasks reassignment is implemented. `/api/work-items/[id]/actions/[actionId]/reassign` validates assignees and work-item scope, rejects terminal/no-op reassignments, persists handoff metadata, writes the ActivityLog in the same transaction, and uses optimistic concurrency protection. The My Tasks UI uses the central owner list and mirrors the server rules. PRs #68 and #69 passed lint, TypeScript, tests, production build, and post-merge `main` verification.
 
-### Migration 2c: Template workflow
+### Migration 2c: Template workflow — COMPLETE
 ```
-Template.category     TemplateCategory (enum)
-Template.variables    String[]
-Template.pendingReview Boolean @default(false)
-Template.approvedBy   String?
-Template.approvedAt   DateTime?
-Template.reviewNote   String?
+Template.category       TemplateCategory (enum)
+Template.variables      String[]
+Template.pendingReview  Boolean @default(false)
+Template.approvedBy     String?
+Template.approvedAt     DateTime?
+Template.reviewNote     String?
 ```
-**Unlocks:** Template approval workflow (submit/approve/reject), TemplatesClient, TemplatePreviewPanel
+**Delivered on `main` (2026-08-12):** The schema fields are active and the approval workflow is implemented end to end. New or updated templates are saved as drafts; caller-supplied approval cannot bypass review. Authenticated users can submit for review, while approve/reject remains George-only per the deferred source design. The API uses guarded transitions and optimistic concurrency protection, approval refreshes extracted variables, and the Templates page exposes Draft / Pending Review / Approved / Rejected states with approved-only use/copy actions and rejection notes. PRs #71 and #73 passed lint, TypeScript, the full unit suite, production build, and post-merge `main` verification.
+
+**Optional follow-up:** `TemplatePreviewPanel` from the historical source branch was not required for the approval-state workflow and is not currently implemented on `main`.
 
 ### Migration 2d: Company CRM fields
 ```
