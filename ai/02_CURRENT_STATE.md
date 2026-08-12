@@ -4,6 +4,8 @@ Last updated: 2026-07-03
 
 See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for the product direction and AI-scope rules this state is tracked against.
 
+> **Status update — 2026-08-12:** Action reassignment is now complete on `main`. The schema fields, authenticated reassignment API, audited transactional write path, optimistic concurrency protection, and My Tasks UI are all implemented and CI-verified. Other sections below retain their prior roadmap assumptions unless separately updated.
+
 ## Branch status
 
 | Branch | Status |
@@ -32,7 +34,7 @@ See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for 
 - `/templates` — Template management
 - `/contacts` — Contacts list
 - `/alerts`, `/alert-recipients`, `/alert-events` — Alert management
-- `/my-tasks` — Per-person task list with mark-done
+- `/my-tasks` — Per-person task list with mark-done plus audited reassignment and optional handoff notes
 - `/team` — Team capacity overview
 - `/settings` — User settings
 
@@ -53,6 +55,7 @@ See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for 
 - `/api/work-items` — CRUD
 - `/api/work-items/[id]/actions` — Action management
 - `/api/work-items/[id]/actions/[actionId]` — Update action status
+- `/api/work-items/[id]/actions/[actionId]/reassign` — authenticated action reassignment with validation, optimistic concurrency protection, persisted handoff metadata, and transactional ActivityLog auditing
 - `/api/decisions/[id]` — Decision approve/reject
 - `/api/dashboard` — Dashboard stats
 - `/api/dashboard/briefing` — Morning briefing items (George)
@@ -86,10 +89,6 @@ See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for 
 ### Voice quality signals
 - Requires: `VoiceIntake.transcriptConfidence`, `VoiceIntake.qualityFlags`
 - Voice improvements exist in sheetops branch but NOT in canonical (blocked on schema migration)
-
-### Action reassignment
-- Requires: `Action.reassignedFrom`, `Action.reassignedAt`, `Action.reassignedBy`, `Action.handoffNote`
-- My Tasks reassign UI exists but the API endpoint is blocked on schema migration
 
 ### AgentMail (persistent conversational email)
 - **Approved in policy, zero code exists.** No `EmailThread` model, no API routes, no dependency installed. Do not assume any voice command like "email the customer" or "read my messages" is wired up — it isn't.
