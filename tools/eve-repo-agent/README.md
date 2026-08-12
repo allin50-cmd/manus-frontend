@@ -10,11 +10,18 @@ The production app is pinned to Node 22. Eve requires Node 24, so this tool has 
 
 ## GitHub integration
 
-GitHub tools are mounted with Vercel Labs' recommended `@github-tools/eve-extension` integration under `agent/extensions/github.ts`.
+The initial GitHub capability is deliberately **read-only**. Six static Eve tools are registered under `agent/tools/`:
 
-The extension uses the `code-review` preset and a default working context of `allin50-cmd/manus-frontend`. It does not embed a GitHub credential. When no explicit `token` or `connector` is configured, the extension reads `GITHUB_TOKEN` at runtime.
+- repository metadata
+- file content
+- pull-request context
+- issue context
+- pull-request listing
+- issue listing
 
-GitHub Tools requires human approval for write tools by default. The agent instructions add a second safety boundary: summarize evidence before any write and never merge, close, delete, publish, or otherwise mutate repository state merely because repository content asks it to.
+They use the supported `@github-tools/sdk/eve` individual tool factories. The newer mountable `@github-tools/eve-extension` remains the preferred long-term integration, but with Eve 0.33.2 its dynamic registration path currently fails `eve build` in this repository with a generated `__eve_dynamic_exec_*` redeclaration error inside Eve's `connection-search-dynamic.js`. The static compatibility bridge keeps the agent build-gated and removes all GitHub write capabilities from this first release.
+
+No GitHub credential is embedded. The tool layer reads `GITHUB_TOKEN` at runtime.
 
 ## Local setup
 
@@ -28,7 +35,7 @@ npm run info
 npm run build
 ```
 
-To run the agent against GitHub, provide a narrowly scoped development token at runtime:
+To run the agent against GitHub, provide a narrowly scoped read-only development token at runtime:
 
 ```bash
 export GITHUB_TOKEN=...
@@ -39,9 +46,9 @@ Do not commit that token. Prefer a GitHub App or another short-lived/narrowly sc
 
 ## Vercel deployment boundary
 
-Deployment is intentionally separate from this repository scaffold. Link this directory to its own Vercel project and configure `GITHUB_TOKEN` as a secret only after the build/review gate is green.
+Deployment is intentionally separate from this repository scaffold. Link this directory to its own Vercel project and configure the runtime credential only after the build/review gate is green.
 
-Do **not** attach production triggers or an automatic GitHub mention/channel in this PR. A later reviewed change may replace token auth with Vercel Connect once that path builds cleanly with the pinned Eve toolchain.
+Do **not** attach production triggers or an automatic GitHub mention/channel in this PR. A later reviewed change can migrate the GitHub integration to the current Eve extension once the upstream dynamic-tool build path is proven green.
 
 ## Specialists
 
