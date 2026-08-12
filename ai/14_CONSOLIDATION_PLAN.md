@@ -4,6 +4,8 @@
 
 One canonical branch (`chore/drizzle-full-migration`) → promoted to `main` → one production Vercel project → one database implementation → no duplicates.
 
+> **Verified update — 2026-08-12:** Phase 2 is no longer wholly blocked. Action reassignment (2b) and the Template approval workflow (2c) are delivered and CI-verified on `main`. The broader historical consolidation assumptions below have not been re-audited in this update.
+
 ## Source branches
 
 | Branch | Role | Status |
@@ -48,12 +50,12 @@ One canonical branch (`chore/drizzle-full-migration`) → promoted to `main` →
 
 ---
 
-## Phase 2 — Schema Migrations (BLOCKED — not yet started)
+## Phase 2 — Schema Migrations (IN PROGRESS — 2b and 2c delivered on main)
 
 Each migration must:
 1. Be written as a Prisma migration file (`prisma migrate dev --name <name>`)
 2. Not use `prisma db push --accept-data-loss`
-3. Be verified: type-check + build + 130 tests pass after each one
+3. Be verified: type-check + build + tests pass after each one
 
 ### Migration 2a — VoiceIntake quality signals
 
@@ -68,20 +70,21 @@ Each migration must:
 - [ ] `app/api/voice/drafts/route.ts` — New endpoint
 - [ ] `app/voice-intake/page.tsx` — Quality badges, draft recovery
 
-### Migration 2b — Action reassign fields
+### Migration 2b — Action reassign fields ✅ DELIVERED
 
-**New fields on `Action`:**
+**Fields on `Action`:**
 - `reassignedFrom String?`
 - `reassignedAt DateTime?`
 - `reassignedBy String?`
 - `handoffNote String?`
 
-**Unlocks:**
-- [ ] `app/api/work-items/[id]/actions/[actionId]/reassign/route.ts`
+**Delivered:**
+- [x] `app/api/work-items/[id]/actions/[actionId]/reassign/route.ts`
+- [x] My Tasks reassignment UI with central owner list, terminal-state guards, optional handoff note, transactional audit logging, and optimistic concurrency protection
 
-### Migration 2c — Template workflow fields
+### Migration 2c — Template workflow fields ✅ DELIVERED
 
-**New enum `TemplateCategory`** and new fields on `Template`:
+**Enum `TemplateCategory`** and fields on `Template`:
 - `category TemplateCategory`
 - `variables String[]`
 - `pendingReview Boolean`
@@ -89,12 +92,13 @@ Each migration must:
 - `approvedAt DateTime?`
 - `reviewNote String?`
 
-**Unlocks:**
-- [ ] `app/api/templates/[id]/approve/route.ts`
-- [ ] `app/api/templates/[id]/reject/route.ts`
-- [ ] `app/api/templates/[id]/submit/route.ts`
-- [ ] `components/TemplatesClient.tsx`
-- [ ] `components/TemplatePreviewPanel.tsx`
+**Delivered:**
+- [x] `app/api/templates/[id]/approve/route.ts`
+- [x] `app/api/templates/[id]/reject/route.ts`
+- [x] `app/api/templates/[id]/submit/route.ts`
+- [x] `app/templates/TemplatesClient.tsx`
+- [x] Draft-safe template creation/update and approved-only use/copy controls
+- [ ] `components/TemplatePreviewPanel.tsx` — optional historical follow-up; not required for the approval-state workflow
 
 ### Migration 2d — Company CRM fields
 
@@ -149,13 +153,13 @@ After Phase 2 schema migrations are complete and Prisma is stable in production,
 
 ---
 
-## Phase 4 — Main Promotion (BLOCKED on Phase 2+3)
+## Phase 4 — Main Promotion (BLOCKED on remaining Phase 2+3 work)
 
 - [ ] `chore/drizzle-full-migration` passes type-check + build + 130 tests
 - [ ] All Phase 2 schema migrations applied and verified in production
 - [ ] `/partnerships` page exists and works
 - [ ] `/filings` detail page (dedicated Filing model) exists and works
-- [ ] Template workflow (submit/approve/reject) exists and works
+- [x] Template workflow (submit/approve/reject) exists and works
 - [ ] Voice quality signals displayed in voice intake
 - [ ] Smoke test: login → create work item → view dashboard → view partnerships → view filings
 - [ ] `chore/drizzle-full-migration` promoted to `main`
