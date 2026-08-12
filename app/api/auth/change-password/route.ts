@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { hashPassword, verifyPassword } from '@/lib/password'
@@ -8,14 +8,13 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let body: any
+  let body: { currentPassword?: unknown; newPassword?: unknown }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
-  const { currentPassword, newPassword } = body as { currentPassword: unknown; newPassword: unknown }
+  const { currentPassword, newPassword } = body
 
   if (typeof currentPassword !== 'string' || !currentPassword) {
     return NextResponse.json({ error: 'Current password is required' }, { status: 400 })
@@ -24,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 })
   }
 
-  let stored
+  let stored: { hash: string } | null = null
   try {
     stored = await db.userPassword.findUnique({ where: { person: session.person } })
   } catch {
