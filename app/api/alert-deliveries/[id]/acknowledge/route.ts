@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { AlertDelivery } from '@prisma/client'
+import { type NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 
@@ -6,7 +7,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  let delivery
+  let delivery: AlertDelivery | null
   try {
     delivery = await db.alertDelivery.findUnique({ where: { id: params.id } })
   } catch {

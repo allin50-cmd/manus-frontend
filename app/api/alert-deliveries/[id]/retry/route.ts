@@ -1,16 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import type { AlertDelivery, Prisma } from '@prisma/client'
+import { type NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { sendAlertEmail } from '@/lib/alert-dispatch'
-import { randomUUID } from 'crypto'
+import { getSession } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 // Only a delivery that actually failed may be retried. Pending deliveries are still
 // in flight and Sent/Acknowledged ones already succeeded.
 const RETRYABLE_STATUSES = new Set(['Failed'])
 
+type DeliveryWithRelations = Prisma.AlertDeliveryGetPayload<{
+  include: { workItem: true; recipient: true }
+}>
+
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const session = await getSession()
   if (!session) {
@@ -19,7 +24,7 @@ export async function POST(
 
   const { id } = params
 
-  let delivery
+  let delivery: DeliveryWithRelations | null
   try {
     delivery = await db.alertDelivery.findUnique({
       where: { id },
@@ -40,7 +45,7 @@ export async function POST(
     )
   }
 
-  let newDelivery
+  let newDelivery: AlertDelivery
   try {
     newDelivery = await db.alertDelivery.create({
       data: {
