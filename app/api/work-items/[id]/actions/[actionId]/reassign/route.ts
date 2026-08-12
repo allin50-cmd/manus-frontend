@@ -6,6 +6,29 @@ import { OWNERS } from '@/lib/work-item-enums'
 
 const TERMINAL_ACTION_STATUSES = ['Done', 'Cancelled'] as const
 const MAX_HANDOFF_NOTE_LENGTH = 1000
+const ACTION_SELECT = {
+  id: true,
+  workItemId: true,
+  label: true,
+  status: true,
+  assignedTo: true,
+  reassignedFrom: true,
+  reassignedAt: true,
+  reassignedBy: true,
+  handoffNote: true,
+} as const
+
+type ActionSnapshot = {
+  id: string
+  workItemId: string
+  label: string
+  status: string
+  assignedTo: string | null
+  reassignedFrom: string | null
+  reassignedAt: Date | null
+  reassignedBy: string | null
+  handoffNote: string | null
+}
 
 function isValidOwner(value: string): value is (typeof OWNERS)[number] {
   return OWNERS.includes(value as (typeof OWNERS)[number])
@@ -41,9 +64,12 @@ export async function PATCH(
     return NextResponse.json({ error: 'Handoff note is too long' }, { status: 400 })
   }
 
-  let action
+  let action: ActionSnapshot | null
   try {
-    action = await db.action.findUnique({ where: { id: params.actionId } })
+    action = await db.action.findUnique({
+      where: { id: params.actionId },
+      select: ACTION_SELECT,
+    })
   } catch {
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
   }
@@ -63,7 +89,7 @@ export async function PATCH(
   const reassignedAt = new Date()
   const previousAssignee = action.assignedTo ?? 'Unassigned'
 
-  let updated
+  let updated: ActionSnapshot | null
   try {
     updated = await db.$transaction(async (tx) => {
       const result = await tx.action.updateMany({
@@ -94,7 +120,10 @@ export async function PATCH(
         },
       })
 
-      return tx.action.findUniqueOrThrow({ where: { id: params.actionId } })
+      return tx.action.findUniqueOrThrow({
+        where: { id: params.actionId },
+        select: ACTION_SELECT,
+      })
     })
   } catch {
     return NextResponse.json({ error: 'Could not reassign action' }, { status: 503 })
