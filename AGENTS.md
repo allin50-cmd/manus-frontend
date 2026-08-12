@@ -71,6 +71,8 @@ public/
 
 3. **No AI agents or agent frameworks beyond the two approved exceptions.** OpenAI is used only for Whisper transcription (`app/api/voice/transcribe/route.ts`). AgentMail is approved solely for persistent conversational email — drafting, summarisation, threading — scoped to communication mechanics inside a user-triggered, always-logged flow; it never makes autonomous business decisions (see `CLAUDE.md` → AgentMail Integration Policy). No LangChain, no OpenAI Assistants, no other agent framework, and no extending AgentMail into auto-send or agent-initiated outreach without new, separate approval.
 
+   **Development-time reviewer exception:** project-local Claude Code reviewers under `.claude/agents/` are permitted as engineering tooling only. They may inspect code, recommend fixes, run development checks, and review pull requests. They are not production/runtime agents, must not be imported into application code, must not make business/compliance decisions, and must not initiate outreach or user-facing actions.
+
 4. **No tRPC. No monorepo. No complex RBAC.** Auth is a single shared passcode — no user roles.
 
 5. **DB schema changes** use `prisma db push` only (no Prisma migration files). Run `npx prisma db push` after editing `schema.prisma`.
