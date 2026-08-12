@@ -91,7 +91,6 @@ export default function AddTemplateForm() {
               <input
                 id="template-name"
                 required
-                autoFocus
                 value={form.name}
                 onChange={(event) => setField('name', event.target.value)}
                 placeholder="Template name"
