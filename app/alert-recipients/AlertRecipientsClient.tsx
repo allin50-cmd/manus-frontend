@@ -536,7 +536,6 @@ export default function AlertRecipientsClient({
                 <form
                   onSubmit={handleEdit}
                   className="mt-3 pt-3 border-t border-slate-100 space-y-3"
-                  onClick={(e) => e.stopPropagation()}
                 >
                   <div className="grid grid-cols-2 gap-2">
                     <div>
