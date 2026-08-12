@@ -4,7 +4,7 @@ Last updated: 2026-07-03
 
 See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for the product direction and AI-scope rules this state is tracked against.
 
-> **Status update — 2026-08-12:** Action reassignment is now complete on `main`. The schema fields, authenticated reassignment API, audited transactional write path, optimistic concurrency protection, and My Tasks UI are all implemented and CI-verified. Other sections below retain their prior roadmap assumptions unless separately updated.
+> **Status update — 2026-08-12:** Action reassignment and the Template approval workflow are now complete on `main` and CI-verified. Action reassignment includes the authenticated reassignment API, audited transactional writes, optimistic concurrency protection, and My Tasks UI. Template review includes draft-safe creation, current category handling, submit/approve/reject transitions, George-only approve/reject authority, approved-only use/copy controls, rejection notes, and regression coverage. Other sections below retain their prior roadmap assumptions unless separately updated.
 
 ## Branch status
 
@@ -31,7 +31,7 @@ See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for 
 - `/work-items` — Work item list + `/work-items/[id]` detail
 - `/work-items/new` — Create work item form
 - `/voice-intake` — Voice recording → transcription → review
-- `/templates` — Template management
+- `/templates` — Template management with Draft / Pending Review / Approved / Rejected states, category filtering, George review controls, and approved-only use/copy actions
 - `/contacts` — Contacts list
 - `/alerts`, `/alert-recipients`, `/alert-events` — Alert management
 - `/my-tasks` — Per-person task list with mark-done plus audited reassignment and optional handoff notes
@@ -64,7 +64,10 @@ See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for 
 - `/api/voice/transcribe` — Whisper transcription
 - `/api/voice/upload` — Upload audio for VoiceIntake
 - `/api/voice/approve` — Approve voice intake → create work item
-- `/api/templates` — Template CRUD
+- `/api/templates` — authenticated template listing plus draft-safe create/update; caller-supplied approval cannot bypass review
+- `/api/templates/[id]/submit` — submit a draft/rejected template for review
+- `/api/templates/[id]/approve` — George-only approval with optimistic concurrency protection and variable refresh
+- `/api/templates/[id]/reject` — George-only rejection with review-note validation and optimistic concurrency protection
 - `/api/alert-recipients` — Alert recipient management
 - `/api/portfolio` — Portfolio data
 - `/api/auth/*` — Login/logout/session
@@ -79,11 +82,6 @@ See `CLAUDE.md` → **Product Vision** and **AgentMail Integration Policy** for 
 ### Filings
 - `lib/compliance/thresholds.ts` — Threshold config (pure logic, no DB)
 - Requires: `Filing` model + `FilingStatus`/`FilingCategory`/`FilingSource` enums
-- Pages exist in sheetops branch but NOT in canonical (blocked on schema migration)
-
-### Template workflow (approve/reject/submit)
-- `lib/template-utils.ts` — Variable substitution engine (pure logic, no DB)
-- Requires: `Template.category`, `Template.variables`, `Template.pendingReview`, `Template.approvedBy`, `Template.approvedAt`, `Template.reviewNote` + `TemplateCategory` enum
 - Pages exist in sheetops branch but NOT in canonical (blocked on schema migration)
 
 ### Voice quality signals
