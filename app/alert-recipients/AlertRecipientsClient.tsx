@@ -258,6 +258,7 @@ export default function AlertRecipientsClient({
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2 items-center">
         <button
+          type="button"
           onClick={() => setShowAdd((v) => !v)}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
@@ -266,6 +267,7 @@ export default function AlertRecipientsClient({
 
         {pendingCount > 0 && (
           <button
+            type="button"
             onClick={runEscalationCheck}
             disabled={escalating}
             className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -290,10 +292,11 @@ export default function AlertRecipientsClient({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              <label htmlFor="recipient-company" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                 Company *
               </label>
               <input
+                id="recipient-company"
                 required
                 value={form.company}
                 onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
@@ -302,10 +305,11 @@ export default function AlertRecipientsClient({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              <label htmlFor="recipient-name" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                 Name *
               </label>
               <input
+                id="recipient-name"
                 required
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -316,10 +320,11 @@ export default function AlertRecipientsClient({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              <label htmlFor="recipient-email" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                 Email
               </label>
               <input
+                id="recipient-email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -327,10 +332,11 @@ export default function AlertRecipientsClient({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              <label htmlFor="recipient-phone" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                 Phone
               </label>
               <input
+                id="recipient-phone"
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 className={inp}
@@ -340,10 +346,11 @@ export default function AlertRecipientsClient({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              <label htmlFor="recipient-role" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                 Role *
               </label>
               <select
+                id="recipient-role"
                 value={form.role}
                 onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
                 className={inp}
@@ -356,10 +363,11 @@ export default function AlertRecipientsClient({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              <label htmlFor="recipient-channel" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                 Channel
               </label>
               <select
+                id="recipient-channel"
                 value={form.preferredChannel}
                 onChange={(e) => setForm((f) => ({ ...f, preferredChannel: e.target.value }))}
                 className={inp}
@@ -370,10 +378,11 @@ export default function AlertRecipientsClient({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+              <label htmlFor="recipient-escalation-level" className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
                 Escalation Level
               </label>
               <select
+                id="recipient-escalation-level"
                 value={form.escalationLevel}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, escalationLevel: Number(e.target.value) }))
@@ -390,9 +399,9 @@ export default function AlertRecipientsClient({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+            <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
               Alert Categories (empty = all categories)
-            </label>
+            </span>
             <div className="flex flex-wrap gap-2">
               {ALERT_CATEGORIES.map((cat) => (
                 <button
@@ -481,6 +490,7 @@ export default function AlertRecipientsClient({
                 <div className="flex gap-1.5 shrink-0">
                   {r.isActive && (
                     <button
+                      type="button"
                       onClick={() => openEdit(r)}
                       disabled={busyId === r.id}
                       className="text-xs text-blue-600 border border-blue-200 hover:bg-blue-50 rounded px-2 py-1 transition-colors disabled:opacity-50"
@@ -490,6 +500,7 @@ export default function AlertRecipientsClient({
                   )}
                   {r.isActive && !r.isSuppressed && (
                     <button
+                      type="button"
                       onClick={() => suppress(r.id)}
                       disabled={busyId === r.id}
                       className="text-xs text-orange-600 border border-orange-200 hover:bg-orange-50 rounded px-2 py-1 transition-colors disabled:opacity-50"
@@ -499,6 +510,7 @@ export default function AlertRecipientsClient({
                   )}
                   {r.isSuppressed && (
                     <button
+                      type="button"
                       onClick={() => unsuppress(r.id)}
                       disabled={busyId === r.id}
                       className="text-xs text-green-600 border border-green-200 hover:bg-green-50 rounded px-2 py-1 transition-colors disabled:opacity-50"
@@ -508,6 +520,7 @@ export default function AlertRecipientsClient({
                   )}
                   {r.isActive && (
                     <button
+                      type="button"
                       onClick={() => deactivate(r.id)}
                       disabled={busyId === r.id}
                       className="text-xs text-red-600 border border-red-200 hover:bg-red-50 rounded px-2 py-1 transition-colors disabled:opacity-50"
@@ -523,45 +536,44 @@ export default function AlertRecipientsClient({
                 <form
                   onSubmit={handleEdit}
                   className="mt-3 pt-3 border-t border-slate-100 space-y-3"
-                  onClick={(e) => e.stopPropagation()}
                 >
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Name *</label>
-                      <input required value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className={inp} />
+                      <label htmlFor={`edit-recipient-name-${r.id}`} className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Name *</label>
+                      <input id={`edit-recipient-name-${r.id}`} required value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className={inp} />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Email</label>
-                      <input type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} className={inp} />
+                      <label htmlFor={`edit-recipient-email-${r.id}`} className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Email</label>
+                      <input id={`edit-recipient-email-${r.id}`} type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} className={inp} />
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Phone</label>
-                      <input value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} className={inp} />
+                      <label htmlFor={`edit-recipient-phone-${r.id}`} className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Phone</label>
+                      <input id={`edit-recipient-phone-${r.id}`} value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} className={inp} />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Role</label>
-                      <select value={editForm.role} onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))} className={inp}>
+                      <label htmlFor={`edit-recipient-role-${r.id}`} className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Role</label>
+                      <select id={`edit-recipient-role-${r.id}`} value={editForm.role} onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))} className={inp}>
                         {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Channel</label>
-                      <select value={editForm.preferredChannel} onChange={(e) => setEditForm((f) => ({ ...f, preferredChannel: e.target.value }))} className={inp}>
+                      <label htmlFor={`edit-recipient-channel-${r.id}`} className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Channel</label>
+                      <select id={`edit-recipient-channel-${r.id}`} value={editForm.preferredChannel} onChange={(e) => setEditForm((f) => ({ ...f, preferredChannel: e.target.value }))} className={inp}>
                         {CHANNELS.map((c) => <option key={c}>{c}</option>)}
                       </select>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 items-end">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Escalation Level</label>
-                      <select value={editForm.escalationLevel} onChange={(e) => setEditForm((f) => ({ ...f, escalationLevel: Number(e.target.value) }))} className={inp}>
+                      <label htmlFor={`edit-recipient-escalation-${r.id}`} className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Escalation Level</label>
+                      <select id={`edit-recipient-escalation-${r.id}`} value={editForm.escalationLevel} onChange={(e) => setEditForm((f) => ({ ...f, escalationLevel: Number(e.target.value) }))} className={inp}>
                         {[1, 2, 3, 4].map((l) => <option key={l} value={l}>Level {l}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Categories (empty = all)</label>
+                      <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Categories (empty = all)</span>
                       <div className="flex flex-wrap gap-1">
                         {ALERT_CATEGORIES.map((cat) => (
                           <button key={cat} type="button" onClick={() => toggleEditCategory(cat)}
