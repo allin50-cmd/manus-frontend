@@ -36,6 +36,59 @@ jobs:
           @types/react@latest
           @types/react-dom@latest
 
+      - name: Migrate Next 16 dynamic route contracts
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+
+          function walk(dir) {
+            return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+              const full = path.join(dir, entry.name)
+              return entry.isDirectory() ? walk(full) : [full]
+            })
+          }
+
+          const routeFiles = walk('app/api').filter(
+            (file) => file.endsWith('/route.ts') && file.includes('['),
+          )
+
+          let changedRoutes = 0
+          for (const file of routeFiles) {
+            const source = fs.readFileSync(file, 'utf8')
+            let migrated = source.replace(
+              /(\{\s*params\s*\}\s*:\s*\{\s*params\s*:\s*)\{([^{}]+)\}(\s*\})/g,
+              '$1Promise<{$2}>$3',
+            )
+            migrated = migrated.replace(
+              /(\bconst\s+\{[^}]+\}\s*=\s*)params\b/g,
+              '$1await params',
+            )
+            migrated = migrated.replace(/\bparams\.(\w+)/g, '(await params).$1')
+
+            if (migrated !== source) {
+              fs.writeFileSync(file, migrated)
+              changedRoutes += 1
+            }
+          }
+
+          const configPath = 'next.config.js'
+          const config = fs.readFileSync(configPath, 'utf8')
+          const migratedConfig = config.replace(
+            /  experimental: \{\n    serverComponentsExternalPackages: \['@prisma\/client', 'prisma'\],\n  \},\n/,
+            "  serverExternalPackages: ['@prisma/client', 'prisma'],\n",
+          )
+          if (migratedConfig === config) {
+            throw new Error('Expected Next 14 serverComponentsExternalPackages config was not found')
+          }
+          fs.writeFileSync(configPath, migratedConfig)
+
+          if (changedRoutes === 0) {
+            throw new Error('No dynamic API route contracts were migrated')
+          }
+          console.log(`Migrated ${changedRoutes} dynamic API route file(s)`)
+          NODE
+
       - name: Dependency security gate
         run: npm audit --audit-level=high
 
@@ -55,13 +108,13 @@ jobs:
       - name: Diff integrity
         run: git diff --check
 
-      - name: Commit generated dependency update
+      - name: Commit generated framework update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
+          git add package.json package-lock.json tsconfig.json next.config.js app/api
           if git diff --cached --quiet; then
-            echo "No dependency changes to commit"
+            echo "No framework changes to commit"
             exit 0
           fi
           git commit -m "fix: upgrade framework security baseline [upgrade-generated]"
