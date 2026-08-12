@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { runEscalationCheck } from '@/lib/alert-dispatch'
 

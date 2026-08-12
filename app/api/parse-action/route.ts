@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     const result = parseActionRequest(input)
     return NextResponse.json({ ok: true, result })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { ok: false, error: 'Unable to parse action request' },
       { status: 500 }
