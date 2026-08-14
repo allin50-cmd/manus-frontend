@@ -74,7 +74,9 @@ Thumbs.db
 credentials.json
 .vercel
 .env*
-.claude/
+# Keep repository-level Claude agents and skills tracked; ignore only local Claude state.
+.claude/settings.local.json
+.claude/*.local.*
 # Manus migration local data and credentials
 scripts/manus-migration/.env.local
 scripts/manus-migration/headers.local.json
