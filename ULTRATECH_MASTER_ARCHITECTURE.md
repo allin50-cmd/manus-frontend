@@ -1,4 +1,4 @@
-# UltraTech Master Architecture v2.2
+# UltraTech Master Architecture v2.3
 
 Date: 14 August 2026
 
@@ -24,20 +24,29 @@ OBJECTIVE -> INTENT -> POLICY -> AUTHORITY -> ACTION -> APPROVAL -> EXECUTION ->
 - FineGuard production remains untouched during this sprint
 
 ## Current Proven State
-- Property compute prototype merged to `main` at `f09d5d4217a97790501e84ca6db53c73d4d4fbd0` via PR #79.
+### Property and Builders commercial journeys
+- Source proof lives on `allin50-cmd/fineguard`, branch `claude/cash-generation-sprint-5feu2g`, in `docs/evidence/PROPERTY-BUILDERS-JOURNEY-PROOF.md` and `dist/property-builders-console.html`.
+- Property journey is PROVEN locally against persisted MariaDB records and read back after process restart: 2 properties, 1 tenancy, GBP 950 monthly rent, 50% occupancy, 3 compliance certificates, 1 remedial job, tenant notification, completed recorded outcome and commercial CTA.
+- Compliance status is derived from expiry on read using the 28-day threshold. Proven defect: an EICR expired 1 February 2026 had remained stored as `valid`; derived logic surfaces it as expired.
+- Builders / JustWorks journey is PROVEN locally: opportunity -> qualified 8/10 -> quote/invoice -> sent -> paid -> lead promoted to customer -> activity recorded.
+- Proven won value: invoice `ACC-2026-0147`, GBP 48,750, status paid.
+- UltraTech application suite recorded in the evidence run: `pnpm test` 68 passed / 0 failed after seeding the shipped Luxe fixtures; `tsc --noEmit` clean.
+- The self-contained offline console carries the proven exported records and recomputes the certificate status client-side; it now declares UTF-8 explicitly so direct-file client demos preserve GBP signs, arrows, em dashes and checkmarks.
+- These journeys are proven, not deployed. Production verification/cutover remains a separate gate.
+
+### Property compute sidecar
+- Property compute prototype merged to `manus-frontend/main` at `f09d5d4217a97790501e84ca6db53c73d4d4fbd0` via PR #79.
 - Canonical property compute path: normalized portfolio JSON or Manus export adapter -> IPython/Jupyter kernel -> rent/compliance/maintenance/data-quality analysis -> SHA-256 evidence receipt -> concise business summary.
 - Fixture proof: 2 properties, 2 active tenancies, GBP 2,200 monthly rent, GBP 26,400 annualised rent, 1 certificate expiring within 30 days, 1 high-priority open maintenance job, status `REVIEW_REQUIRED`.
 - Evidence hashes from the proven fixture: input `3eeab3e8e1afd3ad09c8b478bf0ed9bfcaa8d24b35d73032f5dc507055f91865`; result `7e89ab69ff2b77eb9e264fc2d8aee63cb62651782b183f5bcc3bbcdad13f9862`.
-- Live Manus adapter exists and is hardened, but a real Manus export has not yet been proven from the execution environment. Do not promote fixture results as live portfolio evidence.
-- Property domain migration remains gated until real exported records are reconciled and validated.
-- Production customer app remains separate from this compute proof; no FineGuard production migration is authorised by this update.
+- Compute is evidence/analysis only: no protected production writes and no authority escalation.
 
 ## Property Compute Contract
 Command:
 `python tools/compute/run_property_business.py --manus`
 
 Flow:
-`MANUS_EXPORT -> NORMALISE -> COMPUTE -> RECONCILE -> EVIDENCE -> REVIEW -> VALIDATED_PROPERTY_STORE`
+`SOURCE_EXPORT -> NORMALISE -> COMPUTE -> RECONCILE -> EVIDENCE -> REVIEW -> VALIDATED_PROPERTY_STORE`
 
 Promotion rule:
 Only reconciled records that pass validation may move into the dedicated property schema. Unknown, conflicting or incomplete records remain review-required and must not be silently repaired by an LLM.
@@ -47,15 +56,15 @@ Compute may analyse and propose. It may not grant itself authority, approve cons
 
 ## Roadmap
 ### NOW
-- Run the real Manus property export through the merged compute path and capture the evidence receipt.
-- Reconcile live property, tenancy, compliance and maintenance records; quarantine conflicts rather than guessing.
-- Complete the dedicated property schema only against the validated compute contract.
+- Treat Property and Builders as proven commercial journeys; stop rebuilding their proof and move to deployment/customer use.
+- Reconcile the proven UltraTech property records with the canonical property schema and compute contract without inventing identities or fields.
+- Complete the dedicated property schema against validated records.
 - Provision ultratech-production-lite: Cloudflare -> AWS Lightsail London -> Docker Compose.
-- Property cash journey: portfolio -> need -> action -> recorded outcome -> onboarding/revenue CTA.
-- Builders cash journey: opportunity -> qualify -> quote/job -> WON -> GBP value -> activity receipt.
+- Put the Property journey in front of real landlords/agents and capture onboarding/revenue outcomes.
+- Put the Builders journey in front of real builders and capture the next real quoted/won GBP outcome.
 - Deploy UltraTech Runtime authority/receipt path and bounded Hermes worker on the same origin host.
 - Prove reboot recovery, database persistence, backup/restore and HITL bypass resistance.
-- Preserve FineGuard production operation; do not migrate it during the 24-hour sprint.
+- Preserve FineGuard production operation; do not migrate it during this sprint.
 
 ### NEXT
 - Formal UltraCore agent registry and shared mission protocol.
@@ -74,14 +83,15 @@ Compute may analyse and propose. It may not grant itself authority, approve cons
 - Dynamic model/harness routing by cost, quality, latency and risk.
 
 ## Immediate Acceptance Gate
-PASS only when all are true:
-1. Real Manus export is obtained without weakening production or preview security.
-2. The merged compute command completes against that export.
-3. Counts and monetary totals reconcile to source records.
-4. Compliance and maintenance exceptions are surfaced deterministically.
-5. Input and result hashes are captured.
-6. Conflicts remain explicit and review-required.
+PASS for the next deployment slice only when all are true:
+1. Property and Builders proven source records are mapped without loss or invented identity.
+2. Compliance status remains derived, not writable stored truth.
+3. Counts and GBP totals reconcile to the proven source records.
+4. Property actions/communications/outcomes remain attributable in the activity trail.
+5. Builders quote/won value remains attributable to the correct customer/job.
+6. Compute/evidence output remains non-authoritative and receipt-linked.
 7. No protected production write occurs outside UltraTech Runtime authority.
-8. Validated records can be mapped losslessly into the property schema.
+8. Full build/test gate passes on the exact release head.
+9. Deployment preserves persistent database state through restart.
 
-Until then the state is: `COMPUTE_PROVEN / LIVE_DATA_PENDING`.
+Current state: `JOURNEYS_PROVEN / COMPUTE_PROVEN / DEPLOYMENT_PENDING`.
