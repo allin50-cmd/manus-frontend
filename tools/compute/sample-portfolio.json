@@ -1,0 +1,18 @@
+{
+  "properties": [
+    {"sourceId":"P-1001","addressLine1":"12 Bromley Road","postcode":"SE20 8AA","bedrooms":2,"status":"Active"},
+    {"sourceId":"P-1002","addressLine1":"44 Anerley Park","postcode":"SE20 8NU","bedrooms":3,"status":"Active"}
+  ],
+  "tenancies": [
+    {"sourceId":"T-2001","propertySourceId":"P-1001","tenantName":"A. Tenant","status":"Active","monthlyRentPence":95000},
+    {"sourceId":"T-2002","propertySourceId":"P-1002","tenantName":"B. Tenant","status":"Active","monthlyRentPence":125000}
+  ],
+  "certificates": [
+    {"sourceId":"C-3001","propertySourceId":"P-1001","certificateType":"Gas Safety","expiresAt":"2026-08-28T00:00:00Z"},
+    {"sourceId":"C-3002","propertySourceId":"P-1002","certificateType":"EPC","expiresAt":"2027-05-01T00:00:00Z"}
+  ],
+  "maintenance": [
+    {"sourceId":"M-4001","propertySourceId":"P-1001","title":"Boiler pressure loss","priority":"High","status":"Open"},
+    {"sourceId":"M-4002","propertySourceId":"P-1002","title":"Fence panel replacement","priority":"Low","status":"Completed"}
+  ]
+}
