@@ -43,8 +43,18 @@ def discover(name):
         except Exception as e: errors.append(str(e))
     raise RuntimeError(f'No usable {name} endpoint. ' + ' | '.join(errors))
 
-def sid(r): return str(r.get('sourceId') or r.get('source_id') or r.get('id') or r.get('_id') or '')
-def propid(r): return str(r.get('propertySourceId') or r.get('property_source_id') or r.get('propertyId') or r.get('property_id') or r.get('property',{}).get('id') if isinstance(r.get('property'),dict) else '')
+def sid(r):
+    return str(r.get('sourceId') or r.get('source_id') or r.get('id') or r.get('_id') or '')
+
+def propid(r):
+    direct = r.get('propertySourceId') or r.get('property_source_id') or r.get('propertyId') or r.get('property_id')
+    if direct not in (None, ''):
+        return str(direct)
+    prop = r.get('property')
+    if isinstance(prop, dict):
+        return str(prop.get('sourceId') or prop.get('source_id') or prop.get('id') or '')
+    return ''
+
 def money_pence(r,*keys):
     for k in keys:
         v=r.get(k)
@@ -59,8 +69,10 @@ def normalise(name,rs):
     for r in rs:
         if not isinstance(r,dict): continue
         if name=='properties':
-            address=r.get('address') if isinstance(r.get('address'),dict) else {}
-            out.append({'sourceId':sid(r),'addressLine1':r.get('addressLine1') or r.get('address_line1') or address.get('line1') or r.get('address') if isinstance(r.get('address'),str) else '',
+            raw_address=r.get('address')
+            address=raw_address if isinstance(raw_address,dict) else {}
+            address_line1=(r.get('addressLine1') or r.get('address_line1') or address.get('line1') or (raw_address if isinstance(raw_address,str) else ''))
+            out.append({'sourceId':sid(r),'addressLine1':address_line1,
                         'addressLine2':r.get('addressLine2') or r.get('address_line2') or address.get('line2'),'city':r.get('city') or address.get('city'),
                         'postcode':r.get('postcode') or r.get('post_code') or address.get('postcode') or '','propertyType':r.get('propertyType') or r.get('property_type'),
                         'bedrooms':r.get('bedrooms'),'status':r.get('status') or 'Active'})
@@ -83,8 +95,8 @@ def main():
     payload={}; endpoints={}
     for name in CANDIDATES:
         path,rs=discover(name); endpoints[name]=path; payload[name]=normalise(name,rs)
-    for name,rs in payload.items():
-        missing=[i for i,r in enumerate(rs) if not r.get('sourceId')]
+    for name in CANDIDATES:
+        missing=[i for i,r in enumerate(payload[name]) if not r.get('sourceId')]
         if missing: raise RuntimeError(f'{name}: {len(missing)} records missing stable source id')
     payload['_source']={'baseUrl':BASE,'endpoints':endpoints}
     OUT.parent.mkdir(parents=True,exist_ok=True); OUT.write_text(json.dumps(payload,indent=2,ensure_ascii=False))
