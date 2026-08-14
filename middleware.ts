@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { verifySessionToken } from '@/lib/session-token'
 
 // Paths that bypass auth by exact match (no sub-paths allowed).
-const PUBLIC_EXACT = new Set(['/api/alert-deliveries/ack'])
+const PUBLIC_EXACT = new Set(['/api/alert-deliveries/ack', '/api/dev/manus-discover'])
 // Paths that bypass auth by prefix match (and all their sub-paths).
 const PUBLIC_PREFIX = ['/login', '/api/auth/login', '/api/auth/dev-bypass']
 
