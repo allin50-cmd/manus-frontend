@@ -3,9 +3,10 @@ import argparse, json, subprocess, sys
 from pathlib import Path
 
 HERE=Path(__file__).resolve().parent
+REPO=HERE.parent.parent
 
 def run(cmd):
-    p=subprocess.run(cmd,cwd=HERE.parent.parent,text=True,capture_output=True)
+    p=subprocess.run(cmd,cwd=REPO,text=True,capture_output=True)
     if p.returncode:
         sys.stderr.write(p.stdout+p.stderr)
         raise SystemExit(p.returncode)
@@ -17,6 +18,7 @@ def main():
     src.add_argument('--manus',action='store_true',help='discover/export from MANUS_BASE_URL')
     src.add_argument('--input',help='normalized portfolio JSON')
     ap.add_argument('--output',default='tools/compute/property-compute-receipt.json')
+    ap.add_argument('--as-of',default=None,help='optional ISO-8601 analysis timestamp')
     args=ap.parse_args()
 
     if args.manus:
@@ -28,7 +30,9 @@ def main():
 
     out=Path(args.output).resolve()
     out.parent.mkdir(parents=True,exist_ok=True)
-    run([sys.executable,str(HERE/'run_ipython.py'),str(portfolio),str(out)])
+    cmd=[sys.executable,str(HERE/'run_ipython.py'),str(portfolio),'--output',str(out)]
+    if args.as_of: cmd += ['--as-of',args.as_of]
+    run(cmd)
     receipt=json.loads(out.read_text())
     result=receipt['result']
     print(json.dumps({
