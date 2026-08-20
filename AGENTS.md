@@ -59,6 +59,8 @@ components/         ← Shared React components
 middleware.ts       ← Auth guard (JWT verification on every request)
 public/
   prototype.html    ← Standalone UK Companies House demo (localStorage, no backend)
+.claude/agents/     ← Project-local Claude Code development reviewers
+tools/eve-repo-agent/ ← Isolated Node 24 Vercel eve repository agent; not product runtime
 ```
 
 ---
@@ -69,11 +71,9 @@ public/
 
 2. **Auth is server-only.** `JWT_SECRET` is never sent to the client. `secret()` in `lib/auth.ts` throws if `JWT_SECRET` is unset. Every API route calls `getSession()` or `requireAuth()`.
 
-3. **No AI agents or agent frameworks beyond the two approved exceptions.** OpenAI is used only for Whisper transcription (`app/api/voice/transcribe/route.ts`). AgentMail is approved solely for persistent conversational email — drafting, summarisation, threading — scoped to communication mechanics inside a user-triggered, always-logged flow; it never makes autonomous business decisions (see `CLAUDE.md` → AgentMail Integration Policy). No LangChain, no OpenAI Assistants, no other agent framework, and no extending AgentMail into auto-send or agent-initiated outreach without new, separate approval.
+3. **No product/runtime AI agents or agent frameworks beyond explicitly approved exceptions.** OpenAI is used only for Whisper transcription (`app/api/voice/transcribe/route.ts`). AgentMail is approved solely for persistent conversational email — drafting, summarisation, threading — scoped to communication mechanics inside a user-triggered, always-logged flow; it never makes autonomous business decisions (see `CLAUDE.md` → AgentMail Integration Policy). A third exception is approved for repository development tooling only: Vercel `eve` may exist only under `tools/eve-repo-agent/` to inspect and review this GitHub repository. It must not be imported by `app/`, `lib/`, `server/`, middleware, or other product runtime code; it must not make business/compliance decisions, contact customers, change production data, or initiate outreach; and GitHub write tools must remain human-approval gated. Project-local definitions under `.claude/agents/` are likewise development reviewers, not product actors. Moving `eve` or any development agent into product/runtime behavior requires new, separate approval. No LangChain, no OpenAI Assistants, and no extending AgentMail into auto-send or agent-initiated outreach without new, separate approval.
 
-   **Development-time reviewer exception:** project-local Claude Code reviewers under `.claude/agents/` are permitted as engineering tooling only. They may inspect code, recommend fixes, run development checks, and review pull requests. They are not production/runtime agents, must not be imported into application code, must not make business/compliance decisions, and must not initiate outreach or user-facing actions.
-
-4. **No tRPC. No monorepo. No complex RBAC.** Auth is a single shared passcode — no user roles.
+4. **No tRPC. No monorepo. No complex RBAC.** Auth is a single shared passcode — no user roles. The isolated `tools/eve-repo-agent/` directory is standalone development tooling and is deliberately not a root npm workspace or application package.
 
 5. **DB schema changes** use `prisma db push` only (no Prisma migration files). Run `npx prisma db push` after editing `schema.prisma`.
 
