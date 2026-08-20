@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type')
   const owner = searchParams.get('owner')
   const priority = searchParams.get('priority')
+  const company = searchParams.get('company')
 
   // Validate enums before passing to Prisma to avoid P2009 uncaught errors.
   if (status && status !== 'all') {
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
     if (!isValidPriority(priority)) return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
     where.priority = priority as Priority
   }
+  if (company) where.company = company
 
   try {
     const items = await db.workItem.findMany({
