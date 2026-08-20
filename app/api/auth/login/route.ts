@@ -25,18 +25,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
   }
 
+  const defaultPass = process.env.DEFAULT_PASSCODE
+  const isLocalRequest = ['localhost', '127.0.0.1', '::1'].includes(req.nextUrl.hostname)
+
   let stored: UserPassword | null
   try {
     stored = await db.userPassword.findUnique({ where: { person: person as string } })
   } catch {
-    return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+    // Local development must remain usable when the database is offline. Only
+    // allow the configured fallback passcode on loopback; deployed requests
+    // continue to fail closed if the password store cannot be reached.
+    if (!isLocalRequest || !defaultPass) {
+      return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+    }
+    stored = null
   }
 
   let ok: boolean
   if (stored) {
     ok = await verifyPassword(passcode, stored.hash)
   } else {
-    const defaultPass = process.env.DEFAULT_PASSCODE
     if (!defaultPass) {
       return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
     }
