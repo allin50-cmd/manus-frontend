@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/production-migrate.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "node scripts/lint-changed.mjs",
