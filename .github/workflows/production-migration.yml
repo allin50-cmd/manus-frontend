@@ -1,0 +1,129 @@
+name: Governed Production Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: Exact branch, tag, or commit intended for release
+        required: true
+        default: main
+      change_reference:
+        description: Non-secret change or approval reference
+        required: true
+      backup_reference:
+        description: Non-secret backup or rollback reference
+        required: true
+      approval:
+        description: Type APPROVE PRODUCTION MIGRATION
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_REF: ${{ inputs.release_ref }}
+  CHANGE_REFERENCE: ${{ inputs.change_reference }}
+  BACKUP_REFERENCE: ${{ inputs.backup_reference }}
+
+jobs:
+  migrate-and-verify:
+    name: Runtime-governed migration and verification
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Validate explicit approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.approval }}" != "APPROVE PRODUCTION MIGRATION" ]; then
+            echo "Explicit production migration approval was not provided."
+            exit 1
+          fi
+
+      - name: Checkout approved release ref
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_ref }}
+          fetch-depth: 0
+
+      - name: Capture immutable release identity
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "release_ref=${RELEASE_REF}"
+          echo "release_sha=$(git rev-parse HEAD)"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate production database authority
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "Production DATABASE_URL is not available to the governed release environment."
+            exit 1
+          fi
+          echo "Production database credential is available; value remains secret."
+
+      - name: Apply approved Prisma migrations
+        id: migration
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run db:migrate:deploy
+
+      - name: Verify application build after migration
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Create Runtime release receipt
+        if: success()
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-evidence
+          cat > release-evidence/runtime-release-receipt.json <<EOF
+          {
+            "objective": "Apply the approved production database migration for the selected UltraCore Ops release",
+            "intent": "Bring the production schema into alignment before release acceptance",
+            "policy": "UltraCore proposes; governed release authority approves; production migration is explicit and auditable",
+            "authority": "GitHub production environment plus explicit workflow approval",
+            "action": "npm run db:migrate:deploy",
+            "approval": "APPROVE PRODUCTION MIGRATION",
+            "execution": "GitHub Actions governed production migration workflow",
+            "result": "migration and post-migration application build passed",
+            "evidence": {
+              "release_ref": "${RELEASE_REF}",
+              "release_sha": "${RELEASE_SHA}",
+              "change_reference": "${CHANGE_REFERENCE}",
+              "backup_reference": "${BACKUP_REFERENCE}",
+              "workflow_run_id": "${GITHUB_RUN_ID}",
+              "workflow_run_attempt": "${GITHUB_RUN_ATTEMPT}",
+              "actor": "${GITHUB_ACTOR}",
+              "repository": "${GITHUB_REPOSITORY}"
+            }
+          }
+          EOF
+
+      - name: Upload release evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-release-receipt-${{ steps.release.outputs.sha }}
+          path: release-evidence/runtime-release-receipt.json
+          if-no-files-found: error
+          retention-days: 90
