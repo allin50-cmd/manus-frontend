@@ -56,6 +56,17 @@ describe('POST /api/auth/login', () => {
     expect(createSessionToken).not.toHaveBeenCalled()
   })
 
+  it('uses the configured bootstrap passcode when only the UserPassword table is missing', async () => {
+    db.userPassword.findUnique.mockRejectedValue({ code: 'P2021' })
+
+    const res = await POST(request({ person: 'George', passcode: 'configured-passcode' }))
+
+    expect(res.status).toBe(200)
+    expect(safeEqual).toHaveBeenCalledWith('configured-passcode', 'configured-passcode')
+    expect(createSessionToken).toHaveBeenCalledWith('George')
+    expect(res.cookies.get('session')?.value).toBe('signed-session-token')
+  })
+
   it('does not fall back to a hard-coded demo passcode when DEFAULT_PASSCODE is missing', async () => {
     delete process.env.DEFAULT_PASSCODE
 
