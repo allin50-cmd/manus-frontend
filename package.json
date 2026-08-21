@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/production-migrate.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "node scripts/lint-changed.mjs",
@@ -14,6 +15,7 @@
     "type-check:server": "echo 'No separate server — all routes are Next.js App Router'",
     "test": "vitest run",
     "db:push": "prisma db push",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate"
