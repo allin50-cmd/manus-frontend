@@ -1,8 +1,24 @@
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
 
-if (process.env.VERCEL_ENV !== 'production') {
-  console.log('Skipping Prisma migrate deploy outside Vercel production.')
+const vercelEnv = process.env.VERCEL_ENV
+const vercelTargetEnv = process.env.VERCEL_TARGET_ENV
+const gitRef = process.env.VERCEL_GIT_COMMIT_REF
+
+// Some Vercel projects do not expose VERCEL_ENV to the build process.
+// Prefer Vercel's explicit environment markers, then fall back to the
+// repository's production branch. PR/feature branches remain read-only.
+const isProductionBuild =
+  vercelEnv === 'production' ||
+  vercelTargetEnv === 'production' ||
+  gitRef === 'main'
+
+console.log(
+  `Migration gate: VERCEL_ENV=${vercelEnv ?? '<unset>'}, VERCEL_TARGET_ENV=${vercelTargetEnv ?? '<unset>'}, VERCEL_GIT_COMMIT_REF=${gitRef ?? '<unset>'}`,
+)
+
+if (!isProductionBuild) {
+  console.log('Skipping Prisma migrate deploy outside production/main builds.')
   process.exit(0)
 }
 
