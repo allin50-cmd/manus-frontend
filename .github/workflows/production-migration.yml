@@ -78,7 +78,6 @@ jobs:
           echo "Production database credential is available; value remains secret."
 
       - name: Apply approved Prisma migrations
-        id: migration
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npm run db:migrate:deploy
@@ -90,34 +89,39 @@ jobs:
 
       - name: Create Runtime release receipt
         if: success()
-        shell: bash
         env:
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p release-evidence
-          cat > release-evidence/runtime-release-receipt.json <<EOF
-          {
-            "objective": "Apply the approved production database migration for the selected UltraCore Ops release",
-            "intent": "Bring the production schema into alignment before release acceptance",
-            "policy": "UltraCore proposes; governed release authority approves; production migration is explicit and auditable",
-            "authority": "GitHub production environment plus explicit workflow approval",
-            "action": "npm run db:migrate:deploy",
-            "approval": "APPROVE PRODUCTION MIGRATION",
-            "execution": "GitHub Actions governed production migration workflow",
-            "result": "migration and post-migration application build passed",
-            "evidence": {
-              "release_ref": "${RELEASE_REF}",
-              "release_sha": "${RELEASE_SHA}",
-              "change_reference": "${CHANGE_REFERENCE}",
-              "backup_reference": "${BACKUP_REFERENCE}",
-              "workflow_run_id": "${GITHUB_RUN_ID}",
-              "workflow_run_attempt": "${GITHUB_RUN_ATTEMPT}",
-              "actor": "${GITHUB_ACTOR}",
-              "repository": "${GITHUB_REPOSITORY}"
-            }
+          node <<'NODE'
+          const fs = require('node:fs')
+          const receipt = {
+            objective: 'Apply the approved production database migration for the selected UltraCore Ops release',
+            intent: 'Bring the production schema into alignment before release acceptance',
+            policy: 'UltraCore proposes; governed release authority approves; production migration is explicit and auditable',
+            authority: 'GitHub production environment plus explicit workflow approval',
+            action: 'npm run db:migrate:deploy',
+            approval: 'APPROVE PRODUCTION MIGRATION',
+            execution: 'GitHub Actions governed production migration workflow',
+            result: 'migration and post-migration application build passed',
+            evidence: {
+              release_ref: process.env.RELEASE_REF,
+              release_sha: process.env.RELEASE_SHA,
+              change_reference: process.env.CHANGE_REFERENCE,
+              backup_reference: process.env.BACKUP_REFERENCE,
+              workflow_run_id: process.env.GITHUB_RUN_ID,
+              workflow_run_attempt: process.env.GITHUB_RUN_ATTEMPT,
+              actor: process.env.GITHUB_ACTOR,
+              repository: process.env.GITHUB_REPOSITORY,
+            },
           }
-          EOF
+          fs.writeFileSync(
+            'release-evidence/runtime-release-receipt.json',
+            `${JSON.stringify(receipt, null, 2)}\n`,
+          )
+          NODE
 
       - name: Upload release evidence
         if: success()
