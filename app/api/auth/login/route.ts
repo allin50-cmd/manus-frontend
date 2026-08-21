@@ -7,6 +7,15 @@ import { safeEqual } from '@/lib/safe-equal'
 
 const KNOWN_PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
 
+function isMissingUserPasswordTable(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'P2021'
+  )
+}
+
 export async function POST(req: NextRequest) {
   let body: { passcode?: unknown; person?: unknown }
   try {
@@ -25,11 +34,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Incorrect passcode' }, { status: 401 })
   }
 
-  let stored: UserPassword | null
+  let stored: UserPassword | null = null
   try {
     stored = await db.userPassword.findUnique({ where: { person: person as string } })
-  } catch {
-    return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+  } catch (error) {
+    // A clean deployment can temporarily have schema drift if UserPassword has
+    // not been migrated yet. Treat only Prisma P2021 (missing table) as the
+    // same bootstrap state as "no personal password". Real database outages
+    // and all other query failures continue to fail closed.
+    if (!isMissingUserPasswordTable(error)) {
+      return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+    }
   }
 
   let ok: boolean
