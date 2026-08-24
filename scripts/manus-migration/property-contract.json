@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "source": "UltraTech Property Manus app",
+  "sourceDatabase": "MySQL/TiDB",
+  "targetDatabase": "PostgreSQL/Supabase",
+  "tables": [
+    "fg_properties",
+    "fg_tenants",
+    "fg_certificates",
+    "fg_inspections",
+    "fg_maintenance_requests",
+    "fg_contractors",
+    "fg_rent_payments",
+    "fg_expenses",
+    "fg_documents",
+    "fg_calendar_events",
+    "fg_landlord_messages"
+  ],
+  "rules": {
+    "noTenancyTable": true,
+    "preserveUnknownFields": true,
+    "productionWritesDefault": false,
+    "canonicaliseOnlyAfterInspection": true
+  },
+  "certificate": {
+    "types": [
+      "gas_safety",
+      "eicr",
+      "epc",
+      "deposit_protection",
+      "smoke_alarms",
+      "co_alarms",
+      "fire_extinguisher"
+    ],
+    "statuses": ["valid", "expiring_soon", "expired", "not_required"],
+    "knownFields": [
+      "type",
+      "status",
+      "expiryDate",
+      "issueDate",
+      "engineerName",
+      "certNumber",
+      "fileUrl",
+      "notes"
+    ]
+  }
+}
