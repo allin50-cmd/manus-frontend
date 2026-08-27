@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, FormEvent, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
 const PEOPLE = ['Dagon', 'George', 'Alissa', 'Michelle', 'Chris', 'Charlie']
@@ -67,7 +68,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              aria-hidden="true"
+              className="w-8 h-8 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18M3 14h18M3 18h18" />
             </svg>
           </div>
@@ -76,8 +83,8 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Who are you?</label>
+          <fieldset>
+            <legend className="block text-sm font-medium text-slate-300 mb-2">Who are you?</legend>
             <div className="grid grid-cols-3 gap-2">
               {PEOPLE.map((p) => (
                 <button
@@ -94,24 +101,24 @@ export default function LoginPage() {
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Passcode</label>
+            <label htmlFor="passcode" className="block text-sm font-medium text-slate-300 mb-2">
+              Passcode
+            </label>
             <input
+              id="passcode"
               type="password"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
               placeholder="Enter passcode"
               required
-              autoFocus
               className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg tracking-widest"
             />
           </div>
 
-          {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
           <button
             type="submit"
