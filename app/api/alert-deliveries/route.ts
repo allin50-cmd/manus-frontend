@@ -7,9 +7,13 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const workItemId = req.nextUrl.searchParams.get('workItemId')
+  const company = req.nextUrl.searchParams.get('company')
   const limitParam = req.nextUrl.searchParams.get('limit')
   const take = limitParam ? Math.min(parseInt(limitParam, 10) || 200, 500) : 200
-  const where = workItemId ? { workItemId } : {}
+  const where = {
+    ...(workItemId ? { workItemId } : {}),
+    ...(company ? { workItem: { company } } : {}),
+  }
 
   let deliveries
   try {

@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from 'react'
 
-interface WorkspaceTasksProps {
+interface WorkspaceAlertsProps {
   companyName: string
 }
 
-interface WorkItemTask {
+interface AlertDelivery {
   id: string
-  title: string
   status: string
-  priority: string
-  owner: string
-  dueDate: string | null
+  channel: string
+  sentAt: string | null
+  acknowledgedAt: string | null
+  createdAt: string
+  recipient: { name: string; role: string } | null
+  workItem: { id: string; title: string; priority: string } | null
 }
 
 const cardStyle = {
@@ -20,13 +22,12 @@ const cardStyle = {
   border: '1px solid rgba(255,255,255,0.07)',
 }
 
-function formatDate(value: string | null) {
-  if (!value) return '—'
+function formatDate(value: string) {
   return new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export default function WorkspaceTasks({ companyName }: WorkspaceTasksProps) {
-  const [tasks, setTasks] = useState<WorkItemTask[] | null>(null)
+export default function WorkspaceAlerts({ companyName }: WorkspaceAlertsProps) {
+  const [alerts, setAlerts] = useState<AlertDelivery[] | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -34,19 +35,17 @@ export default function WorkspaceTasks({ companyName }: WorkspaceTasksProps) {
 
     async function load() {
       setError('')
-      setTasks(null)
+      setAlerts(null)
       try {
-        const res = await fetch(
-          `/api/work-items?type=InternalTask&company=${encodeURIComponent(companyName)}`
-        )
+        const res = await fetch(`/api/alert-deliveries?company=${encodeURIComponent(companyName)}`)
         if (!res.ok) {
           const data = await res.json().catch(() => ({}))
-          throw new Error(data.error ?? 'Failed to load tasks')
+          throw new Error(data.error ?? 'Failed to load alerts')
         }
-        const data: WorkItemTask[] = await res.json()
-        if (!cancelled) setTasks(data)
+        const data: AlertDelivery[] = await res.json()
+        if (!cancelled) setAlerts(data)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load tasks')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load alerts')
       }
     }
 
@@ -66,21 +65,21 @@ export default function WorkspaceTasks({ companyName }: WorkspaceTasksProps) {
     )
   }
 
-  if (tasks === null) {
+  if (alerts === null) {
     return (
       <div className="p-4 rounded-2xl" style={cardStyle}>
         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-          Loading tasks…
+          Loading alerts…
         </p>
       </div>
     )
   }
 
-  if (tasks.length === 0) {
+  if (alerts.length === 0) {
     return (
       <div className="p-4 rounded-2xl" style={cardStyle}>
         <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-          No tasks yet for {companyName}.
+          No alerts yet for {companyName}.
         </p>
       </div>
     )
@@ -88,32 +87,27 @@ export default function WorkspaceTasks({ companyName }: WorkspaceTasksProps) {
 
   return (
     <div className="space-y-2">
-      {tasks.map((task) => (
+      {alerts.map((alert) => (
         <a
-          key={task.id}
-          href={`/work-items/${task.id}`}
+          key={alert.id}
+          href={alert.workItem ? `/work-items/${alert.workItem.id}` : '/alert-deliveries'}
           className="flex items-center justify-between gap-3 p-4 rounded-2xl flex-wrap sm:flex-nowrap hover:bg-white/[0.02] transition-colors"
           style={cardStyle}
         >
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate" style={{ color: 'rgba(255,255,255,0.92)' }}>
-              {task.title}
+              {alert.workItem?.title ?? 'Untitled work item'}
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              {task.owner} · Due {formatDate(task.dueDate)}
+              {alert.recipient?.name ?? 'Unassigned'} · {alert.channel} · {formatDate(alert.createdAt)}
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {task.priority}
-            </span>
-            <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
-              style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.09)' }}
-            >
-              {task.status}
-            </span>
-          </div>
+          <span
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0"
+            style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.09)' }}
+          >
+            {alert.status}
+          </span>
         </a>
       ))}
     </div>

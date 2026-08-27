@@ -10,6 +10,7 @@ import WorkspaceMessages from '@/components/WorkspaceMessages'
 import WorkspaceQuotes from '@/components/WorkspaceQuotes'
 import WorkspaceInvoices from '@/components/WorkspaceInvoices'
 import WorkspaceDocuments from '@/components/WorkspaceDocuments'
+import WorkspaceAlerts from '@/components/WorkspaceAlerts'
 
 export default function WorkspaceOverviewPage({
   params,
@@ -34,6 +35,14 @@ export default function WorkspaceOverviewPage({
       <section className="space-y-4">
         <h2 className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>Operations</h2>
         <div className="grid grid-cols-1 gap-8">
+          {/* Alerts */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Alerts
+            </h3>
+            <WorkspaceAlerts companyName={company.name} />
+          </div>
+
           {/* Tasks */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
@@ -47,7 +56,7 @@ export default function WorkspaceOverviewPage({
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Calls
             </h3>
-            <WorkspaceCalls companyName={company.name} />
+            <WorkspaceCalls companyId={params.companyId} companyName={company.name} />
           </div>
 
           {/* Messages */}
@@ -55,7 +64,7 @@ export default function WorkspaceOverviewPage({
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Messages
             </h3>
-            <WorkspaceMessages companyName={company.name} />
+            <WorkspaceMessages companyId={params.companyId} companyName={company.name} />
           </div>
 
           {/* Quotes */}
@@ -63,7 +72,7 @@ export default function WorkspaceOverviewPage({
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Quotes
             </h3>
-            <WorkspaceQuotes companyName={company.name} />
+            <WorkspaceQuotes companyId={params.companyId} companyName={company.name} />
           </div>
 
           {/* Invoices */}
@@ -71,7 +80,7 @@ export default function WorkspaceOverviewPage({
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Invoices
             </h3>
-            <WorkspaceInvoices companyName={company.name} />
+            <WorkspaceInvoices companyId={params.companyId} companyName={company.name} />
           </div>
 
           {/* Documents */}
@@ -79,7 +88,7 @@ export default function WorkspaceOverviewPage({
             <h3 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Documents
             </h3>
-            <WorkspaceDocuments companyName={company.name} />
+            <WorkspaceDocuments companyId={params.companyId} companyName={company.name} />
           </div>
         </div>
       </section>

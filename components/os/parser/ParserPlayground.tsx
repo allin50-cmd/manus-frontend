@@ -1,28 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import type { ParsedAction } from '@/lib/action-parser'
 import { commandCorpus } from '@/lib/action-parser/commandCorpus'
 import { getExecutionPreview } from '@/lib/action-parser/executionPreview'
 
-type ParseResult = {
-  action: string
-  title?: string
-  message?: string
-  person?: string
-  participants?: string[]
-  amount?: number
-  currency?: string
-  date?: string
-  time?: string
-  confidence: number
-  needs_confirmation: boolean
-  missing_fields: string[]
-  raw_text: string
-}
-
 type HistoryItem = {
   input: string
-  result: ParseResult
+  result: ParsedAction
 }
 
 const EXAMPLES = commandCorpus.slice(0, 12)
@@ -34,7 +19,7 @@ function formatConfidence(confidence?: number) {
 
 export default function ParserPlayground() {
   const [text, setText] = useState(EXAMPLES[12]?.input || EXAMPLES[0]?.input || '')
-  const [result, setResult] = useState<ParseResult | null>(null)
+  const [result, setResult] = useState<ParsedAction | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
