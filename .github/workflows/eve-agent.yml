@@ -1,0 +1,46 @@
+name: Eve Agent
+
+on:
+  pull_request:
+    paths:
+      - "tools/eve-repo-agent/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".github/workflows/eve-agent.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/eve-repo-agent/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".github/workflows/eve-agent.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  eve-agent:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    defaults:
+      run:
+        working-directory: tools/eve-repo-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install isolated eve dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Inspect eve discovery
+        run: npm run info
+
+      - name: Build eve agent
+        run: npm run build
