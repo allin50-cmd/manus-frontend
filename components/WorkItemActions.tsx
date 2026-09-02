@@ -6,7 +6,7 @@ import { STATUS_LABELS } from '@/lib/work-item-enums'
 import { WORK_ITEM_TRANSITIONS, optionsFor, canTransition } from '@/server/workflow/workflowTransitions'
 import type { WorkItemStatus } from '@/lib/types'
 
-type Panel = 'logNote' | 'followUp' | 'changeStatus' | 'escalate' | null
+type Panel = 'logNote' | 'followUp' | 'changeStatus' | 'escalate' | 'logOutreach' | null
 
 export default function WorkItemActions({
   workItemId,
@@ -117,6 +117,16 @@ export default function WorkItemActions({
     if (ok) { setPanel(null); router.refresh() }
   }
 
+  async function handleLogOutreach(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const ok = await post(`/api/work-items/${workItemId}/outreach`, {
+      channel: fd.get('channel'),
+      summary: fd.get('summary'),
+    })
+    if (ok) { setPanel(null); router.refresh() }
+  }
+
   async function handleMarkComplete() {
     const ok = await patch({ status: 'Completed' })
     if (ok) router.refresh()
@@ -136,19 +146,23 @@ export default function WorkItemActions({
 
       {/* Action buttons — 2-col grid, solid fills for clear tap affordance */}
       <div className="grid grid-cols-2 gap-2">
-        <button onClick={() => togglePanel('logNote')} className={`${btn} bg-slate-800 hover:bg-slate-700 text-white`}>
+        <button type="button" onClick={() => togglePanel('logNote')} className={`${btn} bg-slate-800 hover:bg-slate-700 text-white`}>
           Log Note
         </button>
-        <button onClick={() => togglePanel('followUp')} className={`${btn} bg-blue-600 hover:bg-blue-700 text-white`}>
+        <button type="button" onClick={() => togglePanel('followUp')} className={`${btn} bg-blue-600 hover:bg-blue-700 text-white`}>
           Create Follow-Up
         </button>
-        <button onClick={() => togglePanel('changeStatus')} className={`${btn} bg-amber-500 hover:bg-amber-600 text-white`}>
+        <button type="button" onClick={() => togglePanel('changeStatus')} className={`${btn} bg-amber-500 hover:bg-amber-600 text-white`}>
           Change Status
         </button>
-        <button onClick={() => togglePanel('escalate')} className={`${btn} bg-purple-600 hover:bg-purple-700 text-white`}>
+        <button type="button" onClick={() => togglePanel('escalate')} className={`${btn} bg-purple-600 hover:bg-purple-700 text-white`}>
           Escalate to George
         </button>
+        <button type="button" onClick={() => togglePanel('logOutreach')} className={`${btn} bg-teal-600 hover:bg-teal-700 text-white`}>
+          Log Outreach
+        </button>
         <button
+          type="button"
           onClick={handleMarkComplete}
           disabled={loading || !canComplete}
           className={`${btn} bg-green-600 hover:bg-green-700 text-white`}
@@ -156,6 +170,7 @@ export default function WorkItemActions({
           Mark Complete
         </button>
         <button
+          type="button"
           onClick={handleArchive}
           disabled={loading || !canArchive}
           className={`${btn} border border-red-200 bg-white hover:bg-red-50 text-red-600`}
@@ -176,7 +191,6 @@ export default function WorkItemActions({
               rows={3}
               placeholder="What happened? What was said?"
               className={inputCls}
-              autoFocus
             />
             <div className="flex gap-2">
               <button type="submit" disabled={loading} className={submitCls}>
@@ -190,7 +204,7 @@ export default function WorkItemActions({
       {panel === 'followUp' && (
         <Panel title="Create Follow-Up" onClose={() => setPanel(null)}>
           <form onSubmit={handleFollowUp} className="space-y-3">
-            <input name="label" required placeholder="What needs to happen?" className={inputCls} autoFocus />
+            <input name="label" required placeholder="What needs to happen?" className={inputCls} />
             <input name="assignedTo" placeholder={`Assigned to (default: ${person})`} className={inputCls} />
             <input name="dueDate" type="date" className={inputCls} />
             <button type="submit" disabled={loading} className={submitCls}>
@@ -224,7 +238,6 @@ export default function WorkItemActions({
               rows={2}
               placeholder="What decision is needed?"
               className={inputCls}
-              autoFocus
             />
             <input name="recommendation" placeholder="Your recommendation (optional)" className={inputCls} />
             <input name="options" placeholder="Options available (optional)" className={inputCls} />
@@ -232,6 +245,31 @@ export default function WorkItemActions({
             <input name="dueDate" type="date" className={inputCls} />
             <button type="submit" disabled={loading} className={submitCls}>
               {loading ? 'Escalating…' : 'Escalate'}
+            </button>
+          </form>
+        </Panel>
+      )}
+      {panel === 'logOutreach' && (
+        <Panel title="Log Outreach" onClose={() => setPanel(null)}>
+          <form onSubmit={handleLogOutreach} className="space-y-3">
+            <select name="channel" required defaultValue="" className={inputCls}>
+              <option value="" disabled>Channel...</option>
+              <option value="Call">Call</option>
+              <option value="Email">Email</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Text/WhatsApp">Text/WhatsApp</option>
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="Other">Other</option>
+            </select>
+            <textarea
+              name="summary"
+              required
+              rows={3}
+              placeholder="What was discussed?"
+              className={inputCls}
+            />
+            <button type="submit" disabled={loading} className={submitCls}>
+              {loading ? 'Saving…' : 'Save Outreach'}
             </button>
           </form>
         </Panel>
@@ -245,7 +283,7 @@ function Panel({ title, onClose, children }: { title: string; onClose: () => voi
     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">×</button>
+        <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">×</button>
       </div>
       {children}
     </div>
