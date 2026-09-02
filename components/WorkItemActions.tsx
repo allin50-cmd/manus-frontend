@@ -6,7 +6,7 @@ import { STATUS_LABELS } from '@/lib/work-item-enums'
 import { WORK_ITEM_TRANSITIONS, optionsFor, canTransition } from '@/server/workflow/workflowTransitions'
 import type { WorkItemStatus } from '@/lib/types'
 
-type Panel = 'logNote' | 'followUp' | 'changeStatus' | 'escalate' | null
+type Panel = 'logNote' | 'followUp' | 'changeStatus' | 'escalate' | 'logOutreach' | null
 
 export default function WorkItemActions({
   workItemId,
@@ -117,6 +117,16 @@ export default function WorkItemActions({
     if (ok) { setPanel(null); router.refresh() }
   }
 
+  async function handleLogOutreach(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const ok = await post(`/api/work-items/${workItemId}/outreach`, {
+      channel: fd.get('channel'),
+      summary: fd.get('summary'),
+    })
+    if (ok) { setPanel(null); router.refresh() }
+  }
+
   async function handleMarkComplete() {
     const ok = await patch({ status: 'Completed' })
     if (ok) router.refresh()
@@ -147,6 +157,9 @@ export default function WorkItemActions({
         </button>
         <button onClick={() => togglePanel('escalate')} className={`${btn} bg-purple-600 hover:bg-purple-700 text-white`}>
           Escalate to George
+        </button>
+        <button onClick={() => togglePanel('logOutreach')} className={`${btn} bg-teal-600 hover:bg-teal-700 text-white`}>
+          Log Outreach
         </button>
         <button
           onClick={handleMarkComplete}
@@ -232,6 +245,31 @@ export default function WorkItemActions({
             <input name="dueDate" type="date" className={inputCls} />
             <button type="submit" disabled={loading} className={submitCls}>
               {loading ? 'Escalating…' : 'Escalate'}
+            </button>
+          </form>
+        </Panel>
+      )}
+      {panel === 'logOutreach' && (
+        <Panel title="Log Outreach" onClose={() => setPanel(null)}>
+          <form onSubmit={handleLogOutreach} className="space-y-3">
+            <select name="channel" required defaultValue="" className={inputCls}>
+              <option value="" disabled>Channel...</option>
+              <option value="Call">Call</option>
+              <option value="Email">Email</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Text/WhatsApp">Text/WhatsApp</option>
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="Other">Other</option>
+            </select>
+            <textarea
+              name="summary"
+              required
+              rows={3}
+              placeholder="What was discussed?"
+              className={inputCls}
+            />
+            <button type="submit" disabled={loading} className={submitCls}>
+              {loading ? 'Saving…' : 'Save Outreach'}
             </button>
           </form>
         </Panel>

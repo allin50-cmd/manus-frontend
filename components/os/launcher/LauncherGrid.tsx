@@ -16,7 +16,7 @@ const modules = [
   {
     title: 'Money',
     subtitle: 'Quotes & Invoices',
-    href: '/os/money/quotes/new',
+    href: '/os/money/quotes',
   },
   {
     title: 'Contacts',
