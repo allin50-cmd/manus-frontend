@@ -14,15 +14,6 @@ export type AppDefinition = {
 
 export const APP_REGISTRY: AppDefinition[] = [
   {
-    id: 'fineguard',
-    name: 'FineGuard',
-    icon: '🛡️',
-    description: 'Companies House compliance monitoring and deadline alerts.',
-    category: 'compliance',
-    status: 'live',
-    color: '#00A86B',
-  },
-  {
     id: 'autolawclerk',
     name: 'AutoLawClerk',
     icon: '⚖️',
@@ -35,7 +26,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     id: 'smart-receptionist',
     name: 'SmartReceptionist',
     icon: '🎤',
-    description: 'AI voice intake, call routing, and work capture.',
+    description: 'Voice intake, call routing, booking, and work capture.',
     category: 'communications',
     status: 'beta',
     color: '#7A5AF8',
